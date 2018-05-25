@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>ExternalTab.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.preftabs</a> &gt; <span class="el_source">ExternalTab.java</span></div><h1>ExternalTab.java</h1><pre class="source lang-java linenums">package org.jabref.gui.preftabs;
+
+import java.awt.BorderLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.GridLayout;
+import java.awt.Insets;
+
+import javax.swing.BorderFactory;
+import javax.swing.ButtonGroup;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JFileChooser;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JRadioButton;
+import javax.swing.JTextField;
+
+import org.jabref.Globals;
+import org.jabref.gui.JabRefFrame;
+import org.jabref.gui.externalfiletype.ExternalFileTypeEditor;
+import org.jabref.gui.push.PushToApplication;
+import org.jabref.gui.push.PushToApplicationButton;
+import org.jabref.logic.l10n.Localization;
+import org.jabref.logic.util.OS;
+import org.jabref.preferences.JabRefPreferences;
+
+import com.jgoodies.forms.builder.DefaultFormBuilder;
+import com.jgoodies.forms.layout.FormLayout;
+
+class ExternalTab extends JPanel implements PrefsTab {
+    private final JabRefPreferences prefs;
+
+    private final JabRefFrame frame;
+
+    private final JTextField emailSubject;
+    private final JTextField citeCommand;
+    private final JCheckBox openFoldersOfAttachedFiles;
+
+    private final JRadioButton defaultConsole;
+    private final JRadioButton executeConsole;
+    private final JTextField consoleCommand;
+    private final JButton browseButton;
+
+    private final JRadioButton adobeAcrobatReader;
+    private final JRadioButton sumatraReader;
+    private final JTextField adobeAcrobatReaderPath;
+    private final JTextField sumatraReaderPath;
+    private final JButton browseAdobeAcrobatReader;
+    private final JButton browseSumatraReader;
+
+<span class="nc" id="L52">    public ExternalTab(JabRefFrame frame, PreferencesDialog prefsDiag, JabRefPreferences prefs) {</span>
+<span class="nc" id="L53">        this.prefs = prefs;</span>
+<span class="nc" id="L54">        this.frame = frame;</span>
+<span class="nc" id="L55">        setLayout(new BorderLayout());</span>
+
+<span class="nc" id="L57">        JButton editFileTypes = new JButton(Localization.lang(&quot;Manage external file types&quot;));</span>
+<span class="nc" id="L58">        citeCommand = new JTextField(25);</span>
+<span class="nc" id="L59">        editFileTypes.addActionListener(ExternalFileTypeEditor.getAction(prefsDiag));</span>
+
+
+<span class="nc" id="L62">        defaultConsole = new JRadioButton(Localization.lang(&quot;Use default terminal emulator&quot;));</span>
+<span class="nc" id="L63">        executeConsole = new JRadioButton(Localization.lang(&quot;Execute command&quot;) + &quot;:&quot;);</span>
+<span class="nc" id="L64">        consoleCommand = new JTextField();</span>
+<span class="nc" id="L65">        browseButton = new JButton(Localization.lang(&quot;Browse&quot;));</span>
+
+<span class="nc" id="L67">        adobeAcrobatReader = new JRadioButton(Localization.lang(&quot;Adobe Acrobat Reader&quot;));</span>
+<span class="nc" id="L68">        adobeAcrobatReaderPath = new JTextField();</span>
+<span class="nc" id="L69">        browseAdobeAcrobatReader = new JButton(Localization.lang(&quot;Browse&quot;));</span>
+
+<span class="nc" id="L71">        sumatraReader = new JRadioButton(Localization.lang(&quot;Sumatra Reader&quot;));</span>
+<span class="nc" id="L72">        sumatraReaderPath = new JTextField();</span>
+<span class="nc" id="L73">        browseSumatraReader = new JButton(Localization.lang(&quot;Browse&quot;));</span>
+
+
+<span class="nc" id="L76">        JLabel commandDescription = new JLabel(Localization.lang(</span>
+<span class="nc" id="L77">                &quot;Note: Use the placeholder %0 for the location of the opened library file.&quot;, &quot;%DIR&quot;));</span>
+
+<span class="nc" id="L79">        ButtonGroup consoleOptions = new ButtonGroup();</span>
+<span class="nc" id="L80">        consoleOptions.add(defaultConsole);</span>
+<span class="nc" id="L81">        consoleOptions.add(executeConsole);</span>
+
+<span class="nc" id="L83">        ButtonGroup  readerOptions = new ButtonGroup();</span>
+<span class="nc" id="L84">        readerOptions.add(adobeAcrobatReader);</span>
+
+<span class="nc" id="L86">        JPanel pdfOptionPanel = new JPanel(new GridBagLayout());</span>
+<span class="nc" id="L87">        GridBagConstraints pdfLayoutConstrains = new GridBagConstraints();</span>
+
+<span class="nc" id="L89">        JPanel consoleOptionPanel = new JPanel(new GridBagLayout());</span>
+<span class="nc" id="L90">        GridBagConstraints layoutConstraints = new GridBagConstraints();</span>
+
+<span class="nc" id="L92">        defaultConsole.addActionListener(e -&gt; updateExecuteConsoleButtonAndFieldEnabledState());</span>
+<span class="nc" id="L93">        executeConsole.addActionListener(e -&gt; updateExecuteConsoleButtonAndFieldEnabledState());</span>
+<span class="nc" id="L94">        browseButton.addActionListener(e -&gt; showConsoleChooser());</span>
+
+<span class="nc" id="L96">        browseAdobeAcrobatReader.addActionListener(e -&gt; showAdobeChooser());</span>
+
+<span class="nc" id="L98">        layoutConstraints.fill = GridBagConstraints.HORIZONTAL;</span>
+
+<span class="nc" id="L100">        pdfLayoutConstrains.fill = GridBagConstraints.HORIZONTAL;</span>
+
+<span class="nc" id="L102">        layoutConstraints.gridx = 0;</span>
+<span class="nc" id="L103">        layoutConstraints.gridy = 0;</span>
+<span class="nc" id="L104">        layoutConstraints.insets = new Insets(0, 0, 6, 0);</span>
+<span class="nc" id="L105">        consoleOptionPanel.add(defaultConsole, layoutConstraints);</span>
+
+<span class="nc" id="L107">        layoutConstraints.gridy = 1;</span>
+<span class="nc" id="L108">        consoleOptionPanel.add(executeConsole, layoutConstraints);</span>
+
+<span class="nc" id="L110">        layoutConstraints.gridx = 1;</span>
+<span class="nc" id="L111">        consoleOptionPanel.add(consoleCommand, layoutConstraints);</span>
+
+<span class="nc" id="L113">        layoutConstraints.gridx = 2;</span>
+<span class="nc" id="L114">        layoutConstraints.insets = new Insets(0, 4, 6, 0);</span>
+<span class="nc" id="L115">        consoleOptionPanel.add(browseButton, layoutConstraints);</span>
+
+<span class="nc" id="L117">        layoutConstraints.gridx = 1;</span>
+<span class="nc" id="L118">        layoutConstraints.gridy = 2;</span>
+<span class="nc" id="L119">        consoleOptionPanel.add(commandDescription, layoutConstraints);</span>
+
+<span class="nc" id="L121">        pdfLayoutConstrains.gridx = 0;</span>
+<span class="nc" id="L122">        pdfLayoutConstrains.gridy = 0;</span>
+<span class="nc" id="L123">        pdfLayoutConstrains.insets = new Insets(0, 0, 6, 0);</span>
+<span class="nc" id="L124">        pdfOptionPanel.add(adobeAcrobatReader, pdfLayoutConstrains);</span>
+
+<span class="nc" id="L126">        pdfLayoutConstrains.gridx = 1;</span>
+<span class="nc" id="L127">        pdfOptionPanel.add(adobeAcrobatReaderPath,pdfLayoutConstrains);</span>
+
+<span class="nc" id="L129">        pdfLayoutConstrains.gridx = 2;</span>
+<span class="nc" id="L130">        pdfOptionPanel.add(browseAdobeAcrobatReader, pdfLayoutConstrains);</span>
+
+<span class="nc bnc" id="L132" title="All 2 branches missed.">        if (OS.WINDOWS) {</span>
+<span class="nc" id="L133">            readerOptions.add(sumatraReader);</span>
+<span class="nc" id="L134">            browseSumatraReader.addActionListener(e -&gt; showSumatraChooser());</span>
+<span class="nc" id="L135">            pdfLayoutConstrains.gridy = 1;</span>
+<span class="nc" id="L136">            pdfLayoutConstrains.gridx = 0;</span>
+<span class="nc" id="L137">            pdfOptionPanel.add(sumatraReader,pdfLayoutConstrains);</span>
+
+<span class="nc" id="L139">            pdfLayoutConstrains.gridx = 1;</span>
+<span class="nc" id="L140">            pdfOptionPanel.add(sumatraReaderPath, pdfLayoutConstrains);</span>
+
+<span class="nc" id="L142">            pdfLayoutConstrains.gridx = 2;</span>
+<span class="nc" id="L143">            pdfOptionPanel.add(browseSumatraReader, pdfLayoutConstrains);</span>
+        }
+
+<span class="nc" id="L146">        FormLayout layout = new FormLayout(</span>
+<span class="nc" id="L147">                &quot;1dlu, 8dlu, left:pref, 4dlu, fill:150dlu, 4dlu, fill:pref&quot;, &quot;&quot;);</span>
+
+<span class="nc" id="L149">        DefaultFormBuilder builder = new DefaultFormBuilder(layout);</span>
+
+<span class="nc" id="L151">        builder.appendSeparator(Localization.lang(&quot;Sending of emails&quot;));</span>
+<span class="nc" id="L152">        builder.append(new JPanel());</span>
+<span class="nc" id="L153">        JLabel lab = new JLabel(Localization.lang(&quot;Subject for sending an email with references&quot;).concat(&quot;:&quot;));</span>
+<span class="nc" id="L154">        builder.append(lab);</span>
+<span class="nc" id="L155">        emailSubject = new JTextField(25);</span>
+<span class="nc" id="L156">        builder.append(emailSubject);</span>
+<span class="nc" id="L157">        builder.nextLine();</span>
+<span class="nc" id="L158">        builder.append(new JPanel());</span>
+<span class="nc" id="L159">        openFoldersOfAttachedFiles = new JCheckBox(Localization.lang(&quot;Automatically open folders of attached files&quot;));</span>
+<span class="nc" id="L160">        builder.append(openFoldersOfAttachedFiles);</span>
+<span class="nc" id="L161">        builder.nextLine();</span>
+
+<span class="nc" id="L163">        builder.appendSeparator(Localization.lang(&quot;External programs&quot;));</span>
+<span class="nc" id="L164">        builder.nextLine();</span>
+
+<span class="nc" id="L166">        JPanel butpan = new JPanel();</span>
+<span class="nc" id="L167">        butpan.setLayout(new GridLayout(3, 3));</span>
+<span class="nc bnc" id="L168" title="All 2 branches missed.">        for (PushToApplication pushToApplication : frame.getPushApplications().getApplications()) {</span>
+<span class="nc" id="L169">            addSettingsButton(pushToApplication, butpan);</span>
+        }
+<span class="nc" id="L171">        builder.append(new JPanel());</span>
+<span class="nc" id="L172">        builder.append(butpan, 3);</span>
+
+<span class="nc" id="L174">        builder.nextLine();</span>
+<span class="nc" id="L175">        lab = new JLabel(Localization.lang(&quot;Cite command&quot;) + ':');</span>
+<span class="nc" id="L176">        JPanel pan = new JPanel();</span>
+<span class="nc" id="L177">        builder.append(pan);</span>
+<span class="nc" id="L178">        builder.append(lab);</span>
+<span class="nc" id="L179">        builder.append(citeCommand);</span>
+
+<span class="nc" id="L181">        builder.nextLine();</span>
+<span class="nc" id="L182">        builder.append(pan);</span>
+<span class="nc" id="L183">        builder.append(editFileTypes);</span>
+<span class="nc" id="L184">        builder.nextLine();</span>
+
+<span class="nc" id="L186">        builder.appendSeparator(Localization.lang(&quot;Open console&quot;));</span>
+<span class="nc" id="L187">        builder.nextLine();</span>
+<span class="nc" id="L188">        builder.append(new JPanel());</span>
+<span class="nc" id="L189">        builder.append(consoleOptionPanel);</span>
+<span class="nc" id="L190">        builder.nextLine();</span>
+
+<span class="nc" id="L192">        builder.appendSeparator(Localization.lang(&quot;Open PDF&quot;));</span>
+<span class="nc" id="L193">        builder.nextLine();</span>
+<span class="nc" id="L194">        builder.append(new JPanel());</span>
+<span class="nc" id="L195">        builder.append(pdfOptionPanel);</span>
+
+<span class="nc" id="L197">        pan = builder.getPanel();</span>
+<span class="nc" id="L198">        pan.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));</span>
+<span class="nc" id="L199">        add(pan, BorderLayout.CENTER);</span>
+
+<span class="nc" id="L201">    }</span>
+
+    private void addSettingsButton(final PushToApplication pt, JPanel p) {
+<span class="nc" id="L204">        JButton button = new JButton(Localization.lang(&quot;Settings for %0&quot;, pt.getApplicationName()),</span>
+<span class="nc" id="L205">                pt.getIcon());</span>
+<span class="nc" id="L206">        button.addActionListener(e -&gt; PushToApplicationButton.showSettingsDialog(frame, pt, pt.getSettingsPanel()));</span>
+<span class="nc" id="L207">        p.add(button);</span>
+<span class="nc" id="L208">    }</span>
+
+    @Override
+    public void setValues() {
+
+<span class="nc" id="L213">        emailSubject.setText(prefs.get(JabRefPreferences.EMAIL_SUBJECT));</span>
+<span class="nc" id="L214">        openFoldersOfAttachedFiles.setSelected(prefs.getBoolean(JabRefPreferences.OPEN_FOLDERS_OF_ATTACHED_FILES));</span>
+
+<span class="nc" id="L216">        citeCommand.setText(prefs.get(JabRefPreferences.CITE_COMMAND));</span>
+
+<span class="nc" id="L218">        defaultConsole.setSelected(Globals.prefs.getBoolean(JabRefPreferences.USE_DEFAULT_CONSOLE_APPLICATION));</span>
+<span class="nc bnc" id="L219" title="All 2 branches missed.">        executeConsole.setSelected(!Globals.prefs.getBoolean(JabRefPreferences.USE_DEFAULT_CONSOLE_APPLICATION));</span>
+
+<span class="nc" id="L221">        consoleCommand.setText(Globals.prefs.get(JabRefPreferences.CONSOLE_COMMAND));</span>
+
+<span class="nc" id="L223">        adobeAcrobatReaderPath.setText(Globals.prefs.get(JabRefPreferences.ADOBE_ACROBAT_COMMAND));</span>
+<span class="nc bnc" id="L224" title="All 2 branches missed.">        if (OS.WINDOWS) {</span>
+<span class="nc" id="L225">            sumatraReaderPath.setText(Globals.prefs.get(JabRefPreferences.SUMATRA_PDF_COMMAND));</span>
+
+<span class="nc bnc" id="L227" title="All 2 branches missed.">            if (Globals.prefs.get(JabRefPreferences.USE_PDF_READER).equals(adobeAcrobatReaderPath.getText())) {</span>
+<span class="nc" id="L228">                adobeAcrobatReader.setSelected(true);</span>
+<span class="nc bnc" id="L229" title="All 2 branches missed.">            } else if (Globals.prefs.get(JabRefPreferences.USE_PDF_READER).equals(sumatraReaderPath.getText())) {</span>
+<span class="nc" id="L230">                sumatraReader.setSelected(true);</span>
+            }
+        }
+
+<span class="nc" id="L234">        updateExecuteConsoleButtonAndFieldEnabledState();</span>
+<span class="nc" id="L235">    }</span>
+
+    @Override
+    public void storeSettings() {
+<span class="nc" id="L239">        prefs.put(JabRefPreferences.EMAIL_SUBJECT, emailSubject.getText());</span>
+<span class="nc" id="L240">        prefs.putBoolean(JabRefPreferences.OPEN_FOLDERS_OF_ATTACHED_FILES, openFoldersOfAttachedFiles.isSelected());</span>
+<span class="nc" id="L241">        prefs.put(JabRefPreferences.CITE_COMMAND, citeCommand.getText());</span>
+<span class="nc" id="L242">        prefs.putBoolean(JabRefPreferences.USE_DEFAULT_CONSOLE_APPLICATION, defaultConsole.isSelected());</span>
+<span class="nc" id="L243">        prefs.put(JabRefPreferences.CONSOLE_COMMAND, consoleCommand.getText());</span>
+<span class="nc" id="L244">        prefs.put(JabRefPreferences.ADOBE_ACROBAT_COMMAND, adobeAcrobatReaderPath.getText());</span>
+<span class="nc bnc" id="L245" title="All 2 branches missed.">        if (OS.WINDOWS) {</span>
+<span class="nc" id="L246">            prefs.put(JabRefPreferences.SUMATRA_PDF_COMMAND, sumatraReaderPath.getText());</span>
+        }
+<span class="nc" id="L248">        readerSelected();</span>
+<span class="nc" id="L249">    }</span>
+
+    @Override
+    public boolean validateSettings() {
+<span class="nc" id="L253">        return true;</span>
+    }
+
+    @Override
+    public String getTabName() {
+<span class="nc" id="L258">        return Localization.lang(&quot;External programs&quot;);</span>
+    }
+
+    private void updateExecuteConsoleButtonAndFieldEnabledState() {
+<span class="nc" id="L262">        browseButton.setEnabled(executeConsole.isSelected());</span>
+<span class="nc" id="L263">        consoleCommand.setEnabled(executeConsole.isSelected());</span>
+<span class="nc" id="L264">    }</span>
+
+    private void showConsoleChooser() {
+<span class="nc" id="L267">        JFileChooser consoleChooser = new JFileChooser();</span>
+<span class="nc" id="L268">        int answer = consoleChooser.showOpenDialog(ExternalTab.this);</span>
+<span class="nc bnc" id="L269" title="All 2 branches missed.">        if (answer == JFileChooser.APPROVE_OPTION) {</span>
+<span class="nc" id="L270">            consoleCommand.setText(consoleChooser.getSelectedFile().getAbsolutePath());</span>
+        }
+<span class="nc" id="L272">    }</span>
+
+    private void showAdobeChooser() {
+<span class="nc" id="L275">        JFileChooser adobeChooser = new JFileChooser();</span>
+<span class="nc" id="L276">        int answer = adobeChooser.showOpenDialog(ExternalTab.this);</span>
+<span class="nc bnc" id="L277" title="All 2 branches missed.">        if (answer == JFileChooser.APPROVE_OPTION) {</span>
+<span class="nc" id="L278">            adobeAcrobatReaderPath.setText(adobeChooser.getSelectedFile().getAbsolutePath());</span>
+        }
+<span class="nc" id="L280">    }</span>
+
+    private void showSumatraChooser() {
+<span class="nc" id="L283">        JFileChooser adobeChooser = new JFileChooser();</span>
+<span class="nc" id="L284">        int answer = adobeChooser.showOpenDialog(ExternalTab.this);</span>
+<span class="nc bnc" id="L285" title="All 2 branches missed.">        if (answer == JFileChooser.APPROVE_OPTION) {</span>
+<span class="nc" id="L286">            sumatraReaderPath.setText(adobeChooser.getSelectedFile().getAbsolutePath());</span>
+        }
+<span class="nc" id="L288">    }</span>
+
+    private void readerSelected() {
+<span class="nc bnc" id="L291" title="All 2 branches missed.">        if (adobeAcrobatReader.isSelected()) {</span>
+<span class="nc" id="L292">            prefs.put(JabRefPreferences.USE_PDF_READER, adobeAcrobatReaderPath.getText());</span>
+<span class="nc" id="L293">        }</span>
+<span class="nc bnc" id="L294" title="All 2 branches missed.">        else if (sumatraReader.isSelected()) {</span>
+<span class="nc" id="L295">            prefs.put(JabRefPreferences.USE_PDF_READER, sumatraReaderPath.getText());</span>
+        }
+<span class="nc" id="L297">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

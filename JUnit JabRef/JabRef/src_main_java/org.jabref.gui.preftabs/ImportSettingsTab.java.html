@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>ImportSettingsTab.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.preftabs</a> &gt; <span class="el_source">ImportSettingsTab.java</span></div><h1>ImportSettingsTab.java</h1><pre class="source lang-java linenums">package org.jabref.gui.preftabs;
+
+import java.awt.BorderLayout;
+import java.util.Objects;
+
+import javax.swing.BorderFactory;
+import javax.swing.ButtonGroup;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JLabel;
+import javax.swing.JMenuItem;
+import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+import javax.swing.JRadioButton;
+import javax.swing.JTextField;
+
+import org.jabref.logic.l10n.Localization;
+import org.jabref.pdfimport.ImportDialog;
+import org.jabref.preferences.JabRefPreferences;
+
+import com.jgoodies.forms.builder.DefaultFormBuilder;
+import com.jgoodies.forms.layout.FormLayout;
+
+public class ImportSettingsTab extends JPanel implements PrefsTab {
+
+<span class="fc" id="L26">    public static final String[] DEFAULT_FILENAMEPATTERNS = new String[] {&quot;[bibtexkey]&quot;,</span>
+<span class="fc" id="L27">            &quot;[bibtexkey] - [title]&quot;};</span>
+
+    public static final int DEFAULT_STYLE = ImportDialog.CONTENT;
+<span class="fc" id="L30">    private static final String[] DEFAULT_FILENAMEPATTERNS_DISPLAY = new String[] {&quot;bibtexkey&quot;, &quot;bibtexkey - title&quot;,};</span>
+
+    private final JabRefPreferences prefs;
+    private final JRadioButton radioButtonXmp;
+    private final JRadioButton radioButtonPDFcontent;
+    private final JRadioButton radioButtonNoMeta;
+    private final JRadioButton radioButtononlyAttachPDF;
+    private final JCheckBox useDefaultPDFImportStyle;
+
+    private final JTextField fileNamePattern;
+    private final JButton selectFileNamePattern;
+
+    private final JTextField fileDirPattern;
+
+<span class="nc" id="L44">    public ImportSettingsTab(JabRefPreferences prefs) {</span>
+<span class="nc" id="L45">        this.prefs = Objects.requireNonNull(prefs);</span>
+
+<span class="nc" id="L47">        setLayout(new BorderLayout());</span>
+<span class="nc" id="L48">        FormLayout layout = new FormLayout(&quot;1dlu, 8dlu, left:pref, 4dlu, fill:3dlu&quot;);</span>
+<span class="nc" id="L49">        radioButtonNoMeta = new JRadioButton(Localization.lang(&quot;Create blank entry linking the PDF&quot;));</span>
+<span class="nc" id="L50">        radioButtonXmp = new JRadioButton(Localization.lang(&quot;Create entry based on XMP-metadata&quot;));</span>
+<span class="nc" id="L51">        radioButtonPDFcontent = new JRadioButton(Localization.lang(&quot;Create entry based on content&quot;));</span>
+<span class="nc" id="L52">        radioButtononlyAttachPDF = new JRadioButton(Localization.lang(&quot;Only attach PDF&quot;));</span>
+<span class="nc" id="L53">        ButtonGroup bg = new ButtonGroup();</span>
+<span class="nc" id="L54">        bg.add(radioButtonNoMeta);</span>
+<span class="nc" id="L55">        bg.add(radioButtonXmp);</span>
+<span class="nc" id="L56">        bg.add(radioButtonPDFcontent);</span>
+<span class="nc" id="L57">        bg.add(radioButtononlyAttachPDF);</span>
+
+<span class="nc" id="L59">        useDefaultPDFImportStyle = new JCheckBox(</span>
+<span class="nc" id="L60">                Localization.lang(&quot;Always use this PDF import style (and do not ask for each import)&quot;));</span>
+
+<span class="nc" id="L62">        fileNamePattern = new JTextField(50);</span>
+<span class="nc" id="L63">        fileDirPattern = new JTextField(50);</span>
+<span class="nc" id="L64">        selectFileNamePattern = new JButton(Localization.lang(&quot;Choose pattern&quot;));</span>
+<span class="nc" id="L65">        selectFileNamePattern.addActionListener(e -&gt; openFilePatternMenu());</span>
+
+<span class="nc" id="L67">        DefaultFormBuilder builder = new DefaultFormBuilder(layout);</span>
+<span class="nc" id="L68">        JPanel pan = new JPanel();</span>
+
+<span class="nc" id="L70">        builder.appendSeparator(Localization.lang(&quot;Default import style for drag and drop of PDFs&quot;));</span>
+<span class="nc" id="L71">        builder.nextLine();</span>
+<span class="nc" id="L72">        builder.append(pan);</span>
+<span class="nc" id="L73">        builder.append(radioButtonNoMeta);</span>
+<span class="nc" id="L74">        builder.nextLine();</span>
+<span class="nc" id="L75">        builder.append(pan);</span>
+<span class="nc" id="L76">        builder.append(radioButtonXmp);</span>
+<span class="nc" id="L77">        builder.nextLine();</span>
+<span class="nc" id="L78">        builder.append(pan);</span>
+<span class="nc" id="L79">        builder.append(radioButtonPDFcontent);</span>
+<span class="nc" id="L80">        builder.nextLine();</span>
+<span class="nc" id="L81">        builder.append(pan);</span>
+<span class="nc" id="L82">        builder.append(radioButtononlyAttachPDF);</span>
+<span class="nc" id="L83">        builder.nextLine();</span>
+<span class="nc" id="L84">        builder.append(pan);</span>
+<span class="nc" id="L85">        builder.append(useDefaultPDFImportStyle);</span>
+<span class="nc" id="L86">        builder.nextLine();</span>
+
+<span class="nc" id="L88">        builder.appendSeparator(Localization.lang(&quot;Default PDF file link action&quot;));</span>
+<span class="nc" id="L89">        builder.nextLine();</span>
+<span class="nc" id="L90">        builder.append(pan);</span>
+
+<span class="nc" id="L92">        JPanel pan2 = new JPanel();</span>
+<span class="nc" id="L93">        JLabel lab = new JLabel(Localization.lang(&quot;Filename format pattern&quot;).concat(&quot;:&quot;));</span>
+<span class="nc" id="L94">        pan2.add(lab);</span>
+<span class="nc" id="L95">        pan2.add(fileNamePattern);</span>
+<span class="nc" id="L96">        pan2.add(selectFileNamePattern);</span>
+<span class="nc" id="L97">        builder.append(pan2);</span>
+
+<span class="nc" id="L99">        JPanel pan3 = new JPanel();</span>
+<span class="nc" id="L100">        JLabel lbfileDirPattern = new JLabel(Localization.lang(&quot;File directory pattern&quot;).concat(&quot;:&quot;));</span>
+<span class="nc" id="L101">        pan3.add(lbfileDirPattern);</span>
+<span class="nc" id="L102">        pan3.add(fileDirPattern);</span>
+
+<span class="nc" id="L104">        builder.nextLine();</span>
+<span class="nc" id="L105">        builder.append(pan);</span>
+<span class="nc" id="L106">        builder.append(pan3);</span>
+
+<span class="nc" id="L108">        pan = builder.getPanel();</span>
+<span class="nc" id="L109">        pan.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));</span>
+<span class="nc" id="L110">        add(pan, BorderLayout.CENTER);</span>
+<span class="nc" id="L111">    }</span>
+
+    @Override
+    public void setValues() {
+
+<span class="nc" id="L116">        useDefaultPDFImportStyle.setSelected(prefs.getBoolean(JabRefPreferences.IMPORT_ALWAYSUSE));</span>
+<span class="nc" id="L117">        int style = prefs.getInt(JabRefPreferences.IMPORT_DEFAULT_PDF_IMPORT_STYLE);</span>
+<span class="nc bnc" id="L118" title="All 5 branches missed.">        switch (style) {</span>
+        case ImportDialog.NOMETA:
+<span class="nc" id="L120">            radioButtonNoMeta.setSelected(true);</span>
+<span class="nc" id="L121">            break;</span>
+        case ImportDialog.XMP:
+<span class="nc" id="L123">            radioButtonXmp.setSelected(true);</span>
+<span class="nc" id="L124">            break;</span>
+        case ImportDialog.CONTENT:
+<span class="nc" id="L126">            radioButtonPDFcontent.setSelected(true);</span>
+<span class="nc" id="L127">            break;</span>
+        case ImportDialog.ONLYATTACH:
+<span class="nc" id="L129">            radioButtononlyAttachPDF.setSelected(true);</span>
+<span class="nc" id="L130">            break;</span>
+        default:
+            // fallback
+<span class="nc" id="L133">            radioButtonPDFcontent.setSelected(true);</span>
+            break;
+        }
+<span class="nc" id="L136">        fileNamePattern.setText(prefs.get(JabRefPreferences.IMPORT_FILENAMEPATTERN));</span>
+<span class="nc" id="L137">        fileDirPattern.setText(prefs.get(JabRefPreferences.IMPORT_FILEDIRPATTERN));</span>
+<span class="nc" id="L138">    }</span>
+
+    @Override
+    public void storeSettings() {
+<span class="nc" id="L142">        prefs.putBoolean(JabRefPreferences.IMPORT_ALWAYSUSE, useDefaultPDFImportStyle.isSelected());</span>
+<span class="nc" id="L143">        int style = ImportSettingsTab.DEFAULT_STYLE;</span>
+<span class="nc bnc" id="L144" title="All 2 branches missed.">        if (radioButtonNoMeta.isSelected()) {</span>
+<span class="nc" id="L145">            style = ImportDialog.NOMETA;</span>
+<span class="nc bnc" id="L146" title="All 2 branches missed.">        } else if (radioButtonXmp.isSelected()) {</span>
+<span class="nc" id="L147">            style = ImportDialog.XMP;</span>
+<span class="nc bnc" id="L148" title="All 2 branches missed.">        } else if (radioButtonPDFcontent.isSelected()) {</span>
+<span class="nc" id="L149">            style = ImportDialog.CONTENT;</span>
+<span class="nc bnc" id="L150" title="All 2 branches missed.">        } else if (radioButtononlyAttachPDF.isSelected()) {</span>
+<span class="nc" id="L151">            style = ImportDialog.ONLYATTACH;</span>
+        }
+<span class="nc" id="L153">        prefs.putInt(JabRefPreferences.IMPORT_DEFAULT_PDF_IMPORT_STYLE, style);</span>
+<span class="nc" id="L154">        prefs.put(JabRefPreferences.IMPORT_FILENAMEPATTERN, fileNamePattern.getText());</span>
+<span class="nc" id="L155">        prefs.put(JabRefPreferences.IMPORT_FILEDIRPATTERN, fileDirPattern.getText());</span>
+<span class="nc" id="L156">    }</span>
+
+    @Override
+    public boolean validateSettings() {
+<span class="nc" id="L160">        return true;</span>
+    }
+
+    @Override
+    public String getTabName() {
+<span class="nc" id="L165">        return Localization.lang(&quot;Import&quot;);</span>
+    }
+
+    private void openFilePatternMenu() {
+<span class="nc" id="L169">        JPopupMenu popup = new JPopupMenu();</span>
+<span class="nc bnc" id="L170" title="All 2 branches missed.">        for (int i = 0; i &lt; ImportSettingsTab.DEFAULT_FILENAMEPATTERNS.length; i++) {</span>
+<span class="nc" id="L171">            final JMenuItem item = new JMenuItem(ImportSettingsTab.DEFAULT_FILENAMEPATTERNS_DISPLAY[i]);</span>
+<span class="nc" id="L172">            final String toSet = ImportSettingsTab.DEFAULT_FILENAMEPATTERNS[i];</span>
+<span class="nc" id="L173">            item.addActionListener(e -&gt; fileNamePattern.setText(toSet));</span>
+<span class="nc" id="L174">            popup.add(item);</span>
+        }
+<span class="nc" id="L176">        popup.show(selectFileNamePattern, 0, selectFileNamePattern.getHeight());</span>
+<span class="nc" id="L177">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

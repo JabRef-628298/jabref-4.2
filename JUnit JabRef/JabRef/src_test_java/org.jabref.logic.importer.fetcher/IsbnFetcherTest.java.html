@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>IsbnFetcherTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.importer.fetcher</a> &gt; <span class="el_source">IsbnFetcherTest.java</span></div><h1>IsbnFetcherTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.importer.fetcher;
+
+import java.util.Optional;
+
+import org.jabref.logic.importer.FetcherException;
+import org.jabref.logic.importer.ImportFormatPreferences;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.BiblatexEntryTypes;
+import org.jabref.testutils.category.FetcherTest;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Answers;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
+
+@FetcherTest
+<span class="fc" id="L21">public class IsbnFetcherTest {</span>
+
+    private IsbnFetcher fetcher;
+    private BibEntry bibEntry;
+
+    @BeforeEach
+    public void setUp() {
+<span class="fc" id="L28">        fetcher = new IsbnFetcher(mock(ImportFormatPreferences.class, Answers.RETURNS_DEEP_STUBS));</span>
+
+<span class="fc" id="L30">        bibEntry = new BibEntry();</span>
+<span class="fc" id="L31">        bibEntry.setType(BiblatexEntryTypes.BOOK);</span>
+<span class="fc" id="L32">        bibEntry.setField(&quot;bibtexkey&quot;, &quot;9780134685991&quot;);</span>
+<span class="fc" id="L33">        bibEntry.setField(&quot;title&quot;, &quot;Effective Java&quot;);</span>
+<span class="fc" id="L34">        bibEntry.setField(&quot;publisher&quot;, &quot;Addison Wesley&quot;);</span>
+<span class="fc" id="L35">        bibEntry.setField(&quot;year&quot;, &quot;2018&quot;);</span>
+<span class="fc" id="L36">        bibEntry.setField(&quot;author&quot;, &quot;Bloch, Joshua&quot;);</span>
+<span class="fc" id="L37">        bibEntry.setField(&quot;date&quot;, &quot;2018-01-11&quot;);</span>
+<span class="fc" id="L38">        bibEntry.setField(&quot;ean&quot;, &quot;9780134685991&quot;);</span>
+<span class="fc" id="L39">        bibEntry.setField(&quot;isbn&quot;, &quot;0134685997&quot;);</span>
+<span class="fc" id="L40">        bibEntry.setField(&quot;url&quot;, &quot;https://www.ebook.de/de/product/28983211/joshua_bloch_effective_java.html&quot;);</span>
+
+<span class="fc" id="L42">    }</span>
+
+    @Test
+    public void testName() {
+<span class="fc" id="L46">        assertEquals(&quot;ISBN&quot;, fetcher.getName());</span>
+<span class="fc" id="L47">    }</span>
+
+    @Test
+    public void testHelpPage() {
+<span class="fc" id="L51">        assertEquals(&quot;ISBNtoBibTeX&quot;, fetcher.getHelpPage().getPageName());</span>
+<span class="fc" id="L52">    }</span>
+
+    @Test
+    public void searchByIdSuccessfulWithShortISBN() throws FetcherException {
+<span class="fc" id="L56">        Optional&lt;BibEntry&gt; fetchedEntry = fetcher.performSearchById(&quot;0134685997&quot;);</span>
+<span class="fc" id="L57">        assertEquals(Optional.of(bibEntry), fetchedEntry);</span>
+<span class="fc" id="L58">    }</span>
+
+    @Test
+    public void searchByIdSuccessfulWithLongISBN() throws FetcherException {
+<span class="fc" id="L62">        Optional&lt;BibEntry&gt; fetchedEntry = fetcher.performSearchById(&quot;9780134685991&quot;);</span>
+<span class="fc" id="L63">        assertEquals(Optional.of(bibEntry), fetchedEntry);</span>
+<span class="fc" id="L64">    }</span>
+
+    @Test
+    public void searchByIdReturnsEmptyWithEmptyISBN() throws FetcherException {
+<span class="fc" id="L68">        Optional&lt;BibEntry&gt; fetchedEntry = fetcher.performSearchById(&quot;&quot;);</span>
+<span class="fc" id="L69">        assertEquals(Optional.empty(), fetchedEntry);</span>
+<span class="fc" id="L70">    }</span>
+
+    @Test
+    public void searchByIdThrowsExceptionForShortInvalidISBN() {
+<span class="pc" id="L74">        assertThrows(FetcherException.class, () -&gt; fetcher.performSearchById(&quot;123456789&quot;));</span>
+<span class="fc" id="L75">    }</span>
+
+    @Test
+    public void searchByIdThrowsExceptionForLongInvalidISB() {
+<span class="pc" id="L79">        assertThrows(FetcherException.class, () -&gt; fetcher.performSearchById(&quot;012345678910&quot;));</span>
+<span class="fc" id="L80">    }</span>
+
+    @Test
+    public void searchByIdThrowsExceptionForInvalidISBN() {
+<span class="pc" id="L84">        assertThrows(FetcherException.class, () -&gt; fetcher.performSearchById(&quot;jabref-4-ever&quot;));</span>
+<span class="fc" id="L85">    }</span>
+
+    /**
+     * This test searches for a valid ISBN. See https://www.amazon.de/dp/3728128155/?tag=jabref-21
+     * However, this ISBN is not available on ebook.de. The fetcher should something as it falls back to Chimbori
+     * @throws FetcherException
+     */
+    @Test
+    public void searchForIsbnAvailableAtChimboriButNonOnEbookDe() throws FetcherException {
+<span class="fc" id="L94">        Optional&lt;BibEntry&gt; fetchedEntry = fetcher.performSearchById(&quot;3728128155&quot;);</span>
+<span class="fc" id="L95">        assertNotEquals(Optional.empty(), fetchedEntry);</span>
+<span class="fc" id="L96">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

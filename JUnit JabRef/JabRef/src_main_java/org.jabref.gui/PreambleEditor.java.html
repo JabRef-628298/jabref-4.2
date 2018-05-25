@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>PreambleEditor.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui</a> &gt; <span class="el_source">PreambleEditor.java</span></div><h1>PreambleEditor.java</h1><pre class="source lang-java linenums"><span class="nc" id="L1">package org.jabref.gui;</span>
+
+import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.Container;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.awt.event.ActionEvent;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+
+import javax.swing.AbstractAction;
+import javax.swing.Action;
+import javax.swing.JPanel;
+import javax.swing.LayoutFocusTraversalPolicy;
+import javax.swing.text.JTextComponent;
+
+import org.jabref.Globals;
+import org.jabref.gui.actions.Actions;
+import org.jabref.gui.fieldeditors.FieldEditor;
+import org.jabref.gui.fieldeditors.TextArea;
+import org.jabref.gui.keyboard.KeyBinding;
+import org.jabref.gui.undo.UndoablePreambleChange;
+import org.jabref.gui.util.WindowLocation;
+import org.jabref.logic.l10n.Localization;
+import org.jabref.model.database.BibDatabase;
+import org.jabref.preferences.JabRefPreferences;
+
+class PreambleEditor extends JabRefDialog {
+    // A reference to the entry this object works on.
+    private final BibDatabase database;
+    private final BasePanel panel;
+
+    private final FieldEditor editor;
+
+<span class="nc" id="L39">    private final UndoAction undoAction = new UndoAction();</span>
+<span class="nc" id="L40">    private final StoreFieldAction storeFieldAction = new StoreFieldAction();</span>
+<span class="nc" id="L41">    private final RedoAction redoAction = new RedoAction();</span>
+    // The action concerned with closing the window.
+<span class="nc" id="L43">    private final CloseAction closeAction = new CloseAction();</span>
+
+    public PreambleEditor(JabRefFrame baseFrame, BasePanel panel, BibDatabase database) {
+<span class="nc" id="L46">        super(baseFrame, PreambleEditor.class);</span>
+<span class="nc" id="L47">        this.panel = panel;</span>
+<span class="nc" id="L48">        this.database = database;</span>
+
+<span class="nc" id="L50">        addWindowListener(new WindowAdapter() {</span>
+
+            @Override
+            public void windowClosing(WindowEvent e) {
+<span class="nc" id="L54">                closeAction.actionPerformed(null);</span>
+<span class="nc" id="L55">            }</span>
+
+            @Override
+            public void windowOpened(WindowEvent e) {
+<span class="nc" id="L59">                editor.requestFocus();</span>
+<span class="nc" id="L60">            }</span>
+        });
+<span class="nc" id="L62">        setFocusTraversalPolicy(new LayoutFocusTraversalPolicy() {</span>
+
+            @Override
+            protected boolean accept(Component c) {
+<span class="nc bnc" id="L66" title="All 4 branches missed.">                return super.accept(c) &amp;&amp; (c instanceof FieldEditor);</span>
+            }
+        });
+
+<span class="nc" id="L70">        JPanel pan = new JPanel();</span>
+<span class="nc" id="L71">        GridBagLayout gbl = new GridBagLayout();</span>
+<span class="nc" id="L72">        pan.setLayout(gbl);</span>
+<span class="nc" id="L73">        GridBagConstraints con = new GridBagConstraints();</span>
+<span class="nc" id="L74">        con.fill = GridBagConstraints.BOTH;</span>
+<span class="nc" id="L75">        con.weighty = 1;</span>
+<span class="nc" id="L76">        con.insets = new Insets(10, 5, 10, 5);</span>
+
+<span class="nc" id="L78">        editor = new TextArea(Localization.lang(&quot;Preamble&quot;), database.getPreamble().orElse(&quot;&quot;));</span>
+
+        // TODO: Reenable this
+        //setupJTextComponent((TextArea) editor);
+
+        //gbl.setConstraints(editor.getLabel(), con);
+        //pan.add(editor.getLabel());
+
+<span class="nc" id="L86">        con.weightx = 1;</span>
+
+<span class="nc" id="L88">        gbl.setConstraints(editor.getPane(), con);</span>
+<span class="nc" id="L89">        pan.add(editor.getPane());</span>
+
+<span class="nc" id="L91">        Container conPane = getContentPane();</span>
+<span class="nc" id="L92">        conPane.add(pan, BorderLayout.CENTER);</span>
+<span class="nc" id="L93">        setTitle(Localization.lang(&quot;Edit preamble&quot;));</span>
+
+<span class="nc" id="L95">        WindowLocation pw = new WindowLocation(this, JabRefPreferences.PREAMBLE_POS_X, JabRefPreferences.PREAMBLE_POS_Y,</span>
+<span class="nc" id="L96">                JabRefPreferences.PREAMBLE_SIZE_X, JabRefPreferences.PREAMBLE_SIZE_Y);</span>
+<span class="nc" id="L97">        pw.displayWindowAtStoredLocation();</span>
+<span class="nc" id="L98">    }</span>
+
+    private void setupJTextComponent(JTextComponent ta) {
+        // Set up key bindings and focus listener for the FieldEditor.
+<span class="nc" id="L102">        ta.getInputMap().put(Globals.getKeyPrefs().getKey(KeyBinding.CLOSE_DIALOG), &quot;close&quot;);</span>
+<span class="nc" id="L103">        ta.getActionMap().put(&quot;close&quot;, closeAction);</span>
+<span class="nc" id="L104">        ta.getInputMap().put(Globals.getKeyPrefs().getKey(KeyBinding.PREAMBLE_EDITOR_STORE_CHANGES), &quot;store&quot;);</span>
+<span class="nc" id="L105">        ta.getActionMap().put(&quot;store&quot;, storeFieldAction);</span>
+
+<span class="nc" id="L107">        ta.getInputMap().put(Globals.getKeyPrefs().getKey(KeyBinding.UNDO), &quot;undo&quot;);</span>
+<span class="nc" id="L108">        ta.getActionMap().put(Actions.UNDO, undoAction);</span>
+<span class="nc" id="L109">        ta.getInputMap().put(Globals.getKeyPrefs().getKey(KeyBinding.REDO), &quot;redo&quot;);</span>
+<span class="nc" id="L110">        ta.getActionMap().put(Actions.REDO, redoAction);</span>
+
+<span class="nc" id="L112">        ta.addFocusListener(new FieldListener());</span>
+<span class="nc" id="L113">    }</span>
+
+    public void updatePreamble() {
+<span class="nc" id="L116">        editor.setText(database.getPreamble().orElse(&quot;&quot;));</span>
+<span class="nc" id="L117">    }</span>
+
+    public FieldEditor getFieldEditor() {
+<span class="nc" id="L120">        return editor;</span>
+    }
+
+    public void storeCurrentEdit() {
+<span class="nc" id="L124">        storeFieldAction.actionPerformed(null);</span>
+<span class="nc" id="L125">    }</span>
+
+<span class="nc" id="L127">    private class FieldListener extends FocusAdapter {</span>
+
+        /*
+         * Focus listener that fires the storeFieldAction when a TextArea
+         * loses focus.
+         */
+        @Override
+        public void focusLost(FocusEvent e) {
+<span class="nc bnc" id="L135" title="All 2 branches missed.">            if (!e.isTemporary()) {</span>
+<span class="nc" id="L136">                storeFieldAction.actionPerformed(new ActionEvent(e.getSource(), 0, &quot;&quot;));</span>
+            }
+<span class="nc" id="L138">        }</span>
+
+    }
+
+    class StoreFieldAction extends AbstractAction {
+
+<span class="nc" id="L144">        public StoreFieldAction() {</span>
+<span class="nc" id="L145">            super(&quot;Store field value&quot;);</span>
+<span class="nc" id="L146">            putValue(Action.SHORT_DESCRIPTION, &quot;Store field value&quot;);</span>
+<span class="nc" id="L147">        }</span>
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L151">            String toSet = editor.getText();</span>
+
+            // We check if the field has changed, since we don't want to mark the
+            // base as changed unless we have a real change.
+<span class="nc bnc" id="L155" title="All 2 branches missed.">            if (!database.getPreamble().orElse(&quot;&quot;).equals(toSet)) {</span>
+<span class="nc" id="L156">                panel.getUndoManager().addEdit(</span>
+<span class="nc" id="L157">                        new UndoablePreambleChange(database, panel, database.getPreamble().orElse(null), toSet));</span>
+<span class="nc" id="L158">                database.setPreamble(toSet);</span>
+                //if ((toSet == null) || toSet.isEmpty()) {
+                //    editor.setLabelColor(GUIGlobals.NULL_FIELD_COLOR);
+                //} else {
+                //    editor.setLabelColor(GUIGlobals.ENTRY_EDITOR_LABEL_COLOR);
+                //}
+<span class="nc" id="L164">                editor.setValidBackgroundColor();</span>
+<span class="nc bnc" id="L165" title="All 2 branches missed.">                if (editor.hasFocus()) {</span>
+<span class="nc" id="L166">                    editor.setActiveBackgroundColor();</span>
+                }
+<span class="nc" id="L168">                panel.markBaseChanged();</span>
+            }
+
+<span class="nc" id="L171">        }</span>
+    }
+
+    class UndoAction extends AbstractAction {
+
+<span class="nc" id="L176">        public UndoAction() {</span>
+<span class="nc" id="L177">            super(&quot;Undo&quot;, IconTheme.JabRefIcon.UNDO.getIcon());</span>
+<span class="nc" id="L178">            putValue(Action.SHORT_DESCRIPTION, &quot;Undo&quot;);</span>
+<span class="nc" id="L179">        }</span>
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L183">            panel.runCommand(Actions.UNDO);</span>
+<span class="nc" id="L184">        }</span>
+    }
+
+    class RedoAction extends AbstractAction {
+
+<span class="nc" id="L189">        public RedoAction() {</span>
+<span class="nc" id="L190">            super(&quot;Redo&quot;, IconTheme.JabRefIcon.REDO.getIcon());</span>
+<span class="nc" id="L191">            putValue(Action.SHORT_DESCRIPTION, &quot;Redo&quot;);</span>
+<span class="nc" id="L192">        }</span>
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L196">            panel.runCommand(Actions.REDO);</span>
+<span class="nc" id="L197">        }</span>
+    }
+
+    class CloseAction extends AbstractAction {
+
+<span class="nc" id="L202">        public CloseAction() {</span>
+<span class="nc" id="L203">            super(Localization.lang(&quot;Close window&quot;));</span>
+<span class="nc" id="L204">        }</span>
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L208">            storeFieldAction.actionPerformed(null);</span>
+<span class="nc" id="L209">            panel.preambleEditorClosing();</span>
+<span class="nc" id="L210">            dispose();</span>
+<span class="nc" id="L211">        }</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

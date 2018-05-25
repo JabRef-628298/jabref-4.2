@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>ProtectedTermsListTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.protectedterms</a> &gt; <span class="el_source">ProtectedTermsListTest.java</span></div><h1>ProtectedTermsListTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.protectedterms;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+
+<span class="fc" id="L17">public class ProtectedTermsListTest {</span>
+
+    private ProtectedTermsList internalList;
+    private ProtectedTermsList externalList;
+
+    @Rule
+<span class="fc" id="L23">    public TemporaryFolder temporaryFolder = new TemporaryFolder();</span>
+
+    @Before
+    public void setUp() throws IOException {
+<span class="fc" id="L27">        String tempFileName = temporaryFolder.newFile().getAbsolutePath();</span>
+
+<span class="fc" id="L29">        internalList = new ProtectedTermsList(&quot;Name&quot;, new ArrayList&lt;&gt;(Arrays.asList(&quot;AAA&quot;, &quot;BBB&quot;)), &quot;location&quot;, true);</span>
+<span class="fc" id="L30">        externalList = new ProtectedTermsList(&quot;Namely&quot;, new ArrayList&lt;&gt;(Arrays.asList(&quot;AAA&quot;, &quot;BBB&quot;)), tempFileName);</span>
+<span class="fc" id="L31">    }</span>
+
+    @Test
+    public void testProtectedTermsListStringListOfStringStringBoolean() {
+<span class="fc" id="L35">        assertTrue(internalList.isInternalList());</span>
+<span class="fc" id="L36">    }</span>
+
+    @Test
+    public void testProtectedTermsListStringListOfStringString() {
+<span class="fc" id="L40">        assertFalse(externalList.isInternalList());</span>
+<span class="fc" id="L41">    }</span>
+
+    @Test
+    public void testGetDescription() {
+<span class="fc" id="L45">        assertEquals(&quot;Name&quot;, internalList.getDescription());</span>
+<span class="fc" id="L46">    }</span>
+
+    @Test
+    public void testGetTermList() {
+<span class="fc" id="L50">        assertEquals(Arrays.asList(&quot;AAA&quot;, &quot;BBB&quot;), internalList.getTermList());</span>
+<span class="fc" id="L51">    }</span>
+
+    @Test
+    public void testGetLocation() {
+<span class="fc" id="L55">        assertEquals(&quot;location&quot;, internalList.getLocation());</span>
+<span class="fc" id="L56">    }</span>
+
+    @Test
+    public void testGetTermListing() {
+<span class="fc" id="L60">        assertEquals(&quot;AAA\nBBB&quot;, internalList.getTermListing());</span>
+<span class="fc" id="L61">    }</span>
+
+    @Test
+    public void testCompareTo() {
+<span class="fc" id="L65">        assertEquals(-2, internalList.compareTo(externalList));</span>
+<span class="fc" id="L66">    }</span>
+
+    @Test
+    public void testSetEnabledIsEnabled() {
+<span class="fc" id="L70">        assertFalse(internalList.isEnabled());</span>
+<span class="fc" id="L71">        internalList.setEnabled(true);</span>
+<span class="fc" id="L72">        assertTrue(internalList.isEnabled());</span>
+<span class="fc" id="L73">    }</span>
+
+    @Test
+    public void testNotEnabledByDefault() {
+<span class="fc" id="L77">        assertFalse(internalList.isEnabled());</span>
+<span class="fc" id="L78">    }</span>
+
+    @Test
+    public void testCanNotAddTermToInternalList() {
+<span class="fc" id="L82">        assertFalse(internalList.addProtectedTerm(&quot;CCC&quot;));</span>
+<span class="fc" id="L83">    }</span>
+
+    @Test
+    public void testTermNotAddedToInternalList() {
+<span class="fc" id="L87">        internalList.addProtectedTerm(&quot;CCC&quot;);</span>
+<span class="fc" id="L88">        assertFalse(internalList.getTermList().contains(&quot;CCC&quot;));</span>
+<span class="fc" id="L89">    }</span>
+
+    @Test
+    public void testCanAddTermToExternalList() {
+<span class="fc" id="L93">        assertTrue(externalList.addProtectedTerm(&quot;CCC&quot;));</span>
+<span class="fc" id="L94">    }</span>
+
+    @Test
+    public void testTermAddedToExternalList() {
+<span class="fc" id="L98">        externalList.addProtectedTerm(&quot;CCC&quot;);</span>
+<span class="fc" id="L99">        assertTrue(externalList.getTermList().contains(&quot;CCC&quot;));</span>
+<span class="fc" id="L100">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

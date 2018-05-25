@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>HtmlExportFormatTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.exporter</a> &gt; <span class="el_source">HtmlExportFormatTest.java</span></div><h1>HtmlExportFormatTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.exporter;
+
+import java.io.File;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.jabref.logic.layout.LayoutFormatterPreferences;
+import org.jabref.logic.xmp.XmpPreferences;
+import org.jabref.model.database.BibDatabaseContext;
+import org.jabref.model.entry.BibEntry;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.mockito.Answers;
+
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+
+<span class="fc" id="L27">public class HtmlExportFormatTest {</span>
+    private Exporter exportFormat;
+    public BibDatabaseContext databaseContext;
+    public Charset charset;
+    public List&lt;BibEntry&gt; entries;
+
+    @Rule
+<span class="fc" id="L34">    public TemporaryFolder testFolder = new TemporaryFolder();</span>
+
+    @Before
+    public void setUp() {
+<span class="fc" id="L38">        Map&lt;String, TemplateExporter&gt; customFormats = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L39">        LayoutFormatterPreferences layoutPreferences = mock(LayoutFormatterPreferences.class, Answers.RETURNS_DEEP_STUBS);</span>
+<span class="fc" id="L40">        SavePreferences savePreferences = mock(SavePreferences.class);</span>
+<span class="fc" id="L41">        XmpPreferences xmpPreferences = mock(XmpPreferences.class);</span>
+<span class="fc" id="L42">        ExporterFactory exporterFactory = ExporterFactory.create(customFormats, layoutPreferences, savePreferences, xmpPreferences);</span>
+
+<span class="fc" id="L44">        exportFormat = exporterFactory.getExporterByName(&quot;html&quot;).get();</span>
+
+<span class="fc" id="L46">        databaseContext = new BibDatabaseContext();</span>
+<span class="fc" id="L47">        charset = StandardCharsets.UTF_8;</span>
+<span class="fc" id="L48">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L49">        entry.setField(&quot;title&quot;, &quot;my paper title&quot;);</span>
+<span class="fc" id="L50">        entry.setField(&quot;author&quot;, &quot;Stefan Kolb&quot;);</span>
+<span class="fc" id="L51">        entry.setCiteKey(&quot;mykey&quot;);</span>
+<span class="fc" id="L52">        entries = Arrays.asList(entry);</span>
+<span class="fc" id="L53">    }</span>
+
+    @After
+    public void tearDown() {
+<span class="fc" id="L57">        exportFormat = null;</span>
+<span class="fc" id="L58">    }</span>
+
+    @Test
+    public void emitWellFormedHtml() throws Exception {
+<span class="fc" id="L62">        File tmpFile = testFolder.newFile();</span>
+<span class="fc" id="L63">        exportFormat.export(databaseContext, tmpFile.toPath(), charset, entries);</span>
+<span class="fc" id="L64">        List&lt;String&gt; lines = Files.readAllLines(tmpFile.toPath());</span>
+<span class="fc" id="L65">        assertEquals(&quot;&lt;/html&gt;&quot;, lines.get(lines.size() - 1));</span>
+<span class="fc" id="L66">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

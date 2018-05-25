@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>DBLPFetcherTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.importer.fetcher</a> &gt; <span class="el_source">DBLPFetcherTest.java</span></div><h1>DBLPFetcherTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.importer.fetcher;
+
+import java.util.Collections;
+import java.util.List;
+
+import org.jabref.logic.bibtex.FieldContentParserPreferences;
+import org.jabref.logic.importer.FetcherException;
+import org.jabref.logic.importer.ImportFormatPreferences;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.BibtexEntryTypes;
+import org.jabref.model.entry.FieldName;
+import org.jabref.testutils.category.FetcherTest;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+@FetcherTest
+<span class="fc" id="L22">public class DBLPFetcherTest {</span>
+
+    private DBLPFetcher dblpFetcher;
+    private BibEntry entry;
+
+    @BeforeEach
+    public void setUp() {
+<span class="fc" id="L29">        ImportFormatPreferences importFormatPreferences = mock(ImportFormatPreferences.class);</span>
+<span class="fc" id="L30">        when(importFormatPreferences.getFieldContentParserPreferences())</span>
+<span class="fc" id="L31">                .thenReturn(mock(FieldContentParserPreferences.class));</span>
+<span class="fc" id="L32">        dblpFetcher = new DBLPFetcher(importFormatPreferences);</span>
+<span class="fc" id="L33">        entry = new BibEntry();</span>
+
+<span class="fc" id="L35">        entry.setType(BibtexEntryTypes.ARTICLE.getName());</span>
+<span class="fc" id="L36">        entry.setCiteKey(&quot;DBLP:journals/stt/GeigerHL16&quot;);</span>
+<span class="fc" id="L37">        entry.setField(FieldName.TITLE,</span>
+<span class="fc" id="L38">                &quot;Process Engine Benchmarking with Betsy in the Context of {ISO/IEC} Quality Standards&quot;);</span>
+<span class="fc" id="L39">        entry.setField(FieldName.AUTHOR, &quot;Matthias Geiger and Simon Harrer and J{\\\&quot;{o}}rg Lenhard&quot;);</span>
+<span class="fc" id="L40">        entry.setField(FieldName.JOURNAL, &quot;Softwaretechnik-Trends&quot;);</span>
+<span class="fc" id="L41">        entry.setField(FieldName.VOLUME, &quot;36&quot;);</span>
+<span class="fc" id="L42">        entry.setField(FieldName.NUMBER, &quot;2&quot;);</span>
+<span class="fc" id="L43">        entry.setField(FieldName.YEAR, &quot;2016&quot;);</span>
+<span class="fc" id="L44">        entry.setField(FieldName.URL,</span>
+<span class="fc" id="L45">                &quot;http://pi.informatik.uni-siegen.de/stt/36_2/./03_Technische_Beitraege/ZEUS2016/beitrag_2.pdf&quot;);</span>
+<span class="fc" id="L46">        entry.setField(&quot;biburl&quot;, &quot;https://dblp.org/rec/bib/journals/stt/GeigerHL16&quot;);</span>
+<span class="fc" id="L47">        entry.setField(&quot;bibsource&quot;, &quot;dblp computer science bibliography, https://dblp.org&quot;);</span>
+
+<span class="fc" id="L49">    }</span>
+
+    @Test
+    public void findSingleEntry() throws FetcherException {
+<span class="fc" id="L53">        String query = &quot;Process Engine Benchmarking with Betsy in the Context of {ISO/IEC} Quality Standards&quot;;</span>
+<span class="fc" id="L54">        List&lt;BibEntry&gt; result = dblpFetcher.performSearch(query);</span>
+
+<span class="fc" id="L56">        assertEquals(Collections.singletonList(entry), result);</span>
+<span class="fc" id="L57">    }</span>
+
+    @Test
+    public void findSingleEntryUsingComplexOperators() throws FetcherException {
+<span class="fc" id="L61">        String query = &quot;geiger harrer betsy$ softw.trends&quot;; //-wirtz Negative operators do no longer work,  see issue https://github.com/JabRef/jabref/issues/2890</span>
+<span class="fc" id="L62">        List&lt;BibEntry&gt; result = dblpFetcher.performSearch(query);</span>
+
+<span class="fc" id="L64">        assertEquals(Collections.singletonList(entry), result);</span>
+<span class="fc" id="L65">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

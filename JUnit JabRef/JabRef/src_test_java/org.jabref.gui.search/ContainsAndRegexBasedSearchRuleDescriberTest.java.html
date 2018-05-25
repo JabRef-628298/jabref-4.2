@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>ContainsAndRegexBasedSearchRuleDescriberTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.search</a> &gt; <span class="el_source">ContainsAndRegexBasedSearchRuleDescriberTest.java</span></div><h1>ContainsAndRegexBasedSearchRuleDescriberTest.java</h1><pre class="source lang-java linenums">package org.jabref.gui.search;
+
+import java.util.Arrays;
+import java.util.List;
+
+import javafx.scene.text.Text;
+import javafx.scene.text.TextFlow;
+
+import org.jabref.gui.search.rules.describer.ContainsAndRegexBasedSearchRuleDescriber;
+import org.jabref.gui.util.TooltipTextUtil;
+
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+<span class="fc" id="L16">public class ContainsAndRegexBasedSearchRuleDescriberTest {</span>
+
+    @Test
+    public void testNoAst() {
+<span class="fc" id="L20">        String query = &quot;a b&quot;;</span>
+<span class="fc" id="L21">        List&lt;Text&gt; expectedTexts = Arrays.asList(TooltipTextUtil.createText(&quot;This search contains entries in which any field contains the term &quot;),</span>
+<span class="fc" id="L22">                TooltipTextUtil.createText(&quot;a&quot;, TooltipTextUtil.TextType.BOLD), TooltipTextUtil.createText(&quot; and &quot;), TooltipTextUtil.createText(&quot;b&quot;, TooltipTextUtil.TextType.BOLD), TooltipTextUtil.createText(&quot; (case insensitive). &quot;),</span>
+<span class="fc" id="L23">                TooltipTextUtil.createText(&quot;\n\nHint: To search specific fields only, enter for example:\n&quot;), TooltipTextUtil.createText(&quot;author=smith and title=electrical&quot;, TooltipTextUtil.TextType.MONOSPACED));</span>
+<span class="fc" id="L24">        TextFlow description = new ContainsAndRegexBasedSearchRuleDescriber(false, false, query).getDescription();</span>
+
+<span class="fc" id="L26">        assertTrue(TextFlowEqualityHelper.checkIfDescriptionEqualsExpectedTexts(description, expectedTexts));</span>
+<span class="fc" id="L27">    }</span>
+
+    @Test
+    public void testNoAstRegex() {
+<span class="fc" id="L31">        String query = &quot;a b&quot;;</span>
+<span class="fc" id="L32">        List&lt;Text&gt; expectedTexts = Arrays.asList(TooltipTextUtil.createText(&quot;This search contains entries in which any field contains the regular expression &quot;),</span>
+<span class="fc" id="L33">                TooltipTextUtil.createText(&quot;a&quot;, TooltipTextUtil.TextType.BOLD), TooltipTextUtil.createText(&quot; and &quot;), TooltipTextUtil.createText(&quot;b&quot;, TooltipTextUtil.TextType.BOLD), TooltipTextUtil.createText(&quot; (case insensitive). &quot;),</span>
+<span class="fc" id="L34">                TooltipTextUtil.createText(&quot;\n\nHint: To search specific fields only, enter for example:\n&quot;), TooltipTextUtil.createText(&quot;author=smith and title=electrical&quot;, TooltipTextUtil.TextType.MONOSPACED));</span>
+<span class="fc" id="L35">        TextFlow description = new ContainsAndRegexBasedSearchRuleDescriber(false, true, query).getDescription();</span>
+
+<span class="fc" id="L37">        assertTrue(TextFlowEqualityHelper.checkIfDescriptionEqualsExpectedTexts(description, expectedTexts));</span>
+<span class="fc" id="L38">    }</span>
+
+    @Test
+    public void testNoAstRegexCaseSensitive() {
+<span class="fc" id="L42">        String query = &quot;a b&quot;;</span>
+<span class="fc" id="L43">        List&lt;Text&gt; expectedTexts = Arrays.asList(TooltipTextUtil.createText(&quot;This search contains entries in which any field contains the regular expression &quot;),</span>
+<span class="fc" id="L44">                TooltipTextUtil.createText(&quot;a&quot;, TooltipTextUtil.TextType.BOLD), TooltipTextUtil.createText(&quot; and &quot;), TooltipTextUtil.createText(&quot;b&quot;, TooltipTextUtil.TextType.BOLD), TooltipTextUtil.createText(&quot; (case sensitive). &quot;),</span>
+<span class="fc" id="L45">                TooltipTextUtil.createText(&quot;\n\nHint: To search specific fields only, enter for example:\n&quot;), TooltipTextUtil.createText(&quot;author=smith and title=electrical&quot;, TooltipTextUtil.TextType.MONOSPACED));</span>
+<span class="fc" id="L46">        TextFlow description = new ContainsAndRegexBasedSearchRuleDescriber(true, true, query).getDescription();</span>
+
+<span class="fc" id="L48">        assertTrue(TextFlowEqualityHelper.checkIfDescriptionEqualsExpectedTexts(description, expectedTexts));</span>
+<span class="fc" id="L49">    }</span>
+
+    @Test
+    public void testNoAstCaseSensitive() {
+<span class="fc" id="L53">        String query = &quot;a b&quot;;</span>
+<span class="fc" id="L54">        List&lt;Text&gt; expectedTexts = Arrays.asList(TooltipTextUtil.createText(&quot;This search contains entries in which any field contains the term &quot;),</span>
+<span class="fc" id="L55">                TooltipTextUtil.createText(&quot;a&quot;, TooltipTextUtil.TextType.BOLD), TooltipTextUtil.createText(&quot; and &quot;), TooltipTextUtil.createText(&quot;b&quot;, TooltipTextUtil.TextType.BOLD), TooltipTextUtil.createText(&quot; (case sensitive). &quot;),</span>
+<span class="fc" id="L56">                TooltipTextUtil.createText(&quot;\n\nHint: To search specific fields only, enter for example:\n&quot;), TooltipTextUtil.createText(&quot;author=smith and title=electrical&quot;, TooltipTextUtil.TextType.MONOSPACED));</span>
+<span class="fc" id="L57">        TextFlow description = new ContainsAndRegexBasedSearchRuleDescriber(true, false, query).getDescription();</span>
+
+<span class="fc" id="L59">        assertTrue(TextFlowEqualityHelper.checkIfDescriptionEqualsExpectedTexts(description, expectedTexts));</span>
+<span class="fc" id="L60">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

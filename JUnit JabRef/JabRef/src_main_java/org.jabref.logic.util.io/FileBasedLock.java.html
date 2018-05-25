@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>FileBasedLock.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.util.io</a> &gt; <span class="el_source">FileBasedLock.java</span></div><h1>FileBasedLock.java</h1><pre class="source lang-java linenums">package org.jabref.logic.util.io;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
+import java.util.Optional;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class FileBasedLock {
+    /**
+     * The age in ms of a lockfile before JabRef will offer to &quot;steal&quot; the locked file.
+     */
+    public static final long LOCKFILE_CRITICAL_AGE = 60000;
+
+<span class="fc" id="L19">    private static final Logger LOGGER = LoggerFactory.getLogger(FileBasedLock.class);</span>
+    private static final String LOCKFILE_SUFFIX = &quot;.lock&quot;;
+
+    // default retry count for aquiring file lock
+<span class="fc" id="L23">    private static final int AQUIRE_LOCK_RETRY = 10;</span>
+
+<span class="nc" id="L25">    private FileBasedLock() {</span>
+<span class="nc" id="L26">    }</span>
+
+    /**
+     * This method checks whether there is a lock file for the given file. If
+     * there is, it waits for 500 ms. This is repeated until the lock is gone
+     * or we have waited the maximum number of times.
+     *
+     * @param file The file to check the lock for.
+     * @param maxWaitCount The maximum number of times to wait.
+     * @return true if the lock file is gone, false if it is still there.
+     */
+    private static boolean waitForFileLock(Path file, int maxWaitCount) {
+        // Check if the file is locked by another JabRef user:
+<span class="nc" id="L39">        int lockCheckCount = 0;</span>
+<span class="nc bnc" id="L40" title="All 2 branches missed.">        while (hasLockFile(file)) {</span>
+
+<span class="nc bnc" id="L42" title="All 2 branches missed.">            if (lockCheckCount++ == maxWaitCount) {</span>
+<span class="nc" id="L43">                return false;</span>
+            }
+            try {
+<span class="nc" id="L46">                Thread.sleep(500);</span>
+<span class="nc" id="L47">            } catch (InterruptedException ignored) {</span>
+                // Ignored
+            }
+        }
+<span class="nc" id="L51">        return true;</span>
+    }
+
+    public static boolean waitForFileLock(Path file) {
+<span class="nc" id="L55">        return waitForFileLock(file, AQUIRE_LOCK_RETRY);</span>
+    }
+
+    /**
+     * Check whether a lock file exists for this file.
+     * @param file The file to check.
+     * @return true if a lock file exists, false otherwise.
+     */
+    public static boolean hasLockFile(Path file) {
+<span class="nc" id="L64">        Path lockFile = getLockFilePath(file);</span>
+<span class="nc" id="L65">        return Files.exists(lockFile);</span>
+    }
+
+    /**
+     * Find the lock file's last modified time, if it has a lock file.
+     * @param file The file to check.
+     * @return the last modified time if lock file exists, empty optional otherwise.
+     */
+    public static Optional&lt;FileTime&gt; getLockFileTimeStamp(Path file) {
+<span class="nc" id="L74">        Path lockFile = getLockFilePath(file);</span>
+        try {
+<span class="nc bnc" id="L76" title="All 2 branches missed.">            return Files.exists(lockFile) ?</span>
+<span class="nc" id="L77">                    Optional.of(Files.readAttributes(lockFile, BasicFileAttributes.class).lastModifiedTime()) :</span>
+<span class="nc" id="L78">                    Optional.empty();</span>
+<span class="nc" id="L79">        } catch (IOException e) {</span>
+<span class="nc" id="L80">            return Optional.empty();</span>
+        }
+    }
+
+    /**
+     * Check if a lock file exists, and delete it if it does.
+     *
+     * @return true if the lock file existed, false otherwise.
+     */
+    public static boolean deleteLockFile(Path file) {
+<span class="fc" id="L90">        Path lockFile = getLockFilePath(file);</span>
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">        if (!Files.exists(lockFile)) {</span>
+<span class="nc" id="L92">            return false;</span>
+        }
+        try {
+<span class="fc" id="L95">            Files.delete(lockFile);</span>
+<span class="pc" id="L96">        } catch (IOException e) {</span>
+<span class="nc" id="L97">            LOGGER.warn(&quot;Cannot delete lock file&quot;, e);</span>
+        }
+<span class="fc" id="L99">        return true;</span>
+    }
+
+    /**
+     * Check if a lock file exists, and create it if it doesn't.
+     *
+     * @return true if the lock file already existed
+     * @throws IOException if something happens during creation.
+     */
+    public static boolean createLockFile(Path file) throws IOException {
+<span class="fc" id="L109">        Path lockFile = getLockFilePath(file);</span>
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">        if (Files.exists(lockFile)) {</span>
+<span class="nc" id="L111">            return true;</span>
+        }
+
+        try {
+<span class="fc" id="L115">            Files.write(lockFile, &quot;0&quot;.getBytes());</span>
+<span class="pc" id="L116">        } catch (IOException ex) {</span>
+<span class="nc" id="L117">            LOGGER.error(&quot;Error when creating lock file.&quot;, ex);</span>
+        }
+<span class="fc" id="L119">        lockFile.toFile().deleteOnExit();</span>
+<span class="fc" id="L120">        return false;</span>
+    }
+
+    private static Path getLockFilePath(Path file) {
+<span class="fc" id="L124">        return file.resolveSibling(file.getFileName() + LOCKFILE_SUFFIX);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

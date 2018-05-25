@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>AuxCommandLineTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.cli</a> &gt; <span class="el_source">AuxCommandLineTest.java</span></div><h1>AuxCommandLineTest.java</h1><pre class="source lang-java linenums">package org.jabref.cli;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
+
+import org.jabref.logic.importer.ImportFormatPreferences;
+import org.jabref.logic.importer.ParserResult;
+import org.jabref.logic.importer.fileformat.BibtexParser;
+import org.jabref.model.database.BibDatabase;
+import org.jabref.model.util.DummyFileUpdateMonitor;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Answers;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.mock;
+
+<span class="fc" id="L25">public class AuxCommandLineTest {</span>
+
+    private ImportFormatPreferences importFormatPreferences;
+
+    @BeforeEach
+    public void setUp() throws Exception {
+<span class="fc" id="L31">        importFormatPreferences = mock(ImportFormatPreferences.class, Answers.RETURNS_DEEP_STUBS);</span>
+<span class="fc" id="L32">    }</span>
+
+    @Test
+    public void test() throws URISyntaxException, IOException {
+<span class="fc" id="L36">        InputStream originalStream = AuxCommandLineTest.class.getResourceAsStream(&quot;origin.bib&quot;);</span>
+
+<span class="fc" id="L38">        File auxFile = Paths.get(AuxCommandLineTest.class.getResource(&quot;paper.aux&quot;).toURI()).toFile();</span>
+<span class="fc" id="L39">        try (InputStreamReader originalReader = new InputStreamReader(originalStream, StandardCharsets.UTF_8)) {</span>
+<span class="fc" id="L40">            ParserResult result = new BibtexParser(importFormatPreferences, new DummyFileUpdateMonitor()).parse(originalReader);</span>
+
+<span class="fc" id="L42">            AuxCommandLine auxCommandLine = new AuxCommandLine(auxFile.getAbsolutePath(), result.getDatabase());</span>
+<span class="fc" id="L43">            BibDatabase newDB = auxCommandLine.perform();</span>
+<span class="fc" id="L44">            assertNotNull(newDB);</span>
+<span class="fc" id="L45">            assertEquals(2, newDB.getEntries().size());</span>
+<span class="pc bpc" id="L46" title="7 of 8 branches missed.">        }</span>
+<span class="fc" id="L47">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

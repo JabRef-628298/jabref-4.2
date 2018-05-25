@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>PreviewPrefsTab.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.preftabs</a> &gt; <span class="el_source">PreviewPrefsTab.java</span></div><h1>PreviewPrefsTab.java</h1><pre class="source lang-java linenums"><span class="nc" id="L1">package org.jabref.gui.preftabs;</span>
+
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.ExecutionException;
+
+import javax.swing.BoxLayout;
+import javax.swing.DefaultListModel;
+import javax.swing.JButton;
+import javax.swing.JList;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.ListSelectionModel;
+import javax.swing.SwingWorker;
+
+import javafx.embed.swing.JFXPanel;
+import javafx.scene.Scene;
+
+import org.jabref.Globals;
+import org.jabref.JabRefGUI;
+import org.jabref.gui.BasePanel;
+import org.jabref.gui.PreviewPanel;
+import org.jabref.gui.customjfx.CustomJFXPanel;
+import org.jabref.logic.citationstyle.CitationStyle;
+import org.jabref.logic.l10n.Localization;
+import org.jabref.logic.util.TestEntry;
+import org.jabref.preferences.PreviewPreferences;
+
+import com.google.common.primitives.Ints;
+import com.jgoodies.forms.builder.FormBuilder;
+import com.jgoodies.forms.factories.Paddings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class PreviewPrefsTab extends JPanel implements PrefsTab {
+
+<span class="nc" id="L44">    private static final Logger LOGGER = LoggerFactory.getLogger(PreviewPrefsTab.class);</span>
+
+    private SwingWorker&lt;List&lt;CitationStyle&gt;, Void&gt; discoverCitationStyleWorker;
+
+<span class="nc" id="L48">    private final DefaultListModel&lt;Object&gt; availableModel = new DefaultListModel&lt;&gt;();</span>
+<span class="nc" id="L49">    private final DefaultListModel&lt;Object&gt; chosenModel = new DefaultListModel&lt;&gt;();</span>
+
+<span class="nc" id="L51">    private final JList&lt;Object&gt; available = new JList&lt;&gt;(availableModel);</span>
+<span class="nc" id="L52">    private final JList&lt;Object&gt; chosen = new JList&lt;&gt;(chosenModel);</span>
+
+<span class="nc" id="L54">    private final JButton btnRight = new JButton(&quot;»&quot;);</span>
+<span class="nc" id="L55">    private final JButton btnLeft = new JButton(&quot;«&quot;);</span>
+<span class="nc" id="L56">    private final JButton btnUp = new JButton(Localization.lang(&quot;Up&quot;));</span>
+<span class="nc" id="L57">    private final JButton btnDown = new JButton(Localization.lang(&quot;Down&quot;));</span>
+
+
+<span class="nc" id="L60">    private final JTextArea layout = new JTextArea(&quot;&quot;, 1, 1);</span>
+<span class="nc" id="L61">    private final JButton btnTest = new JButton(Localization.lang(&quot;Test&quot;));</span>
+<span class="nc" id="L62">    private final JButton btnDefault = new JButton(Localization.lang(&quot;Default&quot;));</span>
+<span class="nc" id="L63">    private final JScrollPane scrollPane = new JScrollPane(layout);</span>
+
+
+<span class="nc" id="L66">    public PreviewPrefsTab() {</span>
+<span class="nc" id="L67">        setupLogic();</span>
+<span class="nc" id="L68">        setupGui();</span>
+<span class="nc" id="L69">    }</span>
+
+    private void setupLogic() {
+<span class="nc" id="L72">        chosen.getSelectionModel().addListSelectionListener(event -&gt; {</span>
+<span class="nc" id="L73">            boolean selectionEmpty = ((ListSelectionModel) event.getSource()).isSelectionEmpty();</span>
+<span class="nc bnc" id="L74" title="All 2 branches missed.">            btnLeft.setEnabled(!selectionEmpty);</span>
+<span class="nc bnc" id="L75" title="All 2 branches missed.">            btnDown.setEnabled(!selectionEmpty);</span>
+<span class="nc bnc" id="L76" title="All 2 branches missed.">            btnUp.setEnabled(!selectionEmpty);</span>
+<span class="nc" id="L77">        });</span>
+
+<span class="nc" id="L79">        available.getSelectionModel()</span>
+<span class="nc bnc" id="L80" title="All 2 branches missed.">                .addListSelectionListener(e -&gt; btnRight.setEnabled(!((ListSelectionModel) e.getSource()).isSelectionEmpty()));</span>
+
+<span class="nc" id="L82">        btnRight.addActionListener(event -&gt; {</span>
+<span class="nc bnc" id="L83" title="All 2 branches missed.">            for (Object object : available.getSelectedValuesList()) {</span>
+<span class="nc" id="L84">                availableModel.removeElement(object);</span>
+<span class="nc" id="L85">                chosenModel.addElement(object);</span>
+            }
+<span class="nc" id="L87">        });</span>
+
+<span class="nc" id="L89">        btnLeft.addActionListener(event -&gt; {</span>
+<span class="nc bnc" id="L90" title="All 2 branches missed.">            for (Object object : chosen.getSelectedValuesList()) {</span>
+<span class="nc" id="L91">                availableModel.addElement(object);</span>
+<span class="nc" id="L92">                chosenModel.removeElement(object);</span>
+            }
+<span class="nc" id="L94">        });</span>
+
+<span class="nc" id="L96">        btnUp.addActionListener(event -&gt; {</span>
+<span class="nc" id="L97">            List&lt;Integer&gt; newSelectedIndices = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L98" title="All 2 branches missed.">            for (int oldIndex : chosen.getSelectedIndices()) {</span>
+<span class="nc" id="L99">                boolean alreadyTaken = newSelectedIndices.contains(oldIndex - 1);</span>
+<span class="nc bnc" id="L100" title="All 4 branches missed.">                int newIndex = (oldIndex &gt; 0 &amp;&amp; !alreadyTaken) ? oldIndex - 1 : oldIndex;</span>
+<span class="nc" id="L101">                chosenModel.add(newIndex, chosenModel.remove(oldIndex));</span>
+<span class="nc" id="L102">                newSelectedIndices.add(newIndex);</span>
+            }
+<span class="nc" id="L104">            chosen.setSelectedIndices(Ints.toArray(newSelectedIndices));</span>
+<span class="nc" id="L105">        });</span>
+
+<span class="nc" id="L107">        btnDown.addActionListener(event -&gt; {</span>
+<span class="nc" id="L108">            List&lt;Integer&gt; newSelectedIndices = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L109">            int[] selectedIndices = chosen.getSelectedIndices();</span>
+<span class="nc bnc" id="L110" title="All 2 branches missed.">            for (int i = selectedIndices.length - 1; i &gt;= 0; i--) {</span>
+<span class="nc" id="L111">                int oldIndex = selectedIndices[i];</span>
+<span class="nc" id="L112">                boolean alreadyTaken = newSelectedIndices.contains(oldIndex + 1);</span>
+<span class="nc bnc" id="L113" title="All 4 branches missed.">                int newIndex = (oldIndex &lt; chosenModel.getSize() - 1 &amp;&amp; !alreadyTaken) ? oldIndex + 1 : oldIndex;</span>
+<span class="nc" id="L114">                chosenModel.add(newIndex, chosenModel.remove(oldIndex));</span>
+<span class="nc" id="L115">                newSelectedIndices.add(newIndex);</span>
+            }
+<span class="nc" id="L117">            chosen.setSelectedIndices(Ints.toArray(newSelectedIndices));</span>
+<span class="nc" id="L118">        });</span>
+
+<span class="nc" id="L120">        btnDefault.addActionListener(event -&gt; layout.setText(Globals.prefs.getPreviewPreferences()</span>
+<span class="nc" id="L121">                .getPreviewStyleDefault().replace(&quot;__NEWLINE__&quot;, &quot;\n&quot;)));</span>
+
+<span class="nc" id="L123">        btnTest.addActionListener(event -&gt; {</span>
+            try {
+<span class="nc" id="L125">                PreviewPanel testPane = new PreviewPanel(null, null);</span>
+<span class="nc" id="L126">                testPane.setFixedLayout(layout.getText());</span>
+<span class="nc" id="L127">                testPane.setEntry(TestEntry.getTestEntry());</span>
+<span class="nc" id="L128">                JFXPanel container = CustomJFXPanel.wrap(new Scene(testPane));</span>
+<span class="nc" id="L129">                container.setPreferredSize(new Dimension(800, 350));</span>
+<span class="nc" id="L130">                JOptionPane.showMessageDialog(PreviewPrefsTab.this, container, Localization.lang(&quot;Preview&quot;), JOptionPane.PLAIN_MESSAGE);</span>
+<span class="nc" id="L131">            } catch (StringIndexOutOfBoundsException exception) {</span>
+<span class="nc" id="L132">                LOGGER.warn(&quot;Parsing error.&quot;, exception);</span>
+<span class="nc" id="L133">                JOptionPane.showMessageDialog(null,</span>
+<span class="nc" id="L134">                        Localization.lang(&quot;Parsing error&quot;) + &quot;: &quot; + Localization.lang(&quot;illegal backslash expression&quot;)</span>
+<span class="nc" id="L135">                                + &quot;.\n&quot; + exception.getMessage(),</span>
+<span class="nc" id="L136">                        Localization.lang(&quot;Parsing error&quot;), JOptionPane.ERROR_MESSAGE);</span>
+            }
+<span class="nc" id="L138">        });</span>
+<span class="nc" id="L139">    }</span>
+
+    private void setupGui() {
+<span class="nc" id="L142">        JPanel chooseStyle = FormBuilder.create()</span>
+<span class="nc" id="L143">                .columns(&quot;0:grow, $lcgap, pref, $lcgap, 0:grow&quot;)</span>
+<span class="nc" id="L144">                .rows(&quot;pref, $lg, fill:pref:grow, $lg, pref:grow, $lg, pref:grow, $lg, pref:grow&quot;)</span>
+<span class="nc" id="L145">                .padding(Paddings.DIALOG)</span>
+
+<span class="nc" id="L147">                .addSeparator(Localization.lang(&quot;Current Preview&quot;)).xyw(1, 1, 5)</span>
+<span class="nc" id="L148">                .add(available).xywh(1, 3, 1, 7)</span>
+<span class="nc" id="L149">                .add(chosen).xywh(5, 3, 1, 7)</span>
+
+<span class="nc" id="L151">                .add(btnRight).xy(3, 3, &quot;fill, bottom&quot;)</span>
+<span class="nc" id="L152">                .add(btnLeft).xy(3, 5, &quot;fill, top&quot;)</span>
+<span class="nc" id="L153">                .add(btnUp).xy(3, 7, &quot;fill, bottom&quot;)</span>
+<span class="nc" id="L154">                .add(btnDown).xy(3, 9, &quot;fill, top&quot;)</span>
+<span class="nc" id="L155">                .build();</span>
+
+<span class="nc" id="L157">        JPanel preview = FormBuilder.create()</span>
+<span class="nc" id="L158">                .columns(&quot;pref:grow, $lcgap, pref, $lcgap, pref&quot;)</span>
+<span class="nc" id="L159">                .rows(&quot;pref, $lg, fill:pref:grow&quot;)</span>
+<span class="nc" id="L160">                .padding(Paddings.DIALOG)</span>
+
+<span class="nc" id="L162">                .addSeparator(Localization.lang(&quot;Preview&quot;)).xy(1, 1)</span>
+<span class="nc" id="L163">                .add(btnTest).xy(3, 1)</span>
+<span class="nc" id="L164">                .add(btnDefault).xy(5, 1)</span>
+<span class="nc" id="L165">                .add(scrollPane).xyw(1, 3, 5)</span>
+<span class="nc" id="L166">                .build();</span>
+
+<span class="nc" id="L168">        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));</span>
+<span class="nc" id="L169">        add(chooseStyle, BorderLayout.CENTER);</span>
+<span class="nc" id="L170">        add(preview, BorderLayout.PAGE_END);</span>
+<span class="nc" id="L171">    }</span>
+
+    @Override
+    public void setValues() {
+<span class="nc" id="L175">        PreviewPreferences previewPreferences = Globals.prefs.getPreviewPreferences();</span>
+
+<span class="nc" id="L177">        chosenModel.clear();</span>
+<span class="nc" id="L178">        boolean isPreviewChosen = false;</span>
+<span class="nc bnc" id="L179" title="All 2 branches missed.">        for (String style : previewPreferences.getPreviewCycle()) {</span>
+            // in case the style is not a valid citation style file, an empty Optional is returned
+<span class="nc" id="L181">            Optional&lt;CitationStyle&gt; citationStyle = CitationStyle.createCitationStyleFromFile(style);</span>
+<span class="nc bnc" id="L182" title="All 2 branches missed.">            if (citationStyle.isPresent()) {</span>
+<span class="nc" id="L183">                chosenModel.addElement(citationStyle.get());</span>
+<span class="nc" id="L184">            } else {</span>
+<span class="nc bnc" id="L185" title="All 2 branches missed.">                if (isPreviewChosen) {</span>
+<span class="nc" id="L186">                    LOGGER.error(&quot;Preview is already in the list, something went wrong&quot;);</span>
+<span class="nc" id="L187">                    continue;</span>
+                }
+<span class="nc" id="L189">                isPreviewChosen = true;</span>
+<span class="nc" id="L190">                chosenModel.addElement(Localization.lang(&quot;Preview&quot;));</span>
+            }
+        }
+
+<span class="nc" id="L194">        availableModel.clear();</span>
+<span class="nc bnc" id="L195" title="All 2 branches missed.">        if (!isPreviewChosen) {</span>
+<span class="nc" id="L196">            availableModel.addElement(Localization.lang(&quot;Preview&quot;));</span>
+        }
+
+<span class="nc bnc" id="L199" title="All 2 branches missed.">        btnLeft.setEnabled(!chosen.isSelectionEmpty());</span>
+<span class="nc bnc" id="L200" title="All 2 branches missed.">        btnRight.setEnabled(!available.isSelectionEmpty());</span>
+<span class="nc bnc" id="L201" title="All 2 branches missed.">        btnUp.setEnabled(!chosen.isSelectionEmpty());</span>
+<span class="nc bnc" id="L202" title="All 2 branches missed.">        btnDown.setEnabled(!chosen.isSelectionEmpty());</span>
+
+<span class="nc bnc" id="L204" title="All 2 branches missed.">        if (discoverCitationStyleWorker != null) {</span>
+<span class="nc" id="L205">            discoverCitationStyleWorker.cancel(true);</span>
+        }
+
+<span class="nc" id="L208">        discoverCitationStyleWorker = new SwingWorker&lt;List&lt;CitationStyle&gt;, Void&gt;() {</span>
+            @Override
+            protected List&lt;CitationStyle&gt; doInBackground() throws Exception {
+<span class="nc" id="L211">                return CitationStyle.discoverCitationStyles();</span>
+            }
+
+            @Override
+            public void done() {
+<span class="nc bnc" id="L216" title="All 2 branches missed.">                if (this.isCancelled()) {</span>
+<span class="nc" id="L217">                    return;</span>
+                }
+                try {
+<span class="nc" id="L220">                    get().stream()</span>
+<span class="nc bnc" id="L221" title="All 2 branches missed.">                            .filter(style -&gt; !previewPreferences.getPreviewCycle().contains(style.getFilePath()))</span>
+<span class="nc" id="L222">                            .sorted(Comparator.comparing(CitationStyle::getTitle))</span>
+<span class="nc" id="L223">                            .forEach(availableModel::addElement);</span>
+
+<span class="nc bnc" id="L225" title="All 2 branches missed.">                    btnRight.setEnabled(!availableModel.isEmpty());</span>
+<span class="nc" id="L226">                } catch (InterruptedException | ExecutionException e) {</span>
+<span class="nc" id="L227">                    LOGGER.error(&quot;something went wrong while adding the discovered CitationStyles to the list &quot;);</span>
+                }
+<span class="nc" id="L229">            }</span>
+        };
+<span class="nc" id="L231">        discoverCitationStyleWorker.execute();</span>
+
+<span class="nc" id="L233">        layout.setText(Globals.prefs.getPreviewPreferences().getPreviewStyle().replace(&quot;__NEWLINE__&quot;, &quot;\n&quot;));</span>
+<span class="nc" id="L234">    }</span>
+
+    @Override
+    public void storeSettings() {
+<span class="nc" id="L238">        List&lt;String&gt; styles = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L239">        Enumeration&lt;Object&gt; elements = chosenModel.elements();</span>
+<span class="nc bnc" id="L240" title="All 2 branches missed.">        while (elements.hasMoreElements()) {</span>
+<span class="nc" id="L241">            Object obj = elements.nextElement();</span>
+<span class="nc bnc" id="L242" title="All 2 branches missed.">            if (obj instanceof CitationStyle) {</span>
+<span class="nc" id="L243">                styles.add(((CitationStyle) obj).getFilePath());</span>
+<span class="nc bnc" id="L244" title="All 2 branches missed.">            } else if (obj instanceof String) {</span>
+<span class="nc" id="L245">                styles.add(&quot;Preview&quot;);</span>
+            }
+        }
+<span class="nc" id="L248">        PreviewPreferences previewPreferences = Globals.prefs.getPreviewPreferences()</span>
+<span class="nc" id="L249">                .getBuilder()</span>
+<span class="nc" id="L250">                .withPreviewCycle(styles)</span>
+<span class="nc" id="L251">                .withPreviewStyle(layout.getText().replace(&quot;\n&quot;, &quot;__NEWLINE__&quot;))</span>
+<span class="nc" id="L252">                .build();</span>
+<span class="nc" id="L253">        Globals.prefs.storePreviewPreferences(previewPreferences);</span>
+
+        // update preview
+<span class="nc bnc" id="L256" title="All 2 branches missed.">        for (BasePanel basePanel : JabRefGUI.getMainFrame().getBasePanelList()) {</span>
+<span class="nc" id="L257">            basePanel.getPreviewPanel().updateLayout();</span>
+        }
+<span class="nc" id="L259">    }</span>
+
+    @Override
+    public boolean validateSettings() {
+<span class="nc bnc" id="L263" title="All 2 branches missed.">        return !chosenModel.isEmpty();</span>
+    }
+
+    @Override
+    public String getTabName() {
+<span class="nc" id="L268">        return Localization.lang(&quot;Entry preview&quot;);</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

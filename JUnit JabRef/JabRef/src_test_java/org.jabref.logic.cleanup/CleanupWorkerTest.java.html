@@ -1,0 +1,346 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>CleanupWorkerTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.cleanup</a> &gt; <span class="el_source">CleanupWorkerTest.java</span></div><h1>CleanupWorkerTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.cleanup;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Optional;
+
+import org.jabref.logic.formatter.bibtexfields.HtmlToLatexFormatter;
+import org.jabref.logic.formatter.bibtexfields.LatexCleanupFormatter;
+import org.jabref.logic.formatter.bibtexfields.NormalizeDateFormatter;
+import org.jabref.logic.formatter.bibtexfields.NormalizeMonthFormatter;
+import org.jabref.logic.formatter.bibtexfields.NormalizePagesFormatter;
+import org.jabref.logic.formatter.bibtexfields.UnitsToLatexFormatter;
+import org.jabref.logic.formatter.casechanger.ProtectTermsFormatter;
+import org.jabref.logic.layout.LayoutFormatterPreferences;
+import org.jabref.logic.protectedterms.ProtectedTermsLoader;
+import org.jabref.logic.protectedterms.ProtectedTermsPreferences;
+import org.jabref.model.Defaults;
+import org.jabref.model.FieldChange;
+import org.jabref.model.cleanup.FieldFormatterCleanup;
+import org.jabref.model.cleanup.FieldFormatterCleanups;
+import org.jabref.model.database.BibDatabase;
+import org.jabref.model.database.BibDatabaseContext;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.FileFieldWriter;
+import org.jabref.model.entry.LinkedFile;
+import org.jabref.model.metadata.FileDirectoryPreferences;
+import org.jabref.model.metadata.MetaData;
+
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+<span class="fc" id="L42">public class CleanupWorkerTest {</span>
+
+    @Rule
+<span class="fc" id="L45">    public TemporaryFolder bibFolder = new TemporaryFolder();</span>
+
+<span class="fc" id="L47">    private final CleanupPreset emptyPreset = new CleanupPreset(EnumSet.noneOf(CleanupPreset.CleanupStep.class));</span>
+    private CleanupWorker worker;
+    private File pdfFolder;
+
+    @Before
+    public void setUp() throws IOException {
+<span class="fc" id="L53">        pdfFolder = bibFolder.newFolder();</span>
+
+<span class="fc" id="L55">        MetaData metaData = new MetaData();</span>
+<span class="fc" id="L56">        metaData.setDefaultFileDirectory(pdfFolder.getAbsolutePath());</span>
+<span class="fc" id="L57">        BibDatabaseContext context = new BibDatabaseContext(new BibDatabase(), metaData, new Defaults());</span>
+<span class="fc" id="L58">        context.setDatabaseFile(bibFolder.newFile(&quot;test.bib&quot;));</span>
+
+<span class="fc" id="L60">        FileDirectoryPreferences fileDirPrefs = mock(FileDirectoryPreferences.class);</span>
+        //Biblocation as Primary overwrites all other dirs
+<span class="fc" id="L62">        when(fileDirPrefs.isBibLocationAsPrimary()).thenReturn(true);</span>
+
+<span class="fc" id="L64">        worker = new CleanupWorker(context,</span>
+                //empty fileDirPattern for backwards compatibility
+<span class="fc" id="L66">                new CleanupPreferences(&quot;[bibtexkey]&quot;,</span>
+<span class="fc" id="L67">                        &quot;&quot;,</span>
+<span class="fc" id="L68">                        mock(LayoutFormatterPreferences.class),</span>
+<span class="fc" id="L69">                        fileDirPrefs));</span>
+
+<span class="fc" id="L71">    }</span>
+
+    @Test(expected = NullPointerException.class)
+    public void cleanupWithNullPresetThrowsException() {
+<span class="nc" id="L75">        worker.cleanup(null, new BibEntry());</span>
+<span class="nc" id="L76">    }</span>
+
+    @Test(expected = NullPointerException.class)
+    public void cleanupNullEntryThrowsException() {
+<span class="nc" id="L80">        worker.cleanup(emptyPreset, null);</span>
+<span class="nc" id="L81">    }</span>
+
+    @Test
+    public void cleanupDoesNothingByDefault() throws IOException {
+<span class="fc" id="L85">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L86">        entry.setCiteKey(&quot;Toot&quot;);</span>
+<span class="fc" id="L87">        entry.setField(&quot;pdf&quot;, &quot;aPdfFile&quot;);</span>
+<span class="fc" id="L88">        entry.setField(&quot;some&quot;, &quot;1st&quot;);</span>
+<span class="fc" id="L89">        entry.setField(&quot;doi&quot;, &quot;http://dx.doi.org/10.1016/0001-8708(80)90035-3&quot;);</span>
+<span class="fc" id="L90">        entry.setField(&quot;month&quot;, &quot;01&quot;);</span>
+<span class="fc" id="L91">        entry.setField(&quot;pages&quot;, &quot;1-2&quot;);</span>
+<span class="fc" id="L92">        entry.setField(&quot;date&quot;, &quot;01/1999&quot;);</span>
+<span class="fc" id="L93">        entry.setField(&quot;pdf&quot;, &quot;aPdfFile&quot;);</span>
+<span class="fc" id="L94">        entry.setField(&quot;ps&quot;, &quot;aPsFile&quot;);</span>
+<span class="fc" id="L95">        entry.setField(&quot;file&quot;, &quot;link::&quot;);</span>
+<span class="fc" id="L96">        entry.setField(&quot;journal&quot;, &quot;test&quot;);</span>
+<span class="fc" id="L97">        entry.setField(&quot;title&quot;, &quot;&lt;b&gt;hallo&lt;/b&gt; units 1 A case AlGaAs and latex $\\alpha$$\\beta$&quot;);</span>
+<span class="fc" id="L98">        entry.setField(&quot;abstract&quot;, &quot;Réflexions&quot;);</span>
+<span class="fc" id="L99">        File tempFile = bibFolder.newFile();</span>
+<span class="fc" id="L100">        LinkedFile fileField = new LinkedFile(&quot;&quot;, tempFile.getAbsolutePath(), &quot;&quot;);</span>
+<span class="fc" id="L101">        entry.setField(&quot;file&quot;, FileFieldWriter.getStringRepresentation(fileField));</span>
+
+<span class="fc" id="L103">        List&lt;FieldChange&gt; changes = worker.cleanup(emptyPreset, entry);</span>
+<span class="fc" id="L104">        Assert.assertEquals(Collections.emptyList(), changes);</span>
+<span class="fc" id="L105">    }</span>
+
+    @Test
+    public void upgradeExternalLinksMoveFromPdfToFile() {
+<span class="fc" id="L109">        CleanupPreset preset = new CleanupPreset(CleanupPreset.CleanupStep.CLEAN_UP_UPGRADE_EXTERNAL_LINKS);</span>
+<span class="fc" id="L110">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L111">        entry.setField(&quot;pdf&quot;, &quot;aPdfFile&quot;);</span>
+
+<span class="fc" id="L113">        worker.cleanup(preset, entry);</span>
+<span class="fc" id="L114">        Assert.assertEquals(Optional.empty(), entry.getField(&quot;pdf&quot;));</span>
+<span class="fc" id="L115">        Assert.assertEquals(Optional.of(&quot;aPdfFile:aPdfFile:PDF&quot;), entry.getField(&quot;file&quot;));</span>
+<span class="fc" id="L116">    }</span>
+
+    @Test
+    public void upgradeExternalLinksMoveFromPsToFile() {
+<span class="fc" id="L120">        CleanupPreset preset = new CleanupPreset(CleanupPreset.CleanupStep.CLEAN_UP_UPGRADE_EXTERNAL_LINKS);</span>
+<span class="fc" id="L121">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L122">        entry.setField(&quot;ps&quot;, &quot;aPsFile&quot;);</span>
+
+<span class="fc" id="L124">        worker.cleanup(preset, entry);</span>
+<span class="fc" id="L125">        Assert.assertEquals(Optional.empty(), entry.getField(&quot;pdf&quot;));</span>
+<span class="fc" id="L126">        Assert.assertEquals(Optional.of(&quot;aPsFile:aPsFile:PostScript&quot;), entry.getField(&quot;file&quot;));</span>
+<span class="fc" id="L127">    }</span>
+
+    @Test
+    public void cleanupDoiRemovesLeadingHttp() {
+<span class="fc" id="L131">        CleanupPreset preset = new CleanupPreset(CleanupPreset.CleanupStep.CLEAN_UP_DOI);</span>
+<span class="fc" id="L132">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L133">        entry.setField(&quot;doi&quot;, &quot;http://dx.doi.org/10.1016/0001-8708(80)90035-3&quot;);</span>
+
+<span class="fc" id="L135">        worker.cleanup(preset, entry);</span>
+<span class="fc" id="L136">        Assert.assertEquals(Optional.of(&quot;10.1016/0001-8708(80)90035-3&quot;), entry.getField(&quot;doi&quot;));</span>
+<span class="fc" id="L137">    }</span>
+
+    @Test
+    public void cleanupDoiReturnsChanges() {
+<span class="fc" id="L141">        CleanupPreset preset = new CleanupPreset(CleanupPreset.CleanupStep.CLEAN_UP_DOI);</span>
+<span class="fc" id="L142">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L143">        entry.setField(&quot;doi&quot;, &quot;http://dx.doi.org/10.1016/0001-8708(80)90035-3&quot;);</span>
+
+<span class="fc" id="L145">        List&lt;FieldChange&gt; changes = worker.cleanup(preset, entry);</span>
+
+<span class="fc" id="L147">        FieldChange expectedChange = new FieldChange(entry, &quot;doi&quot;, &quot;http://dx.doi.org/10.1016/0001-8708(80)90035-3&quot;,</span>
+<span class="fc" id="L148">                &quot;10.1016/0001-8708(80)90035-3&quot;);</span>
+<span class="fc" id="L149">        Assert.assertEquals(Collections.singletonList(expectedChange), changes);</span>
+<span class="fc" id="L150">    }</span>
+
+    @Test
+    public void cleanupDoiFindsDoiInURLFieldAndMoveItToDOIField() {
+<span class="fc" id="L154">        CleanupPreset preset = new CleanupPreset(CleanupPreset.CleanupStep.CLEAN_UP_DOI);</span>
+<span class="fc" id="L155">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L156">        entry.setField(&quot;url&quot;, &quot;http://dx.doi.org/10.1016/0001-8708(80)90035-3&quot;);</span>
+
+<span class="fc" id="L158">        worker.cleanup(preset, entry);</span>
+<span class="fc" id="L159">        Assert.assertEquals(Optional.of(&quot;10.1016/0001-8708(80)90035-3&quot;), entry.getField(&quot;doi&quot;));</span>
+<span class="fc" id="L160">        Assert.assertEquals(Optional.empty(), entry.getField(&quot;url&quot;));</span>
+<span class="fc" id="L161">    }</span>
+
+    @Test
+    public void cleanupDoiReturnsChangeWhenDoiInURLField() {
+<span class="fc" id="L165">        CleanupPreset preset = new CleanupPreset(CleanupPreset.CleanupStep.CLEAN_UP_DOI);</span>
+<span class="fc" id="L166">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L167">        entry.setField(&quot;url&quot;, &quot;http://dx.doi.org/10.1016/0001-8708(80)90035-3&quot;);</span>
+
+<span class="fc" id="L169">        List&lt;FieldChange&gt; changes = worker.cleanup(preset, entry);</span>
+<span class="fc" id="L170">        List&lt;FieldChange&gt; changeList = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L171">        changeList.add(new FieldChange(entry, &quot;doi&quot;, null, &quot;10.1016/0001-8708(80)90035-3&quot;));</span>
+<span class="fc" id="L172">        changeList.add(new FieldChange(entry, &quot;url&quot;, &quot;http://dx.doi.org/10.1016/0001-8708(80)90035-3&quot;, null));</span>
+<span class="fc" id="L173">        Assert.assertEquals(changeList, changes);</span>
+<span class="fc" id="L174">    }</span>
+
+    @Test
+    public void cleanupMonthChangesNumberToBibtex() {
+<span class="fc" id="L178">        CleanupPreset preset = new CleanupPreset(new FieldFormatterCleanups(true,</span>
+<span class="fc" id="L179">                Collections.singletonList(new FieldFormatterCleanup(&quot;month&quot;, new NormalizeMonthFormatter()))));</span>
+<span class="fc" id="L180">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L181">        entry.setField(&quot;month&quot;, &quot;01&quot;);</span>
+
+<span class="fc" id="L183">        worker.cleanup(preset, entry);</span>
+<span class="fc" id="L184">        Assert.assertEquals(Optional.of(&quot;#jan#&quot;), entry.getField(&quot;month&quot;));</span>
+<span class="fc" id="L185">    }</span>
+
+    @Test
+    public void cleanupPageNumbersConvertsSingleDashToDouble() {
+<span class="fc" id="L189">        CleanupPreset preset = new CleanupPreset(new FieldFormatterCleanups(true,</span>
+<span class="fc" id="L190">                Collections.singletonList(new FieldFormatterCleanup(&quot;pages&quot;, new NormalizePagesFormatter()))));</span>
+<span class="fc" id="L191">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L192">        entry.setField(&quot;pages&quot;, &quot;1-2&quot;);</span>
+
+<span class="fc" id="L194">        worker.cleanup(preset, entry);</span>
+<span class="fc" id="L195">        Assert.assertEquals(Optional.of(&quot;1--2&quot;), entry.getField(&quot;pages&quot;));</span>
+<span class="fc" id="L196">    }</span>
+
+    @Test
+    public void cleanupDatesConvertsToCorrectFormat() {
+<span class="fc" id="L200">        CleanupPreset preset = new CleanupPreset(new FieldFormatterCleanups(true,</span>
+<span class="fc" id="L201">                Collections.singletonList(new FieldFormatterCleanup(&quot;date&quot;, new NormalizeDateFormatter()))));</span>
+<span class="fc" id="L202">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L203">        entry.setField(&quot;date&quot;, &quot;01/1999&quot;);</span>
+
+<span class="fc" id="L205">        worker.cleanup(preset, entry);</span>
+<span class="fc" id="L206">        Assert.assertEquals(Optional.of(&quot;1999-01&quot;), entry.getField(&quot;date&quot;));</span>
+<span class="fc" id="L207">    }</span>
+
+    @Test
+    public void cleanupFixFileLinksMovesSingleDescriptionToLink() {
+<span class="fc" id="L211">        CleanupPreset preset = new CleanupPreset(CleanupPreset.CleanupStep.FIX_FILE_LINKS);</span>
+<span class="fc" id="L212">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L213">        entry.setField(&quot;file&quot;, &quot;link::&quot;);</span>
+
+<span class="fc" id="L215">        worker.cleanup(preset, entry);</span>
+<span class="fc" id="L216">        Assert.assertEquals(Optional.of(&quot;:link:&quot;), entry.getField(&quot;file&quot;));</span>
+<span class="fc" id="L217">    }</span>
+
+    @Test
+    public void cleanupMoveFilesMovesFileFromSubfolder() throws IOException {
+<span class="fc" id="L221">        CleanupPreset preset = new CleanupPreset(CleanupPreset.CleanupStep.MOVE_PDF);</span>
+
+<span class="fc" id="L223">        File subfolder = bibFolder.newFolder();</span>
+<span class="fc" id="L224">        File tempFile = new File(subfolder, &quot;test.pdf&quot;);</span>
+<span class="fc" id="L225">        tempFile.createNewFile();</span>
+<span class="fc" id="L226">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L227">        LinkedFile fileField = new LinkedFile(&quot;&quot;, tempFile.getAbsolutePath(), &quot;&quot;);</span>
+<span class="fc" id="L228">        entry.setField(&quot;file&quot;, FileFieldWriter.getStringRepresentation(fileField));</span>
+
+<span class="fc" id="L230">        worker.cleanup(preset, entry);</span>
+<span class="fc" id="L231">        LinkedFile newFileField = new LinkedFile(&quot;&quot;, tempFile.getName(), &quot;&quot;);</span>
+<span class="fc" id="L232">        Assert.assertEquals(Optional.of(FileFieldWriter.getStringRepresentation(newFileField)), entry.getField(&quot;file&quot;));</span>
+<span class="fc" id="L233">    }</span>
+
+    @Test
+    public void cleanupRelativePathsConvertAbsoluteToRelativePath() throws IOException {
+<span class="fc" id="L237">        CleanupPreset preset = new CleanupPreset(CleanupPreset.CleanupStep.MAKE_PATHS_RELATIVE);</span>
+
+<span class="fc" id="L239">        File tempFile = bibFolder.newFile();</span>
+<span class="fc" id="L240">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L241">        LinkedFile fileField = new LinkedFile(&quot;&quot;, tempFile.getAbsolutePath(), &quot;&quot;);</span>
+<span class="fc" id="L242">        entry.setField(&quot;file&quot;, FileFieldWriter.getStringRepresentation(fileField));</span>
+
+<span class="fc" id="L244">        worker.cleanup(preset, entry);</span>
+<span class="fc" id="L245">        LinkedFile newFileField = new LinkedFile(&quot;&quot;, tempFile.getName(), &quot;&quot;);</span>
+<span class="fc" id="L246">        Assert.assertEquals(Optional.of(FileFieldWriter.getStringRepresentation(newFileField)), entry.getField(&quot;file&quot;));</span>
+<span class="fc" id="L247">    }</span>
+
+    @Test
+    public void cleanupRenamePdfRenamesRelativeFile() throws IOException {
+<span class="fc" id="L251">        CleanupPreset preset = new CleanupPreset(CleanupPreset.CleanupStep.RENAME_PDF);</span>
+
+<span class="fc" id="L253">        File tempFile = bibFolder.newFile();</span>
+<span class="fc" id="L254">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L255">        entry.setCiteKey(&quot;Toot&quot;);</span>
+<span class="fc" id="L256">        LinkedFile fileField = new LinkedFile(&quot;&quot;, tempFile.getAbsolutePath(), &quot;&quot;);</span>
+<span class="fc" id="L257">        entry.setField(&quot;file&quot;, FileFieldWriter.getStringRepresentation(fileField));</span>
+
+<span class="fc" id="L259">        worker.cleanup(preset, entry);</span>
+<span class="fc" id="L260">        LinkedFile newFileField = new LinkedFile(&quot;&quot;, &quot;Toot.tmp&quot;, &quot;&quot;);</span>
+<span class="fc" id="L261">        Assert.assertEquals(Optional.of(FileFieldWriter.getStringRepresentation(newFileField)), entry.getField(&quot;file&quot;));</span>
+<span class="fc" id="L262">    }</span>
+
+    @Test
+    public void cleanupHtmlToLatexConvertsEpsilonToLatex() {
+<span class="fc" id="L266">        CleanupPreset preset = new CleanupPreset(new FieldFormatterCleanups(true,</span>
+<span class="fc" id="L267">                Collections.singletonList(new FieldFormatterCleanup(&quot;title&quot;, new HtmlToLatexFormatter()))));</span>
+<span class="fc" id="L268">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L269">        entry.setField(&quot;title&quot;, &quot;&amp;Epsilon;&quot;);</span>
+
+<span class="fc" id="L271">        worker.cleanup(preset, entry);</span>
+<span class="fc" id="L272">        Assert.assertEquals(Optional.of(&quot;{{$\\Epsilon$}}&quot;), entry.getField(&quot;title&quot;));</span>
+<span class="fc" id="L273">    }</span>
+
+    @Test
+    public void cleanupUnitsConvertsOneAmpereToLatex() {
+<span class="fc" id="L277">        CleanupPreset preset = new CleanupPreset(new FieldFormatterCleanups(true,</span>
+<span class="fc" id="L278">                Collections.singletonList(new FieldFormatterCleanup(&quot;title&quot;, new UnitsToLatexFormatter()))));</span>
+<span class="fc" id="L279">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L280">        entry.setField(&quot;title&quot;, &quot;1 A&quot;);</span>
+
+<span class="fc" id="L282">        worker.cleanup(preset, entry);</span>
+<span class="fc" id="L283">        Assert.assertEquals(Optional.of(&quot;1~{A}&quot;), entry.getField(&quot;title&quot;));</span>
+<span class="fc" id="L284">    }</span>
+
+    @Test
+    public void cleanupCasesAddsBracketAroundAluminiumGalliumArsenid() {
+<span class="fc" id="L288">        ProtectedTermsLoader protectedTermsLoader = new ProtectedTermsLoader(</span>
+<span class="fc" id="L289">                new ProtectedTermsPreferences(ProtectedTermsLoader.getInternalLists(), Collections.emptyList(),</span>
+<span class="fc" id="L290">                        Collections.emptyList(), Collections.emptyList()));</span>
+<span class="fc" id="L291">        Assert.assertNotEquals(Collections.emptyList(), protectedTermsLoader.getProtectedTerms());</span>
+<span class="fc" id="L292">        CleanupPreset preset = new CleanupPreset(new FieldFormatterCleanups(true, Collections</span>
+<span class="fc" id="L293">                .singletonList(new FieldFormatterCleanup(&quot;title&quot;, new ProtectTermsFormatter(protectedTermsLoader)))));</span>
+<span class="fc" id="L294">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L295">        entry.setField(&quot;title&quot;, &quot;AlGaAs&quot;);</span>
+
+<span class="fc" id="L297">        worker.cleanup(preset, entry);</span>
+<span class="fc" id="L298">        Assert.assertEquals(Optional.of(&quot;{AlGaAs}&quot;), entry.getField(&quot;title&quot;));</span>
+<span class="fc" id="L299">    }</span>
+
+    @Test
+    public void cleanupLatexMergesTwoLatexMathEnvironments() {
+<span class="fc" id="L303">        CleanupPreset preset = new CleanupPreset(new FieldFormatterCleanups(true,</span>
+<span class="fc" id="L304">                Collections.singletonList(new FieldFormatterCleanup(&quot;title&quot;, new LatexCleanupFormatter()))));</span>
+<span class="fc" id="L305">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L306">        entry.setField(&quot;title&quot;, &quot;$\\alpha$$\\beta$&quot;);</span>
+
+<span class="fc" id="L308">        worker.cleanup(preset, entry);</span>
+<span class="fc" id="L309">        Assert.assertEquals(Optional.of(&quot;$\\alpha\\beta$&quot;), entry.getField(&quot;title&quot;));</span>
+<span class="fc" id="L310">    }</span>
+
+    @Test
+    public void convertToBiblatexMovesAddressToLocation() {
+<span class="fc" id="L314">        CleanupPreset preset = new CleanupPreset(CleanupPreset.CleanupStep.CONVERT_TO_BIBLATEX);</span>
+<span class="fc" id="L315">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L316">        entry.setField(&quot;address&quot;, &quot;test&quot;);</span>
+
+<span class="fc" id="L318">        worker.cleanup(preset, entry);</span>
+<span class="fc" id="L319">        Assert.assertEquals(Optional.empty(), entry.getField(&quot;address&quot;));</span>
+<span class="fc" id="L320">        Assert.assertEquals(Optional.of(&quot;test&quot;), entry.getField(&quot;location&quot;));</span>
+<span class="fc" id="L321">    }</span>
+
+    @Test
+    public void convertToBiblatexMovesJournalToJournalTitle() {
+<span class="fc" id="L325">        CleanupPreset preset = new CleanupPreset(CleanupPreset.CleanupStep.CONVERT_TO_BIBLATEX);</span>
+<span class="fc" id="L326">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L327">        entry.setField(&quot;journal&quot;, &quot;test&quot;);</span>
+
+<span class="fc" id="L329">        worker.cleanup(preset, entry);</span>
+<span class="fc" id="L330">        Assert.assertEquals(Optional.empty(), entry.getField(&quot;journal&quot;));</span>
+<span class="fc" id="L331">        Assert.assertEquals(Optional.of(&quot;test&quot;), entry.getField(&quot;journaltitle&quot;));</span>
+<span class="fc" id="L332">    }</span>
+
+    @Test
+    public void cleanupWithDisabledFieldFormatterChangesNothing() {
+<span class="fc" id="L336">        CleanupPreset preset = new CleanupPreset(new FieldFormatterCleanups(false,</span>
+<span class="fc" id="L337">                Collections.singletonList(new FieldFormatterCleanup(&quot;month&quot;, new NormalizeMonthFormatter()))));</span>
+<span class="fc" id="L338">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L339">        entry.setField(&quot;month&quot;, &quot;01&quot;);</span>
+
+<span class="fc" id="L341">        worker.cleanup(preset, entry);</span>
+<span class="fc" id="L342">        Assert.assertEquals(Optional.of(&quot;01&quot;), entry.getField(&quot;month&quot;));</span>
+<span class="fc" id="L343">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

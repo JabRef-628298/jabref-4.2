@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MergeDialog.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui</a> &gt; <span class="el_source">MergeDialog.java</span></div><h1>MergeDialog.java</h1><pre class="source lang-java linenums"><span class="nc" id="L1">package org.jabref.gui;</span>
+
+import java.awt.BorderLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.awt.event.ActionEvent;
+
+import javax.swing.AbstractAction;
+import javax.swing.ActionMap;
+import javax.swing.BorderFactory;
+import javax.swing.InputMap;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JComponent;
+import javax.swing.JPanel;
+
+import org.jabref.Globals;
+import org.jabref.gui.keyboard.KeyBinding;
+import org.jabref.logic.l10n.Localization;
+
+/**
+ * &lt;p&gt;Title: MergeDialog&lt;/p&gt;
+ * &lt;p&gt;Description: Asks for details about merge database operation.&lt;/p&gt;
+ * &lt;p&gt;Copyright: Copyright (c) 2003&lt;/p&gt;
+ * @author Morten O. Alver
+ */
+
+public class MergeDialog extends JabRefDialog {
+
+<span class="nc" id="L31">    private final JPanel panel1 = new JPanel();</span>
+<span class="nc" id="L32">    private final BorderLayout borderLayout1 = new BorderLayout();</span>
+<span class="nc" id="L33">    private final JPanel jPanel1 = new JPanel();</span>
+<span class="nc" id="L34">    private final JPanel jPanel2 = new JPanel();</span>
+<span class="nc" id="L35">    private final JButton ok = new JButton();</span>
+<span class="nc" id="L36">    private final JButton cancel = new JButton();</span>
+<span class="nc" id="L37">    private final JCheckBox entries = new JCheckBox();</span>
+<span class="nc" id="L38">    private final JCheckBox strings = new JCheckBox();</span>
+<span class="nc" id="L39">    private final GridBagLayout gridBagLayout1 = new GridBagLayout();</span>
+<span class="nc" id="L40">    private final JCheckBox groups = new JCheckBox();</span>
+<span class="nc" id="L41">    private final JCheckBox selector = new JCheckBox();</span>
+
+
+    private boolean okPressed;
+
+    public MergeDialog(JabRefFrame frame, String title, boolean modal) {
+<span class="nc" id="L47">        super(frame, title, modal, MergeDialog.class);</span>
+<span class="nc" id="L48">        jbInit();</span>
+<span class="nc" id="L49">        pack();</span>
+<span class="nc" id="L50">    }</span>
+
+    public boolean isOkPressed() {
+<span class="nc" id="L53">        return okPressed;</span>
+    }
+
+    private void jbInit() {
+<span class="nc" id="L57">        panel1.setLayout(borderLayout1);</span>
+<span class="nc" id="L58">        ok.setText(Localization.lang(&quot;OK&quot;));</span>
+<span class="nc" id="L59">        ok.addActionListener(e -&gt; {</span>
+<span class="nc" id="L60">                okPressed = true;</span>
+<span class="nc" id="L61">                dispose();</span>
+<span class="nc" id="L62">        });</span>
+<span class="nc" id="L63">        cancel.setText(Localization.lang(&quot;Cancel&quot;));</span>
+<span class="nc" id="L64">        cancel.addActionListener(e -&gt; dispose());</span>
+<span class="nc" id="L65">        jPanel1.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));</span>
+<span class="nc" id="L66">        jPanel1.setLayout(gridBagLayout1);</span>
+<span class="nc" id="L67">        entries.setSelected(true);</span>
+<span class="nc" id="L68">        entries.setText(Localization.lang(&quot;Import entries&quot;));</span>
+<span class="nc" id="L69">        strings.setSelected(true);</span>
+<span class="nc" id="L70">        strings.setText(Localization.lang(&quot;Import strings&quot;));</span>
+<span class="nc" id="L71">        groups.setText(Localization.lang(&quot;Import group definitions&quot;));</span>
+<span class="nc" id="L72">        selector.setText(Localization.lang(&quot;Import word selector definitions&quot;));</span>
+
+<span class="nc" id="L74">        this.setModal(true);</span>
+<span class="nc" id="L75">        this.setResizable(false);</span>
+<span class="nc" id="L76">        getContentPane().add(panel1);</span>
+<span class="nc" id="L77">        panel1.add(jPanel2, BorderLayout.SOUTH);</span>
+<span class="nc" id="L78">        jPanel2.add(ok, null);</span>
+<span class="nc" id="L79">        jPanel2.add(cancel, null);</span>
+<span class="nc" id="L80">        panel1.add(jPanel1, BorderLayout.CENTER);</span>
+<span class="nc" id="L81">        jPanel1.add(entries, new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0</span>
+<span class="nc" id="L82">                , GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(0, 0, 0, 0), 0, 0));</span>
+<span class="nc" id="L83">        jPanel1.add(strings, new GridBagConstraints(0, 1, 1, 1, 0.0, 0.0</span>
+<span class="nc" id="L84">                , GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));</span>
+<span class="nc" id="L85">        jPanel1.add(groups, new GridBagConstraints(0, 2, 1, 1, 0.0, 0.0</span>
+<span class="nc" id="L86">                , GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));</span>
+<span class="nc" id="L87">        jPanel1.add(selector, new GridBagConstraints(0, 3, 1, 1, 0.0, 0.0, GridBagConstraints.WEST,</span>
+<span class="nc" id="L88">                GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));</span>
+
+        // Key bindings:
+<span class="nc" id="L91">        ActionMap am = jPanel1.getActionMap();</span>
+<span class="nc" id="L92">        InputMap im = jPanel1.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);</span>
+<span class="nc" id="L93">        im.put(Globals.getKeyPrefs().getKey(KeyBinding.CLOSE_DIALOG), &quot;close&quot;);</span>
+<span class="nc" id="L94">        am.put(&quot;close&quot;, new AbstractAction() {</span>
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L98">                dispose();</span>
+<span class="nc" id="L99">            }</span>
+        });
+
+<span class="nc" id="L102">    }</span>
+
+    public boolean importEntries() {
+<span class="nc" id="L105">        return entries.isSelected();</span>
+    }
+
+    public boolean importGroups() {
+<span class="nc" id="L109">        return groups.isSelected();</span>
+    }
+
+    public boolean importStrings() {
+<span class="nc" id="L113">        return strings.isSelected();</span>
+    }
+
+    public boolean importSelectorWords() {
+<span class="nc" id="L117">        return selector.isSelected();</span>
+    }
+}
+
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

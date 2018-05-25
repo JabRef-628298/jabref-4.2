@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>NormalizePagesFormatterTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.formatter.bibtexfields</a> &gt; <span class="el_source">NormalizePagesFormatterTest.java</span></div><h1>NormalizePagesFormatterTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.formatter.bibtexfields;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+/**
+ * Tests in addition to the general tests from {@link org.jabref.logic.formatter.FormatterTest}
+ */
+<span class="fc" id="L11">public class NormalizePagesFormatterTest {</span>
+
+    private NormalizePagesFormatter formatter;
+
+    @BeforeEach
+    public void setUp() {
+<span class="fc" id="L17">        formatter = new NormalizePagesFormatter();</span>
+<span class="fc" id="L18">    }</span>
+
+    @Test
+    public void formatSinglePageResultsInNoChange() {
+<span class="fc" id="L22">        assertEquals(&quot;1&quot;, formatter.format(&quot;1&quot;));</span>
+<span class="fc" id="L23">    }</span>
+
+    @Test
+    public void formatPageNumbers() {
+<span class="fc" id="L27">        assertEquals(&quot;1--2&quot;, formatter.format(&quot;1-2&quot;));</span>
+<span class="fc" id="L28">    }</span>
+
+    @Test
+    public void formatPageNumbersCommaSeparated() {
+<span class="fc" id="L32">        assertEquals(&quot;1,2,3&quot;, formatter.format(&quot;1,2,3&quot;));</span>
+<span class="fc" id="L33">    }</span>
+
+    @Test
+    public void formatPageNumbersPlusRange() {
+<span class="fc" id="L37">        assertEquals(&quot;43+&quot;, formatter.format(&quot;43+&quot;));</span>
+<span class="fc" id="L38">    }</span>
+
+    @Test
+    public void ignoreWhitespaceInPageNumbers() {
+<span class="fc" id="L42">        assertEquals(&quot;1--2&quot;, formatter.format(&quot;   1  - 2 &quot;));</span>
+<span class="fc" id="L43">    }</span>
+
+    @Test
+    public void removeWhitespaceSinglePage() {
+<span class="fc" id="L47">        assertEquals(&quot;1&quot;, formatter.format(&quot;   1  &quot;));</span>
+<span class="fc" id="L48">    }</span>
+
+    @Test
+    public void removeWhitespacePageRange() {
+<span class="fc" id="L52">        assertEquals(&quot;1--2&quot;, formatter.format(&quot;   1 -- 2  &quot;));</span>
+<span class="fc" id="L53">    }</span>
+
+    @Test
+    public void ignoreWhitespaceInPageNumbersWithDoubleDash() {
+<span class="fc" id="L57">        assertEquals(&quot;43--103&quot;, formatter.format(&quot;43 -- 103&quot;));</span>
+<span class="fc" id="L58">    }</span>
+
+    @Test
+    public void keepCorrectlyFormattedPageNumbers() {
+<span class="fc" id="L62">        assertEquals(&quot;1--2&quot;, formatter.format(&quot;1--2&quot;));</span>
+<span class="fc" id="L63">    }</span>
+
+    @Test
+    public void formatPageNumbersRemoveUnexpectedLiterals() {
+<span class="fc" id="L67">        assertEquals(&quot;1--2&quot;, formatter.format(&quot;{1}-{2}&quot;));</span>
+<span class="fc" id="L68">    }</span>
+
+    @Test
+    public void formatPageNumbersRegexNotMatching() {
+<span class="fc" id="L72">        assertEquals(&quot;12&quot;, formatter.format(&quot;12&quot;));</span>
+<span class="fc" id="L73">    }</span>
+
+    @Test
+    public void doNotRemoveLetters() {
+<span class="fc" id="L77">        assertEquals(&quot;R1-R50&quot;, formatter.format(&quot;R1-R50&quot;));</span>
+<span class="fc" id="L78">    }</span>
+
+    @Test
+    public void replaceLongDashWithDoubleDash() {
+<span class="fc" id="L82">        assertEquals(&quot;1--50&quot;, formatter.format(&quot;1 \u2014 50&quot;));</span>
+<span class="fc" id="L83">    }</span>
+
+    @Test
+    public void removePagePrefix() {
+<span class="fc" id="L87">        assertEquals(&quot;50&quot;, formatter.format(&quot;p.50&quot;));</span>
+<span class="fc" id="L88">    }</span>
+
+    @Test
+    public void removePagesPrefix() {
+<span class="fc" id="L92">        assertEquals(&quot;50&quot;, formatter.format(&quot;pp.50&quot;));</span>
+<span class="fc" id="L93">    }</span>
+
+    @Test
+    public void formatACMPages() {
+        // This appears in https://doi.org/10.1145/1658373.1658375
+<span class="fc" id="L98">        assertEquals(&quot;2:1--2:33&quot;, formatter.format(&quot;2:1-2:33&quot;));</span>
+<span class="fc" id="L99">    }</span>
+
+    @Test
+    public void keepFormattedACMPages() {
+        // This appears in https://doi.org/10.1145/1658373.1658375
+<span class="fc" id="L104">        assertEquals(&quot;2:1--2:33&quot;, formatter.format(&quot;2:1--2:33&quot;));</span>
+<span class="fc" id="L105">    }</span>
+
+    @Test
+    public void formatExample() {
+<span class="fc" id="L109">        assertEquals(&quot;1--2&quot;, formatter.format(formatter.getExampleInput()));</span>
+<span class="fc" id="L110">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

@@ -1,0 +1,289 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>DBMSProcessorTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.shared</a> &gt; <span class="el_source">DBMSProcessorTest.java</span></div><h1>DBMSProcessorTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.shared;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import org.jabref.model.database.shared.DBMSType;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.logic.shared.exception.InvalidDBMSConnectionPropertiesException;
+import org.jabref.logic.shared.exception.OfflineLockException;
+import org.jabref.testutils.category.DatabaseTest;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
+@DatabaseTest
+<span class="fc" id="L31">public class DBMSProcessorTest {</span>
+
+    private DBMSConnection dbmsConnection;
+    private DBMSProcessor dbmsProcessor;
+
+    @Parameter public DBMSType dbmsType;
+
+    @BeforeEach
+    public void setUp() throws SQLException, InvalidDBMSConnectionPropertiesException {
+<span class="nc" id="L40">        dbmsConnection = TestConnector.getTestDBMSConnection(dbmsType);</span>
+<span class="nc" id="L41">        dbmsProcessor = DBMSProcessor.getProcessorInstance(dbmsConnection);</span>
+<span class="nc" id="L42">        dbmsProcessor.setupSharedDatabase();</span>
+<span class="nc" id="L43">    }</span>
+
+    @Parameters(name = &quot;Test with {0} database system&quot;)
+    public static Collection&lt;DBMSType&gt; getTestingDatabaseSystems() {
+<span class="nc" id="L47">        return TestManager.getDBMSTypeTestParameter();</span>
+    }
+
+    @Test
+    public void testCheckBaseIntegrity() throws SQLException {
+<span class="nc" id="L52">        assertTrue(dbmsProcessor.checkBaseIntegrity());</span>
+<span class="nc" id="L53">        clear();</span>
+<span class="nc" id="L54">        assertFalse(dbmsProcessor.checkBaseIntegrity());</span>
+<span class="nc" id="L55">    }</span>
+
+    @Test
+    public void testSetUpSharedDatabase() throws SQLException {
+<span class="nc" id="L59">        clear();</span>
+<span class="nc" id="L60">        dbmsProcessor.setupSharedDatabase();</span>
+<span class="nc" id="L61">        assertTrue(dbmsProcessor.checkBaseIntegrity());</span>
+<span class="nc" id="L62">    }</span>
+
+    @Test
+    public void testInsertEntry() throws SQLException {
+<span class="nc" id="L66">        BibEntry expectedEntry = getBibEntryExample();</span>
+
+<span class="nc" id="L68">        dbmsProcessor.insertEntry(expectedEntry);</span>
+
+<span class="nc" id="L70">        BibEntry emptyEntry = new BibEntry();</span>
+<span class="nc" id="L71">        emptyEntry.getSharedBibEntryData().setSharedID(1);</span>
+<span class="nc" id="L72">        dbmsProcessor.insertEntry(emptyEntry); // does not insert, due to same sharedID.</span>
+
+<span class="nc" id="L74">        Map&lt;String, String&gt; actualFieldMap = new HashMap&lt;&gt;();</span>
+
+<span class="nc" id="L76">        try (ResultSet entryResultSet = selectFrom(&quot;ENTRY&quot;)) {</span>
+<span class="nc" id="L77">            assertTrue(entryResultSet.next());</span>
+<span class="nc" id="L78">            assertEquals(1, entryResultSet.getInt(&quot;SHARED_ID&quot;));</span>
+<span class="nc" id="L79">            assertEquals(&quot;inproceedings&quot;, entryResultSet.getString(&quot;TYPE&quot;));</span>
+<span class="nc" id="L80">            assertEquals(1, entryResultSet.getInt(&quot;VERSION&quot;));</span>
+<span class="nc" id="L81">            assertFalse(entryResultSet.next());</span>
+
+<span class="nc" id="L83">            try (ResultSet fieldResultSet = selectFrom(&quot;FIELD&quot;)) {</span>
+<span class="nc bnc" id="L84" title="All 2 branches missed.">                while (fieldResultSet.next()) {</span>
+<span class="nc" id="L85">                    actualFieldMap.put(fieldResultSet.getString(&quot;NAME&quot;), fieldResultSet.getString(&quot;VALUE&quot;));</span>
+                }
+<span class="nc bnc" id="L87" title="All 8 branches missed.">            }</span>
+<span class="nc bnc" id="L88" title="All 8 branches missed.">        }</span>
+
+<span class="nc" id="L90">        Map&lt;String, String&gt; expectedFieldMap = expectedEntry.getFieldMap();</span>
+
+<span class="nc" id="L92">        assertEquals(expectedFieldMap, actualFieldMap);</span>
+<span class="nc" id="L93">    }</span>
+
+    @Test
+    public void testUpdateEntry() throws OfflineLockException, SQLException {
+<span class="nc" id="L97">        BibEntry expectedEntry = getBibEntryExample();</span>
+
+<span class="nc" id="L99">        dbmsProcessor.insertEntry(expectedEntry);</span>
+
+<span class="nc" id="L101">        expectedEntry.setType(&quot;book&quot;);</span>
+<span class="nc" id="L102">        expectedEntry.setField(&quot;author&quot;, &quot;Michael J and Hutchings&quot;);</span>
+<span class="nc" id="L103">        expectedEntry.setField(&quot;customField&quot;, &quot;custom value&quot;);</span>
+<span class="nc" id="L104">        expectedEntry.clearField(&quot;booktitle&quot;);</span>
+
+<span class="nc" id="L106">        dbmsProcessor.updateEntry(expectedEntry);</span>
+
+<span class="nc" id="L108">        Optional&lt;BibEntry&gt; actualEntryOptional = dbmsProcessor</span>
+<span class="nc" id="L109">                .getSharedEntry(expectedEntry.getSharedBibEntryData().getSharedID());</span>
+
+<span class="nc" id="L111">        assertEquals(expectedEntry, actualEntryOptional.get());</span>
+<span class="nc" id="L112">    }</span>
+
+    @Test
+    public void testUpdateNewerEntry() throws OfflineLockException, SQLException {
+<span class="nc" id="L116">        BibEntry bibEntry = getBibEntryExample();</span>
+
+<span class="nc" id="L118">        dbmsProcessor.insertEntry(bibEntry);</span>
+
+        //simulate older version
+<span class="nc" id="L121">        bibEntry.getSharedBibEntryData().setVersion(0);</span>
+<span class="nc" id="L122">        bibEntry.setField(&quot;year&quot;, &quot;1993&quot;);</span>
+
+<span class="nc" id="L124">        assertThrows(OfflineLockException.class, () -&gt; dbmsProcessor.updateEntry(bibEntry));</span>
+<span class="nc" id="L125">    }</span>
+
+    @Test
+    public void testUpdateEqualEntry() throws OfflineLockException, SQLException {
+<span class="nc" id="L129">        BibEntry expectedBibEntry = getBibEntryExample();</span>
+
+<span class="nc" id="L131">        dbmsProcessor.insertEntry(expectedBibEntry);</span>
+        //simulate older version
+<span class="nc" id="L133">        expectedBibEntry.getSharedBibEntryData().setVersion(0);</span>
+<span class="nc" id="L134">        dbmsProcessor.updateEntry(expectedBibEntry);</span>
+
+<span class="nc" id="L136">        Optional&lt;BibEntry&gt; actualBibEntryOptional = dbmsProcessor</span>
+<span class="nc" id="L137">                .getSharedEntry(expectedBibEntry.getSharedBibEntryData().getSharedID());</span>
+
+<span class="nc" id="L139">        assertEquals(expectedBibEntry, actualBibEntryOptional.get());</span>
+<span class="nc" id="L140">    }</span>
+
+    @Test
+    public void testRemoveEntry() throws SQLException {
+<span class="nc" id="L144">        BibEntry bibEntry = getBibEntryExample();</span>
+<span class="nc" id="L145">        dbmsProcessor.insertEntry(bibEntry);</span>
+<span class="nc" id="L146">        dbmsProcessor.removeEntry(bibEntry);</span>
+
+<span class="nc" id="L148">        try (ResultSet resultSet = selectFrom(&quot;ENTRY&quot;)) {</span>
+<span class="nc" id="L149">            assertFalse(resultSet.next());</span>
+<span class="nc bnc" id="L150" title="All 8 branches missed.">        }</span>
+<span class="nc" id="L151">    }</span>
+
+    @Test
+    public void testGetSharedEntries() {
+<span class="nc" id="L155">        BibEntry bibEntry = getBibEntryExampleWithEmptyFields();</span>
+
+<span class="nc" id="L157">        dbmsProcessor.insertEntry(bibEntry);</span>
+
+<span class="nc" id="L159">        List&lt;BibEntry&gt; expectedEntries = Arrays.asList(bibEntry);</span>
+<span class="nc" id="L160">        List&lt;BibEntry&gt; actualEntries = dbmsProcessor.getSharedEntries();</span>
+
+<span class="nc" id="L162">        assertEquals(expectedEntries, actualEntries);</span>
+<span class="nc" id="L163">    }</span>
+
+    @Test
+    public void testGetSharedEntry() {
+<span class="nc" id="L167">        BibEntry expectedBibEntry = getBibEntryExampleWithEmptyFields();</span>
+
+<span class="nc" id="L169">        dbmsProcessor.insertEntry(expectedBibEntry);</span>
+
+<span class="nc" id="L171">        Optional&lt;BibEntry&gt; actualBibEntryOptional = dbmsProcessor</span>
+<span class="nc" id="L172">                .getSharedEntry(expectedBibEntry.getSharedBibEntryData().getSharedID());</span>
+
+<span class="nc" id="L174">        assertEquals(expectedBibEntry, actualBibEntryOptional.get());</span>
+<span class="nc" id="L175">    }</span>
+
+    @Test
+    public void testGetNotExistingSharedEntry() {
+<span class="nc" id="L179">        Optional&lt;BibEntry&gt; actualBibEntryOptional = dbmsProcessor.getSharedEntry(1);</span>
+<span class="nc" id="L180">        assertFalse(actualBibEntryOptional.isPresent());</span>
+<span class="nc" id="L181">    }</span>
+
+    @Test
+    public void testGetSharedIDVersionMapping() throws OfflineLockException, SQLException {
+<span class="nc" id="L185">        BibEntry firstEntry = getBibEntryExample();</span>
+<span class="nc" id="L186">        BibEntry secondEntry = getBibEntryExample();</span>
+
+<span class="nc" id="L188">        dbmsProcessor.insertEntry(firstEntry);</span>
+<span class="nc" id="L189">        dbmsProcessor.insertEntry(secondEntry);</span>
+<span class="nc" id="L190">        dbmsProcessor.updateEntry(secondEntry);</span>
+
+<span class="nc" id="L192">        Map&lt;Integer, Integer&gt; expectedIDVersionMap = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L193">        expectedIDVersionMap.put(firstEntry.getSharedBibEntryData().getSharedID(), 1);</span>
+<span class="nc" id="L194">        expectedIDVersionMap.put(secondEntry.getSharedBibEntryData().getSharedID(), 2);</span>
+
+<span class="nc" id="L196">        Map&lt;Integer, Integer&gt; actualIDVersionMap = dbmsProcessor.getSharedIDVersionMapping();</span>
+
+<span class="nc" id="L198">        assertEquals(expectedIDVersionMap, actualIDVersionMap);</span>
+<span class="nc" id="L199">    }</span>
+
+    @Test
+    public void testGetSharedMetaData() {
+<span class="nc" id="L203">        insertMetaData(&quot;databaseType&quot;, &quot;bibtex;&quot;);</span>
+<span class="nc" id="L204">        insertMetaData(&quot;protectedFlag&quot;, &quot;true;&quot;);</span>
+<span class="nc" id="L205">        insertMetaData(&quot;saveActions&quot;, &quot;enabled;\nauthor[capitalize,html_to_latex]\ntitle[title_case]\n;&quot;);</span>
+<span class="nc" id="L206">        insertMetaData(&quot;saveOrderConfig&quot;, &quot;specified;author;false;title;false;year;true;&quot;);</span>
+
+<span class="nc" id="L208">        Map&lt;String, String&gt; expectedMetaData = getMetaDataExample();</span>
+<span class="nc" id="L209">        Map&lt;String, String&gt; actualMetaData = dbmsProcessor.getSharedMetaData();</span>
+
+<span class="nc" id="L211">        assertEquals(expectedMetaData, actualMetaData);</span>
+<span class="nc" id="L212">    }</span>
+
+    @Test
+    public void testSetSharedMetaData() throws SQLException {
+<span class="nc" id="L216">        Map&lt;String, String&gt; expectedMetaData = getMetaDataExample();</span>
+<span class="nc" id="L217">        dbmsProcessor.setSharedMetaData(expectedMetaData);</span>
+
+<span class="nc" id="L219">        Map&lt;String, String&gt; actualMetaData = dbmsProcessor.getSharedMetaData();</span>
+
+<span class="nc" id="L221">        assertEquals(expectedMetaData, actualMetaData);</span>
+<span class="nc" id="L222">    }</span>
+
+    private Map&lt;String, String&gt; getMetaDataExample() {
+<span class="nc" id="L225">        Map&lt;String, String&gt; expectedMetaData = new HashMap&lt;&gt;();</span>
+
+<span class="nc" id="L227">        expectedMetaData.put(&quot;databaseType&quot;, &quot;bibtex;&quot;);</span>
+<span class="nc" id="L228">        expectedMetaData.put(&quot;protectedFlag&quot;, &quot;true;&quot;);</span>
+<span class="nc" id="L229">        expectedMetaData.put(&quot;saveActions&quot;, &quot;enabled;\nauthor[capitalize,html_to_latex]\ntitle[title_case]\n;&quot;);</span>
+<span class="nc" id="L230">        expectedMetaData.put(&quot;saveOrderConfig&quot;, &quot;specified;author;false;title;false;year;true;&quot;);</span>
+
+<span class="nc" id="L232">        return expectedMetaData;</span>
+    }
+
+    private BibEntry getBibEntryExampleWithEmptyFields() {
+<span class="nc" id="L236">        BibEntry bibEntry = new BibEntry();</span>
+<span class="nc" id="L237">        bibEntry.setField(&quot;author&quot;, &quot;Author&quot;);</span>
+<span class="nc" id="L238">        bibEntry.setField(&quot;title&quot;, &quot;&quot;);</span>
+<span class="nc" id="L239">        bibEntry.setField(&quot;year&quot;, &quot;&quot;);</span>
+<span class="nc" id="L240">        bibEntry.getSharedBibEntryData().setSharedID(1);</span>
+<span class="nc" id="L241">        return bibEntry;</span>
+    }
+
+    private BibEntry getBibEntryExample() {
+<span class="nc" id="L245">        BibEntry bibEntry = new BibEntry();</span>
+<span class="nc" id="L246">        bibEntry.setType(&quot;inproceedings&quot;);</span>
+<span class="nc" id="L247">        bibEntry.setField(&quot;author&quot;, &quot;Wirthlin, Michael J and Hutchings, Brad L and Gilson, Kent L&quot;);</span>
+<span class="nc" id="L248">        bibEntry.setField(&quot;title&quot;, &quot;The nano processor: a low resource reconfigurable processor&quot;);</span>
+<span class="nc" id="L249">        bibEntry.setField(&quot;booktitle&quot;, &quot;FPGAs for Custom Computing Machines, 1994. Proceedings. IEEE Workshop on&quot;);</span>
+<span class="nc" id="L250">        bibEntry.setField(&quot;year&quot;, &quot;1994&quot;);</span>
+<span class="nc" id="L251">        bibEntry.setCiteKey(&quot;nanoproc1994&quot;);</span>
+<span class="nc" id="L252">        return bibEntry;</span>
+    }
+
+    private ResultSet selectFrom(String table) {
+        try {
+<span class="nc" id="L257">            return dbmsConnection.getConnection().createStatement().executeQuery(&quot;SELECT * FROM &quot; + escape(table));</span>
+<span class="nc" id="L258">        } catch (SQLException e) {</span>
+<span class="nc" id="L259">            fail(e.getMessage());</span>
+<span class="nc" id="L260">            return null;</span>
+        }
+    }
+
+    // Oracle does not support multiple tuple insertion in one INSERT INTO command.
+    // Therefore this function was defined to improve the readability and to keep the code short.
+    private void insertMetaData(String key, String value) {
+        try {
+<span class="nc" id="L268">            dbmsConnection.getConnection().createStatement().executeUpdate(&quot;INSERT INTO &quot; + escape(&quot;METADATA&quot;) + &quot;(&quot;</span>
+<span class="nc" id="L269">                    + escape(&quot;KEY&quot;) + &quot;, &quot; + escape(&quot;VALUE&quot;) + &quot;) VALUES(&quot;</span>
+<span class="nc" id="L270">                    + escapeValue(key) + &quot;, &quot; + escapeValue(value) + &quot;)&quot;);</span>
+<span class="nc" id="L271">        } catch (SQLException e) {</span>
+<span class="nc" id="L272">            fail(e.getMessage());</span>
+        }
+<span class="nc" id="L274">    }</span>
+
+    private String escape(String expression) {
+<span class="nc" id="L277">        return dbmsProcessor.escape(expression);</span>
+    }
+
+    private String escapeValue(String value) {
+<span class="nc" id="L281">        return &quot;'&quot; + value + &quot;'&quot;;</span>
+    }
+
+    @AfterEach
+    public void clear() throws SQLException {
+<span class="nc" id="L286">        TestManager.clearTables(dbmsConnection);</span>
+<span class="nc" id="L287">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

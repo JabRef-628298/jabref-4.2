@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>BibtexCaseChangersTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.bst</a> &gt; <span class="el_source">BibtexCaseChangersTest.java</span></div><h1>BibtexCaseChangersTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.bst;
+
+import org.jabref.logic.bst.BibtexCaseChanger.FORMAT_MODE;
+
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+<span class="fc" id="L9">public class BibtexCaseChangersTest {</span>
+
+    @Test
+    public void testChangeCase() {
+
+<span class="fc" id="L14">        assertCaseChangerTitleLowers(&quot;i&quot;, &quot;i&quot;);</span>
+<span class="fc" id="L15">        assertCaseChangerAllLowers(&quot;i&quot;, &quot;i&quot;);</span>
+<span class="fc" id="L16">        assertCaseChangerAllUppers(&quot;I&quot;, &quot;i&quot;);</span>
+<span class="fc" id="L17">        assertCaseChangerTitleLowers(&quot;0i~ &quot;, &quot;0I~ &quot;);</span>
+<span class="fc" id="L18">        assertCaseChangerAllLowers(&quot;0i~ &quot;, &quot;0I~ &quot;);</span>
+<span class="fc" id="L19">        assertCaseChangerAllUppers(&quot;0I~ &quot;, &quot;0I~ &quot;);</span>
+<span class="fc" id="L20">        assertCaseChangerTitleLowers(&quot;Hi hi &quot;, &quot;Hi Hi &quot;);</span>
+<span class="fc" id="L21">        assertCaseChangerAllLowers(&quot;hi hi &quot;, &quot;Hi Hi &quot;);</span>
+<span class="fc" id="L22">        assertCaseChangerAllUppers(&quot;HI HI &quot;, &quot;Hi Hi &quot;);</span>
+<span class="fc" id="L23">        assertCaseChangerTitleLowers(&quot;{\\oe}&quot;, &quot;{\\oe}&quot;);</span>
+<span class="fc" id="L24">        assertCaseChangerAllLowers(&quot;{\\oe}&quot;, &quot;{\\oe}&quot;);</span>
+<span class="fc" id="L25">        assertCaseChangerAllUppers(&quot;{\\OE}&quot;, &quot;{\\oe}&quot;);</span>
+<span class="fc" id="L26">        assertCaseChangerTitleLowers(&quot;Hi {\\oe   }hi &quot;, &quot;Hi {\\oe   }Hi &quot;);</span>
+<span class="fc" id="L27">        assertCaseChangerAllLowers(&quot;hi {\\oe   }hi &quot;, &quot;Hi {\\oe   }Hi &quot;);</span>
+<span class="fc" id="L28">        assertCaseChangerAllUppers(&quot;HI {\\OE   }HI &quot;, &quot;Hi {\\oe   }Hi &quot;);</span>
+<span class="fc" id="L29">        assertCaseChangerTitleLowers(</span>
+<span class="fc" id="L30">                &quot;Jonathan meyer and charles louis xavier joseph de la vall{\\'e}e poussin&quot;,</span>
+<span class="fc" id="L31">                &quot;Jonathan Meyer and Charles Louis Xavier Joseph de la Vall{\\'e}e Poussin&quot;);</span>
+<span class="fc" id="L32">        assertCaseChangerAllLowers(</span>
+<span class="fc" id="L33">                &quot;jonathan meyer and charles louis xavier joseph de la vall{\\'e}e poussin&quot;,</span>
+<span class="fc" id="L34">                &quot;Jonathan Meyer and Charles Louis Xavier Joseph de la Vall{\\'e}e Poussin&quot;);</span>
+<span class="fc" id="L35">        assertCaseChangerAllUppers(</span>
+<span class="fc" id="L36">                &quot;JONATHAN MEYER AND CHARLES LOUIS XAVIER JOSEPH DE LA VALL{\\'E}E POUSSIN&quot;,</span>
+<span class="fc" id="L37">                &quot;Jonathan Meyer and Charles Louis Xavier Joseph de la Vall{\\'e}e Poussin&quot;);</span>
+<span class="fc" id="L38">        assertCaseChangerTitleLowers(&quot;{\\'e}&quot;, &quot;{\\'e}&quot;);</span>
+<span class="fc" id="L39">        assertCaseChangerAllLowers(&quot;{\\'e}&quot;, &quot;{\\'e}&quot;);</span>
+<span class="fc" id="L40">        assertCaseChangerAllUppers(&quot;{\\'E}&quot;, &quot;{\\'e}&quot;);</span>
+<span class="fc" id="L41">        assertCaseChangerTitleLowers(&quot;{\\'{E}}douard masterly&quot;, &quot;{\\'{E}}douard Masterly&quot;);</span>
+<span class="fc" id="L42">        assertCaseChangerAllLowers(&quot;{\\'{e}}douard masterly&quot;, &quot;{\\'{E}}douard Masterly&quot;);</span>
+<span class="fc" id="L43">        assertCaseChangerAllUppers(&quot;{\\'{E}}DOUARD MASTERLY&quot;, &quot;{\\'{E}}douard Masterly&quot;);</span>
+<span class="fc" id="L44">        assertCaseChangerTitleLowers(&quot;Ulrich {\\\&quot;{u}}nderwood and ned {\\~n}et and paul {\\={p}}ot&quot;,</span>
+<span class="fc" id="L45">                &quot;Ulrich {\\\&quot;{U}}nderwood and Ned {\\~N}et and Paul {\\={P}}ot&quot;);</span>
+<span class="fc" id="L46">        assertCaseChangerAllLowers(&quot;ulrich {\\\&quot;{u}}nderwood and ned {\\~n}et and paul {\\={p}}ot&quot;,</span>
+<span class="fc" id="L47">                &quot;Ulrich {\\\&quot;{U}}nderwood and Ned {\\~N}et and Paul {\\={P}}ot&quot;);</span>
+<span class="fc" id="L48">        assertCaseChangerAllUppers(&quot;ULRICH {\\\&quot;{U}}NDERWOOD AND NED {\\~N}ET AND PAUL {\\={P}}OT&quot;,</span>
+<span class="fc" id="L49">                &quot;Ulrich {\\\&quot;{U}}nderwood and Ned {\\~N}et and Paul {\\={P}}ot&quot;);</span>
+<span class="fc" id="L50">        assertCaseChangerTitleLowers(&quot;An {$O(n \\log n / \\! \\log\\log n)$} sorting algorithm&quot;,</span>
+<span class="fc" id="L51">                &quot;An {$O(n \\log n / \\! \\log\\log n)$} Sorting Algorithm&quot;);</span>
+<span class="fc" id="L52">        assertCaseChangerAllLowers(&quot;an {$O(n \\log n / \\! \\log\\log n)$} sorting algorithm&quot;,</span>
+<span class="fc" id="L53">                &quot;An {$O(n \\log n / \\! \\log\\log n)$} Sorting Algorithm&quot;);</span>
+<span class="fc" id="L54">        assertCaseChangerAllUppers(&quot;AN {$O(n \\log n / \\! \\log\\log n)$} SORTING ALGORITHM&quot;,</span>
+<span class="fc" id="L55">                &quot;An {$O(n \\log n / \\! \\log\\log n)$} Sorting Algorithm&quot;);</span>
+
+<span class="fc" id="L57">        assertCaseChangerTitleLowers(&quot;hallo&quot;, &quot;hallo&quot;);</span>
+<span class="fc" id="L58">        assertCaseChangerTitleLowers(&quot;Hallo&quot;, &quot;HAllo&quot;);</span>
+<span class="fc" id="L59">        assertCaseChangerTitleLowers(&quot;Hallo world&quot;, &quot;HAllo World&quot;);</span>
+<span class="fc" id="L60">        assertCaseChangerTitleLowers(&quot;Hallo world. how&quot;, &quot;HAllo WORLD. HOW&quot;);</span>
+<span class="fc" id="L61">        assertCaseChangerTitleLowers(&quot;Hallo {WORLD}. how&quot;, &quot;HAllo {WORLD}. HOW&quot;);</span>
+<span class="fc" id="L62">        assertCaseChangerTitleLowers(&quot;Hallo {\\world}. how&quot;, &quot;HAllo {\\WORLD}. HOW&quot;);</span>
+
+<span class="fc" id="L64">        assertCaseChangerAllLowers(&quot;hallo&quot;, &quot;hallo&quot;);</span>
+<span class="fc" id="L65">        assertCaseChangerAllLowers(&quot;hallo&quot;, &quot;HAllo&quot;);</span>
+<span class="fc" id="L66">        assertCaseChangerAllLowers(&quot;hallo world&quot;, &quot;HAllo World&quot;);</span>
+<span class="fc" id="L67">        assertCaseChangerAllLowers(&quot;hallo world. how&quot;, &quot;HAllo WORLD. HOW&quot;);</span>
+<span class="fc" id="L68">        assertCaseChangerAllLowers(&quot;hallo {worLD}. how&quot;, &quot;HAllo {worLD}. HOW&quot;);</span>
+<span class="fc" id="L69">        assertCaseChangerAllLowers(&quot;hallo {\\world}. how&quot;, &quot;HAllo {\\WORLD}. HOW&quot;);</span>
+
+<span class="fc" id="L71">        assertCaseChangerAllUppers(&quot;HALLO&quot;, &quot;hallo&quot;);</span>
+<span class="fc" id="L72">        assertCaseChangerAllUppers(&quot;HALLO&quot;, &quot;HAllo&quot;);</span>
+<span class="fc" id="L73">        assertCaseChangerAllUppers(&quot;HALLO WORLD&quot;, &quot;HAllo World&quot;);</span>
+<span class="fc" id="L74">        assertCaseChangerAllUppers(&quot;HALLO WORLD. HOW&quot;, &quot;HAllo World. How&quot;);</span>
+<span class="fc" id="L75">        assertCaseChangerAllUppers(&quot;HALLO {worLD}. HOW&quot;, &quot;HAllo {worLD}. how&quot;);</span>
+<span class="fc" id="L76">        assertCaseChangerAllUppers(&quot;HALLO {\\WORLD}. HOW&quot;, &quot;HAllo {\\woRld}. hoW&quot;);</span>
+
+<span class="fc" id="L78">        assertCaseChangerTitleLowers(&quot;On notions of information transfer in {VLSI} circuits&quot;,</span>
+<span class="fc" id="L79">                &quot;On Notions of Information Transfer in {VLSI} Circuits&quot;);</span>
+
+<span class="fc" id="L81">    }</span>
+
+    @Test
+    public void testColon() {
+<span class="fc" id="L85">        assertCaseChangerTitleLowers(&quot;Hallo world: How&quot;, &quot;HAllo WORLD: HOW&quot;);</span>
+<span class="fc" id="L86">        assertCaseChangerTitleLowers(&quot;Hallo world! how&quot;, &quot;HAllo WORLD! HOW&quot;);</span>
+<span class="fc" id="L87">        assertCaseChangerTitleLowers(&quot;Hallo world? how&quot;, &quot;HAllo WORLD? HOW&quot;);</span>
+<span class="fc" id="L88">        assertCaseChangerTitleLowers(&quot;Hallo world. how&quot;, &quot;HAllo WORLD. HOW&quot;);</span>
+<span class="fc" id="L89">        assertCaseChangerTitleLowers(&quot;Hallo world, how&quot;, &quot;HAllo WORLD, HOW&quot;);</span>
+<span class="fc" id="L90">        assertCaseChangerTitleLowers(&quot;Hallo world; how&quot;, &quot;HAllo WORLD; HOW&quot;);</span>
+<span class="fc" id="L91">        assertCaseChangerTitleLowers(&quot;Hallo world- how&quot;, &quot;HAllo WORLD- HOW&quot;);</span>
+<span class="fc" id="L92">    }</span>
+
+    @Test
+    public void testSpecialBracketPlacement() {
+        // area between brackets spanning multiple words
+<span class="fc" id="L97">        assertCaseChangerAllLowers(&quot;this i{S REALLY CraZy ST}uff&quot;, &quot;tHIS I{S REALLY CraZy ST}UfF&quot;);</span>
+<span class="fc" id="L98">        assertCaseChangerAllLowers(&quot;this i{S R{\\'E}ALLY CraZy ST}uff&quot;, &quot;tHIS I{S R{\\'E}ALLY CraZy ST}UfF&quot;);</span>
+
+        // real use case: Formulas
+<span class="fc" id="L101">        assertCaseChangerAllUppers(&quot;AN {$O(n \\log n)$} SORTING ALGORITHM&quot;, &quot;An {$O(n \\log n)$} Sorting Algorithm&quot;);</span>
+
+        // only one special character, no strange bracket placement
+<span class="fc" id="L104">        assertCaseChangerAllLowers(&quot;this is r{\\'e}ally crazy stuff&quot;, &quot;tHIS IS R{\\'E}ALLY CraZy STUfF&quot;);</span>
+<span class="fc" id="L105">    }</span>
+
+    @Test
+    public void testTitleCase() {
+        // CaseChangers.TITLE is good at keeping some words lower case
+        // Here some modified test cases to show that escaping with BibtexCaseChanger also works
+        // Examples taken from https://github.com/JabRef/jabref/pull/176#issuecomment-142723792
+<span class="fc" id="L112">        assertCaseChangerAllLowers(&quot;this is a simple example {TITLE}&quot;, &quot;This is a simple example {TITLE}&quot;);</span>
+<span class="fc" id="L113">        assertCaseChangerAllLowers(&quot;this {IS} another simple example tit{LE}&quot;, &quot;This {IS} another simple example tit{LE}&quot;);</span>
+<span class="fc" id="L114">        assertCaseChangerAllLowers(&quot;{What ABOUT thIS} one?&quot;, &quot;{What ABOUT thIS} one?&quot;);</span>
+<span class="fc" id="L115">        assertCaseChangerAllLowers(&quot;{And {thIS} might {a{lso}} be possible}&quot;, &quot;{And {thIS} might {a{lso}} be possible}&quot;);</span>
+
+        /* the real test would look like as follows. Also from the comment of issue 176, order reversed as the &quot;should be&quot; comes first */
+        // assertCaseChangerTitleUppers(&quot;This is a Simple Example {TITLE}&quot;, &quot;This is a simple example {TITLE}&quot;);
+        // assertCaseChangerTitleUppers(&quot;This {IS} Another Simple Example Tit{LE}&quot;, &quot;This {IS} another simple example tit{LE}&quot;);
+        // assertCaseChangerTitleUppers(&quot;{What ABOUT thIS} one?&quot;, &quot;{What ABOUT thIS} one?&quot;);
+        // assertCaseChangerTitleUppers(&quot;{And {thIS} might {a{lso}} be possible}&quot;, &quot;{And {thIS} might {a{lso}} be possible}&quot;);
+<span class="fc" id="L122">    }</span>
+
+    private void assertCaseChangerTitleLowers(final String string, final String string2) {
+<span class="fc" id="L125">        assertEquals(string, BibtexCaseChanger.changeCase(string2, FORMAT_MODE.TITLE_LOWERS));</span>
+
+<span class="fc" id="L127">    }</span>
+
+    private void assertCaseChangerAllLowers(final String string, final String string2) {
+<span class="fc" id="L130">        assertEquals(string, BibtexCaseChanger.changeCase(string2, FORMAT_MODE.ALL_LOWERS));</span>
+<span class="fc" id="L131">    }</span>
+
+    private void assertCaseChangerAllUppers(final String string, final String string2) {
+<span class="fc" id="L134">        assertEquals(string, BibtexCaseChanger.changeCase(string2, FORMAT_MODE.ALL_UPPERS));</span>
+<span class="fc" id="L135">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

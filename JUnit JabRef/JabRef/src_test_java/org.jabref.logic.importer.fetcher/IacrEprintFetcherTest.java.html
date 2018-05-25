@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>IacrEprintFetcherTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.importer.fetcher</a> &gt; <span class="el_source">IacrEprintFetcherTest.java</span></div><h1>IacrEprintFetcherTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.importer.fetcher;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Stream;
+
+import org.jabref.logic.importer.FetcherException;
+import org.jabref.logic.importer.ImportFormatPreferences;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.BiblatexEntryTypes;
+import org.jabref.model.entry.FieldName;
+import org.jabref.testutils.category.FetcherTest;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.Answers;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+
+@FetcherTest
+<span class="fc" id="L33">public class IacrEprintFetcherTest {</span>
+
+    private IacrEprintFetcher fetcher;
+    private BibEntry abram2017;
+    private BibEntry beierle2016;
+    private BibEntry delgado2017;
+
+    @BeforeEach
+    public void setUp() {
+<span class="fc" id="L42">        fetcher = new IacrEprintFetcher(mock(ImportFormatPreferences.class, Answers.RETURNS_DEEP_STUBS));</span>
+
+<span class="fc" id="L44">        abram2017 = new BibEntry();</span>
+<span class="fc" id="L45">        abram2017.setType(BiblatexEntryTypes.MISC);</span>
+<span class="fc" id="L46">        abram2017.setField(&quot;bibtexkey&quot;, &quot;cryptoeprint:2017:1118&quot;);</span>
+<span class="fc" id="L47">        abram2017.setField(FieldName.ABSTRACT, &quot;dummy&quot;);</span>
+<span class="fc" id="L48">        abram2017.setField(FieldName.AUTHOR, &quot;Ittai Abraham and Dahlia Malkhi and Kartik Nayak and Ling Ren and Alexander Spiegelman&quot;);</span>
+<span class="fc" id="L49">        abram2017.setField(FieldName.DATE, &quot;2017-11-18&quot;);</span>
+<span class="fc" id="L50">        abram2017.setField(FieldName.HOWPUBLISHED, &quot;Cryptology ePrint Archive, Report 2017/1118&quot;);</span>
+<span class="fc" id="L51">        abram2017.setField(FieldName.NOTE, &quot;\\url{https://eprint.iacr.org/2017/1118}&quot;);</span>
+<span class="fc" id="L52">        abram2017.setField(FieldName.TITLE, &quot;Solida: A Blockchain Protocol Based on Reconfigurable Byzantine Consensus&quot;);</span>
+<span class="fc" id="L53">        abram2017.setField(FieldName.URL, &quot;https://eprint.iacr.org/2017/1118/20171124:064527&quot;);</span>
+<span class="fc" id="L54">        abram2017.setField(FieldName.VERSION, &quot;20171124:064527&quot;);</span>
+<span class="fc" id="L55">        abram2017.setField(FieldName.YEAR, &quot;2017&quot;);</span>
+
+<span class="fc" id="L57">        beierle2016 = new BibEntry();</span>
+<span class="fc" id="L58">        beierle2016.setType(BiblatexEntryTypes.MISC);</span>
+<span class="fc" id="L59">        beierle2016.setField(&quot;bibtexkey&quot;, &quot;cryptoeprint:2016:119&quot;);</span>
+<span class="fc" id="L60">        beierle2016.setField(FieldName.ABSTRACT, &quot;dummy&quot;);</span>
+<span class="fc" id="L61">        beierle2016.setField(FieldName.AUTHOR, &quot;Christof Beierle and Thorsten Kranz and Gregor Leander&quot;);</span>
+<span class="fc" id="L62">        beierle2016.setField(FieldName.DATE, &quot;2017-02-17&quot;);</span>
+<span class="fc" id="L63">        beierle2016.setField(FieldName.HOWPUBLISHED, &quot;Cryptology ePrint Archive, Report 2016/119&quot;);</span>
+<span class="fc" id="L64">        beierle2016.setField(FieldName.NOTE, &quot;\\url{https://eprint.iacr.org/2016/119}&quot;);</span>
+<span class="fc" id="L65">        beierle2016.setField(FieldName.TITLE, &quot;Lightweight Multiplication in GF(2^n) with Applications to MDS Matrices&quot;);</span>
+<span class="fc" id="L66">        beierle2016.setField(FieldName.URL, &quot;https://eprint.iacr.org/2016/119/20170217:150415&quot;);</span>
+<span class="fc" id="L67">        beierle2016.setField(FieldName.VERSION, &quot;20170217:150415&quot;);</span>
+<span class="fc" id="L68">        beierle2016.setField(FieldName.YEAR, &quot;2016&quot;);</span>
+
+<span class="fc" id="L70">        delgado2017 = new BibEntry();</span>
+<span class="fc" id="L71">        delgado2017.setType(BiblatexEntryTypes.MISC);</span>
+<span class="fc" id="L72">        delgado2017.setField(&quot;bibtexkey&quot;, &quot;cryptoeprint:2017:1095&quot;);</span>
+<span class="fc" id="L73">        delgado2017.setField(FieldName.ABSTRACT, &quot;dummy&quot;);</span>
+<span class="fc" id="L74">        delgado2017.setField(FieldName.AUTHOR, &quot;Sergi Delgado-Segura and Cristina Pérez-Solà and Guillermo Navarro-Arribas and Jordi Herrera-Joancomartí&quot;);</span>
+<span class="fc" id="L75">        delgado2017.setField(FieldName.DATE, &quot;2018-01-19&quot;);</span>
+<span class="fc" id="L76">        delgado2017.setField(FieldName.HOWPUBLISHED, &quot;Cryptology ePrint Archive, Report 2017/1095&quot;);</span>
+<span class="fc" id="L77">        delgado2017.setField(FieldName.NOTE, &quot;\\url{https://eprint.iacr.org/2017/1095}&quot;);</span>
+<span class="fc" id="L78">        delgado2017.setField(FieldName.TITLE, &quot;Analysis of the Bitcoin UTXO set&quot;);</span>
+<span class="fc" id="L79">        delgado2017.setField(FieldName.URL, &quot;https://eprint.iacr.org/2017/1095/20180119:113352&quot;);</span>
+<span class="fc" id="L80">        delgado2017.setField(FieldName.VERSION, &quot;20180119:113352&quot;);</span>
+<span class="fc" id="L81">        delgado2017.setField(FieldName.YEAR, &quot;2017&quot;);</span>
+<span class="fc" id="L82">    }</span>
+
+    @Test
+    public void searchByIdWithValidId1() throws FetcherException {
+<span class="fc" id="L86">        Optional&lt;BibEntry&gt; fetchedEntry = fetcher.performSearchById(&quot;Report 2017/1118 &quot;);</span>
+<span class="fc" id="L87">        assertFalse(fetchedEntry.get().getField(FieldName.ABSTRACT).get().isEmpty());</span>
+<span class="fc" id="L88">        fetchedEntry.get().setField(FieldName.ABSTRACT, &quot;dummy&quot;);</span>
+<span class="fc" id="L89">        assertEquals(Optional.of(abram2017), fetchedEntry);</span>
+<span class="fc" id="L90">    }</span>
+
+    @Test
+    public void searchByIdWithValidId2() throws FetcherException {
+<span class="fc" id="L94">        Optional&lt;BibEntry&gt; fetchedEntry = fetcher.performSearchById(&quot;iacr ePrint 2016/119&quot;);</span>
+<span class="fc" id="L95">        assertFalse(fetchedEntry.get().getField(FieldName.ABSTRACT).get().isEmpty());</span>
+<span class="fc" id="L96">        fetchedEntry.get().setField(FieldName.ABSTRACT, &quot;dummy&quot;);</span>
+<span class="fc" id="L97">        assertEquals(Optional.of(beierle2016), fetchedEntry);</span>
+<span class="fc" id="L98">    }</span>
+
+    @Test
+    public void searchByIdWithValidIdAndNonAsciiChars() throws FetcherException {
+<span class="fc" id="L102">        Optional&lt;BibEntry&gt; fetchedEntry = fetcher.performSearchById(&quot;some random 2017/1095 stuff around the id&quot;);</span>
+<span class="fc" id="L103">        assertFalse(fetchedEntry.get().getField(FieldName.ABSTRACT).get().isEmpty());</span>
+<span class="fc" id="L104">        fetchedEntry.get().setField(FieldName.ABSTRACT, &quot;dummy&quot;);</span>
+<span class="fc" id="L105">        assertEquals(Optional.of(delgado2017), fetchedEntry);</span>
+<span class="fc" id="L106">    }</span>
+
+    @Test
+    public void searchByIdWithEmptyIdFails() {
+<span class="pc" id="L110">        assertThrows(FetcherException.class, () -&gt; fetcher.performSearchById(&quot;&quot;));</span>
+<span class="fc" id="L111">    }</span>
+
+    @Test
+    public void searchByIdWithInvalidReportNumberFails() {
+<span class="pc" id="L115">        assertThrows(FetcherException.class, () -&gt; fetcher.performSearchById(&quot;2016/1&quot;));</span>
+<span class="fc" id="L116">    }</span>
+
+    @Test
+    public void searchByIdWithInvalidYearFails() {
+<span class="pc" id="L120">        assertThrows(FetcherException.class, () -&gt; fetcher.performSearchById(&quot;16/115&quot;));</span>
+<span class="fc" id="L121">    }</span>
+
+    @Test
+    public void searchByIdWithInvalidIdFails() {
+<span class="pc" id="L125">        assertThrows(FetcherException.class, () -&gt; fetcher.performSearchById(&quot;asdf&quot;));</span>
+<span class="fc" id="L126">    }</span>
+
+    @Test
+    public void searchForNonexistentIdFails() {
+<span class="pc" id="L130">        assertThrows(FetcherException.class, () -&gt; fetcher.performSearchById(&quot;2016/6425&quot;));</span>
+<span class="fc" id="L131">    }</span>
+
+    @Test
+    public void testGetName() {
+<span class="fc" id="L135">        assertEquals(IacrEprintFetcher.NAME, fetcher.getName());</span>
+<span class="fc" id="L136">    }</span>
+
+    @Test
+    public void searchByIdForWithdrawnPaperFails() {
+<span class="pc" id="L140">        assertThrows(FetcherException.class, () -&gt; fetcher.performSearchById(&quot;1998/016&quot;));</span>
+<span class="fc" id="L141">    }</span>
+
+    @Test
+    public void searchByIdWithOldHtmlFormatAndCheckDate() throws FetcherException {
+<span class="fc" id="L145">        Optional&lt;BibEntry&gt; fetchedEntry = fetcher.performSearchById(&quot;1997/006&quot;);</span>
+<span class="fc" id="L146">        assertEquals(Optional.of(&quot;1997-05-04&quot;), fetchedEntry.get().getField(FieldName.DATE));</span>
+<span class="fc" id="L147">    }</span>
+
+    @DisplayName(&quot;Get all entries with old HTML format (except withdrawn ones)&quot;)
+    @ParameterizedTest(name = &quot;Fetch for id: {0}&quot;)
+    @MethodSource(&quot;allNonWithdrawnIdsWithOldHtmlFormat&quot;)
+    @Disabled(&quot;Takes a lot of time - should only be called manually&quot;)
+    public void searchByIdWithOldHtmlFormatWithoutDateCheck(String id) throws FetcherException {
+<span class="nc" id="L154">        Optional&lt;BibEntry&gt; fetchedEntry = fetcher.performSearchById(id);</span>
+<span class="nc" id="L155">        assertTrue(fetchedEntry.isPresent(), &quot;Expected to get an entry for id &quot; + id);</span>
+<span class="nc" id="L156">        assertNotEquals(Optional.empty(), fetchedEntry.get().getField(FieldName.DATE), &quot;Expected non empty date field, entry is\n&quot; + fetchedEntry.toString());</span>
+<span class="nc bnc" id="L157" title="All 2 branches missed.">        assertTrue(fetchedEntry.get().getField(FieldName.DATE).get().length() == 10, &quot;Expected yyyy-MM-dd date format, entry is\n&quot; + fetchedEntry.toString());</span>
+<span class="nc" id="L158">        assertNotEquals(Optional.empty(), fetchedEntry.get().getField(FieldName.ABSTRACT), &quot;Expected non empty abstract field, entry is\n&quot; + fetchedEntry.toString());</span>
+<span class="nc" id="L159">    }</span>
+
+    /**
+     * Helper method for allNonWithdrawnIdsWithOldHtmlFormat.
+     *
+     * @param year The year of the generated IDs (e.g. 1996)
+     * @param maxId The maximum ID to generate in the given year (e.g. 112)
+     * @return A list of IDs in the from yyyy/iii (e.g. [1996/001, 1996/002, ..., 1996/112]
+     */
+    private static List&lt;String&gt; getIdsFor(int year, int maxId) {
+<span class="nc" id="L169">        List&lt;String&gt; result = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L170" title="All 2 branches missed.">        for (int i = 1; i &lt;= maxId; i++) {</span>
+<span class="nc" id="L171">            result.add(String.format(&quot;%04d/%03d&quot;, year, i));</span>
+        }
+<span class="nc" id="L173">        return result;</span>
+    }
+
+    // Parameter provider (method name is passed as a string)
+    @SuppressWarnings(&quot;unused&quot;)
+    private static Stream&lt;String&gt; allNonWithdrawnIdsWithOldHtmlFormat() {
+<span class="nc" id="L179">        Collection&lt;String&gt; withdrawnIds = Arrays.asList(&quot;1998/016&quot;, &quot;1999/006&quot;);</span>
+<span class="nc" id="L180">        List&lt;String&gt; ids = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L181">        ids.addAll(getIdsFor(1996, 16));</span>
+<span class="nc" id="L182">        ids.addAll(getIdsFor(1997, 15));</span>
+<span class="nc" id="L183">        ids.addAll(getIdsFor(1998, 26));</span>
+<span class="nc" id="L184">        ids.addAll(getIdsFor(1999, 24));</span>
+<span class="nc" id="L185">        ids.removeAll(withdrawnIds);</span>
+<span class="nc" id="L186">        return ids.stream();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

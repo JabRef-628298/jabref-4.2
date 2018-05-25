@@ -1,0 +1,287 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>GroupTreeNodeTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.model.groups</a> &gt; <span class="el_source">GroupTreeNodeTest.java</span></div><h1>GroupTreeNodeTest.java</h1><pre class="source lang-java linenums">package org.jabref.model.groups;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.search.matchers.AndMatcher;
+import org.jabref.model.search.matchers.OrMatcher;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+<span class="fc" id="L19">public class GroupTreeNodeTest {</span>
+
+<span class="fc" id="L21">    private final List&lt;BibEntry&gt; entries = new ArrayList&lt;&gt;();</span>
+    private BibEntry entry;
+
+    /**
+     * Gets the marked node in the following tree of explicit groups:
+     * Root
+     *      A ExplicitA, Including
+     *      A ExplicitParent, Independent (= parent)
+     *          B ExplicitNode, Refining (&lt;-- this)
+     */
+    public static GroupTreeNode getNodeInSimpleTree(GroupTreeNode root) {
+<span class="fc" id="L32">        root.addSubgroup(new ExplicitGroup(&quot;ExplicitA&quot;, GroupHierarchyType.INCLUDING, ','));</span>
+<span class="fc" id="L33">        GroupTreeNode parent = root</span>
+<span class="fc" id="L34">                .addSubgroup(new ExplicitGroup(&quot;ExplicitParent&quot;, GroupHierarchyType.INDEPENDENT, ','));</span>
+<span class="fc" id="L35">        return parent.addSubgroup(new ExplicitGroup(&quot;ExplicitNode&quot;, GroupHierarchyType.REFINING, ','));</span>
+    }
+
+    /**
+     * Gets the marked node in the following tree:
+     * Root
+     *      A SearchA
+     *      A ExplicitA, Including
+     *      A ExplicitGrandParent (= grand parent)
+     *          B ExplicitB
+     *          B KeywordParent (= parent)
+     *              C KeywordNode (&lt;-- this)
+     *                  D ExplicitChild (= child)
+     *              C SearchC
+     *              C ExplicitC
+     *              C KeywordC
+     *          B SearchB
+     *          B KeywordB
+     *      A KeywordA
+     */
+    public static GroupTreeNode getNodeInComplexTree(GroupTreeNode root) {
+<span class="fc" id="L56">        root.addSubgroup(getSearchGroup(&quot;SearchA&quot;));</span>
+<span class="fc" id="L57">        root.addSubgroup(new ExplicitGroup(&quot;ExplicitA&quot;, GroupHierarchyType.INCLUDING, ','));</span>
+<span class="fc" id="L58">        GroupTreeNode grandParent = root</span>
+<span class="fc" id="L59">                .addSubgroup(new ExplicitGroup(&quot;ExplicitGrandParent&quot;, GroupHierarchyType.INDEPENDENT, ','));</span>
+<span class="fc" id="L60">        root.addSubgroup(getKeywordGroup(&quot;KeywordA&quot;));</span>
+
+<span class="fc" id="L62">        grandParent.addSubgroup(getExplict(&quot;ExplicitB&quot;));</span>
+<span class="fc" id="L63">        GroupTreeNode parent = grandParent.addSubgroup(getKeywordGroup(&quot;KeywordParent&quot;));</span>
+<span class="fc" id="L64">        grandParent.addSubgroup(getSearchGroup(&quot;SearchB&quot;));</span>
+<span class="fc" id="L65">        grandParent.addSubgroup(getKeywordGroup(&quot;KeywordB&quot;));</span>
+
+<span class="fc" id="L67">        GroupTreeNode node = parent.addSubgroup(getKeywordGroup(&quot;KeywordNode&quot;));</span>
+<span class="fc" id="L68">        parent.addSubgroup(getSearchGroup(&quot;SearchC&quot;));</span>
+<span class="fc" id="L69">        parent.addSubgroup(getExplict(&quot;ExplicitC&quot;));</span>
+<span class="fc" id="L70">        parent.addSubgroup(getKeywordGroup(&quot;KeywordC&quot;));</span>
+
+<span class="fc" id="L72">        node.addSubgroup(getExplict(&quot;ExplicitChild&quot;));</span>
+<span class="fc" id="L73">        return node;</span>
+    }
+
+    private static AbstractGroup getKeywordGroup(String name) {
+<span class="fc" id="L77">        return new WordKeywordGroup(name, GroupHierarchyType.INDEPENDENT, &quot;searchField&quot;, &quot;searchExpression&quot;, true,',', false);</span>
+    }
+
+    private static AbstractGroup getSearchGroup(String name) {
+<span class="fc" id="L81">        return new SearchGroup(name, GroupHierarchyType.INCLUDING, &quot;searchExpression&quot;, true, false);</span>
+    }
+
+    private static AbstractGroup getExplict(String name) {
+<span class="fc" id="L85">        return new ExplicitGroup(name, GroupHierarchyType.REFINING, ',');</span>
+    }
+
+    /**
+     * Gets the marked in the following tree:
+     * Root
+     *      A
+     *      A
+     *      A (&lt;- this)
+     *      A
+     */
+    /*
+    public GroupTreeNode getNodeAsChild(TreeNodeMock root) {
+        root.addChild(new TreeNodeMock());
+        root.addChild(new TreeNodeMock());
+        TreeNodeMock node = new TreeNodeMock();
+        root.addChild(node);
+        root.addChild(new TreeNodeMock());
+        return node;
+    }
+    */
+    public static GroupTreeNode getRoot() {
+<span class="fc" id="L107">        return GroupTreeNode.fromGroup(new AllEntriesGroup(&quot;All entries&quot;));</span>
+    }
+
+    @BeforeEach
+    public void setUp() throws Exception {
+<span class="fc" id="L112">        entries.clear();</span>
+<span class="fc" id="L113">        entry = new BibEntry();</span>
+<span class="fc" id="L114">        entries.add(entry);</span>
+<span class="fc" id="L115">        entries.add(new BibEntry().withField(&quot;author&quot;, &quot;author1 and author2&quot;));</span>
+<span class="fc" id="L116">        entries.add(new BibEntry().withField(&quot;author&quot;, &quot;author1&quot;));</span>
+<span class="fc" id="L117">    }</span>
+
+    /*
+    public GroupTreeNode getNodeInComplexTree() {
+        return getNodeInComplexTree(new TreeNodeMock());
+    }
+    */
+
+    private GroupTreeNode getNodeInSimpleTree() {
+<span class="fc" id="L126">        return getNodeInSimpleTree(getRoot());</span>
+    }
+
+    @Test
+    public void getSearchRuleForIndependentGroupReturnsGroupAsMatcher() {
+<span class="fc" id="L131">        GroupTreeNode node = GroupTreeNode</span>
+<span class="fc" id="L132">                .fromGroup(new ExplicitGroup(&quot;node&quot;, GroupHierarchyType.INDEPENDENT, ','));</span>
+<span class="fc" id="L133">        assertEquals(node.getGroup(), node.getSearchMatcher());</span>
+<span class="fc" id="L134">    }</span>
+
+    @Test
+    public void getSearchRuleForRefiningGroupReturnsParentAndGroupAsMatcher() {
+<span class="fc" id="L138">        GroupTreeNode parent = GroupTreeNode</span>
+<span class="fc" id="L139">                .fromGroup(</span>
+<span class="fc" id="L140">                        new ExplicitGroup(&quot;parent&quot;, GroupHierarchyType.INDEPENDENT, ','));</span>
+<span class="fc" id="L141">        GroupTreeNode node = parent</span>
+<span class="fc" id="L142">                .addSubgroup(new ExplicitGroup(&quot;node&quot;, GroupHierarchyType.REFINING, ','));</span>
+
+<span class="fc" id="L144">        AndMatcher matcher = new AndMatcher();</span>
+<span class="fc" id="L145">        matcher.addRule(node.getGroup());</span>
+<span class="fc" id="L146">        matcher.addRule(parent.getGroup());</span>
+<span class="fc" id="L147">        assertEquals(matcher, node.getSearchMatcher());</span>
+<span class="fc" id="L148">    }</span>
+
+    @Test
+    public void getSearchRuleForIncludingGroupReturnsGroupOrSubgroupAsMatcher() {
+<span class="fc" id="L152">        GroupTreeNode node = GroupTreeNode.fromGroup(new ExplicitGroup(&quot;node&quot;, GroupHierarchyType.INCLUDING, ','));</span>
+<span class="fc" id="L153">        GroupTreeNode child = node.addSubgroup(new ExplicitGroup(&quot;child&quot;, GroupHierarchyType.INDEPENDENT, ','));</span>
+
+<span class="fc" id="L155">        OrMatcher matcher = new OrMatcher();</span>
+<span class="fc" id="L156">        matcher.addRule(node.getGroup());</span>
+<span class="fc" id="L157">        matcher.addRule(child.getGroup());</span>
+<span class="fc" id="L158">        assertEquals(matcher, node.getSearchMatcher());</span>
+<span class="fc" id="L159">    }</span>
+
+    @Test
+    public void numberOfHitsReturnsZeroForEmptyList() throws Exception {
+<span class="fc" id="L163">        assertEquals(0, getNodeInSimpleTree().calculateNumberOfMatches(Collections.emptyList()));</span>
+<span class="fc" id="L164">    }</span>
+
+    @Test
+    public void numberOfHitsMatchesOneEntry() throws Exception {
+<span class="fc" id="L168">        GroupTreeNode parent = getNodeInSimpleTree();</span>
+<span class="fc" id="L169">        GroupTreeNode node = parent.addSubgroup(</span>
+<span class="fc" id="L170">                new WordKeywordGroup(&quot;node&quot;, GroupHierarchyType.INDEPENDENT, &quot;author&quot;, &quot;author2&quot;, true, ',', false));</span>
+<span class="fc" id="L171">        assertEquals(1, node.calculateNumberOfMatches(entries));</span>
+<span class="fc" id="L172">    }</span>
+
+    @Test
+    public void numberOfHitsMatchesMultipleEntries() throws Exception {
+<span class="fc" id="L176">        GroupTreeNode parent = getNodeInSimpleTree();</span>
+<span class="fc" id="L177">        GroupTreeNode node = parent.addSubgroup(</span>
+<span class="fc" id="L178">                new WordKeywordGroup(&quot;node&quot;, GroupHierarchyType.INDEPENDENT, &quot;author&quot;, &quot;author1&quot;, true, ',', false));</span>
+<span class="fc" id="L179">        assertEquals(2, node.calculateNumberOfMatches(entries));</span>
+<span class="fc" id="L180">    }</span>
+
+    @Test
+    public void numberOfHitsWorksForRefiningGroups() throws Exception {
+<span class="fc" id="L184">        GroupTreeNode grandParent = getNodeInSimpleTree();</span>
+<span class="fc" id="L185">        GroupTreeNode parent = grandParent.addSubgroup(</span>
+<span class="fc" id="L186">                new WordKeywordGroup(&quot;node&quot;, GroupHierarchyType.INDEPENDENT, &quot;author&quot;, &quot;author2&quot;, true, ',', false));</span>
+<span class="fc" id="L187">        GroupTreeNode node = parent.addSubgroup(</span>
+<span class="fc" id="L188">                new WordKeywordGroup(&quot;node&quot;, GroupHierarchyType.REFINING, &quot;author&quot;, &quot;author1&quot;, true, ',', false));</span>
+<span class="fc" id="L189">        assertEquals(1, node.calculateNumberOfMatches(entries));</span>
+<span class="fc" id="L190">    }</span>
+
+    @Test
+    public void numberOfHitsWorksForHierarchyOfIndependentGroups() throws Exception {
+<span class="fc" id="L194">        GroupTreeNode grandParent = getNodeInSimpleTree();</span>
+<span class="fc" id="L195">        GroupTreeNode parent = grandParent.addSubgroup(</span>
+<span class="fc" id="L196">                new WordKeywordGroup(&quot;node&quot;, GroupHierarchyType.INDEPENDENT, &quot;author&quot;, &quot;author2&quot;, true, ',', false));</span>
+<span class="fc" id="L197">        GroupTreeNode node = parent.addSubgroup(</span>
+<span class="fc" id="L198">                new WordKeywordGroup(&quot;node&quot;, GroupHierarchyType.INDEPENDENT, &quot;author&quot;, &quot;author1&quot;, true, ',', false));</span>
+<span class="fc" id="L199">        assertEquals(2, node.calculateNumberOfMatches(entries));</span>
+<span class="fc" id="L200">    }</span>
+
+    @Test
+    public void setGroupChangesUnderlyingGroup() throws Exception {
+<span class="fc" id="L204">        GroupTreeNode node = getNodeInSimpleTree();</span>
+<span class="fc" id="L205">        AbstractGroup newGroup = new ExplicitGroup(&quot;NewGroup&quot;, GroupHierarchyType.INDEPENDENT, ',');</span>
+
+<span class="fc" id="L207">        node.setGroup(newGroup, true, true, entries);</span>
+
+<span class="fc" id="L209">        assertEquals(newGroup, node.getGroup());</span>
+<span class="fc" id="L210">    }</span>
+
+    @Test
+    public void setGroupAddsPreviousAssignmentsExplicitToExplicit() throws Exception {
+<span class="fc" id="L214">        ExplicitGroup oldGroup = new ExplicitGroup(&quot;OldGroup&quot;, GroupHierarchyType.INDEPENDENT, ',');</span>
+<span class="fc" id="L215">        oldGroup.add(entry);</span>
+<span class="fc" id="L216">        GroupTreeNode node = GroupTreeNode.fromGroup(oldGroup);</span>
+<span class="fc" id="L217">        AbstractGroup newGroup = new ExplicitGroup(&quot;NewGroup&quot;, GroupHierarchyType.INDEPENDENT, ',');</span>
+
+<span class="fc" id="L219">        node.setGroup(newGroup, true, true, entries);</span>
+
+<span class="fc" id="L221">        assertTrue(newGroup.isMatch(entry));</span>
+<span class="fc" id="L222">    }</span>
+
+    @Test
+    public void setGroupWithFalseDoesNotAddsPreviousAssignments() throws Exception {
+<span class="fc" id="L226">        ExplicitGroup oldGroup = new ExplicitGroup(&quot;OldGroup&quot;, GroupHierarchyType.INDEPENDENT, ',');</span>
+<span class="fc" id="L227">        oldGroup.add(entry);</span>
+<span class="fc" id="L228">        GroupTreeNode node = GroupTreeNode.fromGroup(oldGroup);</span>
+<span class="fc" id="L229">        AbstractGroup newGroup = new ExplicitGroup(&quot;NewGroup&quot;, GroupHierarchyType.INDEPENDENT, ',');</span>
+
+<span class="fc" id="L231">        node.setGroup(newGroup, false, false, entries);</span>
+
+<span class="fc" id="L233">        assertFalse(newGroup.isMatch(entry));</span>
+<span class="fc" id="L234">    }</span>
+
+    @Test
+    public void setGroupAddsOnlyPreviousAssignments() throws Exception {
+<span class="fc" id="L238">        ExplicitGroup oldGroup = new ExplicitGroup(&quot;OldGroup&quot;, GroupHierarchyType.INDEPENDENT, ',');</span>
+<span class="fc" id="L239">        assertFalse(oldGroup.isMatch(entry));</span>
+<span class="fc" id="L240">        GroupTreeNode node = GroupTreeNode.fromGroup(oldGroup);</span>
+<span class="fc" id="L241">        AbstractGroup newGroup = new ExplicitGroup(&quot;NewGroup&quot;, GroupHierarchyType.INDEPENDENT, ',');</span>
+
+<span class="fc" id="L243">        node.setGroup(newGroup, true, true, entries);</span>
+
+<span class="fc" id="L245">        assertFalse(newGroup.isMatch(entry));</span>
+<span class="fc" id="L246">    }</span>
+
+    @Test
+    public void setGroupExplicitToSearchDoesNotKeepPreviousAssignments() throws Exception {
+<span class="fc" id="L250">        ExplicitGroup oldGroup = new ExplicitGroup(&quot;OldGroup&quot;, GroupHierarchyType.INDEPENDENT, ',');</span>
+<span class="fc" id="L251">        oldGroup.add(entry);</span>
+<span class="fc" id="L252">        GroupTreeNode node = GroupTreeNode.fromGroup(oldGroup);</span>
+<span class="fc" id="L253">        AbstractGroup newGroup = new SearchGroup(&quot;NewGroup&quot;, GroupHierarchyType.INDEPENDENT, &quot;test&quot;, false, false);</span>
+
+<span class="fc" id="L255">        node.setGroup(newGroup, true, true, entries);</span>
+
+<span class="fc" id="L257">        assertFalse(newGroup.isMatch(entry));</span>
+<span class="fc" id="L258">    }</span>
+
+    @Test
+    public void setGroupExplicitToExplicitIsRenameAndSoRemovesPreviousAssignment() throws Exception {
+<span class="fc" id="L262">        ExplicitGroup oldGroup = new ExplicitGroup(&quot;OldGroup&quot;, GroupHierarchyType.INDEPENDENT, ',');</span>
+<span class="fc" id="L263">        oldGroup.add(entry);</span>
+<span class="fc" id="L264">        GroupTreeNode node = GroupTreeNode.fromGroup(oldGroup);</span>
+<span class="fc" id="L265">        AbstractGroup newGroup = new ExplicitGroup(&quot;NewGroup&quot;, GroupHierarchyType.INDEPENDENT, ',');</span>
+
+<span class="fc" id="L267">        node.setGroup(newGroup, true, true, entries);</span>
+
+<span class="fc" id="L269">        assertFalse(oldGroup.isMatch(entry));</span>
+<span class="fc" id="L270">    }</span>
+
+    @Test
+    public void getChildByPathFindsCorrectChildInSecondLevel() throws Exception {
+<span class="fc" id="L274">        GroupTreeNode root = getRoot();</span>
+<span class="fc" id="L275">        GroupTreeNode child = getNodeInSimpleTree(root);</span>
+
+<span class="fc" id="L277">        assertEquals(Optional.of(child), root.getChildByPath(&quot;ExplicitParent &gt; ExplicitNode&quot;));</span>
+<span class="fc" id="L278">    }</span>
+
+    @Test
+    public void getPathSimpleTree() throws Exception {
+<span class="fc" id="L282">        GroupTreeNode node = getNodeInSimpleTree();</span>
+
+<span class="fc" id="L284">        assertEquals(&quot;ExplicitParent &gt; ExplicitNode&quot;, node.getPath());</span>
+<span class="fc" id="L285">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

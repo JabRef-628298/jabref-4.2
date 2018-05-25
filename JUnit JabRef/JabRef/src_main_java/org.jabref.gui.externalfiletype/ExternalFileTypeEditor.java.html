@@ -1,0 +1,382 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>ExternalFileTypeEditor.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.externalfiletype</a> &gt; <span class="el_source">ExternalFileTypeEditor.java</span></div><h1>ExternalFileTypeEditor.java</h1><pre class="source lang-java linenums"><span class="nc" id="L1">package org.jabref.gui.externalfiletype;</span>
+
+import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+
+import javax.swing.AbstractAction;
+import javax.swing.Action;
+import javax.swing.ActionMap;
+import javax.swing.BorderFactory;
+import javax.swing.Icon;
+import javax.swing.ImageIcon;
+import javax.swing.InputMap;
+import javax.swing.JButton;
+import javax.swing.JComponent;
+import javax.swing.JDialog;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.table.AbstractTableModel;
+import javax.swing.table.TableCellRenderer;
+
+import org.jabref.Globals;
+import org.jabref.gui.IconTheme;
+import org.jabref.gui.JabRefDialog;
+import org.jabref.gui.JabRefFrame;
+import org.jabref.gui.actions.MnemonicAwareAction;
+import org.jabref.gui.keyboard.KeyBinding;
+import org.jabref.logic.l10n.Localization;
+
+import com.jgoodies.forms.builder.ButtonBarBuilder;
+import com.jgoodies.forms.builder.ButtonStackBuilder;
+
+/**
+ * Editor for external file types.
+ */
+public class ExternalFileTypeEditor extends JabRefDialog {
+
+    private JFrame frame;
+    private JDialog dialog;
+    private List&lt;ExternalFileType&gt; fileTypes;
+    private JTable table;
+    private ExternalFileTypeEntryEditor entryEditor;
+    private FileTypeTableModel tableModel;
+<span class="nc" id="L54">    private final JButton ok = new JButton(Localization.lang(&quot;OK&quot;));</span>
+<span class="nc" id="L55">    private final JButton cancel = new JButton(Localization.lang(&quot;Cancel&quot;));</span>
+<span class="nc" id="L56">    private final JButton add = new JButton(IconTheme.JabRefIcon.ADD_NOBOX.getIcon());</span>
+<span class="nc" id="L57">    private final JButton remove = new JButton(IconTheme.JabRefIcon.REMOVE_NOBOX.getIcon());</span>
+<span class="nc" id="L58">    private final JButton edit = new JButton(IconTheme.JabRefIcon.EDIT.getIcon());</span>
+<span class="nc" id="L59">    private final JButton toDefaults = new JButton(Localization.lang(&quot;Default&quot;));</span>
+<span class="nc" id="L60">    private final EditListener editListener = new EditListener();</span>
+
+
+    private ExternalFileTypeEditor(JFrame frame) {
+<span class="nc" id="L64">        super(frame, Localization.lang(&quot;Manage external file types&quot;), true, ExternalFileTypeEditor.class);</span>
+<span class="nc" id="L65">        this.frame = frame;</span>
+<span class="nc" id="L66">        init();</span>
+<span class="nc" id="L67">    }</span>
+
+    private ExternalFileTypeEditor(JDialog dialog) {
+<span class="nc" id="L70">        super(dialog, Localization.lang(&quot;Manage external file types&quot;), true, ExternalFileTypeEditor.class);</span>
+<span class="nc" id="L71">        this.dialog = dialog;</span>
+<span class="nc" id="L72">        init();</span>
+<span class="nc" id="L73">    }</span>
+
+    /**
+     * Update the editor to show the current settings in Preferences.
+     */
+    private void setValues() {
+<span class="nc" id="L79">        fileTypes.clear();</span>
+<span class="nc" id="L80">        Collection&lt;ExternalFileType&gt; types = ExternalFileTypes.getInstance().getExternalFileTypeSelection();</span>
+<span class="nc bnc" id="L81" title="All 2 branches missed.">        for (ExternalFileType type : types) {</span>
+<span class="nc" id="L82">            fileTypes.add(type.copy());</span>
+        }
+<span class="nc" id="L84">        Collections.sort(fileTypes);</span>
+<span class="nc" id="L85">    }</span>
+
+    /**
+     * Store the list of external entry types to Preferences.
+     */
+    private void storeSettings() {
+<span class="nc" id="L91">        ExternalFileTypes.getInstance().setExternalFileTypes(fileTypes);</span>
+<span class="nc" id="L92">    }</span>
+
+    private void init() {
+
+<span class="nc" id="L96">        ok.addActionListener(e -&gt; {</span>
+<span class="nc" id="L97">            storeSettings();</span>
+<span class="nc" id="L98">            dispose();</span>
+<span class="nc" id="L99">        });</span>
+<span class="nc" id="L100">        Action cancelAction = new AbstractAction() {</span>
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L104">                dispose();</span>
+<span class="nc" id="L105">            }</span>
+        };
+<span class="nc" id="L107">        cancel.addActionListener(cancelAction);</span>
+        // The toDefaults resets the entire list to its default values.
+<span class="nc" id="L109">        toDefaults.addActionListener(e -&gt; {</span>
+            /*int reply = JOptionPane.showConfirmDialog(ExternalFileTypeEditor.this,
+                    Globals.lang(&quot;All custom file types will be lost. Proceed?&quot;),
+                    Globals.lang(&quot;Reset file type definitions&quot;), JOptionPane.YES_NO_OPTION,
+                    JOptionPane.QUESTION_MESSAGE);*/
+            //if (reply == JOptionPane.YES_OPTION) {
+<span class="nc" id="L115">            List&lt;ExternalFileType&gt; list = ExternalFileTypes.getDefaultExternalFileTypes();</span>
+<span class="nc" id="L116">            fileTypes.clear();</span>
+<span class="nc" id="L117">            fileTypes.addAll(list);</span>
+<span class="nc" id="L118">            Collections.sort(fileTypes);</span>
+            //Globals.prefs.resetExternalFileTypesToDefault();
+            //setValues();
+<span class="nc" id="L121">            tableModel.fireTableDataChanged();</span>
+            //}
+<span class="nc" id="L123">        });</span>
+
+<span class="nc" id="L125">        add.addActionListener(e -&gt; {</span>
+            // Generate a new file type:
+<span class="nc" id="L127">            ExternalFileType type = new ExternalFileType(&quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;new&quot;,</span>
+<span class="nc" id="L128">                    IconTheme.JabRefIcon.FILE.getSmallIcon());</span>
+            // Show the file type editor:
+<span class="nc" id="L130">            getEditor(type).setVisible(true);</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">            if (entryEditor.okPressed()) {</span>
+                // Ok was pressed. Add the new file type and update the table:
+<span class="nc" id="L133">                fileTypes.add(type);</span>
+<span class="nc" id="L134">                tableModel.fireTableDataChanged();</span>
+            }
+<span class="nc" id="L136">        });</span>
+
+<span class="nc" id="L138">        remove.addActionListener(e -&gt; {</span>
+<span class="nc" id="L139">            int[] rows = table.getSelectedRows();</span>
+<span class="nc bnc" id="L140" title="All 2 branches missed.">            if (rows.length == 0) {</span>
+<span class="nc" id="L141">                return;</span>
+            }
+<span class="nc bnc" id="L143" title="All 2 branches missed.">            for (int i = rows.length - 1; i &gt;= 0; i--) {</span>
+<span class="nc" id="L144">                fileTypes.remove(rows[i]);</span>
+            }
+<span class="nc" id="L146">            tableModel.fireTableDataChanged();</span>
+<span class="nc bnc" id="L147" title="All 2 branches missed.">            if (!fileTypes.isEmpty()) {</span>
+<span class="nc" id="L148">                int row = Math.min(rows[0], fileTypes.size() - 1);</span>
+<span class="nc" id="L149">                table.setRowSelectionInterval(row, row);</span>
+            }
+<span class="nc" id="L151">        });</span>
+
+<span class="nc" id="L153">        edit.addActionListener(editListener);</span>
+<span class="nc" id="L154">        fileTypes = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L155">        setValues();</span>
+
+<span class="nc" id="L157">        tableModel = new FileTypeTableModel();</span>
+<span class="nc" id="L158">        table = new JTable(tableModel);</span>
+<span class="nc" id="L159">        table.setDefaultRenderer(ImageIcon.class, new IconRenderer());</span>
+<span class="nc" id="L160">        table.addMouseListener(new TableClickListener());</span>
+
+<span class="nc" id="L162">        table.getColumnModel().getColumn(0).setMaxWidth(24);</span>
+<span class="nc" id="L163">        table.getColumnModel().getColumn(0).setMinWidth(24);</span>
+<span class="nc" id="L164">        table.getColumnModel().getColumn(1).setMinWidth(170);</span>
+<span class="nc" id="L165">        table.getColumnModel().getColumn(2).setMinWidth(60);</span>
+<span class="nc" id="L166">        table.getColumnModel().getColumn(3).setMinWidth(100);</span>
+<span class="nc" id="L167">        table.getColumnModel().getColumn(0).setResizable(false);</span>
+
+<span class="nc" id="L169">        JScrollPane sp = new JScrollPane(table);</span>
+
+<span class="nc" id="L171">        JPanel upper = new JPanel();</span>
+<span class="nc" id="L172">        upper.setLayout(new BorderLayout());</span>
+<span class="nc" id="L173">        upper.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));</span>
+<span class="nc" id="L174">        upper.add(sp, BorderLayout.CENTER);</span>
+<span class="nc" id="L175">        getContentPane().add(upper, BorderLayout.CENTER);</span>
+
+<span class="nc" id="L177">        ButtonStackBuilder bs = new ButtonStackBuilder();</span>
+<span class="nc" id="L178">        bs.addButton(add);</span>
+<span class="nc" id="L179">        bs.addButton(remove);</span>
+<span class="nc" id="L180">        bs.addButton(edit);</span>
+<span class="nc" id="L181">        bs.addRelatedGap();</span>
+<span class="nc" id="L182">        bs.addButton(toDefaults);</span>
+<span class="nc" id="L183">        upper.add(bs.getPanel(), BorderLayout.EAST);</span>
+
+<span class="nc" id="L185">        ButtonBarBuilder bb = new ButtonBarBuilder();</span>
+<span class="nc" id="L186">        bb.addGlue();</span>
+<span class="nc" id="L187">        bb.addButton(ok);</span>
+<span class="nc" id="L188">        bb.addButton(cancel);</span>
+<span class="nc" id="L189">        bb.addGlue();</span>
+<span class="nc" id="L190">        bb.getPanel().setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));</span>
+<span class="nc" id="L191">        getContentPane().add(bb.getPanel(), BorderLayout.SOUTH);</span>
+<span class="nc" id="L192">        pack();</span>
+
+        // Key bindings:
+<span class="nc" id="L195">        ActionMap am = upper.getActionMap();</span>
+<span class="nc" id="L196">        InputMap im = upper.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);</span>
+<span class="nc" id="L197">        im.put(Globals.getKeyPrefs().getKey(KeyBinding.CLOSE_DIALOG), &quot;close&quot;);</span>
+<span class="nc" id="L198">        am.put(&quot;close&quot;, cancelAction);</span>
+<span class="nc" id="L199">        am = bb.getPanel().getActionMap();</span>
+<span class="nc" id="L200">        im = bb.getPanel().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);</span>
+<span class="nc" id="L201">        im.put(Globals.getKeyPrefs().getKey(KeyBinding.CLOSE_DIALOG), &quot;close&quot;);</span>
+<span class="nc" id="L202">        am.put(&quot;close&quot;, cancelAction);</span>
+
+<span class="nc bnc" id="L204" title="All 2 branches missed.">        if (frame == null) {</span>
+<span class="nc" id="L205">            setLocationRelativeTo(dialog);</span>
+<span class="nc" id="L206">        } else {</span>
+<span class="nc" id="L207">            setLocationRelativeTo(frame);</span>
+        }
+<span class="nc" id="L209">    }</span>
+
+    private ExternalFileTypeEntryEditor getEditor(ExternalFileType type) {
+<span class="nc bnc" id="L212" title="All 2 branches missed.">        if (entryEditor == null) {</span>
+<span class="nc" id="L213">            entryEditor = new ExternalFileTypeEntryEditor(ExternalFileTypeEditor.this, type);</span>
+<span class="nc" id="L214">        } else {</span>
+<span class="nc" id="L215">            entryEditor.setEntry(type);</span>
+        }
+<span class="nc" id="L217">        return entryEditor;</span>
+    }
+
+    /**
+     * Get an AbstractAction for opening the external file types editor.
+     * @param frame The JFrame used as parent window for the dialog.
+     * @return An Action for opening the editor.
+     */
+    public static AbstractAction getAction(JabRefFrame frame) {
+<span class="fc" id="L226">        return new EditExternalFileTypesAction(frame);</span>
+    }
+
+    /**
+     * Get an AbstractAction for opening the external file types editor.
+     * @param dialog The JDialog used as parent window for the dialog.
+     * @return An Action for opening the editor.
+     */
+    public static AbstractAction getAction(JDialog dialog) {
+<span class="nc" id="L235">        return new EditExternalFileTypesAction(dialog);</span>
+    }
+
+<span class="nc" id="L238">    class EditListener implements ActionListener {</span>
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L242">            int[] rows = table.getSelectedRows();</span>
+<span class="nc bnc" id="L243" title="All 2 branches missed.">            if (rows.length != 1) {</span>
+<span class="nc" id="L244">                return;</span>
+            }
+<span class="nc" id="L246">            getEditor(fileTypes.get(rows[0])).setVisible(true);</span>
+<span class="nc bnc" id="L247" title="All 2 branches missed.">            if (entryEditor.okPressed()) {</span>
+<span class="nc" id="L248">                tableModel.fireTableDataChanged();</span>
+            }
+<span class="nc" id="L250">        }</span>
+    }
+
+<span class="nc" id="L253">    static class IconRenderer implements TableCellRenderer {</span>
+
+<span class="nc" id="L255">        private final JLabel lab = new JLabel();</span>
+
+        @Override
+        public Component getTableCellRendererComponent(JTable tab, Object value, boolean isSelected, boolean hasFocus,
+                int row, int column) {
+<span class="nc" id="L260">            lab.setText(null);</span>
+<span class="nc" id="L261">            lab.setIcon((Icon) value);</span>
+<span class="nc" id="L262">            return lab;</span>
+        }
+    }
+
+<span class="nc" id="L266">    private class FileTypeTableModel extends AbstractTableModel {</span>
+
+        @Override
+        public int getColumnCount() {
+<span class="nc" id="L270">            return 5;</span>
+        }
+
+        @Override
+        public int getRowCount() {
+<span class="nc" id="L275">            return fileTypes.size();</span>
+        }
+
+        @Override
+        public String getColumnName(int column) {
+<span class="nc bnc" id="L280" title="All 5 branches missed.">            switch (column) {</span>
+            case 0:
+<span class="nc" id="L282">                return &quot; &quot;;</span>
+            case 1:
+<span class="nc" id="L284">                return Localization.lang(&quot;Name&quot;);</span>
+            case 2:
+<span class="nc" id="L286">                return Localization.lang(&quot;Extension&quot;);</span>
+            case 3:
+<span class="nc" id="L288">                return Localization.lang(&quot;MIME type&quot;);</span>
+            default: // Five columns
+<span class="nc" id="L290">                return Localization.lang(&quot;Application&quot;);</span>
+            }
+        }
+
+        @Override
+        public Class&lt;?&gt; getColumnClass(int columnIndex) {
+<span class="nc bnc" id="L296" title="All 2 branches missed.">            if (columnIndex == 0) {</span>
+<span class="nc" id="L297">                return ImageIcon.class;</span>
+            } else {
+<span class="nc" id="L299">                return String.class;</span>
+            }
+        }
+
+        @Override
+        public Object getValueAt(int rowIndex, int columnIndex) {
+<span class="nc" id="L305">            ExternalFileType type = fileTypes.get(rowIndex);</span>
+<span class="nc bnc" id="L306" title="All 5 branches missed.">            switch (columnIndex) {</span>
+            case 0:
+<span class="nc" id="L308">                return type.getIcon();</span>
+            case 1:
+<span class="nc" id="L310">                return type.getName();</span>
+            case 2:
+<span class="nc" id="L312">                return type.getExtension();</span>
+            case 3:
+<span class="nc" id="L314">                return type.getMimeType();</span>
+            default:
+<span class="nc" id="L316">                return type.getOpenWithApplication();</span>
+            }
+        }
+    }
+
+<span class="nc" id="L321">    class TableClickListener extends MouseAdapter {</span>
+
+        private void handleClick(MouseEvent e) {
+<span class="nc bnc" id="L324" title="All 2 branches missed.">            if (e.getClickCount() == 2) {</span>
+<span class="nc" id="L325">                editListener.actionPerformed(null);</span>
+            }
+<span class="nc" id="L327">        }</span>
+
+        @Override
+        public void mouseClicked(MouseEvent e) {
+<span class="nc" id="L331">            handleClick(e);</span>
+<span class="nc" id="L332">        }</span>
+
+        @Override
+        public void mousePressed(MouseEvent e) {
+<span class="nc" id="L336">            handleClick(e);</span>
+<span class="nc" id="L337">        }</span>
+
+        @Override
+        public void mouseReleased(MouseEvent e) {
+<span class="nc" id="L341">            handleClick(e);</span>
+<span class="nc" id="L342">        }</span>
+    }
+
+    public static class EditExternalFileTypesAction extends MnemonicAwareAction {
+
+        private JabRefFrame frame;
+        private JDialog dialog;
+        private ExternalFileTypeEditor editor;
+
+
+        public EditExternalFileTypesAction(JabRefFrame frame) {
+<span class="fc" id="L353">            super();</span>
+<span class="fc" id="L354">            putValue(Action.NAME, Localization.menuTitle(&quot;Manage external file types&quot;));</span>
+<span class="fc" id="L355">            this.frame = frame;</span>
+<span class="fc" id="L356">        }</span>
+
+        public EditExternalFileTypesAction(JDialog dialog) {
+<span class="nc" id="L359">            super();</span>
+<span class="nc" id="L360">            putValue(Action.NAME, Localization.menuTitle(&quot;Manage external file types&quot;));</span>
+<span class="nc" id="L361">            this.dialog = dialog;</span>
+<span class="nc" id="L362">        }</span>
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+<span class="nc bnc" id="L366" title="All 2 branches missed.">            if (editor == null) {</span>
+<span class="nc bnc" id="L367" title="All 2 branches missed.">                if (frame == null) {</span>
+<span class="nc" id="L368">                    editor = new ExternalFileTypeEditor(dialog);</span>
+<span class="nc" id="L369">                } else {</span>
+<span class="nc" id="L370">                    editor = new ExternalFileTypeEditor(frame);</span>
+                }
+            }
+<span class="nc" id="L373">            editor.setValues();</span>
+<span class="nc" id="L374">            editor.setVisible(true);</span>
+<span class="nc bnc" id="L375" title="All 4 branches missed.">            if ((frame != null) &amp;&amp; (frame.getCurrentBasePanel() != null)) {</span>
+<span class="nc" id="L376">                frame.getCurrentBasePanel().getMainTable().repaint();</span>
+            }
+<span class="nc" id="L378">        }</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>GroupsPrefsTab.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.preftabs</a> &gt; <span class="el_source">GroupsPrefsTab.java</span></div><h1>GroupsPrefsTab.java</h1><pre class="source lang-java linenums"><span class="nc" id="L1">package org.jabref.gui.preftabs;</span>
+
+import java.awt.BorderLayout;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
+
+import javax.swing.BorderFactory;
+import javax.swing.ButtonGroup;
+import javax.swing.JCheckBox;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JRadioButton;
+import javax.swing.JTextField;
+
+import org.jabref.logic.l10n.Localization;
+import org.jabref.preferences.JabRefPreferences;
+
+import com.jgoodies.forms.builder.DefaultFormBuilder;
+import com.jgoodies.forms.layout.FormLayout;
+
+class GroupsPrefsTab extends JPanel implements PrefsTab {
+
+<span class="nc" id="L23">    private final JCheckBox hideNonHits = new JCheckBox(Localization.lang(&quot;Hide non-hits&quot;));</span>
+<span class="nc" id="L24">    private final JCheckBox grayOut = new JCheckBox(Localization.lang(&quot;Gray out non-hits&quot;));</span>
+<span class="nc" id="L25">    private final JCheckBox autoAssignGroup = new JCheckBox(</span>
+<span class="nc" id="L26">            Localization.lang(&quot;Automatically assign new entry to selected groups&quot;));</span>
+<span class="nc" id="L27">    private final JRadioButton multiSelectionModeIntersection = new JRadioButton(Localization.lang(&quot;Intersection&quot;));</span>
+<span class="nc" id="L28">    private final JRadioButton multiSelectionModeUnion = new JRadioButton(Localization.lang(&quot;Union&quot;));</span>
+
+<span class="nc" id="L30">    private final JTextField groupingField = new JTextField(20);</span>
+<span class="nc" id="L31">    private final JTextField keywordSeparator = new JTextField(2);</span>
+
+    private final JabRefPreferences prefs;
+
+
+<span class="nc" id="L36">    public GroupsPrefsTab(JabRefPreferences prefs) {</span>
+<span class="nc" id="L37">        this.prefs = prefs;</span>
+
+<span class="nc" id="L39">        keywordSeparator.addFocusListener(new FocusListener() {</span>
+
+            @Override
+            public void focusGained(FocusEvent e) {
+<span class="nc" id="L43">                keywordSeparator.selectAll();</span>
+<span class="nc" id="L44">            }</span>
+
+            @Override
+            public void focusLost(FocusEvent e) {
+                // deselection is automatic
+<span class="nc" id="L49">            }</span>
+        });
+
+<span class="nc" id="L52">        ButtonGroup hideMode = new ButtonGroup();</span>
+<span class="nc" id="L53">        hideMode.add(grayOut);</span>
+<span class="nc" id="L54">        hideMode.add(hideNonHits);</span>
+
+<span class="nc" id="L56">        ButtonGroup multiSelectionMode = new ButtonGroup();</span>
+<span class="nc" id="L57">        multiSelectionMode.add(multiSelectionModeIntersection);</span>
+<span class="nc" id="L58">        multiSelectionMode.add(multiSelectionModeUnion);</span>
+<span class="nc" id="L59">        multiSelectionModeIntersection.setToolTipText(Localization.lang(&quot;Display only entries belonging to all selected groups.&quot;));</span>
+<span class="nc" id="L60">        multiSelectionModeUnion.setToolTipText(Localization.lang(&quot;Display all entries belonging to one or more of the selected groups.&quot;));</span>
+
+
+<span class="nc" id="L63">        FormLayout layout = new FormLayout(&quot;9dlu, pref&quot;, //500px&quot;,</span>
+<span class="nc" id="L64">                &quot;p, 3dlu, p, 3dlu, p, 3dlu, p, 3dlu, p, 3dlu, p, 3dlu, p, 3dlu, p, 3dlu, p, 3dlu, p&quot;);</span>
+<span class="nc" id="L65">        DefaultFormBuilder builder = new DefaultFormBuilder(layout);</span>
+<span class="nc" id="L66">        builder.appendSeparator(Localization.lang(&quot;View&quot;));</span>
+<span class="nc" id="L67">        builder.nextLine();</span>
+<span class="nc" id="L68">        builder.nextLine();</span>
+<span class="nc" id="L69">        builder.nextColumn();</span>
+<span class="nc" id="L70">        builder.append(hideNonHits);</span>
+<span class="nc" id="L71">        builder.nextLine();</span>
+<span class="nc" id="L72">        builder.nextLine();</span>
+<span class="nc" id="L73">        builder.nextColumn();</span>
+<span class="nc" id="L74">        builder.append(grayOut);</span>
+<span class="nc" id="L75">        builder.nextLine();</span>
+<span class="nc" id="L76">        builder.nextLine();</span>
+<span class="nc" id="L77">        builder.nextColumn();</span>
+<span class="nc" id="L78">        builder.append(multiSelectionModeIntersection);</span>
+<span class="nc" id="L79">        builder.nextLine();</span>
+<span class="nc" id="L80">        builder.nextLine();</span>
+<span class="nc" id="L81">        builder.nextColumn();</span>
+<span class="nc" id="L82">        builder.append(multiSelectionModeUnion);</span>
+<span class="nc" id="L83">        builder.nextLine();</span>
+<span class="nc" id="L84">        builder.nextLine();</span>
+<span class="nc" id="L85">        builder.nextColumn();</span>
+<span class="nc" id="L86">        builder.append(autoAssignGroup);</span>
+<span class="nc" id="L87">        builder.nextLine();</span>
+<span class="nc" id="L88">        builder.nextLine();</span>
+<span class="nc" id="L89">        builder.appendSeparator(Localization.lang(&quot;Dynamic groups&quot;));</span>
+<span class="nc" id="L90">        builder.nextLine();</span>
+<span class="nc" id="L91">        builder.nextLine();</span>
+<span class="nc" id="L92">        builder.nextColumn();</span>
+        // build subcomponent
+<span class="nc" id="L94">        FormLayout layout2 = new FormLayout(&quot;left:pref, 2dlu, left:pref&quot;,</span>
+<span class="nc" id="L95">                &quot;p, 3dlu, p&quot;);</span>
+<span class="nc" id="L96">        DefaultFormBuilder builder2 = new DefaultFormBuilder(layout2);</span>
+<span class="nc" id="L97">        builder2.append(new JLabel(Localization.lang(&quot;Default grouping field&quot;) + &quot;:&quot;));</span>
+<span class="nc" id="L98">        builder2.append(groupingField);</span>
+<span class="nc" id="L99">        builder2.nextLine();</span>
+<span class="nc" id="L100">        builder2.nextLine();</span>
+<span class="nc" id="L101">        builder2.append(new JLabel(Localization.lang(&quot;When adding/removing keywords, separate them by&quot;) + &quot;:&quot;));</span>
+<span class="nc" id="L102">        builder2.append(keywordSeparator);</span>
+<span class="nc" id="L103">        builder.append(builder2.getPanel());</span>
+
+<span class="nc" id="L105">        setLayout(new BorderLayout());</span>
+<span class="nc" id="L106">        JPanel panel = builder.getPanel();</span>
+<span class="nc" id="L107">        panel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));</span>
+<span class="nc" id="L108">        add(panel, BorderLayout.CENTER);</span>
+<span class="nc" id="L109">    }</span>
+
+    @Override
+    public void setValues() {
+<span class="nc" id="L113">        grayOut.setSelected(prefs.getBoolean(JabRefPreferences.GRAY_OUT_NON_HITS));</span>
+<span class="nc" id="L114">        groupingField.setText(prefs.get(JabRefPreferences.GROUPS_DEFAULT_FIELD));</span>
+<span class="nc" id="L115">        keywordSeparator.setText(prefs.get(JabRefPreferences.KEYWORD_SEPARATOR));</span>
+<span class="nc" id="L116">        autoAssignGroup.setSelected(prefs.getBoolean(JabRefPreferences.AUTO_ASSIGN_GROUP));</span>
+<span class="nc" id="L117">        multiSelectionModeIntersection.setSelected(prefs.getBoolean(JabRefPreferences.GROUP_INTERSECT_SELECTIONS));</span>
+<span class="nc" id="L118">    }</span>
+
+    @Override
+    public void storeSettings() {
+<span class="nc" id="L122">        prefs.putBoolean(JabRefPreferences.GRAY_OUT_NON_HITS, grayOut.isSelected());</span>
+<span class="nc" id="L123">        prefs.put(JabRefPreferences.GROUPS_DEFAULT_FIELD, groupingField.getText().trim());</span>
+<span class="nc" id="L124">        prefs.putBoolean(JabRefPreferences.AUTO_ASSIGN_GROUP, autoAssignGroup.isSelected());</span>
+<span class="nc" id="L125">        prefs.put(JabRefPreferences.KEYWORD_SEPARATOR, keywordSeparator.getText());</span>
+<span class="nc" id="L126">        prefs.putBoolean(JabRefPreferences.GROUP_INTERSECT_SELECTIONS, multiSelectionModeIntersection.isSelected());</span>
+<span class="nc" id="L127">    }</span>
+
+    @Override
+    public boolean validateSettings() {
+<span class="nc" id="L131">        return true;</span>
+    }
+
+    @Override
+    public String getTabName() {
+<span class="nc" id="L136">        return Localization.lang(&quot;Groups&quot;);</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

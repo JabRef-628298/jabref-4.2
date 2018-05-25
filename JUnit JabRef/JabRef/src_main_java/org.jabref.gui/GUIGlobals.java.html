@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>GUIGlobals.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui</a> &gt; <span class="el_source">GUIGlobals.java</span></div><h1>GUIGlobals.java</h1><pre class="source lang-java linenums">package org.jabref.gui;
+
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.Toolkit;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.swing.JLabel;
+
+import org.jabref.Globals;
+import org.jabref.gui.externalfiletype.ExternalFileType;
+import org.jabref.gui.externalfiletype.ExternalFileTypes;
+import org.jabref.gui.keyboard.EmacsKeyBindings;
+import org.jabref.gui.specialfields.SpecialFieldViewModel;
+import org.jabref.logic.l10n.Localization;
+import org.jabref.logic.util.OS;
+import org.jabref.model.entry.FieldName;
+import org.jabref.model.entry.specialfields.SpecialField;
+import org.jabref.preferences.JabRefPreferences;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * Static variables for graphics files and keyboard shortcuts.
+ */
+public class GUIGlobals {
+    public static Color editorTextColor;
+    public static Color validFieldBackgroundColor;
+    public static Color activeBackgroundColor;
+    public static Color invalidFieldBackgroundColor;
+    public static Font currentFont;
+<span class="fc" id="L34">    public static final Color NULL_FIELD_COLOR = new Color(75, 130, 95); // Valid field, green.</span>
+
+<span class="fc" id="L36">    public static final Color ACTIVE_EDITOR_COLOR = new Color(230, 230, 255);</span>
+<span class="fc" id="L37">    public static final int WIDTH_ICON_COL = JabRefPreferences.getInstance().getInt(JabRefPreferences.ICON_SIZE_SMALL) + 12; // add some additional space to improve appearance</span>
+
+<span class="fc" id="L39">    public static final int WIDTH_ICON_COL_RANKING = 5 * JabRefPreferences.getInstance().getInt(JabRefPreferences.ICON_SIZE_SMALL); // Width of Ranking Icon Column</span>
+
+<span class="fc" id="L41">    public static final String UNTITLED_TITLE = Localization.lang(&quot;untitled&quot;);</span>
+    public static final int MAX_BACK_HISTORY_SIZE = 10; // The maximum number of &quot;Back&quot; operations stored.
+
+    //	Colors.
+<span class="fc" id="L45">    public static final Color ENTRY_EDITOR_LABEL_COLOR = new Color(100, 100, 150); // Empty field, blue.</span>
+
+<span class="fc" id="L47">    static final Color INACTIVE_TABBED_COLOR = Color.black; // inactive Database</span>
+<span class="fc" id="L48">    private static final Logger LOGGER = LoggerFactory.getLogger(GUIGlobals.class);</span>
+<span class="fc" id="L49">    private static final Map&lt;String, JLabel&gt; TABLE_ICONS = new HashMap&lt;&gt;(); // Contains table icon mappings. Set up</span>
+<span class="fc" id="L50">    static final Color ACTIVE_TABBED_COLOR = ENTRY_EDITOR_LABEL_COLOR.darker(); // active Database (JTabbedPane)</span>
+
+<span class="nc" id="L52">    private GUIGlobals() {</span>
+<span class="nc" id="L53">    }</span>
+
+    public static JLabel getTableIcon(String fieldType) {
+<span class="nc" id="L56">        JLabel label = GUIGlobals.TABLE_ICONS.get(fieldType);</span>
+<span class="nc bnc" id="L57" title="All 2 branches missed.">        if (label == null) {</span>
+<span class="nc" id="L58">            LOGGER.info(&quot;Error: no table icon defined for type '&quot; + fieldType + &quot;'.&quot;);</span>
+<span class="nc" id="L59">            return null;</span>
+        } else {
+<span class="nc" id="L61">            return label;</span>
+        }
+    }
+
+    public static void updateEntryEditorColors() {
+<span class="fc" id="L66">        GUIGlobals.activeBackgroundColor = JabRefPreferences.getInstance().getColor(JabRefPreferences.ACTIVE_FIELD_EDITOR_BACKGROUND_COLOR);</span>
+<span class="fc" id="L67">        GUIGlobals.validFieldBackgroundColor = JabRefPreferences.getInstance().getColor(JabRefPreferences.VALID_FIELD_BACKGROUND_COLOR);</span>
+<span class="fc" id="L68">        GUIGlobals.invalidFieldBackgroundColor = JabRefPreferences.getInstance().getColor(JabRefPreferences.INVALID_FIELD_BACKGROUND_COLOR);</span>
+<span class="fc" id="L69">        GUIGlobals.editorTextColor = JabRefPreferences.getInstance().getColor(JabRefPreferences.FIELD_EDITOR_TEXT_COLOR);</span>
+<span class="fc" id="L70">    }</span>
+
+    /**
+     * Perform initializations that are only used in graphical mode. This is to prevent
+     * the &quot;Xlib: connection to &quot;:0.0&quot; refused by server&quot; error when access to the X server
+     * on Un*x is unavailable.
+     */
+    public static void init() {
+        JLabel label;
+<span class="fc" id="L79">        label = new JLabel(IconTheme.JabRefIcon.PDF_FILE.getSmallIcon());</span>
+<span class="fc" id="L80">        label.setToolTipText(Localization.lang(&quot;Open&quot;) + &quot; PDF&quot;);</span>
+<span class="fc" id="L81">        GUIGlobals.TABLE_ICONS.put(FieldName.PDF, label);</span>
+
+<span class="fc" id="L83">        label = new JLabel(IconTheme.JabRefIcon.WWW.getSmallIcon());</span>
+<span class="fc" id="L84">        label.setToolTipText(Localization.lang(&quot;Open&quot;) + &quot; URL&quot;);</span>
+<span class="fc" id="L85">        GUIGlobals.TABLE_ICONS.put(FieldName.URL, label);</span>
+
+<span class="fc" id="L87">        label = new JLabel(IconTheme.JabRefIcon.WWW.getSmallIcon());</span>
+<span class="fc" id="L88">        label.setToolTipText(Localization.lang(&quot;Open&quot;) + &quot; CiteSeer URL&quot;);</span>
+<span class="fc" id="L89">        GUIGlobals.TABLE_ICONS.put(&quot;citeseerurl&quot;, label);</span>
+
+<span class="fc" id="L91">        label = new JLabel(IconTheme.JabRefIcon.WWW.getSmallIcon());</span>
+<span class="fc" id="L92">        label.setToolTipText(Localization.lang(&quot;Open&quot;) + &quot; ArXiv URL&quot;);</span>
+<span class="fc" id="L93">        GUIGlobals.TABLE_ICONS.put(FieldName.EPRINT, label);</span>
+
+<span class="fc" id="L95">        label = new JLabel(IconTheme.JabRefIcon.DOI.getSmallIcon());</span>
+<span class="fc" id="L96">        label.setToolTipText(Localization.lang(&quot;Open&quot;) + &quot; DOI &quot; + Localization.lang(&quot;web link&quot;));</span>
+<span class="fc" id="L97">        GUIGlobals.TABLE_ICONS.put(FieldName.DOI, label);</span>
+
+<span class="fc" id="L99">        label = new JLabel(IconTheme.JabRefIcon.FILE.getSmallIcon());</span>
+<span class="fc" id="L100">        label.setToolTipText(Localization.lang(&quot;Open&quot;) + &quot; PS&quot;);</span>
+<span class="fc" id="L101">        GUIGlobals.TABLE_ICONS.put(FieldName.PS, label);</span>
+
+<span class="fc" id="L103">        label = new JLabel(IconTheme.JabRefIcon.FOLDER.getSmallIcon());</span>
+<span class="fc" id="L104">        label.setToolTipText(Localization.lang(&quot;Open folder&quot;));</span>
+<span class="fc" id="L105">        GUIGlobals.TABLE_ICONS.put(FieldName.FOLDER, label);</span>
+
+<span class="fc" id="L107">        label = new JLabel(IconTheme.JabRefIcon.FILE.getSmallIcon());</span>
+<span class="fc" id="L108">        label.setToolTipText(Localization.lang(&quot;Open file&quot;));</span>
+<span class="fc" id="L109">        GUIGlobals.TABLE_ICONS.put(FieldName.FILE, label);</span>
+
+<span class="fc bfc" id="L111" title="All 2 branches covered.">        for (ExternalFileType fileType : ExternalFileTypes.getInstance().getExternalFileTypeSelection()) {</span>
+<span class="fc" id="L112">            label = new JLabel(fileType.getIcon());</span>
+<span class="fc" id="L113">            label.setToolTipText(Localization.lang(&quot;Open %0 file&quot;, fileType.getName()));</span>
+<span class="fc" id="L114">            GUIGlobals.TABLE_ICONS.put(fileType.getName(), label);</span>
+        }
+
+<span class="fc" id="L117">        SpecialFieldViewModel relevanceViewModel = new SpecialFieldViewModel(SpecialField.RELEVANCE);</span>
+<span class="fc" id="L118">        label = new JLabel(relevanceViewModel.getRepresentingIcon());</span>
+<span class="fc" id="L119">        label.setToolTipText(relevanceViewModel.getLocalization());</span>
+<span class="fc" id="L120">        GUIGlobals.TABLE_ICONS.put(SpecialField.RELEVANCE.getFieldName(), label);</span>
+
+<span class="fc" id="L122">        SpecialFieldViewModel qualityViewModel = new SpecialFieldViewModel(SpecialField.QUALITY);</span>
+<span class="fc" id="L123">        label = new JLabel(qualityViewModel.getRepresentingIcon());</span>
+<span class="fc" id="L124">        label.setToolTipText(qualityViewModel.getLocalization());</span>
+<span class="fc" id="L125">        GUIGlobals.TABLE_ICONS.put(SpecialField.QUALITY.getFieldName(), label);</span>
+
+        // Ranking item in the menu uses one star
+<span class="fc" id="L128">        SpecialFieldViewModel rankViewModel = new SpecialFieldViewModel(SpecialField.RANKING);</span>
+<span class="fc" id="L129">        label = new JLabel(rankViewModel.getRepresentingIcon());</span>
+<span class="fc" id="L130">        label.setToolTipText(rankViewModel.getLocalization());</span>
+<span class="fc" id="L131">        GUIGlobals.TABLE_ICONS.put(SpecialField.RANKING.getFieldName(), label);</span>
+
+        // Priority icon used for the menu
+<span class="fc" id="L134">        SpecialFieldViewModel priorityViewModel = new SpecialFieldViewModel(SpecialField.PRIORITY);</span>
+<span class="fc" id="L135">        label = new JLabel(priorityViewModel.getRepresentingIcon());</span>
+<span class="fc" id="L136">        label.setToolTipText(priorityViewModel.getLocalization());</span>
+<span class="fc" id="L137">        GUIGlobals.TABLE_ICONS.put(SpecialField.PRIORITY.getFieldName(), label);</span>
+
+        // Read icon used for menu
+<span class="fc" id="L140">        SpecialFieldViewModel readViewModel = new SpecialFieldViewModel(SpecialField.READ_STATUS);</span>
+<span class="fc" id="L141">        label = new JLabel(readViewModel.getRepresentingIcon());</span>
+<span class="fc" id="L142">        label.setToolTipText(readViewModel.getLocalization());</span>
+<span class="fc" id="L143">        GUIGlobals.TABLE_ICONS.put(SpecialField.READ_STATUS.getFieldName(), label);</span>
+
+        // Print icon used for menu
+<span class="fc" id="L146">        SpecialFieldViewModel printedViewModel = new SpecialFieldViewModel(SpecialField.PRINTED);</span>
+<span class="fc" id="L147">        label = new JLabel(printedViewModel.getRepresentingIcon());</span>
+<span class="fc" id="L148">        label.setToolTipText(printedViewModel.getLocalization());</span>
+<span class="fc" id="L149">        GUIGlobals.TABLE_ICONS.put(SpecialField.PRINTED.getFieldName(), label);</span>
+
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">        if (Globals.prefs.getBoolean(JabRefPreferences.EDITOR_EMACS_KEYBINDINGS)) {</span>
+<span class="nc" id="L152">            EmacsKeyBindings.load();</span>
+        }
+
+        // Set up entry editor colors, first time:
+<span class="fc" id="L156">        GUIGlobals.updateEntryEditorColors();</span>
+
+<span class="fc" id="L158">        GUIGlobals.currentFont = new Font(Globals.prefs.get(JabRefPreferences.FONT_FAMILY),</span>
+<span class="fc" id="L159">                Globals.prefs.getInt(JabRefPreferences.FONT_STYLE), Globals.prefs.getInt(JabRefPreferences.FONT_SIZE));</span>
+
+        // Set WM_CLASS using reflection for certain Un*x window managers
+<span class="pc bpc" id="L162" title="2 of 4 branches missed.">        if (!OS.WINDOWS &amp;&amp; !OS.OS_X) {</span>
+            try {
+<span class="fc" id="L164">                Toolkit xToolkit = Toolkit.getDefaultToolkit();</span>
+<span class="fc" id="L165">                java.lang.reflect.Field awtAppClassNameField = xToolkit.getClass().getDeclaredField(&quot;awtAppClassName&quot;);</span>
+<span class="fc" id="L166">                awtAppClassNameField.setAccessible(true);</span>
+<span class="fc" id="L167">                awtAppClassNameField.set(xToolkit, &quot;org-jabref-JabRefMain&quot;);</span>
+<span class="pc" id="L168">            } catch (Exception e) {</span>
+                // ignore any error since this code only works for certain toolkits
+            }
+        }
+
+<span class="fc" id="L173">    }</span>
+
+    public static void setFont(int size) {
+<span class="nc" id="L176">        currentFont = new Font(currentFont.getFamily(), currentFont.getStyle(), size);</span>
+        // update preferences
+<span class="nc" id="L178">        Globals.prefs.putInt(JabRefPreferences.FONT_SIZE, size);</span>
+<span class="nc" id="L179">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>DocumentViewerViewModel.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.documentviewer</a> &gt; <span class="el_source">DocumentViewerViewModel.java</span></div><h1>DocumentViewerViewModel.java</h1><pre class="source lang-java linenums">package org.jabref.gui.documentviewer;
+
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Objects;
+
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.ListProperty;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleListProperty;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
+
+import org.jabref.Globals;
+import org.jabref.gui.AbstractViewModel;
+import org.jabref.gui.StateManager;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.LinkedFile;
+
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.fxmisc.easybind.EasyBind;
+
+public class DocumentViewerViewModel extends AbstractViewModel {
+
+    private StateManager stateManager;
+<span class="nc" id="L31">    private ObjectProperty&lt;DocumentViewModel&gt; currentDocument = new SimpleObjectProperty&lt;&gt;();</span>
+<span class="nc" id="L32">    private ListProperty&lt;LinkedFile&gt; files = new SimpleListProperty&lt;&gt;();</span>
+<span class="nc" id="L33">    private BooleanProperty liveMode = new SimpleBooleanProperty();</span>
+<span class="nc" id="L34">    private ObjectProperty&lt;Integer&gt; currentPage = new SimpleObjectProperty&lt;&gt;();</span>
+<span class="nc" id="L35">    private IntegerProperty maxPages = new SimpleIntegerProperty();</span>
+
+<span class="nc" id="L37">    public DocumentViewerViewModel(StateManager stateManager) {</span>
+<span class="nc" id="L38">        this.stateManager = Objects.requireNonNull(stateManager);</span>
+
+<span class="nc" id="L40">        this.stateManager.getSelectedEntries().addListener((ListChangeListener&lt;? super BibEntry&gt;) c -&gt; {</span>
+            // Switch to currently selected entry in live mode
+<span class="nc bnc" id="L42" title="All 2 branches missed.">            if (isLiveMode()) {</span>
+<span class="nc" id="L43">                setCurrentEntries(this.stateManager.getSelectedEntries());</span>
+            }
+<span class="nc" id="L45">        });</span>
+
+<span class="nc" id="L47">        this.liveMode.addListener((observable, oldValue, newValue) -&gt; {</span>
+            // Switch to currently selected entry if mode is changed to live
+<span class="nc bnc" id="L49" title="All 4 branches missed.">            if (oldValue != newValue &amp;&amp; newValue) {</span>
+<span class="nc" id="L50">                setCurrentEntries(this.stateManager.getSelectedEntries());</span>
+            }
+<span class="nc" id="L52">        });</span>
+
+<span class="nc" id="L54">        maxPages.bindBidirectional(</span>
+<span class="nc" id="L55">                EasyBind.monadic(currentDocument).selectProperty(DocumentViewModel::maxPagesProperty));</span>
+
+<span class="nc" id="L57">        setCurrentEntries(this.stateManager.getSelectedEntries());</span>
+<span class="nc" id="L58">    }</span>
+
+    private int getCurrentPage() {
+<span class="nc" id="L61">        return currentPage.get();</span>
+    }
+
+    public ObjectProperty&lt;Integer&gt; currentPageProperty() {
+<span class="nc" id="L65">        return currentPage;</span>
+    }
+
+    public IntegerProperty maxPagesProperty() {
+<span class="nc" id="L69">        return maxPages;</span>
+    }
+
+    private boolean isLiveMode() {
+<span class="nc" id="L73">        return liveMode.get();</span>
+    }
+
+    public ObjectProperty&lt;DocumentViewModel&gt; currentDocumentProperty() {
+<span class="nc" id="L77">        return currentDocument;</span>
+    }
+
+    public ListProperty&lt;LinkedFile&gt; filesProperty() {
+<span class="nc" id="L81">        return files;</span>
+    }
+
+    private void setCurrentEntries(List&lt;BibEntry&gt; entries) {
+<span class="nc bnc" id="L85" title="All 2 branches missed.">        if (!entries.isEmpty()) {</span>
+<span class="nc" id="L86">            BibEntry firstSelectedEntry = entries.get(0);</span>
+<span class="nc" id="L87">            setCurrentEntry(firstSelectedEntry);</span>
+        }
+<span class="nc" id="L89">    }</span>
+
+    private void setCurrentEntry(BibEntry entry) {
+<span class="nc" id="L92">        stateManager.getActiveDatabase().ifPresent(database -&gt; {</span>
+<span class="nc" id="L93">            List&lt;LinkedFile&gt; linkedFiles = entry.getFiles();</span>
+            // We don't need to switch to the first file, this is done automatically in the UI part
+<span class="nc" id="L95">            files.setValue(FXCollections.observableArrayList(linkedFiles));</span>
+<span class="nc" id="L96">        });</span>
+<span class="nc" id="L97">    }</span>
+
+    private void setCurrentDocument(Path path) {
+        try {
+<span class="nc" id="L101">            currentDocument.set(new PdfDocumentViewModel(PDDocument.load(path.toFile())));</span>
+<span class="nc" id="L102">        } catch (IOException e) {</span>
+<span class="nc" id="L103">            e.printStackTrace();</span>
+        }
+<span class="nc" id="L105">    }</span>
+
+    public void switchToFile(LinkedFile file) {
+<span class="nc bnc" id="L108" title="All 2 branches missed.">        if (file != null) {</span>
+<span class="nc" id="L109">            stateManager.getActiveDatabase().ifPresent(database -&gt;</span>
+<span class="nc" id="L110">                    file.findIn(database, Globals.prefs.getFileDirectoryPreferences())</span>
+<span class="nc" id="L111">                            .ifPresent(this::setCurrentDocument));</span>
+        }
+<span class="nc" id="L113">    }</span>
+
+    public BooleanProperty liveModeProperty() {
+<span class="nc" id="L116">        return liveMode;</span>
+    }
+
+    public void showNextPage() {
+<span class="nc" id="L120">        currentPage.set(getCurrentPage() + 1);</span>
+<span class="nc" id="L121">    }</span>
+
+    public void showPreviousPage() {
+<span class="nc" id="L124">        currentPage.set(getCurrentPage() - 1);</span>
+<span class="nc" id="L125">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

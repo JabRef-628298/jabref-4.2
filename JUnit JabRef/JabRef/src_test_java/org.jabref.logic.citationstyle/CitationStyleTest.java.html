@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>CitationStyleTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.citationstyle</a> &gt; <span class="el_source">CitationStyleTest.java</span></div><h1>CitationStyleTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.citationstyle;
+
+import org.jabref.logic.util.TestEntry;
+
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+<span class="fc" id="L10">public class CitationStyleTest {</span>
+
+    @Test
+    public void getDefault() throws Exception {
+<span class="fc" id="L14">        assertNotNull(CitationStyle.getDefault());</span>
+<span class="fc" id="L15">    }</span>
+
+    @Test
+    public void testDefaultCitation() {
+<span class="fc" id="L19">        String citation = CitationStyleGenerator.generateCitation(TestEntry.getTestEntry(), CitationStyle.getDefault());</span>
+
+        // if the default citation style changes this has to be modified
+<span class="fc" id="L22">        String expected = &quot;  &lt;div class=\&quot;csl-entry\&quot;&gt;\n&quot; +</span>
+                &quot;    &lt;div class=\&quot;csl-left-margin\&quot;&gt;[1]&lt;/div&gt;&lt;div class=\&quot;csl-right-inline\&quot;&gt;&quot; +
+                &quot;B. Smith, B. Jones, and J. Williams, “Title of the test entry,” &quot; +
+                &quot;&lt;i&gt;BibTeX Journal&lt;/i&gt;, vol. 34, no. 3, pp. 45–67, Jul. 2016.&lt;/div&gt;\n&quot; +
+                &quot;  &lt;/div&gt;\n&quot;;
+
+<span class="fc" id="L28">        assertEquals(expected, citation);</span>
+<span class="fc" id="L29">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

@@ -1,0 +1,414 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>IntegrityCheckTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.integrity</a> &gt; <span class="el_source">IntegrityCheckTest.java</span></div><h1>IntegrityCheckTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.integrity;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import org.jabref.logic.bibtexkeypattern.BibtexKeyPatternPreferences;
+import org.jabref.logic.journals.Abbreviation;
+import org.jabref.logic.journals.JournalAbbreviationRepository;
+import org.jabref.model.Defaults;
+import org.jabref.model.bibtexkeypattern.GlobalBibtexKeyPattern;
+import org.jabref.model.database.BibDatabase;
+import org.jabref.model.database.BibDatabaseContext;
+import org.jabref.model.database.BibDatabaseMode;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.InternalBibtexFields;
+import org.jabref.model.metadata.FileDirectoryPreferences;
+import org.jabref.model.metadata.MetaData;
+
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.mockito.Mockito;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.mock;
+
+<span class="fc" id="L34">public class IntegrityCheckTest {</span>
+
+    @Rule
+<span class="fc" id="L37">    public TemporaryFolder testFolder = new TemporaryFolder();</span>
+
+    @Test
+    public void testEntryTypeChecks() {
+<span class="fc" id="L41">        assertCorrect(withMode(createContext(&quot;title&quot;, &quot;sometitle&quot;, &quot;article&quot;), BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L42">        assertWrong(withMode(createContext(&quot;title&quot;, &quot;sometitle&quot;, &quot;patent&quot;), BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L43">        assertCorrect((withMode(createContext(&quot;title&quot;, &quot;sometitle&quot;, &quot;patent&quot;), BibDatabaseMode.BIBLATEX)));</span>
+<span class="fc" id="L44">        assertCorrect(withMode(createContext(&quot;title&quot;, &quot;sometitle&quot;, &quot;article&quot;), BibDatabaseMode.BIBLATEX));</span>
+<span class="fc" id="L45">    }</span>
+
+    @Test
+    public void testUrlChecks() {
+<span class="fc" id="L49">        assertCorrect(createContext(&quot;url&quot;, &quot;http://www.google.com&quot;));</span>
+<span class="fc" id="L50">        assertCorrect(createContext(&quot;url&quot;, &quot;file://c:/asdf/asdf&quot;));</span>
+<span class="fc" id="L51">        assertCorrect(createContext(&quot;url&quot;, &quot;http://scikit-learn.org/stable/modules/ensemble.html#random-forests&quot;));</span>
+
+<span class="fc" id="L53">        assertWrong(createContext(&quot;url&quot;, &quot;www.google.com&quot;));</span>
+<span class="fc" id="L54">        assertWrong(createContext(&quot;url&quot;, &quot;google.com&quot;));</span>
+<span class="fc" id="L55">        assertWrong(createContext(&quot;url&quot;, &quot;c:/asdf/asdf&quot;));</span>
+<span class="fc" id="L56">    }</span>
+
+    @Test
+    public void testYearChecks() {
+<span class="fc" id="L60">        assertCorrect(createContext(&quot;year&quot;, &quot;2014&quot;));</span>
+<span class="fc" id="L61">        assertCorrect(createContext(&quot;year&quot;, &quot;1986&quot;));</span>
+<span class="fc" id="L62">        assertCorrect(createContext(&quot;year&quot;, &quot;around 1986&quot;));</span>
+<span class="fc" id="L63">        assertCorrect(createContext(&quot;year&quot;, &quot;(around 1986)&quot;));</span>
+<span class="fc" id="L64">        assertCorrect(createContext(&quot;year&quot;, &quot;1986,&quot;));</span>
+<span class="fc" id="L65">        assertCorrect(createContext(&quot;year&quot;, &quot;1986}%&quot;));</span>
+<span class="fc" id="L66">        assertCorrect(createContext(&quot;year&quot;, &quot;1986(){},.;!?&lt;&gt;%&amp;$&quot;));</span>
+<span class="fc" id="L67">        assertWrong(createContext(&quot;year&quot;, &quot;abc&quot;));</span>
+<span class="fc" id="L68">        assertWrong(createContext(&quot;year&quot;, &quot;86&quot;));</span>
+<span class="fc" id="L69">        assertWrong(createContext(&quot;year&quot;, &quot;204&quot;));</span>
+<span class="fc" id="L70">        assertWrong(createContext(&quot;year&quot;, &quot;1986a&quot;));</span>
+<span class="fc" id="L71">        assertWrong(createContext(&quot;year&quot;, &quot;(1986a)&quot;));</span>
+<span class="fc" id="L72">        assertWrong(createContext(&quot;year&quot;, &quot;1986a,&quot;));</span>
+<span class="fc" id="L73">        assertWrong(createContext(&quot;year&quot;, &quot;1986}a%&quot;));</span>
+<span class="fc" id="L74">        assertWrong(createContext(&quot;year&quot;, &quot;1986a(){},.;!?&lt;&gt;%&amp;$&quot;));</span>
+<span class="fc" id="L75">    }</span>
+
+    @Test
+    public void testEditionChecks() {
+<span class="fc" id="L79">        assertCorrect(withMode(createContext(&quot;edition&quot;, &quot;Second&quot;), BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L80">        assertCorrect(withMode(createContext(&quot;edition&quot;, &quot;Third&quot;), BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L81">        assertWrong(withMode(createContext(&quot;edition&quot;, &quot;second&quot;), BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L82">        assertWrong(withMode(createContext(&quot;edition&quot;, &quot;2&quot;), BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L83">        assertWrong(withMode(createContext(&quot;edition&quot;, &quot;2nd&quot;), BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L84">        assertCorrect(withMode(createContext(&quot;edition&quot;, &quot;2&quot;), BibDatabaseMode.BIBLATEX));</span>
+<span class="fc" id="L85">        assertCorrect(withMode(createContext(&quot;edition&quot;, &quot;10&quot;), BibDatabaseMode.BIBLATEX));</span>
+<span class="fc" id="L86">        assertCorrect(</span>
+<span class="fc" id="L87">                withMode(createContext(&quot;edition&quot;, &quot;Third, revised and expanded edition&quot;), BibDatabaseMode.BIBLATEX));</span>
+<span class="fc" id="L88">        assertCorrect(withMode(createContext(&quot;edition&quot;, &quot;Edition 2000&quot;), BibDatabaseMode.BIBLATEX));</span>
+<span class="fc" id="L89">        assertWrong(withMode(createContext(&quot;edition&quot;, &quot;2nd&quot;), BibDatabaseMode.BIBLATEX));</span>
+<span class="fc" id="L90">    }</span>
+
+    @Test
+    public void testNoteChecks() {
+<span class="fc" id="L94">        assertCorrect(withMode(createContext(&quot;note&quot;, &quot;Lorem ipsum&quot;), BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L95">        assertCorrect(withMode(createContext(&quot;note&quot;, &quot;Lorem ipsum? 10&quot;), BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L96">        assertWrong(withMode(createContext(&quot;note&quot;, &quot;lorem ipsum&quot;), BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L97">        assertCorrect(withMode(createContext(&quot;note&quot;, &quot;Lorem ipsum&quot;), BibDatabaseMode.BIBLATEX));</span>
+<span class="fc" id="L98">        assertCorrect(withMode(createContext(&quot;note&quot;, &quot;\\url{someurl}&quot;), BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L99">        assertCorrect(withMode(createContext(&quot;note&quot;, &quot;lorem ipsum&quot;), BibDatabaseMode.BIBLATEX));</span>
+<span class="fc" id="L100">    }</span>
+
+    @Test
+    public void testHowpublishedChecks() {
+<span class="fc" id="L104">        assertCorrect(withMode(createContext(&quot;howpublished&quot;, &quot;Lorem ipsum&quot;), BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L105">        assertCorrect(withMode(createContext(&quot;howpublished&quot;, &quot;Lorem ipsum? 10&quot;), BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L106">        assertWrong(withMode(createContext(&quot;howpublished&quot;, &quot;lorem ipsum&quot;), BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L107">        assertCorrect(withMode(createContext(&quot;howpublished&quot;, &quot;\\url{someurl}&quot;), BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L108">        assertCorrect(withMode(createContext(&quot;howpublished&quot;, &quot;Lorem ipsum&quot;), BibDatabaseMode.BIBLATEX));</span>
+<span class="fc" id="L109">        assertCorrect(withMode(createContext(&quot;howpublished&quot;, &quot;lorem ipsum&quot;), BibDatabaseMode.BIBLATEX));</span>
+<span class="fc" id="L110">    }</span>
+
+    @Test
+    public void testMonthChecks() {
+<span class="fc" id="L114">        assertCorrect(withMode(createContext(&quot;month&quot;, &quot;#mar#&quot;), BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L115">        assertCorrect(withMode(createContext(&quot;month&quot;, &quot;#dec#&quot;), BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L116">        assertWrong(withMode(createContext(&quot;month&quot;, &quot;#bla#&quot;), BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L117">        assertWrong(withMode(createContext(&quot;month&quot;, &quot;Dec&quot;), BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L118">        assertWrong(withMode(createContext(&quot;month&quot;, &quot;December&quot;), BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L119">        assertWrong(withMode(createContext(&quot;month&quot;, &quot;Lorem&quot;), BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L120">        assertWrong(withMode(createContext(&quot;month&quot;, &quot;10&quot;), BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L121">        assertCorrect(withMode(createContext(&quot;month&quot;, &quot;1&quot;), BibDatabaseMode.BIBLATEX));</span>
+<span class="fc" id="L122">        assertCorrect(withMode(createContext(&quot;month&quot;, &quot;10&quot;), BibDatabaseMode.BIBLATEX));</span>
+<span class="fc" id="L123">        assertCorrect(withMode(createContext(&quot;month&quot;, &quot;#jan#&quot;), BibDatabaseMode.BIBLATEX));</span>
+<span class="fc" id="L124">        assertWrong(withMode(createContext(&quot;month&quot;, &quot;jan&quot;), BibDatabaseMode.BIBLATEX));</span>
+<span class="fc" id="L125">        assertWrong(withMode(createContext(&quot;month&quot;, &quot;january&quot;), BibDatabaseMode.BIBLATEX));</span>
+<span class="fc" id="L126">        assertWrong(withMode(createContext(&quot;month&quot;, &quot;January&quot;), BibDatabaseMode.BIBLATEX));</span>
+<span class="fc" id="L127">        assertWrong(withMode(createContext(&quot;month&quot;, &quot;Lorem&quot;), BibDatabaseMode.BIBLATEX));</span>
+<span class="fc" id="L128">    }</span>
+
+    @Test
+    public void testJournaltitleChecks() {
+<span class="fc" id="L132">        assertWrong(withMode(createContext(&quot;journaltitle&quot;, &quot;A journal&quot;), BibDatabaseMode.BIBLATEX));</span>
+<span class="fc" id="L133">        assertWrong(withMode(createContext(&quot;journaltitle&quot;, &quot;A journal&quot;), BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L134">    }</span>
+
+    @Test
+    public void testBibtexkeyChecks() {
+<span class="fc" id="L138">        final BibDatabaseContext correctContext = createContext(&quot;bibtexkey&quot;, &quot;Knuth2014&quot;);</span>
+<span class="fc" id="L139">        correctContext.getDatabase().getEntries().get(0).setField(&quot;author&quot;,&quot;Knuth&quot;);</span>
+<span class="fc" id="L140">        correctContext.getDatabase().getEntries().get(0).setField(&quot;year&quot;,&quot;2014&quot;);</span>
+<span class="fc" id="L141">        assertCorrect(correctContext);</span>
+
+<span class="fc" id="L143">        final BibDatabaseContext wrongContext = createContext(&quot;bibtexkey&quot;, &quot;Knuth2014a&quot;);</span>
+<span class="fc" id="L144">        wrongContext.getDatabase().getEntries().get(0).setField(&quot;author&quot;,&quot;Knuth&quot;);</span>
+<span class="fc" id="L145">        wrongContext.getDatabase().getEntries().get(0).setField(&quot;year&quot;,&quot;2014&quot;);</span>
+<span class="fc" id="L146">        assertWrong(wrongContext);</span>
+<span class="fc" id="L147">    }</span>
+
+    @Test
+    public void testBracketChecks() {
+<span class="fc" id="L151">        assertCorrect(createContext(&quot;title&quot;, &quot;x&quot;));</span>
+<span class="fc" id="L152">        assertCorrect(createContext(&quot;title&quot;, &quot;{x}&quot;));</span>
+<span class="fc" id="L153">        assertCorrect(createContext(&quot;title&quot;, &quot;{x}x{}x{{}}&quot;));</span>
+<span class="fc" id="L154">        assertWrong(createContext(&quot;title&quot;, &quot;{x}x{}}x{{}}&quot;));</span>
+<span class="fc" id="L155">        assertWrong(createContext(&quot;title&quot;, &quot;}&quot;));</span>
+<span class="fc" id="L156">        assertWrong(createContext(&quot;title&quot;, &quot;{&quot;));</span>
+<span class="fc" id="L157">    }</span>
+
+    @Test
+    public void testAuthorNameChecks() {
+<span class="fc bfc" id="L161" title="All 2 branches covered.">        for (String field : InternalBibtexFields.getPersonNameFields()) {</span>
+            // getPersonNameFields returns fields that are available in biblatex only
+            // if run without mode, the NoBibtexFieldChecker will complain that &quot;afterword&quot; is a biblatex only field
+<span class="fc" id="L164">            assertCorrect(withMode(createContext(field, &quot;&quot;), BibDatabaseMode.BIBLATEX));</span>
+<span class="fc" id="L165">            assertCorrect(withMode(createContext(field, &quot;Knuth&quot;), BibDatabaseMode.BIBLATEX));</span>
+<span class="fc" id="L166">            assertWrong(withMode(createContext(field, &quot;   Knuth, Donald E. &quot;), BibDatabaseMode.BIBLATEX));</span>
+<span class="fc" id="L167">            assertWrong(withMode(createContext(field, &quot;Knuth, Donald E. and Kurt Cobain and A. Einstein&quot;), BibDatabaseMode.BIBLATEX));</span>
+<span class="fc" id="L168">            assertCorrect(withMode(createContext(field, &quot;Donald E. Knuth and Kurt Cobain and A. Einstein&quot;), BibDatabaseMode.BIBLATEX));</span>
+<span class="fc" id="L169">            assertWrong(withMode(createContext(field, &quot;, and Kurt Cobain and A. Einstein&quot;), BibDatabaseMode.BIBLATEX));</span>
+<span class="fc" id="L170">            assertWrong(withMode(createContext(field, &quot;Donald E. Knuth and Kurt Cobain and ,&quot;), BibDatabaseMode.BIBLATEX));</span>
+<span class="fc" id="L171">            assertWrong(withMode(createContext(field, &quot;and Kurt Cobain and A. Einstein&quot;), BibDatabaseMode.BIBLATEX));</span>
+<span class="fc" id="L172">            assertWrong(withMode(createContext(field, &quot;Donald E. Knuth and Kurt Cobain and&quot;), BibDatabaseMode.BIBLATEX));</span>
+        }
+<span class="fc" id="L174">    }</span>
+
+    @Test
+    public void testTitleChecks() {
+<span class="fc" id="L178">        assertCorrect(withMode(createContext(&quot;title&quot;, &quot;This is a title&quot;), BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L179">        assertWrong(withMode(createContext(&quot;title&quot;, &quot;This is a Title&quot;), BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L180">        assertCorrect(withMode(createContext(&quot;title&quot;, &quot;This is a {T}itle&quot;), BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L181">        assertCorrect(withMode(createContext(&quot;title&quot;, &quot;{This is a Title}&quot;), BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L182">        assertCorrect(withMode(createContext(&quot;title&quot;, &quot;This is a {Title}&quot;), BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L183">        assertCorrect(withMode(createContext(&quot;title&quot;, &quot;{C}urrent {C}hronicle&quot;), BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L184">        assertCorrect(withMode(createContext(&quot;title&quot;, &quot;{A Model-Driven Approach for Monitoring {ebBP} BusinessTransactions}&quot;), BibDatabaseMode.BIBTEX));</span>
+
+<span class="fc" id="L186">        assertCorrect(withMode(createContext(&quot;title&quot;, &quot;This is a title&quot;), BibDatabaseMode.BIBLATEX));</span>
+<span class="fc" id="L187">        assertCorrect(withMode(createContext(&quot;title&quot;, &quot;This is a Title&quot;), BibDatabaseMode.BIBLATEX));</span>
+<span class="fc" id="L188">        assertCorrect(withMode(createContext(&quot;title&quot;, &quot;This is a {T}itle&quot;), BibDatabaseMode.BIBLATEX));</span>
+<span class="fc" id="L189">        assertCorrect(withMode(createContext(&quot;title&quot;, &quot;{This is a Title}&quot;), BibDatabaseMode.BIBLATEX));</span>
+<span class="fc" id="L190">        assertCorrect(withMode(createContext(&quot;title&quot;, &quot;This is a {Title}&quot;), BibDatabaseMode.BIBLATEX));</span>
+<span class="fc" id="L191">        assertCorrect(withMode(createContext(&quot;title&quot;, &quot;{C}urrent {C}hronicle&quot;), BibDatabaseMode.BIBLATEX));</span>
+<span class="fc" id="L192">        assertCorrect(withMode(createContext(&quot;title&quot;, &quot;{A Model-Driven Approach for Monitoring {ebBP} BusinessTransactions}&quot;), BibDatabaseMode.BIBLATEX));</span>
+<span class="fc" id="L193">    }</span>
+
+    @Test
+    public void testAbbreviationChecks() {
+<span class="fc bfc" id="L197" title="All 2 branches covered.">        for (String field : Arrays.asList(&quot;booktitle&quot;, &quot;journal&quot;)) {</span>
+<span class="fc" id="L198">            assertCorrect(createContext(field, &quot;IEEE Software&quot;));</span>
+<span class="fc" id="L199">            assertCorrect(createContext(field, &quot;&quot;));</span>
+<span class="fc" id="L200">            assertWrong(createContext(field, &quot;IEEE SW&quot;));</span>
+        }
+<span class="fc" id="L202">    }</span>
+
+    @Test
+    public void testJournalIsKnownInAbbreviationList() {
+<span class="fc" id="L206">        assertCorrect(createContext(&quot;journal&quot;, &quot;IEEE Software&quot;));</span>
+<span class="fc" id="L207">        assertWrong(createContext(&quot;journal&quot;, &quot;IEEE Whocares&quot;));</span>
+<span class="fc" id="L208">    }</span>
+
+    @Test
+    public void testFileChecks() {
+<span class="fc" id="L212">        MetaData metaData = mock(MetaData.class);</span>
+<span class="fc" id="L213">        Mockito.when(metaData.getDefaultFileDirectory()).thenReturn(Optional.of(&quot;.&quot;));</span>
+<span class="fc" id="L214">        Mockito.when(metaData.getUserFileDirectory(any(String.class))).thenReturn(Optional.empty());</span>
+        // FIXME: must be set as checkBibtexDatabase only activates title checker based on database mode
+<span class="fc" id="L216">        Mockito.when(metaData.getMode()).thenReturn(Optional.of(BibDatabaseMode.BIBTEX));</span>
+
+<span class="fc" id="L218">        assertCorrect(createContext(&quot;file&quot;, &quot;:build.gradle:gradle&quot;, metaData));</span>
+<span class="fc" id="L219">        assertCorrect(createContext(&quot;file&quot;, &quot;description:build.gradle:gradle&quot;, metaData));</span>
+<span class="fc" id="L220">        assertWrong(createContext(&quot;file&quot;, &quot;:asflakjfwofja:PDF&quot;, metaData));</span>
+<span class="fc" id="L221">    }</span>
+
+    @Test
+    public void fileCheckFindsFilesRelativeToBibFile() throws IOException {
+<span class="fc" id="L225">        File bibFile = testFolder.newFile(&quot;lit.bib&quot;);</span>
+<span class="fc" id="L226">        testFolder.newFile(&quot;file.pdf&quot;);</span>
+
+<span class="fc" id="L228">        BibDatabaseContext databaseContext = createContext(&quot;file&quot;, &quot;:file.pdf:PDF&quot;);</span>
+<span class="fc" id="L229">        databaseContext.setDatabaseFile(bibFile);</span>
+
+<span class="fc" id="L231">        assertCorrect(databaseContext);</span>
+<span class="fc" id="L232">    }</span>
+
+    @Test
+    public void testTypeChecks() {
+<span class="fc" id="L236">        assertCorrect(createContext(&quot;pages&quot;, &quot;11--15&quot;, &quot;inproceedings&quot;));</span>
+<span class="fc" id="L237">        assertWrong(createContext(&quot;pages&quot;, &quot;11--15&quot;, &quot;proceedings&quot;));</span>
+<span class="fc" id="L238">    }</span>
+
+    @Test
+    public void testBooktitleChecks() {
+<span class="fc" id="L242">        assertCorrect(createContext(&quot;booktitle&quot;, &quot;2014 Fourth International Conference on Digital Information and Communication Technology and it's Applications (DICTAP)&quot;, &quot;proceedings&quot;));</span>
+<span class="fc" id="L243">        assertWrong(createContext(&quot;booktitle&quot;, &quot;Digital Information and Communication Technology and it's Applications (DICTAP), 2014 Fourth International Conference on&quot;, &quot;proceedings&quot;));</span>
+<span class="fc" id="L244">    }</span>
+
+    @Test
+    public void testPageNumbersChecks() {
+<span class="fc" id="L248">        assertCorrect(createContext(&quot;pages&quot;, &quot;1--2&quot;));</span>
+<span class="fc" id="L249">        assertCorrect(createContext(&quot;pages&quot;, &quot;12&quot;));</span>
+<span class="fc" id="L250">        assertWrong(createContext(&quot;pages&quot;, &quot;1-2&quot;));</span>
+<span class="fc" id="L251">        assertCorrect(createContext(&quot;pages&quot;, &quot;1,2,3&quot;));</span>
+<span class="fc" id="L252">        assertCorrect(createContext(&quot;pages&quot;, &quot;43+&quot;));</span>
+<span class="fc" id="L253">        assertWrong(createContext(&quot;pages&quot;, &quot;1 2&quot;));</span>
+<span class="fc" id="L254">        assertWrong(createContext(&quot;pages&quot;, &quot;{1}-{2}&quot;));</span>
+<span class="fc" id="L255">        assertCorrect(createContext(&quot;pages&quot;, &quot;7,41,73--97&quot;));</span>
+<span class="fc" id="L256">        assertCorrect(createContext(&quot;pages&quot;, &quot;7,41--42,73&quot;));</span>
+<span class="fc" id="L257">        assertCorrect(createContext(&quot;pages&quot;, &quot;7--11,41--43,73&quot;));</span>
+<span class="fc" id="L258">        assertCorrect(createContext(&quot;pages&quot;, &quot;7+,41--43,73&quot;));</span>
+<span class="fc" id="L259">    }</span>
+
+    @Test
+    public void testBiblatexPageNumbersChecks() {
+<span class="fc" id="L263">        assertCorrect(withMode(createContext(&quot;pages&quot;, &quot;1--2&quot;), BibDatabaseMode.BIBLATEX));</span>
+<span class="fc" id="L264">        assertCorrect(withMode(createContext(&quot;pages&quot;, &quot;12&quot;), BibDatabaseMode.BIBLATEX));</span>
+<span class="fc" id="L265">        assertCorrect(withMode(createContext(&quot;pages&quot;, &quot;1-2&quot;), BibDatabaseMode.BIBLATEX)); // only diff to bibtex</span>
+<span class="fc" id="L266">        assertCorrect(withMode(createContext(&quot;pages&quot;, &quot;1,2,3&quot;), BibDatabaseMode.BIBLATEX));</span>
+<span class="fc" id="L267">        assertCorrect(withMode(createContext(&quot;pages&quot;, &quot;43+&quot;), BibDatabaseMode.BIBLATEX));</span>
+<span class="fc" id="L268">        assertWrong(withMode(createContext(&quot;pages&quot;, &quot;1 2&quot;), BibDatabaseMode.BIBLATEX));</span>
+<span class="fc" id="L269">        assertWrong(withMode(createContext(&quot;pages&quot;, &quot;{1}-{2}&quot;), BibDatabaseMode.BIBLATEX));</span>
+<span class="fc" id="L270">        assertCorrect(withMode(createContext(&quot;pages&quot;, &quot;7,41,73--97&quot;), BibDatabaseMode.BIBLATEX));</span>
+<span class="fc" id="L271">        assertCorrect(withMode(createContext(&quot;pages&quot;, &quot;7,41--42,73&quot;), BibDatabaseMode.BIBLATEX));</span>
+<span class="fc" id="L272">        assertCorrect(withMode(createContext(&quot;pages&quot;, &quot;7--11,41--43,73&quot;), BibDatabaseMode.BIBLATEX));</span>
+<span class="fc" id="L273">        assertCorrect(withMode(createContext(&quot;pages&quot;, &quot;7+,41--43,73&quot;), BibDatabaseMode.BIBLATEX));</span>
+<span class="fc" id="L274">    }</span>
+
+    @Test
+    public void testBibStringChecks() {
+<span class="fc" id="L278">        assertCorrect(createContext(&quot;title&quot;, &quot;Not a single hash mark&quot;));</span>
+<span class="fc" id="L279">        assertCorrect(createContext(&quot;month&quot;, &quot;#jan#&quot;));</span>
+<span class="fc" id="L280">        assertCorrect(createContext(&quot;author&quot;, &quot;#einstein# and #newton#&quot;));</span>
+<span class="fc" id="L281">        assertWrong(createContext(&quot;month&quot;, &quot;#jan&quot;));</span>
+<span class="fc" id="L282">        assertWrong(createContext(&quot;author&quot;, &quot;#einstein# #amp; #newton#&quot;));</span>
+<span class="fc" id="L283">    }</span>
+
+    @Test
+    public void testHTMLCharacterChecks() {
+<span class="fc" id="L287">        assertCorrect(createContext(&quot;title&quot;, &quot;Not a single {HTML} character&quot;));</span>
+<span class="fc" id="L288">        assertCorrect(createContext(&quot;month&quot;, &quot;#jan#&quot;));</span>
+<span class="fc" id="L289">        assertCorrect(createContext(&quot;author&quot;, &quot;A. Einstein and I. Newton&quot;));</span>
+<span class="fc" id="L290">        assertCorrect(createContext(&quot;url&quot;, &quot;http://www.thinkmind.org/index.php?view=article&amp;amp;articleid=cloud_computing_2013_1_20_20130&quot;));</span>
+<span class="fc" id="L291">        assertWrong(createContext(&quot;author&quot;, &quot;Lenhard, J&amp;ouml;rg&quot;));</span>
+<span class="fc" id="L292">        assertWrong(createContext(&quot;author&quot;, &quot;Lenhard, J&amp;#227;rg&quot;));</span>
+<span class="fc" id="L293">        assertWrong(createContext(&quot;journal&quot;, &quot;&amp;Auml;rling Str&amp;ouml;m for &amp;#8211; &amp;#x2031;&quot;));</span>
+<span class="fc" id="L294">    }</span>
+
+    @Test
+    public void testISSNChecks() {
+<span class="fc" id="L298">        assertCorrect(createContext(&quot;issn&quot;, &quot;0020-7217&quot;));</span>
+<span class="fc" id="L299">        assertCorrect(createContext(&quot;issn&quot;, &quot;1687-6180&quot;));</span>
+<span class="fc" id="L300">        assertCorrect(createContext(&quot;issn&quot;, &quot;2434-561x&quot;));</span>
+<span class="fc" id="L301">        assertWrong(createContext(&quot;issn&quot;, &quot;Some other stuff&quot;));</span>
+<span class="fc" id="L302">        assertWrong(createContext(&quot;issn&quot;, &quot;0020-7218&quot;));</span>
+<span class="fc" id="L303">    }</span>
+
+    @Test
+    public void testISBNChecks() {
+<span class="fc" id="L307">        assertCorrect(createContext(&quot;isbn&quot;, &quot;0-201-53082-1&quot;));</span>
+<span class="fc" id="L308">        assertCorrect(createContext(&quot;isbn&quot;, &quot;0-9752298-0-X&quot;));</span>
+<span class="fc" id="L309">        assertCorrect(createContext(&quot;isbn&quot;, &quot;978-0-306-40615-7&quot;));</span>
+<span class="fc" id="L310">        assertWrong(createContext(&quot;isbn&quot;, &quot;Some other stuff&quot;));</span>
+<span class="fc" id="L311">        assertWrong(createContext(&quot;isbn&quot;, &quot;0-201-53082-2&quot;));</span>
+<span class="fc" id="L312">        assertWrong(createContext(&quot;isbn&quot;, &quot;978-0-306-40615-8&quot;));</span>
+<span class="fc" id="L313">    }</span>
+
+    @Test
+    public void testDOIChecks() {
+<span class="fc" id="L317">        assertCorrect(createContext(&quot;doi&quot;, &quot;10.1023/A:1022883727209&quot;));</span>
+<span class="fc" id="L318">        assertCorrect(createContext(&quot;doi&quot;, &quot;10.17487/rfc1436&quot;));</span>
+<span class="fc" id="L319">        assertCorrect(createContext(&quot;doi&quot;, &quot;10.1002/(SICI)1097-4571(199205)43:4&lt;284::AID-ASI3&gt;3.0.CO;2-0&quot;));</span>
+<span class="fc" id="L320">        assertWrong(createContext(&quot;doi&quot;, &quot;asdf&quot;));</span>
+<span class="fc" id="L321">    }</span>
+
+    @Test
+    public void testEntryIsUnchangedAfterChecks() {
+<span class="fc" id="L325">        BibEntry entry = new BibEntry();</span>
+
+        // populate with all known fields
+<span class="fc bfc" id="L328" title="All 2 branches covered.">        for (String fieldName : InternalBibtexFields.getAllPublicAndInternalFieldNames()) {</span>
+<span class="fc" id="L329">            entry.setField(fieldName, UUID.randomUUID().toString());</span>
+        }
+        // add a random field
+<span class="fc" id="L332">        entry.setField(UUID.randomUUID().toString(), UUID.randomUUID().toString());</span>
+
+        // duplicate entry
+<span class="fc" id="L335">        BibEntry clonedEntry = (BibEntry) entry.clone();</span>
+
+<span class="fc" id="L337">        BibDatabase bibDatabase = new BibDatabase();</span>
+<span class="fc" id="L338">        bibDatabase.insertEntry(entry);</span>
+<span class="fc" id="L339">        BibDatabaseContext context = new BibDatabaseContext(bibDatabase, new Defaults());</span>
+
+<span class="fc" id="L341">        new IntegrityCheck(context,</span>
+<span class="fc" id="L342">                mock(FileDirectoryPreferences.class),</span>
+<span class="fc" id="L343">                createBibtexKeyPatternPreferences(),</span>
+<span class="fc" id="L344">                new JournalAbbreviationRepository(new Abbreviation(&quot;IEEE Software&quot;, &quot;IEEE SW&quot;)), true)</span>
+<span class="fc" id="L345">                .checkBibtexDatabase();</span>
+
+<span class="fc" id="L347">        assertEquals(clonedEntry, entry);</span>
+<span class="fc" id="L348">    }</span>
+
+    @Test
+    public void testASCIIChecks() {
+<span class="fc" id="L352">        assertCorrect(createContext(&quot;title&quot;, &quot;Only ascii characters!'@12&quot;));</span>
+<span class="fc" id="L353">        assertWrong(createContext(&quot;month&quot;, &quot;Umlauts are nöt ällowed&quot;));</span>
+<span class="fc" id="L354">        assertWrong(createContext(&quot;author&quot;, &quot;Some unicode ⊕&quot;));</span>
+<span class="fc" id="L355">    }</span>
+
+    private BibDatabaseContext createContext(String field, String value, String type) {
+<span class="fc" id="L358">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L359">        entry.setField(field, value);</span>
+<span class="fc" id="L360">        entry.setType(type);</span>
+<span class="fc" id="L361">        BibDatabase bibDatabase = new BibDatabase();</span>
+<span class="fc" id="L362">        bibDatabase.insertEntry(entry);</span>
+<span class="fc" id="L363">        return new BibDatabaseContext(bibDatabase, new Defaults());</span>
+    }
+
+    private BibDatabaseContext createContext(String field, String value, MetaData metaData) {
+<span class="fc" id="L367">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L368">        entry.setField(field, value);</span>
+<span class="fc" id="L369">        BibDatabase bibDatabase = new BibDatabase();</span>
+<span class="fc" id="L370">        bibDatabase.insertEntry(entry);</span>
+<span class="fc" id="L371">        return new BibDatabaseContext(bibDatabase, metaData, new Defaults());</span>
+    }
+
+    private BibDatabaseContext createContext(String field, String value) {
+<span class="fc" id="L375">        return createContext(field, value, new MetaData());</span>
+    }
+
+    private void assertWrong(BibDatabaseContext context) {
+<span class="fc" id="L379">        List&lt;IntegrityMessage&gt; messages = new IntegrityCheck(context,</span>
+<span class="fc" id="L380">                mock(FileDirectoryPreferences.class),</span>
+<span class="fc" id="L381">                createBibtexKeyPatternPreferences(),</span>
+<span class="fc" id="L382">                new JournalAbbreviationRepository(new Abbreviation(&quot;IEEE Software&quot;, &quot;IEEE SW&quot;)), true)</span>
+<span class="fc" id="L383">                .checkBibtexDatabase();</span>
+<span class="fc" id="L384">        assertFalse(messages.toString(), messages.isEmpty());</span>
+<span class="fc" id="L385">    }</span>
+
+    private void assertCorrect(BibDatabaseContext context) {
+<span class="fc" id="L388">        List&lt;IntegrityMessage&gt; messages = new IntegrityCheck(context,</span>
+<span class="fc" id="L389">                mock(FileDirectoryPreferences.class),</span>
+<span class="fc" id="L390">                createBibtexKeyPatternPreferences(),</span>
+<span class="fc" id="L391">                new JournalAbbreviationRepository(new Abbreviation(&quot;IEEE Software&quot;, &quot;IEEE SW&quot;)), true</span>
+<span class="fc" id="L392">        ).checkBibtexDatabase();</span>
+<span class="fc" id="L393">        assertEquals(Collections.emptyList(), messages);</span>
+<span class="fc" id="L394">    }</span>
+
+    private BibtexKeyPatternPreferences createBibtexKeyPatternPreferences() {
+<span class="fc" id="L397">        final GlobalBibtexKeyPattern keyPattern = GlobalBibtexKeyPattern.fromPattern(&quot;[auth][year]&quot;);</span>
+<span class="fc" id="L398">        return new BibtexKeyPatternPreferences(</span>
+<span class="fc" id="L399">                &quot;&quot;,</span>
+<span class="fc" id="L400">                &quot;&quot;,</span>
+<span class="fc" id="L401">                false,</span>
+<span class="fc" id="L402">                false,</span>
+<span class="fc" id="L403">                false,</span>
+<span class="fc" id="L404">                keyPattern,</span>
+<span class="fc" id="L405">                ',');</span>
+    }
+
+    private BibDatabaseContext withMode(BibDatabaseContext context, BibDatabaseMode mode) {
+<span class="fc" id="L409">        context.setMode(mode);</span>
+<span class="fc" id="L410">        return context;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

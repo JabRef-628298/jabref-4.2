@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>URLUtil.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.net</a> &gt; <span class="el_source">URLUtil.java</span></div><h1>URLUtil.java</h1><pre class="source lang-java linenums">package org.jabref.logic.net;
+
+import java.io.UnsupportedEncodingException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Objects;
+
+public class URLUtil {
+    private static final String URL_EXP = &quot;^(https?|ftp)://.+&quot;;
+
+    // Detect Google search URL
+    private static final String GOOGLE_SEARCH_EXP = &quot;^https?://(?:www\\.)?google\\.[\\.a-z]+?/url.*&quot;;
+
+<span class="nc" id="L16">    private URLUtil() {</span>
+<span class="nc" id="L17">    }</span>
+
+    /**
+     * Cleans URLs returned by Google search.
+     *
+     * &lt;example&gt;
+     *  If you copy links from search results from Google, all links will be enriched with search meta data, e.g.
+     *  https://www.google.de/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=1&amp;cad=rja&amp;uact=8&amp;&amp;url=http%3A%2F%2Fwww.inrg.csie.ntu.edu.tw%2Falgorithm2014%2Fhomework%2FWagner-74.pdf&amp;ei=DifeVYHkDYWqU5W0j6gD&amp;usg=AFQjCNFl638rl5KVta1jIMWLyb4CPSZidg&amp;sig2=0hSSMw9XZXL3HJWwEcJtOg
+     * &lt;/example&gt;
+     *
+     * @param url the Google search URL string
+     * @return the cleaned Google URL or @code{url} if no search URL was detected
+     */
+    public static String cleanGoogleSearchURL(String url) {
+<span class="fc" id="L31">        Objects.requireNonNull(url);</span>
+
+<span class="fc bfc" id="L33" title="All 2 branches covered.">        if (!url.matches(GOOGLE_SEARCH_EXP)) {</span>
+<span class="fc" id="L34">            return url;</span>
+        }
+        // Extract destination URL
+        try {
+<span class="fc" id="L38">            URL searchURL = new URL(url);</span>
+            // URL parameters
+<span class="fc" id="L40">            String query = searchURL.getQuery();</span>
+            // no parameters
+<span class="fc bfc" id="L42" title="All 2 branches covered.">            if (query == null) {</span>
+<span class="fc" id="L43">                return url;</span>
+            }
+            // extract url parameter
+<span class="fc" id="L46">            String[] pairs = query.split(&quot;&amp;&quot;);</span>
+
+<span class="fc bfc" id="L48" title="All 2 branches covered.">            for (String pair: pairs) {</span>
+                // &quot;clean&quot; url is decoded value of &quot;url&quot; parameter
+<span class="fc bfc" id="L50" title="All 2 branches covered.">                if (pair.startsWith(&quot;url=&quot;)) {</span>
+<span class="fc" id="L51">                    String value = pair.substring(pair.indexOf('=') + 1, pair.length());</span>
+
+<span class="fc" id="L53">                    String decode = URLDecoder.decode(value, StandardCharsets.UTF_8.name());</span>
+                    // url?
+<span class="fc bfc" id="L55" title="All 2 branches covered.">                    if (decode.matches(URL_EXP)) {</span>
+<span class="fc" id="L56">                        return decode;</span>
+                    }
+                }
+            }
+<span class="fc" id="L60">            return url;</span>
+<span class="nc" id="L61">        } catch (UnsupportedEncodingException | MalformedURLException e) {</span>
+<span class="nc" id="L62">            return url;</span>
+        }
+    }
+
+    /**
+     * Checks whether the given String is a URL.
+     * Currently only checks for a protocol String.
+     *
+     * @param url the String to check for a URL
+     * @return true if &lt;c&gt;url&lt;/c&gt; contains a valid URL
+     */
+    public static boolean isURL(String url) {
+<span class="fc" id="L74">        return url.contains(&quot;://&quot;);</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

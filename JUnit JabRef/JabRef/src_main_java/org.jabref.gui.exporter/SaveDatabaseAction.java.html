@@ -1,0 +1,458 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>SaveDatabaseAction.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.exporter</a> &gt; <span class="el_source">SaveDatabaseAction.java</span></div><h1>SaveDatabaseAction.java</h1><pre class="source lang-java linenums">package org.jabref.gui.exporter;
+
+import java.io.File;
+import java.nio.charset.Charset;
+import java.nio.charset.UnsupportedCharsetException;
+import java.nio.file.Path;
+import java.util.Optional;
+
+import javax.swing.JOptionPane;
+import javax.swing.JTextArea;
+import javax.swing.SwingUtilities;
+
+import org.jabref.Globals;
+import org.jabref.JabRefExecutorService;
+import org.jabref.gui.BasePanel;
+import org.jabref.gui.DialogService;
+import org.jabref.gui.FXDialogService;
+import org.jabref.gui.JabRefFrame;
+import org.jabref.gui.collab.ChangeScanner;
+import org.jabref.gui.collab.FileUpdatePanel;
+import org.jabref.gui.dialogs.AutosaveUIManager;
+import org.jabref.gui.util.DefaultTaskExecutor;
+import org.jabref.gui.util.FileDialogConfiguration;
+import org.jabref.gui.worker.AbstractWorker;
+import org.jabref.logic.autosaveandbackup.AutosaveManager;
+import org.jabref.logic.autosaveandbackup.BackupManager;
+import org.jabref.logic.exporter.BibtexDatabaseWriter;
+import org.jabref.logic.exporter.FileSaveSession;
+import org.jabref.logic.exporter.SaveException;
+import org.jabref.logic.exporter.SavePreferences;
+import org.jabref.logic.exporter.SaveSession;
+import org.jabref.logic.l10n.Encodings;
+import org.jabref.logic.l10n.Localization;
+import org.jabref.logic.shared.prefs.SharedDatabasePreferences;
+import org.jabref.logic.util.FileType;
+import org.jabref.logic.util.io.FileBasedLock;
+import org.jabref.model.database.BibDatabaseContext;
+import org.jabref.model.database.event.ChangePropagation;
+import org.jabref.model.database.shared.DatabaseLocation;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.preferences.JabRefPreferences;
+
+import com.jgoodies.forms.builder.FormBuilder;
+import com.jgoodies.forms.layout.FormLayout;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * Action for the &quot;Save&quot; and &quot;Save as&quot; operations called from BasePanel. This class is also used for
+ * save operations when closing a database or quitting the applications.
+ *
+ * The operations run synchronously, but offload the save operation from the event thread using Spin.
+ * Callers can query whether the operation was canceled, or whether it was successful.
+ */
+public class SaveDatabaseAction extends AbstractWorker {
+
+<span class="nc" id="L57">    private static final Logger LOGGER = LoggerFactory.getLogger(SaveDatabaseAction.class);</span>
+
+    private final BasePanel panel;
+    private final JabRefFrame frame;
+    private boolean success;
+    private boolean canceled;
+    private boolean fileLockedError;
+
+    private Optional&lt;Path&gt; filePath;
+
+<span class="nc" id="L67">    public SaveDatabaseAction(BasePanel panel) {</span>
+<span class="nc" id="L68">        this.panel = panel;</span>
+<span class="nc" id="L69">        this.frame = panel.frame();</span>
+<span class="nc" id="L70">        this.filePath = Optional.empty();</span>
+<span class="nc" id="L71">    }</span>
+
+    /**
+     * @param panel BasePanel which contains the database to be saved
+     * @param filePath Path to the file the database should be saved to
+     */
+    public SaveDatabaseAction(BasePanel panel, Path filePath) {
+<span class="nc" id="L78">        this(panel);</span>
+<span class="nc" id="L79">        this.filePath = Optional.ofNullable(filePath);</span>
+<span class="nc" id="L80">    }</span>
+
+    @Override
+    public void init() throws Exception {
+<span class="nc" id="L84">        success = false;</span>
+<span class="nc" id="L85">        canceled = false;</span>
+<span class="nc" id="L86">        fileLockedError = false;</span>
+<span class="nc bnc" id="L87" title="All 2 branches missed.">        if (panel.getBibDatabaseContext().getDatabaseFile().isPresent()) {</span>
+            // Check for external modifications: if true, save not performed so do not tell the user a save is underway but return instead.
+<span class="nc bnc" id="L89" title="All 2 branches missed.">            if (checkExternalModification()) {</span>
+<span class="nc" id="L90">                return;</span>
+            }
+
+<span class="nc" id="L93">            panel.frame().output(Localization.lang(&quot;Saving library&quot;) + &quot;...&quot;);</span>
+<span class="nc" id="L94">            panel.setSaving(true);</span>
+<span class="nc bnc" id="L95" title="All 2 branches missed.">        } else if (filePath.isPresent()) {</span>
+            // save as directly if the target file location is known
+<span class="nc" id="L97">            saveAs(filePath.get().toFile());</span>
+<span class="nc" id="L98">        } else {</span>
+<span class="nc" id="L99">            saveAs();</span>
+        }
+<span class="nc" id="L101">    }</span>
+
+    @Override
+    public void update() {
+<span class="nc bnc" id="L105" title="All 2 branches missed.">        if (success) {</span>
+            // Reset title of tab
+<span class="nc" id="L107">            frame.setTabTitle(panel, panel.getTabTitle(),</span>
+<span class="nc" id="L108">                    panel.getBibDatabaseContext().getDatabaseFile().get().getAbsolutePath());</span>
+<span class="nc" id="L109">            frame.output(Localization.lang(&quot;Saved library&quot;) + &quot; '&quot;</span>
+<span class="nc" id="L110">                    + panel.getBibDatabaseContext().getDatabaseFile().get().getPath() + &quot;'.&quot;);</span>
+<span class="nc" id="L111">            frame.setWindowTitle();</span>
+<span class="nc" id="L112">            frame.updateAllTabTitles();</span>
+<span class="nc bnc" id="L113" title="All 2 branches missed.">        } else if (!canceled) {</span>
+<span class="nc bnc" id="L114" title="All 2 branches missed.">            if (fileLockedError) {</span>
+                // TODO: user should have the option to override the lock file.
+<span class="nc" id="L116">                frame.output(Localization.lang(&quot;Could not save, file locked by another JabRef instance.&quot;));</span>
+<span class="nc" id="L117">            } else {</span>
+<span class="nc" id="L118">                frame.output(Localization.lang(&quot;Save failed&quot;));</span>
+            }
+        }
+<span class="nc" id="L121">    }</span>
+
+    @Override
+    public void run() {
+<span class="nc bnc" id="L125" title="All 4 branches missed.">        if (canceled || !panel.getBibDatabaseContext().getDatabaseFile().isPresent()) {</span>
+<span class="nc" id="L126">            return;</span>
+        }
+
+        try {
+            // If set in preferences, generate missing BibTeX keys
+<span class="nc" id="L131">            panel.autoGenerateKeysBeforeSaving();</span>
+
+<span class="nc bnc" id="L133" title="All 2 branches missed.">            if (FileBasedLock.waitForFileLock(panel.getBibDatabaseContext().getDatabaseFile().get().toPath())) {</span>
+                // Check for external modifications to alleviate multiuser concurrency issue when near
+                // simultaneous saves occur to a shared database file: if true, do not perform the save
+                // rather return instead.
+<span class="nc bnc" id="L137" title="All 2 branches missed.">                if (checkExternalModification()) {</span>
+<span class="nc" id="L138">                    return;</span>
+                }
+
+                // Save the database
+<span class="nc" id="L142">                success = saveDatabase(panel.getBibDatabaseContext().getDatabaseFile().get(), false,</span>
+<span class="nc" id="L143">                        panel.getBibDatabaseContext().getMetaData().getEncoding()</span>
+<span class="nc" id="L144">                                .orElse(Globals.prefs.getDefaultEncoding()));</span>
+
+<span class="nc" id="L146">                panel.updateTimeStamp();</span>
+<span class="nc" id="L147">            } else {</span>
+<span class="nc" id="L148">                success = false;</span>
+<span class="nc" id="L149">                fileLockedError = true;</span>
+            }
+
+            // release panel from save status
+<span class="nc" id="L153">            panel.setSaving(false);</span>
+
+<span class="nc bnc" id="L155" title="All 2 branches missed.">            if (success) {</span>
+<span class="nc" id="L156">                panel.getUndoManager().markUnchanged();</span>
+                // (Only) after a successful save the following
+                // statement marks that the base is unchanged
+                // since last save:
+<span class="nc" id="L160">                panel.setNonUndoableChange(false);</span>
+<span class="nc" id="L161">                panel.setBaseChanged(false);</span>
+<span class="nc" id="L162">                panel.markExternalChangesAsResolved();</span>
+            }
+<span class="nc" id="L164">        } catch (SaveException ex) {</span>
+<span class="nc bnc" id="L165" title="All 2 branches missed.">            if (ex == SaveException.FILE_LOCKED) {</span>
+<span class="nc" id="L166">                success = false;</span>
+<span class="nc" id="L167">                fileLockedError = true;</span>
+<span class="nc" id="L168">                return;</span>
+            }
+<span class="nc" id="L170">            LOGGER.error(&quot;Problem saving file&quot;, ex);</span>
+        }
+<span class="nc" id="L172">    }</span>
+
+    private boolean saveDatabase(File file, boolean selectedOnly, Charset encoding) throws SaveException {
+        SaveSession session;
+
+        // block user input
+<span class="nc" id="L178">        frame.block();</span>
+
+        try {
+<span class="nc" id="L181">            SavePreferences prefs = Globals.prefs.loadForSaveFromPreferences().withEncoding(encoding);</span>
+<span class="nc" id="L182">            BibtexDatabaseWriter&lt;SaveSession&gt; databaseWriter = new BibtexDatabaseWriter&lt;&gt;(FileSaveSession::new);</span>
+
+<span class="nc bnc" id="L184" title="All 2 branches missed.">            if (selectedOnly) {</span>
+<span class="nc" id="L185">                session = databaseWriter.savePartOfDatabase(panel.getBibDatabaseContext(), panel.getSelectedEntries(),</span>
+<span class="nc" id="L186">                        prefs);</span>
+<span class="nc" id="L187">            } else {</span>
+<span class="nc" id="L188">                session = databaseWriter.saveDatabase(panel.getBibDatabaseContext(), prefs);</span>
+            }
+
+<span class="nc" id="L191">            panel.registerUndoableChanges(session);</span>
+
+<span class="nc" id="L193">        } catch (UnsupportedCharsetException ex) {</span>
+<span class="nc" id="L194">            JOptionPane.showMessageDialog(frame,</span>
+<span class="nc" id="L195">                    Localization.lang(&quot;Could not save file.&quot;)</span>
+<span class="nc" id="L196">                            + Localization.lang(&quot;Character encoding '%0' is not supported.&quot;, encoding.displayName()),</span>
+<span class="nc" id="L197">                    Localization.lang(&quot;Save library&quot;), JOptionPane.ERROR_MESSAGE);</span>
+            // FIXME: rethrow anti-pattern
+<span class="nc" id="L199">            throw new SaveException(&quot;rt&quot;);</span>
+<span class="nc" id="L200">        } catch (SaveException ex) {</span>
+<span class="nc bnc" id="L201" title="All 2 branches missed.">            if (ex == SaveException.FILE_LOCKED) {</span>
+<span class="nc" id="L202">                throw ex;</span>
+            }
+<span class="nc bnc" id="L204" title="All 2 branches missed.">            if (ex.specificEntry()) {</span>
+<span class="nc" id="L205">                BibEntry entry = ex.getEntry();</span>
+                // Error occured during processing of an entry. Highlight it!
+<span class="nc" id="L207">                panel.highlightEntry(entry);</span>
+<span class="nc" id="L208">            } else {</span>
+<span class="nc" id="L209">                LOGGER.error(&quot;A problem occured when trying to save the file&quot;, ex);</span>
+            }
+
+<span class="nc" id="L212">            JOptionPane.showMessageDialog(frame, Localization.lang(&quot;Could not save file.&quot;) + &quot;.\n&quot; + ex.getMessage(),</span>
+<span class="nc" id="L213">                    Localization.lang(&quot;Save library&quot;), JOptionPane.ERROR_MESSAGE);</span>
+            // FIXME: rethrow anti-pattern
+<span class="nc" id="L215">            throw new SaveException(&quot;rt&quot;);</span>
+<span class="nc" id="L216">        } finally {</span>
+            // re-enable user input
+<span class="nc" id="L218">            frame.unblock();</span>
+<span class="nc" id="L219">        }</span>
+
+        // handle encoding problems
+<span class="nc" id="L222">        boolean success = true;</span>
+<span class="nc bnc" id="L223" title="All 2 branches missed.">        if (!session.getWriter().couldEncodeAll()) {</span>
+<span class="nc" id="L224">            FormBuilder builder = FormBuilder.create()</span>
+<span class="nc" id="L225">                    .layout(new FormLayout(&quot;left:pref, 4dlu, fill:pref&quot;, &quot;pref, 4dlu, pref&quot;));</span>
+<span class="nc" id="L226">            JTextArea ta = new JTextArea(session.getWriter().getProblemCharacters());</span>
+<span class="nc" id="L227">            ta.setEditable(false);</span>
+<span class="nc" id="L228">            builder.add(Localization.lang(&quot;The chosen encoding '%0' could not encode the following characters:&quot;,</span>
+<span class="nc" id="L229">                    session.getEncoding().displayName())).xy(1, 1);</span>
+<span class="nc" id="L230">            builder.add(ta).xy(3, 1);</span>
+<span class="nc" id="L231">            builder.add(Localization.lang(&quot;What do you want to do?&quot;)).xy(1, 3);</span>
+<span class="nc" id="L232">            String tryDiff = Localization.lang(&quot;Try different encoding&quot;);</span>
+<span class="nc" id="L233">            int answer = JOptionPane.showOptionDialog(frame, builder.getPanel(), Localization.lang(&quot;Save library&quot;),</span>
+<span class="nc" id="L234">                    JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE, null,</span>
+<span class="nc" id="L235">                    new String[] {Localization.lang(&quot;Save&quot;), tryDiff, Localization.lang(&quot;Cancel&quot;)}, tryDiff);</span>
+
+<span class="nc bnc" id="L237" title="All 2 branches missed.">            if (answer == JOptionPane.NO_OPTION) {</span>
+                // The user wants to use another encoding.
+<span class="nc" id="L239">                Object choice = JOptionPane.showInputDialog(frame, Localization.lang(&quot;Select encoding&quot;),</span>
+<span class="nc" id="L240">                        Localization.lang(&quot;Save library&quot;), JOptionPane.QUESTION_MESSAGE, null,</span>
+<span class="nc" id="L241">                        Encodings.ENCODINGS_DISPLAYNAMES, encoding);</span>
+<span class="nc bnc" id="L242" title="All 2 branches missed.">                if (choice == null) {</span>
+<span class="nc" id="L243">                    success = false;</span>
+<span class="nc" id="L244">                } else {</span>
+<span class="nc" id="L245">                    Charset newEncoding = Charset.forName((String) choice);</span>
+<span class="nc" id="L246">                    return saveDatabase(file, selectedOnly, newEncoding);</span>
+                }
+<span class="nc bnc" id="L248" title="All 2 branches missed.">            } else if (answer == JOptionPane.CANCEL_OPTION) {</span>
+<span class="nc" id="L249">                success = false;</span>
+            }
+        }
+
+        // backup file?
+        try {
+<span class="nc bnc" id="L255" title="All 2 branches missed.">            if (success) {</span>
+<span class="nc" id="L256">                session.commit(file.toPath());</span>
+                // Make sure to remember which encoding we used.
+<span class="nc" id="L258">                panel.getBibDatabaseContext().getMetaData().setEncoding(encoding, ChangePropagation.DO_NOT_POST_EVENT);</span>
+<span class="nc" id="L259">            } else {</span>
+<span class="nc" id="L260">                session.cancel();</span>
+            }
+<span class="nc" id="L262">        } catch (SaveException e) {</span>
+<span class="nc" id="L263">            int ans = JOptionPane.showConfirmDialog(null,</span>
+<span class="nc" id="L264">                    Localization.lang(&quot;Save failed during backup creation&quot;) + &quot;. &quot;</span>
+<span class="nc" id="L265">                            + Localization.lang(&quot;Save without backup?&quot;),</span>
+<span class="nc" id="L266">                    Localization.lang(&quot;Unable to create backup&quot;), JOptionPane.YES_NO_OPTION);</span>
+<span class="nc bnc" id="L267" title="All 2 branches missed.">            if (ans == JOptionPane.YES_OPTION) {</span>
+<span class="nc" id="L268">                session.setUseBackup(false);</span>
+<span class="nc" id="L269">                session.commit(file.toPath());</span>
+<span class="nc" id="L270">                panel.getBibDatabaseContext().getMetaData().setEncoding(encoding, ChangePropagation.DO_NOT_POST_EVENT);</span>
+<span class="nc" id="L271">            } else {</span>
+<span class="nc" id="L272">                success = false;</span>
+            }
+        }
+
+<span class="nc" id="L276">        return success;</span>
+    }
+
+    /**
+     * Run the &quot;Save&quot; operation. This method offloads the actual save operation to a background thread, but
+     * still runs synchronously using Spin (the method returns only after completing the operation).
+     */
+    public void runCommand() throws Exception {
+<span class="nc" id="L284">        BasePanel.runWorker(this);</span>
+<span class="nc" id="L285">    }</span>
+
+    public void save() throws Exception {
+<span class="nc" id="L288">        runCommand();</span>
+<span class="nc" id="L289">        frame.updateEnabledState();</span>
+<span class="nc" id="L290">    }</span>
+
+    public void saveAs() throws Exception {
+        // configure file dialog
+
+<span class="nc" id="L295">        FileDialogConfiguration fileDialogConfiguration = new FileDialogConfiguration.Builder()</span>
+<span class="nc" id="L296">                .addExtensionFilter(FileType.BIBTEX_DB)</span>
+<span class="nc" id="L297">                .withDefaultExtension(FileType.BIBTEX_DB)</span>
+<span class="nc" id="L298">                .withInitialDirectory(Globals.prefs.get(JabRefPreferences.WORKING_DIRECTORY)).build();</span>
+<span class="nc" id="L299">        DialogService ds = new FXDialogService();</span>
+
+<span class="nc" id="L301">        Optional&lt;Path&gt; path = DefaultTaskExecutor</span>
+<span class="nc" id="L302">                .runInJavaFXThread(() -&gt; ds.showFileSaveDialog(fileDialogConfiguration));</span>
+<span class="nc bnc" id="L303" title="All 2 branches missed.">        if (path.isPresent()) {</span>
+<span class="nc" id="L304">            saveAs(path.get().toFile());</span>
+<span class="nc" id="L305">        } else {</span>
+<span class="nc" id="L306">            canceled = true;</span>
+<span class="nc" id="L307">            return;</span>
+        }
+<span class="nc" id="L309">    }</span>
+
+    /**
+     * Run the &quot;Save as&quot; operation. This method offloads the actual save operation to a background thread, but
+     * still runs synchronously using Spin (the method returns only after completing the operation).
+     */
+    public void saveAs(File file) throws Exception {
+<span class="nc" id="L316">        BibDatabaseContext context = panel.getBibDatabaseContext();</span>
+
+<span class="nc bnc" id="L318" title="All 2 branches missed.">        if (context.getLocation() == DatabaseLocation.SHARED) {</span>
+            // Save all properties dependent on the ID. This makes it possible to restore them.
+<span class="nc" id="L320">            new SharedDatabasePreferences(context.getDatabase().generateSharedDatabaseID())</span>
+<span class="nc" id="L321">                    .putAllDBMSConnectionProperties(context.getDBMSSynchronizer().getConnectionProperties());</span>
+
+        }
+
+<span class="nc" id="L325">        context.setDatabaseFile(file);</span>
+<span class="nc bnc" id="L326" title="All 2 branches missed.">        if (file.getParent() != null) {</span>
+<span class="nc" id="L327">            Globals.prefs.put(JabRefPreferences.WORKING_DIRECTORY, file.getParent());</span>
+        }
+<span class="nc" id="L329">        runCommand();</span>
+        // If the operation failed, revert the file field and return:
+<span class="nc bnc" id="L331" title="All 2 branches missed.">        if (!success) {</span>
+<span class="nc" id="L332">            return;</span>
+        }
+
+<span class="nc" id="L335">        Optional&lt;Path&gt; databasePath = context.getDatabasePath();</span>
+<span class="nc bnc" id="L336" title="All 2 branches missed.">        if (databasePath.isPresent()) {</span>
+<span class="nc" id="L337">            final Path oldFile = databasePath.get();</span>
+<span class="nc" id="L338">            context.setDatabaseFile(oldFile.toFile());</span>
+            //closing AutosaveManager and BackupManager for original library
+<span class="nc" id="L340">            AutosaveManager.shutdown(context);</span>
+<span class="nc" id="L341">            BackupManager.shutdown(context);</span>
+<span class="nc" id="L342">        } else {</span>
+<span class="nc" id="L343">            LOGGER.info(&quot;Old file not found, just creating a new file&quot;);</span>
+        }
+<span class="nc" id="L345">        context.setDatabaseFile(file);</span>
+<span class="nc" id="L346">        panel.resetChangeMonitor();</span>
+
+<span class="nc bnc" id="L348" title="All 2 branches missed.">        if (readyForAutosave(context)) {</span>
+<span class="nc" id="L349">            AutosaveManager autosaver = AutosaveManager.start(context);</span>
+<span class="nc" id="L350">            autosaver.registerListener(new AutosaveUIManager(panel));</span>
+        }
+
+<span class="nc bnc" id="L353" title="All 2 branches missed.">        if (readyForBackup(context)) {</span>
+<span class="nc" id="L354">            BackupManager.start(context);</span>
+        }
+
+<span class="nc" id="L357">        context.getDatabaseFile().ifPresent(presentFile -&gt; frame.getFileHistory().newFile(presentFile.getPath()));</span>
+<span class="nc" id="L358">        frame.updateEnabledState();</span>
+<span class="nc" id="L359">    }</span>
+
+    private boolean readyForAutosave(BibDatabaseContext context) {
+<span class="nc bnc" id="L362" title="All 2 branches missed.">        return ((context.getLocation() == DatabaseLocation.SHARED) ||</span>
+<span class="nc bnc" id="L363" title="All 2 branches missed.">                ((context.getLocation() == DatabaseLocation.LOCAL)</span>
+<span class="nc bnc" id="L364" title="All 2 branches missed.">                        &amp;&amp; Globals.prefs.getBoolean(JabRefPreferences.LOCAL_AUTO_SAVE)))</span>
+                &amp;&amp;
+<span class="nc bnc" id="L366" title="All 2 branches missed.">                context.getDatabaseFile().isPresent();</span>
+    }
+
+    private boolean readyForBackup(BibDatabaseContext context) {
+<span class="nc bnc" id="L370" title="All 4 branches missed.">        return (context.getLocation() == DatabaseLocation.LOCAL) &amp;&amp; context.getDatabaseFile().isPresent();</span>
+    }
+
+    /**
+     * Query whether the last operation was successful.
+     *
+     * @return true if the last Save/SaveAs operation completed successfully, false otherwise.
+     */
+    public boolean isSuccess() {
+<span class="nc" id="L379">        return success;</span>
+    }
+
+    /**
+     * Query whether the last operation was canceled.
+     *
+     * @return true if the last Save/SaveAs operation was canceled from the file dialog or from another
+     * query dialog, false otherwise.
+     */
+    public boolean isCanceled() {
+<span class="nc" id="L389">        return canceled;</span>
+    }
+
+    /**
+     * Check whether or not the external database has been modified. If so need to alert the user to accept external updates prior to
+     * saving the database. This is necessary to avoid overwriting other users work when using a multiuser database file.
+     *
+     * @return true if the external database file has been modified and the user must choose to accept the changes and false if no modifications
+     * were found or there is no requested protection for the database file.
+     */
+    private boolean checkExternalModification() {
+        // Check for external modifications:
+<span class="nc bnc" id="L401" title="All 2 branches missed.">        if (panel.isUpdatedExternally()) {</span>
+<span class="nc" id="L402">            String[] opts = new String[] {Localization.lang(&quot;Review changes&quot;), Localization.lang(&quot;Save&quot;),</span>
+<span class="nc" id="L403">                    Localization.lang(&quot;Cancel&quot;)};</span>
+<span class="nc" id="L404">            int answer = JOptionPane.showOptionDialog(panel.frame(),</span>
+<span class="nc" id="L405">                    Localization.lang(&quot;File has been updated externally. &quot; + &quot;What do you want to do?&quot;),</span>
+<span class="nc" id="L406">                    Localization.lang(&quot;File updated externally&quot;), JOptionPane.YES_NO_CANCEL_OPTION,</span>
+<span class="nc" id="L407">                    JOptionPane.QUESTION_MESSAGE, null, opts, opts[0]);</span>
+
+<span class="nc bnc" id="L409" title="All 2 branches missed.">            if (answer == JOptionPane.CANCEL_OPTION) {</span>
+<span class="nc" id="L410">                canceled = true;</span>
+<span class="nc" id="L411">                return true;</span>
+<span class="nc bnc" id="L412" title="All 2 branches missed.">            } else if (answer == JOptionPane.YES_OPTION) {</span>
+<span class="nc" id="L413">                canceled = true;</span>
+
+<span class="nc" id="L415">                JabRefExecutorService.INSTANCE.execute(() -&gt; {</span>
+
+                    if (!FileBasedLock
+<span class="nc bnc" id="L418" title="All 2 branches missed.">                            .waitForFileLock(panel.getBibDatabaseContext().getDatabaseFile().get().toPath())) {</span>
+                        // TODO: GUI handling of the situation when the externally modified file keeps being locked.
+<span class="nc" id="L420">                        LOGGER.error(&quot;File locked, this will be trouble.&quot;);</span>
+                    }
+
+<span class="nc" id="L423">                    ChangeScanner scanner = new ChangeScanner(panel.frame(), panel,</span>
+<span class="nc" id="L424">                            panel.getBibDatabaseContext().getDatabaseFile().get(), panel.getTempFile());</span>
+<span class="nc" id="L425">                    JabRefExecutorService.INSTANCE.executeInterruptableTaskAndWait(scanner);</span>
+<span class="nc bnc" id="L426" title="All 2 branches missed.">                    if (scanner.changesFound()) {</span>
+<span class="nc" id="L427">                        scanner.displayResult(resolved -&gt; {</span>
+<span class="nc bnc" id="L428" title="All 2 branches missed.">                            if (resolved) {</span>
+<span class="nc" id="L429">                                panel.markExternalChangesAsResolved();</span>
+                                SwingUtilities
+<span class="nc" id="L431">                                        .invokeLater(() -&gt; panel.getSidePaneManager().hide(FileUpdatePanel.class));</span>
+<span class="nc" id="L432">                            } else {</span>
+<span class="nc" id="L433">                                canceled = true;</span>
+                            }
+<span class="nc" id="L435">                        });</span>
+                    }
+<span class="nc" id="L437">                });</span>
+
+<span class="nc" id="L439">                return true;</span>
+            } else { // User indicated to store anyway.
+<span class="nc bnc" id="L441" title="All 2 branches missed.">                if (panel.getBibDatabaseContext().getMetaData().isProtected()) {</span>
+<span class="nc" id="L442">                    JOptionPane.showMessageDialog(frame,</span>
+                            Localization
+<span class="nc" id="L444">                                    .lang(&quot;Library is protected. Cannot save until external changes have been reviewed.&quot;),</span>
+<span class="nc" id="L445">                            Localization.lang(&quot;Protected library&quot;), JOptionPane.ERROR_MESSAGE);</span>
+<span class="nc" id="L446">                    canceled = true;</span>
+<span class="nc" id="L447">                } else {</span>
+<span class="nc" id="L448">                    panel.markExternalChangesAsResolved();</span>
+<span class="nc" id="L449">                    panel.getSidePaneManager().hide(FileUpdatePanel.class);</span>
+                }
+            }
+        }
+
+        // Return false as either no external database file modifications have been found or overwrite is requested any way
+<span class="nc" id="L455">        return false;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

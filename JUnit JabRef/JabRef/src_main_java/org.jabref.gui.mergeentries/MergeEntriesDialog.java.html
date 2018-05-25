@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MergeEntriesDialog.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.mergeentries</a> &gt; <span class="el_source">MergeEntriesDialog.java</span></div><h1>MergeEntriesDialog.java</h1><pre class="source lang-java linenums">package org.jabref.gui.mergeentries;
+
+import java.util.List;
+
+import javax.swing.JButton;
+import javax.swing.JOptionPane;
+import javax.swing.JSeparator;
+
+import org.jabref.gui.BasePanel;
+import org.jabref.gui.JabRefDialog;
+import org.jabref.gui.undo.NamedCompound;
+import org.jabref.gui.undo.UndoableInsertEntry;
+import org.jabref.gui.undo.UndoableRemoveEntry;
+import org.jabref.gui.util.WindowLocation;
+import org.jabref.logic.l10n.Localization;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.preferences.JabRefPreferences;
+
+import com.jgoodies.forms.builder.ButtonBarBuilder;
+import com.jgoodies.forms.layout.CellConstraints;
+import com.jgoodies.forms.layout.ColumnSpec;
+import com.jgoodies.forms.layout.FormLayout;
+import com.jgoodies.forms.layout.RowSpec;
+
+/**
+ * @author Oscar
+ *
+ *         Dialog for merging two Bibtex entries
+ */
+public class MergeEntriesDialog extends JabRefDialog {
+
+<span class="nc" id="L32">    private static final String MERGE_ENTRIES = Localization.lang(&quot;Merge entries&quot;);</span>
+<span class="nc" id="L33">    private static final String MARGIN = &quot;5px&quot;;</span>
+    private final BasePanel panel;
+
+<span class="nc" id="L36">    private final CellConstraints cc = new CellConstraints();</span>
+
+    public MergeEntriesDialog(BasePanel panel) {
+<span class="nc" id="L39">        super(panel.frame(), MERGE_ENTRIES, true, MergeEntriesDialog.class);</span>
+
+<span class="nc" id="L41">        this.panel = panel;</span>
+
+        // Start setting up the dialog
+<span class="nc" id="L44">        init(panel.getSelectedEntries());</span>
+<span class="nc" id="L45">    }</span>
+
+    /**
+     * Sets up the dialog
+     *
+     * @param selected Selected BibtexEntries
+     */
+    private void init(List&lt;BibEntry&gt; selected) {
+
+        // Check if there are two entries selected
+<span class="nc bnc" id="L55" title="All 2 branches missed.">        if (selected.size() != 2) { // None selected. Inform the user to select entries first.</span>
+<span class="nc" id="L56">            JOptionPane.showMessageDialog(panel.frame(),</span>
+<span class="nc" id="L57">                    Localization.lang(&quot;You have to choose exactly two entries to merge.&quot;),</span>
+<span class="nc" id="L58">                    MERGE_ENTRIES, JOptionPane.INFORMATION_MESSAGE);</span>
+<span class="nc" id="L59">            this.dispose();</span>
+<span class="nc" id="L60">            return;</span>
+        }
+
+        // Store the two entries
+<span class="nc" id="L64">        BibEntry one = selected.get(0);</span>
+<span class="nc" id="L65">        BibEntry two = selected.get(1);</span>
+
+<span class="nc" id="L67">        MergeEntries mergeEntries = new MergeEntries(one, two, panel.getBibDatabaseContext().getMode());</span>
+
+        // Create undo-compound
+<span class="nc" id="L70">        NamedCompound ce = new NamedCompound(MERGE_ENTRIES);</span>
+
+<span class="nc" id="L72">        FormLayout layout = new FormLayout(&quot;fill:700px:grow&quot;, &quot;fill:400px:grow, 4px, p, 5px, p&quot;);</span>
+<span class="nc" id="L73">        this.setLayout(layout);</span>
+
+<span class="nc" id="L75">        this.add(mergeEntries.getMergeEntryPanel(), cc.xy(1, 1));</span>
+<span class="nc" id="L76">        this.add(new JSeparator(), cc.xy(1, 3));</span>
+
+        // Create buttons
+<span class="nc" id="L79">        ButtonBarBuilder bb = new ButtonBarBuilder();</span>
+<span class="nc" id="L80">        bb.addGlue();</span>
+<span class="nc" id="L81">        JButton cancel = new JButton(Localization.lang(&quot;Cancel&quot;));</span>
+<span class="nc" id="L82">        cancel.setActionCommand(&quot;cancel&quot;);</span>
+<span class="nc" id="L83">        cancel.addActionListener(e -&gt; {</span>
+<span class="nc" id="L84">            panel.output(Localization.lang(&quot;Canceled merging entries&quot;));</span>
+<span class="nc" id="L85">            dispose();</span>
+<span class="nc" id="L86">        });</span>
+
+<span class="nc" id="L88">        JButton replaceentries = new JButton(MERGE_ENTRIES);</span>
+<span class="nc" id="L89">        replaceentries.setActionCommand(&quot;replace&quot;);</span>
+<span class="nc" id="L90">        replaceentries.addActionListener(e -&gt; {</span>
+            // Create a new entry and add it to the undo stack
+            // Remove the other two entries and add them to the undo stack (which is not working...)
+<span class="nc" id="L93">            BibEntry mergedEntry = mergeEntries.getMergeEntry();</span>
+<span class="nc" id="L94">            panel.insertEntry(mergedEntry);</span>
+<span class="nc" id="L95">            ce.addEdit(new UndoableInsertEntry(panel.getDatabase(), mergedEntry, panel));</span>
+<span class="nc" id="L96">            ce.addEdit(new UndoableRemoveEntry(panel.getDatabase(), one, panel));</span>
+<span class="nc" id="L97">            panel.getDatabase().removeEntry(one);</span>
+<span class="nc" id="L98">            ce.addEdit(new UndoableRemoveEntry(panel.getDatabase(), two, panel));</span>
+<span class="nc" id="L99">            panel.getDatabase().removeEntry(two);</span>
+<span class="nc" id="L100">            ce.end();</span>
+<span class="nc" id="L101">            panel.getUndoManager().addEdit(ce);</span>
+<span class="nc" id="L102">            panel.output(Localization.lang(&quot;Merged entries&quot;));</span>
+<span class="nc" id="L103">            dispose();</span>
+<span class="nc" id="L104">        });</span>
+
+<span class="nc" id="L106">        bb.addButton(new JButton[] {replaceentries, cancel});</span>
+<span class="nc" id="L107">        this.add(bb.getPanel(), cc.xy(1, 5));</span>
+
+        // Add some margin around the layout
+<span class="nc" id="L110">        layout.appendRow(RowSpec.decode(MARGIN));</span>
+<span class="nc" id="L111">        layout.appendColumn(ColumnSpec.decode(MARGIN));</span>
+<span class="nc" id="L112">        layout.insertRow(1, RowSpec.decode(MARGIN));</span>
+<span class="nc" id="L113">        layout.insertColumn(1, ColumnSpec.decode(MARGIN));</span>
+
+<span class="nc" id="L115">        WindowLocation pw = new WindowLocation(this, JabRefPreferences.MERGEENTRIES_POS_X,</span>
+<span class="nc" id="L116">                JabRefPreferences.MERGEENTRIES_POS_Y, JabRefPreferences.MERGEENTRIES_SIZE_X,</span>
+<span class="nc" id="L117">                JabRefPreferences.MERGEENTRIES_SIZE_Y);</span>
+<span class="nc" id="L118">        pw.displayWindowAtStoredLocation();</span>
+
+        // Show what we've got
+<span class="nc" id="L121">        setVisible(true);</span>
+<span class="nc" id="L122">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>CiteSeerXFetcher.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.importer.fetcher</a> &gt; <span class="el_source">CiteSeerXFetcher.java</span></div><h1>CiteSeerXFetcher.java</h1><pre class="source lang-java linenums">package org.jabref.gui.importer.fetcher;
+
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import javax.swing.JPanel;
+
+import org.jabref.Globals;
+import org.jabref.gui.importer.ImportInspectionDialog;
+import org.jabref.logic.formatter.bibtexfields.NormalizeNamesFormatter;
+import org.jabref.logic.help.HelpFile;
+import org.jabref.logic.importer.ImportInspector;
+import org.jabref.logic.importer.OutputPrinter;
+import org.jabref.logic.net.URLDownload;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.FieldName;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+<span class="fc" id="L26">public class CiteSeerXFetcher implements EntryFetcher {</span>
+
+    private static final int MAX_PAGES_TO_LOAD = 8;
+    private static final String QUERY_MARKER = &quot;___QUERY___&quot;;
+    private static final String URL_START = &quot;http://citeseer.ist.psu.edu&quot;;
+    private static final String SEARCH_URL = CiteSeerXFetcher.URL_START + &quot;/search?q=&quot; + CiteSeerXFetcher.QUERY_MARKER
+            + &quot;&amp;submit=Search&amp;sort=rlv&amp;t=doc&quot;;
+<span class="fc" id="L33">    private static final Pattern CITE_LINK_PATTERN = Pattern.compile(&quot;&lt;a class=\&quot;remove doc_details\&quot; href=\&quot;(.*)\&quot;&gt;&quot;);</span>
+
+    private static final String BASE_PATTERN = &quot;&lt;meta name=\&quot;&quot; + CiteSeerXFetcher.QUERY_MARKER
+            + &quot;\&quot; content=\&quot;(.*)\&quot; /&gt;&quot;;
+<span class="fc" id="L37">    private static final Pattern TITLE_PATTERN = Pattern</span>
+<span class="fc" id="L38">            .compile(CiteSeerXFetcher.BASE_PATTERN.replace(CiteSeerXFetcher.QUERY_MARKER, &quot;citation_title&quot;));</span>
+<span class="fc" id="L39">    private static final Pattern AUTHOR_PATTERN = Pattern</span>
+<span class="fc" id="L40">            .compile(CiteSeerXFetcher.BASE_PATTERN.replace(CiteSeerXFetcher.QUERY_MARKER, &quot;citation_authors&quot;));</span>
+<span class="fc" id="L41">    private static final Pattern YEAR_PATTERN = Pattern</span>
+<span class="fc" id="L42">            .compile(CiteSeerXFetcher.BASE_PATTERN.replace(CiteSeerXFetcher.QUERY_MARKER, &quot;citation_year&quot;));</span>
+<span class="fc" id="L43">    private static final Pattern ABSTRACT_PATTERN = Pattern.compile(&quot;&lt;h3&gt;Abstract&lt;/h3&gt;\\s*&lt;p&gt;(.*)&lt;/p&gt;&quot;);</span>
+
+<span class="fc" id="L45">    private static final Logger LOGGER = LoggerFactory.getLogger(CiteSeerXFetcher.class);</span>
+
+    private boolean stopFetching;
+
+    @Override
+    public boolean processQuery(String query, ImportInspector inspector, OutputPrinter status) {
+<span class="nc" id="L51">        stopFetching = false;</span>
+        try {
+<span class="nc" id="L53">            List&lt;String&gt; citations = getCitations(query);</span>
+<span class="nc bnc" id="L54" title="All 2 branches missed.">            for (String citation : citations) {</span>
+<span class="nc bnc" id="L55" title="All 2 branches missed.">                if (stopFetching) {</span>
+<span class="nc" id="L56">                    break;</span>
+                }
+<span class="nc" id="L58">                BibEntry entry = getSingleCitation(citation);</span>
+<span class="nc bnc" id="L59" title="All 2 branches missed.">                if (entry != null) {</span>
+<span class="nc" id="L60">                    inspector.addEntry(entry);</span>
+                }
+            }
+
+<span class="nc" id="L64">            return true;</span>
+<span class="nc" id="L65">        } catch (IOException e) {</span>
+<span class="nc" id="L66">            LOGGER.error(&quot;Error while fetching from &quot; + getTitle(), e);</span>
+<span class="nc" id="L67">            ((ImportInspectionDialog)inspector).showErrorMessage(this.getTitle(), e.getLocalizedMessage());</span>
+<span class="nc" id="L68">            return false;</span>
+        }
+    }
+
+    @Override
+    public String getTitle() {
+<span class="fc" id="L74">        return &quot;CiteSeerX&quot;;</span>
+    }
+
+    @Override
+    public HelpFile getHelpPage() {
+<span class="nc" id="L79">        return HelpFile.FETCHER_CITESEERX;</span>
+    }
+
+    @Override
+    public JPanel getOptionsPanel() {
+<span class="nc" id="L84">        return null;</span>
+    }
+
+    @Override
+    public void stopFetching() {
+<span class="nc" id="L89">        stopFetching = true;</span>
+<span class="nc" id="L90">    }</span>
+
+    /**
+     *
+     * @param query
+     *            The search term to query JStor for.
+     * @return a list of IDs
+     * @throws java.io.IOException
+     */
+    private List&lt;String&gt; getCitations(String query) throws IOException {
+        String urlQuery;
+<span class="nc" id="L101">        List&lt;String&gt; ids = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L102">        urlQuery = CiteSeerXFetcher.SEARCH_URL.replace(CiteSeerXFetcher.QUERY_MARKER,</span>
+<span class="nc" id="L103">                URLEncoder.encode(query, StandardCharsets.UTF_8.name()));</span>
+<span class="nc" id="L104">        int count = 1;</span>
+        String nextPage;
+<span class="nc bnc" id="L106" title="All 4 branches missed.">        while (((nextPage = getCitationsFromUrl(urlQuery, ids)) != null)</span>
+<span class="nc" id="L107">                &amp;&amp; (count &lt; CiteSeerXFetcher.MAX_PAGES_TO_LOAD)) {</span>
+<span class="nc" id="L108">            urlQuery = nextPage;</span>
+<span class="nc" id="L109">            count++;</span>
+<span class="nc bnc" id="L110" title="All 2 branches missed.">            if (stopFetching) {</span>
+<span class="nc" id="L111">                break;</span>
+            }
+        }
+<span class="nc" id="L114">        return ids;</span>
+    }
+
+    private static String getCitationsFromUrl(String urlQuery, List&lt;String&gt; ids) throws IOException {
+<span class="nc" id="L118">        String cont = new URLDownload(urlQuery).asString(Globals.prefs.getDefaultEncoding());</span>
+<span class="nc" id="L119">        Matcher m = CiteSeerXFetcher.CITE_LINK_PATTERN.matcher(cont);</span>
+<span class="nc bnc" id="L120" title="All 2 branches missed.">        while (m.find()) {</span>
+<span class="nc" id="L121">            ids.add(CiteSeerXFetcher.URL_START + m.group(1));</span>
+        }
+
+<span class="nc" id="L124">        return null;</span>
+    }
+
+    private static BibEntry getSingleCitation(String urlString) throws IOException {
+<span class="nc" id="L128">        String cont = new URLDownload(urlString).asString();</span>
+
+        // Find title, and create entry if we do. Otherwise assume we did not get an entry:
+<span class="nc" id="L131">        Matcher m = CiteSeerXFetcher.TITLE_PATTERN.matcher(cont);</span>
+<span class="nc bnc" id="L132" title="All 2 branches missed.">        if (m.find()) {</span>
+<span class="nc" id="L133">            BibEntry entry = new BibEntry();</span>
+<span class="nc" id="L134">            entry.setField(FieldName.TITLE, m.group(1));</span>
+
+            // Find authors:
+<span class="nc" id="L137">            m = CiteSeerXFetcher.AUTHOR_PATTERN.matcher(cont);</span>
+<span class="nc bnc" id="L138" title="All 2 branches missed.">            if (m.find()) {</span>
+<span class="nc" id="L139">                String authors = m.group(1);</span>
+<span class="nc" id="L140">                entry.setField(FieldName.AUTHOR, new NormalizeNamesFormatter().format(authors));</span>
+            }
+
+            // Find year:
+<span class="nc" id="L144">            m = CiteSeerXFetcher.YEAR_PATTERN.matcher(cont);</span>
+<span class="nc bnc" id="L145" title="All 2 branches missed.">            if (m.find()) {</span>
+<span class="nc" id="L146">                entry.setField(FieldName.YEAR, m.group(1));</span>
+            }
+
+            // Find abstract:
+<span class="nc" id="L150">            m = CiteSeerXFetcher.ABSTRACT_PATTERN.matcher(cont);</span>
+<span class="nc bnc" id="L151" title="All 2 branches missed.">            if (m.find()) {</span>
+<span class="nc" id="L152">                entry.setField(FieldName.ABSTRACT, m.group(1));</span>
+            }
+
+<span class="nc" id="L155">            return entry;</span>
+        } else {
+<span class="nc" id="L157">            return null;</span>
+        }
+
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

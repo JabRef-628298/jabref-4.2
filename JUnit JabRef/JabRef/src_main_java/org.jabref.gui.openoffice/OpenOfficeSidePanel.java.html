@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>OpenOfficeSidePanel.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.openoffice</a> &gt; <span class="el_source">OpenOfficeSidePanel.java</span></div><h1>OpenOfficeSidePanel.java</h1><pre class="source lang-java linenums">package org.jabref.gui.openoffice;
+
+import javax.swing.Icon;
+
+import org.jabref.Globals;
+import org.jabref.gui.SidePaneComponent;
+import org.jabref.gui.SidePaneManager;
+import org.jabref.gui.keyboard.KeyBinding;
+import org.jabref.logic.l10n.Localization;
+import org.jabref.logic.openoffice.OpenOfficePreferences;
+
+public class OpenOfficeSidePanel extends SidePaneComponent {
+
+    private OpenOfficePreferences preferences;
+    private final ToggleAction toggleAction;
+
+
+    public OpenOfficeSidePanel(SidePaneManager sidePaneManager, Icon icon, String title, OpenOfficePreferences preferences) {
+<span class="fc" id="L19">        super(sidePaneManager, icon, title);</span>
+<span class="fc" id="L20">        this.preferences = preferences;</span>
+<span class="fc" id="L21">        sidePaneManager.register(this);</span>
+<span class="pc bpc" id="L22" title="1 of 2 branches missed.">        if (preferences.getShowPanel()) {</span>
+<span class="nc" id="L23">            manager.show(OpenOfficeSidePanel.class);</span>
+        }
+
+<span class="fc" id="L26">        toggleAction = new ToggleAction(Localization.lang(&quot;OpenOffice/LibreOffice connection&quot;),</span>
+<span class="fc" id="L27">                Localization.lang(&quot;OpenOffice/LibreOffice connection&quot;),</span>
+<span class="fc" id="L28">                Globals.getKeyPrefs().getKey(KeyBinding.OPEN_OPEN_OFFICE_LIBRE_OFFICE_CONNECTION),</span>
+<span class="fc" id="L29">                icon);</span>
+<span class="fc" id="L30">    }</span>
+
+    @Override
+    public void componentClosing() {
+<span class="nc" id="L34">        preferences.setShowPanel(false);</span>
+<span class="nc" id="L35">    }</span>
+
+    @Override
+    public void componentOpening() {
+<span class="nc" id="L39">        preferences.setShowPanel(true);</span>
+<span class="nc" id="L40">    }</span>
+
+    @Override
+    public int getRescalingWeight() {
+<span class="nc" id="L44">        return 0;</span>
+    }
+
+    @Override
+    public ToggleAction getToggleAction() {
+<span class="fc" id="L49">        return toggleAction;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>AuthorsTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.layout.format</a> &gt; <span class="el_source">AuthorsTest.java</span></div><h1>AuthorsTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.layout.format;
+
+import org.jabref.logic.layout.ParamLayoutFormatter;
+
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
+
+<span class="fc" id="L8">public class AuthorsTest {</span>
+
+    @Test
+    public void testStandardUsage() {
+<span class="fc" id="L12">        ParamLayoutFormatter a = new Authors();</span>
+<span class="fc" id="L13">        assertEquals(&quot;B. C. Bruce, C. Manson and J. Jumper&quot;,</span>
+<span class="fc" id="L14">                a.format(&quot;Bob Croydon Bruce and Charles Manson and Jolly Jumper&quot;));</span>
+<span class="fc" id="L15">    }</span>
+
+    @Test
+    public void testStandardUsageOne() {
+<span class="fc" id="L19">        ParamLayoutFormatter a = new Authors();</span>
+<span class="fc" id="L20">        a.setArgument(&quot;fullname, LastFirst, Comma, Comma&quot;);</span>
+<span class="fc" id="L21">        assertEquals(&quot;Bruce, Bob Croydon, Jumper, Jolly&quot;, a.format(&quot;Bob Croydon Bruce and Jolly Jumper&quot;));</span>
+<span class="fc" id="L22">    }</span>
+
+    @Test
+    public void testStandardUsageTwo() {
+<span class="fc" id="L26">        ParamLayoutFormatter a = new Authors();</span>
+<span class="fc" id="L27">        a.setArgument(&quot;initials&quot;);</span>
+<span class="fc" id="L28">        assertEquals(&quot;B. C. Bruce and J. Jumper&quot;, a.format(&quot;Bob Croydon Bruce and Jolly Jumper&quot;));</span>
+<span class="fc" id="L29">    }</span>
+
+    @Test
+    public void testStandardUsageThree() {
+<span class="fc" id="L33">        ParamLayoutFormatter a = new Authors();</span>
+<span class="fc" id="L34">        a.setArgument(&quot;fullname, LastFirst, Comma&quot;);</span>
+<span class="fc" id="L35">        assertEquals(&quot;Bruce, Bob Croydon, Manson, Charles and Jumper, Jolly&quot;,</span>
+<span class="fc" id="L36">                a.format(&quot;Bob Croydon Bruce and Charles Manson and Jolly Jumper&quot;));</span>
+<span class="fc" id="L37">    }</span>
+
+    @Test
+    public void testStandardUsageFour() {
+<span class="fc" id="L41">        ParamLayoutFormatter a = new Authors();</span>
+<span class="fc" id="L42">        a.setArgument(&quot;fullname, LastFirst, Comma, 2&quot;);</span>
+<span class="fc" id="L43">        assertEquals(&quot;Bruce, Bob Croydon et al.&quot;,</span>
+<span class="fc" id="L44">                a.format(&quot;Bob Croydon Bruce and Charles Manson and Jolly Jumper&quot;));</span>
+<span class="fc" id="L45">    }</span>
+
+    @Test
+    public void testStandardUsageFive() {
+<span class="fc" id="L49">        ParamLayoutFormatter a = new Authors();</span>
+<span class="fc" id="L50">        a.setArgument(&quot;fullname, LastFirst, Comma, 3&quot;);</span>
+<span class="fc" id="L51">        assertEquals(&quot;Bruce, Bob Croydon et al.&quot;,</span>
+<span class="fc" id="L52">                a.format(&quot;Bob Croydon Bruce and Charles Manson and Jolly Jumper and Chuck Chuckles&quot;));</span>
+<span class="fc" id="L53">    }</span>
+
+    @Test
+    public void testStandardUsageSix() {
+<span class="fc" id="L57">        ParamLayoutFormatter a = new Authors();</span>
+<span class="fc" id="L58">        a.setArgument(&quot;fullname, LastFirst, Comma, 3, 2&quot;);</span>
+<span class="fc" id="L59">        assertEquals(&quot;Bruce, Bob Croydon, Manson, Charles et al.&quot;,</span>
+<span class="fc" id="L60">                a.format(&quot;Bob Croydon Bruce and Charles Manson and Jolly Jumper and Chuck Chuckles&quot;));</span>
+<span class="fc" id="L61">    }</span>
+
+    @Test
+    public void testSpecialEtAl() {
+<span class="fc" id="L65">        ParamLayoutFormatter a = new Authors();</span>
+<span class="fc" id="L66">        a.setArgument(&quot;fullname, LastFirst, Comma, 3, etal= and a few more&quot;);</span>
+<span class="fc" id="L67">        assertEquals(&quot;Bruce, Bob Croydon and a few more&quot;,</span>
+<span class="fc" id="L68">                a.format(&quot;Bob Croydon Bruce and Charles Manson and Jolly Jumper and Chuck Chuckles&quot;));</span>
+<span class="fc" id="L69">    }</span>
+
+    @Test
+    public void testStandardUsageNull() {
+<span class="fc" id="L73">        ParamLayoutFormatter a = new Authors();</span>
+<span class="fc" id="L74">        assertEquals(&quot;&quot;, a.format(null));</span>
+<span class="fc" id="L75">    }</span>
+
+    @Test
+    public void testStandardOxford() {
+<span class="fc" id="L79">        ParamLayoutFormatter a = new Authors();</span>
+<span class="fc" id="L80">        a.setArgument(&quot;Oxford&quot;);</span>
+<span class="fc" id="L81">        assertEquals(&quot;B. C. Bruce, C. Manson, and J. Jumper&quot;,</span>
+<span class="fc" id="L82">                a.format(&quot;Bob Croydon Bruce and Charles Manson and Jolly Jumper&quot;));</span>
+<span class="fc" id="L83">    }</span>
+
+    @Test
+    public void testStandardOxfordFullName() {
+<span class="fc" id="L87">        ParamLayoutFormatter a = new Authors();</span>
+<span class="fc" id="L88">        a.setArgument(&quot;FullName,Oxford&quot;);</span>
+<span class="fc" id="L89">        assertEquals(&quot;Bob Croydon Bruce, Charles Manson, and Jolly Jumper&quot;,</span>
+<span class="fc" id="L90">                a.format(&quot;Bruce, Bob Croydon and Charles Manson and Jolly Jumper&quot;));</span>
+<span class="fc" id="L91">    }</span>
+
+    @Test
+    public void testStandardCommaFullName() {
+<span class="fc" id="L95">        ParamLayoutFormatter a = new Authors();</span>
+<span class="fc" id="L96">        a.setArgument(&quot;FullName,Comma,Comma&quot;);</span>
+<span class="fc" id="L97">        assertEquals(&quot;Bob Croydon Bruce, Charles Manson, Jolly Jumper&quot;,</span>
+<span class="fc" id="L98">                a.format(&quot;Bruce, Bob Croydon and Charles Manson and Jolly Jumper&quot;));</span>
+<span class="fc" id="L99">    }</span>
+
+    @Test
+    public void testStandardAmpFullName() {
+<span class="fc" id="L103">        ParamLayoutFormatter a = new Authors();</span>
+<span class="fc" id="L104">        a.setArgument(&quot;FullName,Amp&quot;);</span>
+<span class="fc" id="L105">        assertEquals(&quot;Bob Croydon Bruce, Charles Manson &amp; Jolly Jumper&quot;,</span>
+<span class="fc" id="L106">                a.format(&quot;Bruce, Bob Croydon and Charles Manson and Jolly Jumper&quot;));</span>
+<span class="fc" id="L107">    }</span>
+
+    @Test
+    public void testLastName() {
+<span class="fc" id="L111">        ParamLayoutFormatter a = new Authors();</span>
+<span class="fc" id="L112">        a.setArgument(&quot;LastName&quot;);</span>
+<span class="fc" id="L113">        assertEquals(&quot;Bruce, von Manson and Jumper&quot;,</span>
+<span class="fc" id="L114">                a.format(&quot;Bruce, Bob Croydon and Charles von Manson and Jolly Jumper&quot;));</span>
+<span class="fc" id="L115">    }</span>
+
+    @Test
+    public void testMiddleInitial() {
+<span class="fc" id="L119">        ParamLayoutFormatter a = new Authors();</span>
+<span class="fc" id="L120">        a.setArgument(&quot;MiddleInitial&quot;);</span>
+<span class="fc" id="L121">        assertEquals(&quot;Bob C. Bruce, Charles K. von Manson and Jolly Jumper&quot;,</span>
+<span class="fc" id="L122">                a.format(&quot;Bruce, Bob Croydon and Charles Kermit von Manson and Jumper, Jolly&quot;));</span>
+<span class="fc" id="L123">    }</span>
+
+    @Test
+    public void testNoPeriod() {
+<span class="fc" id="L127">        ParamLayoutFormatter a = new Authors();</span>
+<span class="fc" id="L128">        a.setArgument(&quot;NoPeriod&quot;);</span>
+<span class="fc" id="L129">        assertEquals(&quot;B C Bruce, C K von Manson and J Jumper&quot;,</span>
+<span class="fc" id="L130">                a.format(&quot;Bruce, Bob Croydon and Charles Kermit von Manson and Jumper, Jolly&quot;));</span>
+<span class="fc" id="L131">    }</span>
+
+    @Test
+    public void testEtAl() {
+<span class="fc" id="L135">        ParamLayoutFormatter a = new Authors();</span>
+<span class="fc" id="L136">        a.setArgument(&quot;2,1&quot;);</span>
+<span class="fc" id="L137">        assertEquals(&quot;B. C. Bruce et al.&quot;,</span>
+<span class="fc" id="L138">                a.format(&quot;Bruce, Bob Croydon and Charles Kermit von Manson and Jumper, Jolly&quot;));</span>
+<span class="fc" id="L139">    }</span>
+
+    @Test
+    public void testEtAlNotEnoughAuthors() {
+<span class="fc" id="L143">        ParamLayoutFormatter a = new Authors();</span>
+<span class="fc" id="L144">        a.setArgument(&quot;2,1&quot;);</span>
+<span class="fc" id="L145">        assertEquals(&quot;B. C. Bruce and C. K. von Manson&quot;,</span>
+<span class="fc" id="L146">                a.format(&quot;Bruce, Bob Croydon and Charles Kermit von Manson&quot;));</span>
+<span class="fc" id="L147">    }</span>
+
+    @Test
+    public void testEmptyEtAl() {
+<span class="fc" id="L151">        ParamLayoutFormatter a = new Authors();</span>
+<span class="fc" id="L152">        a.setArgument(&quot;fullname, LastFirst, Comma, 3, etal=&quot;);</span>
+<span class="fc" id="L153">        assertEquals(&quot;Bruce, Bob Croydon&quot;,</span>
+<span class="fc" id="L154">                a.format(&quot;Bob Croydon Bruce and Charles Manson and Jolly Jumper and Chuck Chuckles&quot;));</span>
+<span class="fc" id="L155">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

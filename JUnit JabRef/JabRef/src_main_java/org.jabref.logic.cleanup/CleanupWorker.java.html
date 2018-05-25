@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>CleanupWorker.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.cleanup</a> &gt; <span class="el_source">CleanupWorker.java</span></div><h1>CleanupWorker.java</h1><pre class="source lang-java linenums">package org.jabref.logic.cleanup;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
+import org.jabref.logic.layout.LayoutFormatterPreferences;
+import org.jabref.model.FieldChange;
+import org.jabref.model.cleanup.CleanupJob;
+import org.jabref.model.database.BibDatabaseContext;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.metadata.FileDirectoryPreferences;
+
+public class CleanupWorker {
+
+    private final BibDatabaseContext databaseContext;
+    private final String fileNamePattern;
+    private final String fileDirPattern;
+    private final LayoutFormatterPreferences layoutPrefs;
+    private final FileDirectoryPreferences fileDirectoryPreferences;
+    private int unsuccessfulRenames;
+
+
+<span class="fc" id="L24">    public CleanupWorker(BibDatabaseContext databaseContext, CleanupPreferences cleanupPreferences) {</span>
+<span class="fc" id="L25">        this.databaseContext = databaseContext;</span>
+<span class="fc" id="L26">        this.fileNamePattern = cleanupPreferences.getFileNamePattern();</span>
+<span class="fc" id="L27">        this.fileDirPattern = cleanupPreferences.getFileDirPattern();</span>
+<span class="fc" id="L28">        this.layoutPrefs = cleanupPreferences.getLayoutFormatterPreferences();</span>
+<span class="fc" id="L29">        this.fileDirectoryPreferences = cleanupPreferences.getFileDirectoryPreferences();</span>
+<span class="fc" id="L30">    }</span>
+
+    public int getUnsuccessfulRenames() {
+<span class="nc" id="L33">        return unsuccessfulRenames;</span>
+    }
+
+    public List&lt;FieldChange&gt; cleanup(CleanupPreset preset, BibEntry entry) {
+<span class="fc" id="L37">        Objects.requireNonNull(preset);</span>
+<span class="fc" id="L38">        Objects.requireNonNull(entry);</span>
+
+<span class="fc" id="L40">        List&lt;CleanupJob&gt; jobs = determineCleanupActions(preset);</span>
+
+<span class="fc" id="L42">        List&lt;FieldChange&gt; changes = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L43" title="All 2 branches covered.">        for (CleanupJob job : jobs) {</span>
+<span class="fc" id="L44">            changes.addAll(job.cleanup(entry));</span>
+        }
+
+<span class="fc" id="L47">        return changes;</span>
+    }
+
+    private List&lt;CleanupJob&gt; determineCleanupActions(CleanupPreset preset) {
+<span class="fc" id="L51">        List&lt;CleanupJob&gt; jobs = new ArrayList&lt;&gt;();</span>
+
+<span class="fc bfc" id="L53" title="All 2 branches covered.">        if (preset.isConvertToBiblatex()) {</span>
+<span class="fc" id="L54">            jobs.add(new ConvertToBiblatexCleanup());</span>
+        }
+<span class="pc bpc" id="L56" title="1 of 2 branches missed.">        if (preset.isConvertToBibtex()) {</span>
+<span class="nc" id="L57">            jobs.add(new ConvertToBibtexCleanup());</span>
+        }
+<span class="fc bfc" id="L59" title="All 2 branches covered.">        if (preset.getFormatterCleanups().isEnabled()) {</span>
+<span class="fc" id="L60">            jobs.addAll(preset.getFormatterCleanups().getConfiguredActions());</span>
+        }
+<span class="fc bfc" id="L62" title="All 2 branches covered.">        if (preset.isCleanUpUpgradeExternalLinks()) {</span>
+<span class="fc" id="L63">            jobs.add(new UpgradePdfPsToFileCleanup());</span>
+        }
+<span class="fc bfc" id="L65" title="All 2 branches covered.">        if (preset.isCleanUpDOI()) {</span>
+<span class="fc" id="L66">            jobs.add(new DoiCleanup());</span>
+        }
+<span class="fc bfc" id="L68" title="All 2 branches covered.">        if (preset.isCleanUpISSN()) {</span>
+<span class="fc" id="L69">            jobs.add(new ISSNCleanup());</span>
+        }
+<span class="fc bfc" id="L71" title="All 2 branches covered.">        if (preset.isFixFileLinks()) {</span>
+<span class="fc" id="L72">            jobs.add(new FileLinksCleanup());</span>
+        }
+<span class="fc bfc" id="L74" title="All 2 branches covered.">        if (preset.isMovePDF()) {</span>
+<span class="fc" id="L75">            jobs.add(new MoveFilesCleanup(databaseContext, fileDirPattern, fileDirectoryPreferences, layoutPrefs));</span>
+        }
+<span class="fc bfc" id="L77" title="All 2 branches covered.">        if (preset.isMakePathsRelative()) {</span>
+<span class="fc" id="L78">            jobs.add(new RelativePathsCleanup(databaseContext, fileDirectoryPreferences));</span>
+        }
+<span class="fc bfc" id="L80" title="All 2 branches covered.">        if (preset.isRenamePDF()) {</span>
+<span class="fc" id="L81">            RenamePdfCleanup cleaner = new RenamePdfCleanup(preset.isRenamePdfOnlyRelativePaths(), databaseContext,</span>
+<span class="fc" id="L82">                    fileNamePattern, layoutPrefs, fileDirectoryPreferences);</span>
+<span class="fc" id="L83">            jobs.add(cleaner);</span>
+<span class="fc" id="L84">            unsuccessfulRenames += cleaner.getUnsuccessfulRenames();</span>
+        }
+
+<span class="fc" id="L87">        return jobs;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>DeprecatedFieldsTab.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.entryeditor</a> &gt; <span class="el_source">DeprecatedFieldsTab.java</span></div><h1>DeprecatedFieldsTab.java</h1><pre class="source lang-java linenums">package org.jabref.gui.entryeditor;
+
+import java.util.Collection;
+
+import javax.swing.undo.UndoManager;
+
+import javafx.scene.control.Tooltip;
+
+import org.jabref.gui.IconTheme;
+import org.jabref.gui.autocompleter.SuggestionProviders;
+import org.jabref.logic.l10n.Localization;
+import org.jabref.model.database.BibDatabaseContext;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.EntryType;
+
+public class DeprecatedFieldsTab extends FieldsEditorTab {
+    public DeprecatedFieldsTab(BibDatabaseContext databaseContext, SuggestionProviders suggestionProviders, UndoManager undoManager) {
+<span class="nc" id="L18">        super(false, databaseContext, suggestionProviders, undoManager);</span>
+
+<span class="nc" id="L20">        setText(Localization.lang(&quot;Deprecated fields&quot;));</span>
+<span class="nc" id="L21">        setTooltip(new Tooltip(Localization.lang(&quot;Show deprecated BibTeX fields&quot;)));</span>
+<span class="nc" id="L22">        setGraphic(IconTheme.JabRefIcon.OPTIONAL.getGraphicNode());</span>
+<span class="nc" id="L23">    }</span>
+
+    @Override
+    protected Collection&lt;String&gt; determineFieldsToShow(BibEntry entry, EntryType entryType) {
+<span class="nc" id="L27">        return entryType.getDeprecatedFields();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

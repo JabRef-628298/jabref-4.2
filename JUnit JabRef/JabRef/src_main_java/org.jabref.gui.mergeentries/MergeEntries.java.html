@@ -1,0 +1,459 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MergeEntries.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.mergeentries</a> &gt; <span class="el_source">MergeEntries.java</span></div><h1>MergeEntries.java</h1><pre class="source lang-java linenums">package org.jabref.gui.mergeentries;
+
+import java.awt.Font;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.TreeSet;
+
+import javax.swing.BorderFactory;
+import javax.swing.ButtonGroup;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JRadioButton;
+import javax.swing.JScrollPane;
+import javax.swing.JSeparator;
+import javax.swing.JTextArea;
+import javax.swing.JTextPane;
+import javax.swing.ScrollPaneConstants;
+import javax.swing.SwingUtilities;
+
+import javafx.embed.swing.JFXPanel;
+import javafx.scene.Scene;
+
+import org.jabref.Globals;
+import org.jabref.gui.PreviewPanel;
+import org.jabref.gui.customjfx.CustomJFXPanel;
+import org.jabref.gui.util.component.DiffHighlightingTextPane;
+import org.jabref.logic.bibtex.BibEntryWriter;
+import org.jabref.logic.bibtex.LatexFieldFormatter;
+import org.jabref.logic.formatter.casechanger.SentenceCaseFormatter;
+import org.jabref.logic.l10n.Localization;
+import org.jabref.logic.util.strings.DiffHighlighting;
+import org.jabref.model.database.BibDatabaseMode;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.InternalBibtexFields;
+import org.jabref.preferences.JabRefPreferences;
+
+import com.jgoodies.forms.layout.CellConstraints;
+import com.jgoodies.forms.layout.ColumnSpec;
+import com.jgoodies.forms.layout.FormLayout;
+import com.jgoodies.forms.layout.RowSpec;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * @author Oscar Gustafsson
+ *
+ *         Class for dealing with merging entries
+ */
+
+public class MergeEntries {
+
+<span class="nc" id="L62">    private static final Logger LOGGER = LoggerFactory.getLogger(MergeEntries.class);</span>
+
+
+    private static final String MARGIN = &quot;10px&quot;;
+
+<span class="nc" id="L67">    private static final List&lt;JLabel&gt; HEADING_LABELS = new ArrayList&lt;&gt;(6);</span>
+
+<span class="nc" id="L69">    private static final CellConstraints CELL_CONSTRAINTS = new CellConstraints();</span>
+<span class="nc" id="L70">    private static final String[] DIFF_MODES = {Localization.lang(&quot;Plain text&quot;),</span>
+<span class="nc" id="L71">            Localization.lang(&quot;Show diff&quot;) + &quot; - &quot; + Localization.lang(&quot;word&quot;),</span>
+<span class="nc" id="L72">            Localization.lang(&quot;Show diff&quot;) + &quot; - &quot; + Localization.lang(&quot;character&quot;),</span>
+<span class="nc" id="L73">            Localization.lang(&quot;Show symmetric diff&quot;) + &quot; - &quot; + Localization.lang(&quot;word&quot;),</span>
+<span class="nc" id="L74">            Localization.lang(&quot;Show symmetric diff&quot;) + &quot; - &quot; + Localization.lang(&quot;character&quot;)};</span>
+
+    // Headings
+<span class="nc" id="L77">    private final List&lt;String&gt; columnHeadings = Arrays.asList(Localization.lang(&quot;Field&quot;),</span>
+<span class="nc" id="L78">            Localization.lang(&quot;Left entry&quot;),</span>
+<span class="nc" id="L79">            Localization.lang(&quot;Left&quot;),</span>
+<span class="nc" id="L80">            Localization.lang(&quot;None&quot;),</span>
+<span class="nc" id="L81">            Localization.lang(&quot;Right&quot;),</span>
+<span class="nc" id="L82">            Localization.lang(&quot;Right entry&quot;));</span>
+<span class="nc" id="L83">    private final Set&lt;String&gt; identicalFields = new HashSet&lt;&gt;();</span>
+<span class="nc" id="L84">    private final Set&lt;String&gt; differentFields = new HashSet&lt;&gt;();</span>
+<span class="nc" id="L85">    private final BibEntry mergedEntry = new BibEntry();</span>
+    private final BibEntry leftEntry;
+    private final BibEntry rightEntry;
+    private final BibDatabaseMode databaseType;
+    private JScrollPane scrollPane;
+    private JTextArea sourceView;
+    private PreviewPanel entryPreview;
+    private Boolean doneBuilding;
+    private Boolean identicalTypes;
+    private List&lt;JRadioButton&gt; typeRadioButtons;
+<span class="nc" id="L95">    private final Set&lt;String&gt; allFields = new TreeSet&lt;&gt;();</span>
+<span class="nc" id="L96">    private final JComboBox&lt;String&gt; diffMode = new JComboBox&lt;&gt;();</span>
+<span class="nc" id="L97">    private final Map&lt;String, JTextPane&gt; leftTextPanes = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L98">    private final Map&lt;String, JTextPane&gt; rightTextPanes = new HashMap&lt;&gt;();</span>
+
+<span class="nc" id="L100">    private final Map&lt;String, List&lt;JRadioButton&gt;&gt; radioButtons = new HashMap&lt;&gt;();</span>
+
+<span class="nc" id="L102">    private final JPanel mainPanel = new JPanel();</span>
+
+
+
+    /**
+     * Constructor taking two entries
+     *
+     * @param entryLeft Left entry
+     * @param entryRight Right entry
+     * @param type Bib database mode
+     */
+<span class="nc" id="L113">    public MergeEntries(BibEntry entryLeft, BibEntry entryRight, BibDatabaseMode type) {</span>
+<span class="nc" id="L114">        leftEntry = entryLeft;</span>
+<span class="nc" id="L115">        rightEntry = entryRight;</span>
+<span class="nc" id="L116">        this.databaseType = type;</span>
+<span class="nc" id="L117">        initialize();</span>
+<span class="nc" id="L118">    }</span>
+
+    /**
+     * Constructor with optional column captions for the two entries
+     *
+     * @param entryLeft Left entry
+     * @param entryRight Right entry
+     * @param headingLeft Heading for left entry
+     * @param headingRight Heading for right entry
+     * @param type Bib database mode
+     */
+<span class="nc" id="L129">    public MergeEntries(BibEntry entryLeft, BibEntry entryRight, String headingLeft, String headingRight, BibDatabaseMode type) {</span>
+<span class="nc" id="L130">        columnHeadings.set(1, headingLeft);</span>
+<span class="nc" id="L131">        columnHeadings.set(5, headingRight);</span>
+<span class="nc" id="L132">        this.leftEntry = entryLeft;</span>
+<span class="nc" id="L133">        this.rightEntry = entryRight;</span>
+
+<span class="nc" id="L135">        this.databaseType = type;</span>
+
+<span class="nc" id="L137">        initialize();</span>
+<span class="nc" id="L138">    }</span>
+
+    /**
+     * Main function for building the merge entry JPanel
+     */
+    private void initialize() {
+<span class="nc" id="L144">        doneBuilding = false;</span>
+<span class="nc" id="L145">        setupFields();</span>
+
+<span class="nc" id="L147">        fillDiffModes();</span>
+
+        // Create main layout
+<span class="nc" id="L150">        String colSpecMain = &quot;left:pref, 5px, center:3cm:grow, 5px, center:pref, 3px, center:pref, 3px, center:pref, 5px, center:3cm:grow&quot;;</span>
+<span class="nc" id="L151">        String colSpecMerge = &quot;left:pref, 5px, fill:3cm:grow, 5px, center:pref, 3px, center:pref, 3px, center:pref, 5px, fill:3cm:grow&quot;;</span>
+<span class="nc" id="L152">        String rowSpec = &quot;pref, pref, 10px, fill:5cm:grow, 10px, pref, 10px, fill:3cm:grow&quot;;</span>
+<span class="nc" id="L153">        StringBuilder rowBuilder = new StringBuilder(&quot;&quot;);</span>
+<span class="nc bnc" id="L154" title="All 2 branches missed.">        for (int i = 0; i &lt; allFields.size(); i++) {</span>
+<span class="nc" id="L155">            rowBuilder.append(&quot;pref, 2dlu, &quot;);</span>
+        }
+<span class="nc" id="L157">        rowBuilder.append(&quot;pref&quot;);</span>
+
+<span class="nc" id="L159">        JPanel mergePanel = new JPanel();</span>
+<span class="nc" id="L160">        FormLayout mainLayout = new FormLayout(colSpecMain, rowSpec);</span>
+<span class="nc" id="L161">        FormLayout mergeLayout = new FormLayout(colSpecMerge, rowBuilder.toString());</span>
+<span class="nc" id="L162">        mainPanel.setLayout(mainLayout);</span>
+<span class="nc" id="L163">        mergePanel.setLayout(mergeLayout);</span>
+
+<span class="nc" id="L165">        setupHeadingRows();</span>
+
+<span class="nc" id="L167">        mainPanel.add(new JSeparator(), CELL_CONSTRAINTS.xyw(1, 3, 11));</span>
+
+<span class="nc" id="L169">        setupEntryTypeRow(mergePanel);</span>
+
+<span class="nc" id="L171">        int maxLabelWidth = setupFieldRows(mergePanel);</span>
+
+        // Create and add scrollpane
+<span class="nc" id="L174">        scrollPane = new JScrollPane(mergePanel, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,</span>
+<span class="nc" id="L175">                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);</span>
+<span class="nc" id="L176">        scrollPane.setBorder(BorderFactory.createEmptyBorder());</span>
+<span class="nc" id="L177">        updateTextPanes(allFields);</span>
+<span class="nc" id="L178">        mainPanel.add(scrollPane, CELL_CONSTRAINTS.xyw(1, 4, 11));</span>
+<span class="nc" id="L179">        mainPanel.add(new JSeparator(), CELL_CONSTRAINTS.xyw(1, 5, 11));</span>
+
+<span class="nc" id="L181">        synchronizeColumnWidths(mainLayout, mergeLayout, maxLabelWidth);</span>
+
+        // Setup a PreviewPanel and a Bibtex source box for the merged entry
+<span class="nc" id="L184">        mainPanel.add(boldFontLabel(Localization.lang(&quot;Merged entry&quot;)), CELL_CONSTRAINTS.xyw(1, 6, 6));</span>
+
+<span class="nc" id="L186">        entryPreview = new PreviewPanel(null, null);</span>
+<span class="nc" id="L187">        entryPreview.setEntry(mergedEntry);</span>
+<span class="nc" id="L188">        JFXPanel container = CustomJFXPanel.wrap(new Scene(entryPreview));</span>
+<span class="nc" id="L189">        mainPanel.add(container, CELL_CONSTRAINTS.xyw(1, 8, 6));</span>
+
+<span class="nc" id="L191">        mainPanel.add(boldFontLabel(Localization.lang(&quot;Merged BibTeX source code&quot;)), CELL_CONSTRAINTS.xyw(8, 6, 4));</span>
+
+<span class="nc" id="L193">        sourceView = new JTextArea();</span>
+<span class="nc" id="L194">        sourceView.setLineWrap(true);</span>
+<span class="nc" id="L195">        sourceView.setFont(new Font(&quot;Monospaced&quot;, Font.PLAIN, Globals.prefs.getInt(JabRefPreferences.FONT_SIZE)));</span>
+<span class="nc" id="L196">        mainPanel.add(new JScrollPane(sourceView), CELL_CONSTRAINTS.xyw(8, 8, 4));</span>
+<span class="nc" id="L197">        sourceView.setEditable(false);</span>
+
+        // Add some margin around the layout
+<span class="nc" id="L200">        mainLayout.appendRow(RowSpec.decode(MARGIN));</span>
+<span class="nc" id="L201">        mainLayout.appendColumn(ColumnSpec.decode(MARGIN));</span>
+<span class="nc" id="L202">        mainLayout.insertRow(1, RowSpec.decode(MARGIN));</span>
+<span class="nc" id="L203">        mainLayout.insertColumn(1, ColumnSpec.decode(MARGIN));</span>
+
+        // Everything done, allow any action to actually update the merged entry
+<span class="nc" id="L206">        doneBuilding = true;</span>
+
+<span class="nc" id="L208">        updateAll();</span>
+
+        // Show what we've got
+<span class="nc" id="L211">        mainPanel.setVisible(true);</span>
+<span class="nc" id="L212">        SwingUtilities.invokeLater(() -&gt; scrollPane.getVerticalScrollBar().setValue(0));</span>
+<span class="nc" id="L213">    }</span>
+
+    private int setupFieldRows(JPanel mergePanel) {
+        // For all fields in joint add a row and possibly radio buttons
+<span class="nc" id="L217">        int row = 2;</span>
+<span class="nc" id="L218">        int maxLabelWidth = -1;</span>
+<span class="nc bnc" id="L219" title="All 2 branches missed.">        for (String field : allFields) {</span>
+<span class="nc" id="L220">            JLabel label = boldFontLabel(new SentenceCaseFormatter().format(field));</span>
+<span class="nc" id="L221">            mergePanel.add(label, CELL_CONSTRAINTS.xy(1, (2 * row) - 1, &quot;left, top&quot;));</span>
+<span class="nc" id="L222">            Optional&lt;String&gt; leftString = leftEntry.getField(field);</span>
+<span class="nc" id="L223">            Optional&lt;String&gt; rightString = rightEntry.getField(field);</span>
+<span class="nc bnc" id="L224" title="All 2 branches missed.">            if (leftString.equals(rightString)) {</span>
+<span class="nc" id="L225">                identicalFields.add(field);</span>
+<span class="nc" id="L226">            } else {</span>
+<span class="nc" id="L227">                differentFields.add(field);</span>
+            }
+
+<span class="nc" id="L230">            maxLabelWidth = Math.max(maxLabelWidth, label.getPreferredSize().width);</span>
+
+            // Left text pane
+<span class="nc bnc" id="L233" title="All 2 branches missed.">            if (leftString.isPresent()) {</span>
+<span class="nc" id="L234">                JTextPane tf = new DiffHighlightingTextPane();</span>
+<span class="nc" id="L235">                mergePanel.add(tf, CELL_CONSTRAINTS.xy(3, (2 * row) - 1, &quot;f, f&quot;));</span>
+<span class="nc" id="L236">                leftTextPanes.put(field, tf);</span>
+            }
+
+            // Add radio buttons if the two entries do not have identical fields
+<span class="nc bnc" id="L240" title="All 2 branches missed.">            if (identicalFields.contains(field)) {</span>
+<span class="nc" id="L241">                mergedEntry.setField(field, leftString.get()); // Will only happen if both entries have the field and the content is identical</span>
+<span class="nc" id="L242">            } else {</span>
+<span class="nc" id="L243">                ButtonGroup group = new ButtonGroup();</span>
+<span class="nc" id="L244">                List&lt;JRadioButton&gt; list = new ArrayList&lt;&gt;(3);</span>
+<span class="nc bnc" id="L245" title="All 2 branches missed.">                for (int k = 0; k &lt; 3; k++) {</span>
+<span class="nc" id="L246">                    JRadioButton button = new JRadioButton();</span>
+<span class="nc" id="L247">                    group.add(button);</span>
+<span class="nc" id="L248">                    mergePanel.add(button, CELL_CONSTRAINTS.xy(5 + (k * 2), (2 * row) - 1));</span>
+<span class="nc" id="L249">                    button.addChangeListener(e -&gt; updateAll());</span>
+<span class="nc" id="L250">                    list.add(button);</span>
+                }
+<span class="nc" id="L252">                radioButtons.put(field, list);</span>
+<span class="nc bnc" id="L253" title="All 2 branches missed.">                if (leftString.isPresent()) {</span>
+<span class="nc" id="L254">                    list.get(0).setSelected(true);</span>
+<span class="nc bnc" id="L255" title="All 2 branches missed.">                    if (!rightString.isPresent()) {</span>
+<span class="nc" id="L256">                        list.get(2).setEnabled(false);</span>
+                    }
+<span class="nc" id="L258">                } else {</span>
+<span class="nc" id="L259">                    list.get(0).setEnabled(false);</span>
+<span class="nc" id="L260">                    list.get(2).setSelected(true);</span>
+                }
+            }
+
+            // Right text pane
+<span class="nc bnc" id="L265" title="All 2 branches missed.">            if (rightString.isPresent()) {</span>
+<span class="nc" id="L266">                JTextPane tf = new DiffHighlightingTextPane();</span>
+<span class="nc" id="L267">                mergePanel.add(tf, CELL_CONSTRAINTS.xy(11, (2 * row) - 1, &quot;f, f&quot;));</span>
+<span class="nc" id="L268">                rightTextPanes.put(field, tf);</span>
+            }
+<span class="nc" id="L270">            row++;</span>
+        }
+<span class="nc" id="L272">        return maxLabelWidth;</span>
+    }
+
+    private void setupEntryTypeRow(JPanel mergePanel) {
+        // Start with entry type
+<span class="nc" id="L277">        mergePanel.add(boldFontLabel(Localization.lang(&quot;Entry type&quot;)), CELL_CONSTRAINTS.xy(1, 1));</span>
+
+<span class="nc" id="L279">        JTextPane leftTypeDisplay = new DiffHighlightingTextPane();</span>
+<span class="nc" id="L280">        leftTypeDisplay.setText(DiffHighlighting.HTML_START + leftEntry.getType() + DiffHighlighting.HTML_END);</span>
+<span class="nc" id="L281">        mergePanel.add(leftTypeDisplay, CELL_CONSTRAINTS.xy(3, 1));</span>
+<span class="nc bnc" id="L282" title="All 2 branches missed.">        if (leftEntry.getType().equals(rightEntry.getType())) {</span>
+<span class="nc" id="L283">            identicalTypes = true;</span>
+<span class="nc" id="L284">        } else {</span>
+<span class="nc" id="L285">            identicalTypes = false;</span>
+<span class="nc" id="L286">            ButtonGroup group = new ButtonGroup();</span>
+<span class="nc" id="L287">            typeRadioButtons = new ArrayList&lt;&gt;(2);</span>
+<span class="nc bnc" id="L288" title="All 2 branches missed.">            for (int k = 0; k &lt; 3; k += 2) {</span>
+<span class="nc" id="L289">                JRadioButton button = new JRadioButton();</span>
+<span class="nc" id="L290">                typeRadioButtons.add(button);</span>
+<span class="nc" id="L291">                group.add(button);</span>
+<span class="nc" id="L292">                mergePanel.add(button, CELL_CONSTRAINTS.xy(5 + (k * 2), 1));</span>
+<span class="nc" id="L293">                button.addChangeListener(e -&gt; updateAll());</span>
+            }
+<span class="nc" id="L295">            typeRadioButtons.get(0).setSelected(true);</span>
+        }
+<span class="nc" id="L297">        JTextPane rightTypeDisplay = new DiffHighlightingTextPane();</span>
+<span class="nc" id="L298">        rightTypeDisplay.setText(DiffHighlighting.HTML_START + rightEntry.getType() + DiffHighlighting.HTML_END);</span>
+<span class="nc" id="L299">        mergePanel.add(rightTypeDisplay, CELL_CONSTRAINTS.xy(11, 1));</span>
+<span class="nc" id="L300">    }</span>
+
+    private void setupHeadingRows() {
+<span class="nc" id="L303">        mainPanel.add(boldFontLabel(Localization.lang(&quot;Use&quot;)), CELL_CONSTRAINTS.xyw(4, 1, 7, &quot;center, bottom&quot;));</span>
+<span class="nc" id="L304">        mainPanel.add(diffMode, CELL_CONSTRAINTS.xy(11, 1, &quot;right, bottom&quot;));</span>
+
+        // Set headings
+<span class="nc bnc" id="L307" title="All 2 branches missed.">        for (int i = 0; i &lt; 6; i++) {</span>
+<span class="nc" id="L308">            HEADING_LABELS.add(boldFontLabel(columnHeadings.get(i)));</span>
+<span class="nc" id="L309">            mainPanel.add(HEADING_LABELS.get(i), CELL_CONSTRAINTS.xy(1 + (i * 2), 2));</span>
+        }
+<span class="nc" id="L311">    }</span>
+
+    private void fillDiffModes() {
+        // Fill diff mode combo box
+<span class="nc bnc" id="L315" title="All 2 branches missed.">        for (String diffText : DIFF_MODES) {</span>
+<span class="nc" id="L316">            diffMode.addItem(diffText);</span>
+        }
+<span class="nc" id="L318">        diffMode.setSelectedIndex(</span>
+<span class="nc" id="L319">                Math.min(Globals.prefs.getInt(JabRefPreferences.MERGE_ENTRIES_DIFF_MODE), diffMode.getItemCount() - 1));</span>
+<span class="nc" id="L320">        diffMode.addActionListener(e -&gt; {</span>
+<span class="nc" id="L321">            updateTextPanes(differentFields);</span>
+<span class="nc" id="L322">            storePreference();</span>
+<span class="nc" id="L323">        });</span>
+<span class="nc" id="L324">    }</span>
+
+    private void synchronizeColumnWidths(FormLayout mainLayout, FormLayout mergeLayout,
+            int maxLabelWidth) {
+        // Synchronize column widths
+<span class="nc" id="L329">        String[] rbAlign = {&quot;right&quot;, &quot;center&quot;, &quot;left&quot;};</span>
+<span class="nc" id="L330">        mainLayout.setColumnSpec(1, ColumnSpec.decode(Integer.toString(maxLabelWidth) + &quot;px&quot;));</span>
+<span class="nc" id="L331">        Integer maxRBWidth = -1;</span>
+<span class="nc bnc" id="L332" title="All 2 branches missed.">        for (int k = 2; k &lt; 5; k++) {</span>
+<span class="nc" id="L333">            maxRBWidth = Math.max(maxRBWidth, HEADING_LABELS.get(k).getPreferredSize().width);</span>
+        }
+<span class="nc bnc" id="L335" title="All 2 branches missed.">        for (int k = 0; k &lt; 3; k++) {</span>
+<span class="nc" id="L336">            mergeLayout.setColumnSpec(5 + (k * 2), ColumnSpec.decode(rbAlign[k] + &quot;:&quot; + maxRBWidth + &quot;px&quot;));</span>
+        }
+<span class="nc" id="L338">    }</span>
+
+    private JLabel boldFontLabel(String text) {
+<span class="nc" id="L341">        JLabel label = new JLabel(text);</span>
+<span class="nc" id="L342">        Font font = label.getFont();</span>
+<span class="nc" id="L343">        label.setFont(font.deriveFont(font.getStyle() | Font.BOLD));</span>
+<span class="nc" id="L344">        return label;</span>
+    }
+
+    private void storePreference() {
+<span class="nc" id="L348">        Globals.prefs.putInt(JabRefPreferences.MERGE_ENTRIES_DIFF_MODE, diffMode.getSelectedIndex());</span>
+<span class="nc" id="L349">    }</span>
+
+    private void setupFields() {
+<span class="nc" id="L352">        allFields.addAll(leftEntry.getFieldNames());</span>
+<span class="nc" id="L353">        allFields.addAll(rightEntry.getFieldNames());</span>
+
+        // Remove internal fields
+<span class="nc" id="L356">        Set&lt;String&gt; toberemoved = new TreeSet&lt;&gt;();</span>
+<span class="nc bnc" id="L357" title="All 2 branches missed.">        for (String field : allFields) {</span>
+<span class="nc bnc" id="L358" title="All 2 branches missed.">            if (InternalBibtexFields.isInternalField(field)) {</span>
+<span class="nc" id="L359">                toberemoved.add(field);</span>
+            }
+        }
+<span class="nc" id="L362">        allFields.removeAll(toberemoved);</span>
+<span class="nc" id="L363">    }</span>
+
+    private void updateTextPanes(Collection&lt;String&gt; fields) {
+<span class="nc" id="L366">        int oldScrollPaneValue = scrollPane.getVerticalScrollBar().getValue();</span>
+<span class="nc bnc" id="L367" title="All 2 branches missed.">        for (String field : fields) {</span>
+<span class="nc" id="L368">            String leftString = leftEntry.getField(field).orElse(&quot;&quot;);</span>
+<span class="nc" id="L369">            String rightString = rightEntry.getField(field).orElse(&quot;&quot;);</span>
+<span class="nc bnc" id="L370" title="All 6 branches missed.">            switch (diffMode.getSelectedIndex()) {</span>
+            case 0: // Plain text
+<span class="nc" id="L372">                break;</span>
+            case 1: // Latexdiff style - word
+<span class="nc" id="L374">                rightString = DiffHighlighting.generateDiffHighlighting(leftString, rightString, &quot; &quot;);</span>
+<span class="nc" id="L375">                break;</span>
+            case 2: // Latexdiff style - character
+<span class="nc" id="L377">                rightString = DiffHighlighting.generateDiffHighlighting(leftString, rightString, &quot;&quot;);</span>
+<span class="nc" id="L378">                break;</span>
+            case 3: // Symmetric style - word
+<span class="nc" id="L380">                String tmpLeftString = DiffHighlighting.generateSymmetricHighlighting(leftString, rightString, &quot; &quot;);</span>
+<span class="nc" id="L381">                rightString = DiffHighlighting.generateSymmetricHighlighting(rightString, leftString, &quot; &quot;);</span>
+<span class="nc" id="L382">                leftString = tmpLeftString;</span>
+<span class="nc" id="L383">                break;</span>
+            case 4: // Symmetric style - character
+<span class="nc" id="L385">                tmpLeftString = DiffHighlighting.generateSymmetricHighlighting(leftString, rightString, &quot;&quot;);</span>
+<span class="nc" id="L386">                rightString = DiffHighlighting.generateSymmetricHighlighting(rightString, leftString, &quot;&quot;);</span>
+<span class="nc" id="L387">                leftString = tmpLeftString;</span>
+<span class="nc" id="L388">                break;</span>
+            default: // Shouldn't happen
+                break;
+            }
+<span class="nc bnc" id="L392" title="All 4 branches missed.">            if ((leftString != null) &amp;&amp; leftTextPanes.containsKey(field)) {</span>
+<span class="nc" id="L393">                leftTextPanes.get(field).setText(DiffHighlighting.HTML_START + leftString + DiffHighlighting.HTML_END);</span>
+            }
+<span class="nc bnc" id="L395" title="All 4 branches missed.">            if ((rightString != null) &amp;&amp; rightTextPanes.containsKey(field)) {</span>
+<span class="nc" id="L396">                rightTextPanes.get(field).setText(DiffHighlighting.HTML_START + rightString + DiffHighlighting.HTML_END);</span>
+            }
+        }
+<span class="nc" id="L399">        SwingUtilities.invokeLater(() -&gt; scrollPane.getVerticalScrollBar()</span>
+<span class="nc" id="L400">                .setValue(Math.min(scrollPane.getVerticalScrollBar().getMaximum(), oldScrollPaneValue)));</span>
+<span class="nc" id="L401">    }</span>
+
+
+    /**
+     * @return Merged BibEntry
+     */
+    public BibEntry getMergeEntry() {
+<span class="nc" id="L408">        return mergedEntry;</span>
+    }
+
+    /**
+     * @return The merge entry JPanel
+     */
+    public JPanel getMergeEntryPanel() {
+<span class="nc" id="L415">        return mainPanel;</span>
+    }
+
+    /**
+     * Update the merged BibEntry with source and preview panel every time something is changed
+     */
+    private void updateAll() {
+<span class="nc bnc" id="L422" title="All 2 branches missed.">        if (!doneBuilding) {</span>
+            // If we are not done adding everything, do not do anything...
+<span class="nc" id="L424">            return;</span>
+        }
+        // Check if the type has changed
+<span class="nc bnc" id="L427" title="All 4 branches missed.">        if (!identicalTypes &amp;&amp; typeRadioButtons.get(0).isSelected()) {</span>
+<span class="nc" id="L428">            mergedEntry.setType(leftEntry.getType());</span>
+<span class="nc" id="L429">        } else {</span>
+<span class="nc" id="L430">            mergedEntry.setType(rightEntry.getType());</span>
+        }
+
+        // Check the potentially different fields
+<span class="nc bnc" id="L434" title="All 2 branches missed.">        for (String field : differentFields) {</span>
+<span class="nc bnc" id="L435" title="All 2 branches missed.">            if (radioButtons.get(field).get(0).isSelected()) {</span>
+<span class="nc" id="L436">                mergedEntry.setField(field, leftEntry.getField(field).get()); // Will only happen if field exists</span>
+<span class="nc bnc" id="L437" title="All 2 branches missed.">            } else if (radioButtons.get(field).get(2).isSelected()) {</span>
+<span class="nc" id="L438">                mergedEntry.setField(field, rightEntry.getField(field).get()); // Will only happen if field exists</span>
+<span class="nc" id="L439">            } else {</span>
+<span class="nc" id="L440">                mergedEntry.clearField(field);</span>
+            }
+        }
+
+        // Update the PreviewPanel
+<span class="nc" id="L445">        entryPreview.setEntry(mergedEntry);</span>
+
+        // Update the BibTeX source view
+<span class="nc" id="L448">        StringWriter writer = new StringWriter();</span>
+        try {
+<span class="nc" id="L450">            new BibEntryWriter(new LatexFieldFormatter(Globals.prefs.getLatexFieldFormatterPreferences()),</span>
+<span class="nc" id="L451">                    false).write(mergedEntry, writer, databaseType);</span>
+<span class="nc" id="L452">        } catch (IOException ex) {</span>
+<span class="nc" id="L453">            LOGGER.error(&quot;Error in entry&quot;, ex);</span>
+        }
+<span class="nc" id="L455">        sourceView.setText(writer.getBuffer().toString());</span>
+<span class="nc" id="L456">        sourceView.setCaretPosition(0);</span>
+<span class="nc" id="L457">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

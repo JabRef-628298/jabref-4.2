@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>ExportSortingPrefsTab.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.preftabs</a> &gt; <span class="el_source">ExportSortingPrefsTab.java</span></div><h1>ExportSortingPrefsTab.java</h1><pre class="source lang-java linenums"><span class="nc" id="L1">package org.jabref.gui.preftabs;</span>
+
+import java.awt.BorderLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+import javax.swing.BorderFactory;
+import javax.swing.ButtonGroup;
+import javax.swing.JPanel;
+import javax.swing.JRadioButton;
+
+import org.jabref.gui.SaveOrderConfigDisplay;
+import org.jabref.logic.l10n.Localization;
+import org.jabref.preferences.JabRefPreferences;
+
+import com.jgoodies.forms.builder.DefaultFormBuilder;
+import com.jgoodies.forms.layout.FormLayout;
+
+/**
+ * Preference tab for file sorting options.
+ */
+class ExportSortingPrefsTab extends JPanel implements PrefsTab {
+
+    private final JabRefPreferences prefs;
+
+    private final JRadioButton exportInOriginalOrder;
+    private final JRadioButton exportInTableOrder;
+    private final JRadioButton exportInSpecifiedOrder;
+    private final SaveOrderConfigDisplay exportOrderPanel;
+
+
+<span class="nc" id="L32">    public ExportSortingPrefsTab(JabRefPreferences prefs) {</span>
+<span class="nc" id="L33">        this.prefs = prefs;</span>
+<span class="nc" id="L34">        FormLayout layout = new FormLayout(&quot;4dlu, left:pref, 4dlu, fill:pref&quot;, &quot;&quot;);</span>
+<span class="nc" id="L35">        DefaultFormBuilder builder = new DefaultFormBuilder(layout);</span>
+<span class="nc" id="L36">        builder.leadingColumnOffset(1);</span>
+
+        // EXPORT SORT ORDER
+        // create Components
+<span class="nc" id="L40">        exportInOriginalOrder = new JRadioButton(Localization.lang(&quot;Export entries in their original order&quot;));</span>
+<span class="nc" id="L41">        exportInTableOrder = new JRadioButton(Localization.lang(&quot;Export in current table sort order&quot;));</span>
+<span class="nc" id="L42">        exportInSpecifiedOrder = new JRadioButton(Localization.lang(&quot;Export entries ordered as specified&quot;));</span>
+
+<span class="nc" id="L44">        ButtonGroup buttonGroup = new ButtonGroup();</span>
+<span class="nc" id="L45">        buttonGroup.add(exportInOriginalOrder);</span>
+<span class="nc" id="L46">        buttonGroup.add(exportInTableOrder);</span>
+<span class="nc" id="L47">        buttonGroup.add(exportInSpecifiedOrder);</span>
+
+<span class="nc" id="L49">        ActionListener listener = new ActionListener() {</span>
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc bnc" id="L53" title="All 2 branches missed.">                boolean selected = e.getSource() == exportInSpecifiedOrder;</span>
+<span class="nc" id="L54">                exportOrderPanel.setEnabled(selected);</span>
+<span class="nc" id="L55">            }</span>
+        };
+<span class="nc" id="L57">        exportInOriginalOrder.addActionListener(listener);</span>
+<span class="nc" id="L58">        exportInTableOrder.addActionListener(listener);</span>
+<span class="nc" id="L59">        exportInSpecifiedOrder.addActionListener(listener);</span>
+
+        // create GUI
+<span class="nc" id="L62">        builder.appendSeparator(Localization.lang(&quot;Export sort order&quot;));</span>
+<span class="nc" id="L63">        builder.append(exportInOriginalOrder, 1);</span>
+<span class="nc" id="L64">        builder.nextLine();</span>
+<span class="nc" id="L65">        builder.append(exportInTableOrder, 1);</span>
+<span class="nc" id="L66">        builder.nextLine();</span>
+<span class="nc" id="L67">        builder.append(exportInSpecifiedOrder, 1);</span>
+<span class="nc" id="L68">        builder.nextLine();</span>
+
+<span class="nc" id="L70">        exportOrderPanel = new SaveOrderConfigDisplay();</span>
+<span class="nc" id="L71">        builder.append(exportOrderPanel.getPanel());</span>
+<span class="nc" id="L72">        builder.nextLine();</span>
+
+        // COMBINE EVERYTHING
+<span class="nc" id="L75">        JPanel pan = builder.getPanel();</span>
+<span class="nc" id="L76">        pan.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));</span>
+<span class="nc" id="L77">        setLayout(new BorderLayout());</span>
+<span class="nc" id="L78">        add(pan, BorderLayout.CENTER);</span>
+<span class="nc" id="L79">    }</span>
+
+    @Override
+    public void setValues() {
+<span class="nc bnc" id="L83" title="All 2 branches missed.">        if (prefs.getBoolean(JabRefPreferences.EXPORT_IN_ORIGINAL_ORDER)) {</span>
+<span class="nc" id="L84">            exportInOriginalOrder.setSelected(true);</span>
+<span class="nc bnc" id="L85" title="All 2 branches missed.">        } else if (prefs.getBoolean(JabRefPreferences.EXPORT_IN_SPECIFIED_ORDER)) {</span>
+<span class="nc" id="L86">            exportInSpecifiedOrder.setSelected(true);</span>
+<span class="nc" id="L87">        } else {</span>
+<span class="nc" id="L88">            exportInTableOrder.setSelected(true);</span>
+        }
+
+<span class="nc" id="L91">        boolean selected = prefs.getBoolean(JabRefPreferences.EXPORT_IN_SPECIFIED_ORDER);</span>
+<span class="nc" id="L92">        exportOrderPanel.setEnabled(selected);</span>
+<span class="nc" id="L93">        exportOrderPanel.setSaveOrderConfig(prefs.loadExportSaveOrder());</span>
+<span class="nc" id="L94">    }</span>
+
+    @Override
+    public void storeSettings() {
+<span class="nc" id="L98">        prefs.putBoolean(JabRefPreferences.EXPORT_IN_ORIGINAL_ORDER, exportInOriginalOrder.isSelected());</span>
+<span class="nc" id="L99">        prefs.putBoolean(JabRefPreferences.EXPORT_IN_SPECIFIED_ORDER, exportInSpecifiedOrder.isSelected());</span>
+
+<span class="nc" id="L101">        prefs.storeExportSaveOrder(exportOrderPanel.getSaveOrderConfig());</span>
+<span class="nc" id="L102">    }</span>
+
+    @Override
+    public boolean validateSettings() {
+<span class="nc" id="L106">        return true;</span>
+    }
+
+    @Override
+    public String getTabName() {
+<span class="nc" id="L111">        return Localization.lang(&quot;Export sorting&quot;);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

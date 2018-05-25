@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MathSciNetTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.importer.fetcher</a> &gt; <span class="el_source">MathSciNetTest.java</span></div><h1>MathSciNetTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.importer.fetcher;
+
+import java.util.List;
+import java.util.Optional;
+
+import org.jabref.logic.bibtex.FieldContentParserPreferences;
+import org.jabref.logic.importer.ImportFormatPreferences;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.BibtexEntryTypes;
+import org.jabref.support.DisabledOnCIServer;
+import org.jabref.testutils.category.FetcherTest;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+@FetcherTest
+<span class="fc" id="L22">class MathSciNetTest {</span>
+
+    MathSciNet fetcher;
+    private BibEntry ratiuEntry;
+
+    @BeforeEach
+    void setUp() throws Exception {
+<span class="fc" id="L29">        ImportFormatPreferences importFormatPreferences = mock(ImportFormatPreferences.class);</span>
+<span class="fc" id="L30">        when(importFormatPreferences.getFieldContentParserPreferences()).thenReturn(</span>
+<span class="fc" id="L31">                mock(FieldContentParserPreferences.class));</span>
+<span class="fc" id="L32">        fetcher = new MathSciNet(importFormatPreferences);</span>
+
+<span class="fc" id="L34">        ratiuEntry = new BibEntry();</span>
+<span class="fc" id="L35">        ratiuEntry.setType(BibtexEntryTypes.ARTICLE);</span>
+<span class="fc" id="L36">        ratiuEntry.setCiteKey(&quot;MR3537908&quot;);</span>
+<span class="fc" id="L37">        ratiuEntry.setField(&quot;author&quot;, &quot;Chechkin, Gregory A. and Ratiu, Tudor S. and Romanov, Maxim S. and Samokhin, Vyacheslav N.&quot;);</span>
+<span class="fc" id="L38">        ratiuEntry.setField(&quot;title&quot;, &quot;Existence and uniqueness theorems for the two-dimensional {E}ricksen-{L}eslie system&quot;);</span>
+<span class="fc" id="L39">        ratiuEntry.setField(&quot;journal&quot;, &quot;Journal of Mathematical Fluid Mechanics&quot;);</span>
+<span class="fc" id="L40">        ratiuEntry.setField(&quot;volume&quot;, &quot;18&quot;);</span>
+<span class="fc" id="L41">        ratiuEntry.setField(&quot;year&quot;, &quot;2016&quot;);</span>
+<span class="fc" id="L42">        ratiuEntry.setField(&quot;number&quot;, &quot;3&quot;);</span>
+<span class="fc" id="L43">        ratiuEntry.setField(&quot;pages&quot;, &quot;571--589&quot;);</span>
+<span class="fc" id="L44">        ratiuEntry.setField(&quot;issn&quot;, &quot;1422-6928&quot;);</span>
+<span class="fc" id="L45">        ratiuEntry.setField(&quot;keywords&quot;, &quot;76A15 (35A01 35A02 35K61 82D30)&quot;);</span>
+<span class="fc" id="L46">        ratiuEntry.setField(&quot;mrnumber&quot;, &quot;3537908&quot;);</span>
+<span class="fc" id="L47">        ratiuEntry.setField(&quot;doi&quot;, &quot;10.1007/s00021-016-0250-0&quot;);</span>
+<span class="fc" id="L48">    }</span>
+
+    @Test
+    void searchByEntryFindsEntry() throws Exception {
+<span class="fc" id="L52">        BibEntry searchEntry = new BibEntry();</span>
+<span class="fc" id="L53">        searchEntry.setField(&quot;title&quot;, &quot;existence&quot;);</span>
+<span class="fc" id="L54">        searchEntry.setField(&quot;author&quot;, &quot;Ratiu&quot;);</span>
+<span class="fc" id="L55">        searchEntry.setField(&quot;journal&quot;, &quot;fluid&quot;);</span>
+
+<span class="fc" id="L57">        List&lt;BibEntry&gt; fetchedEntries = fetcher.performSearch(searchEntry);</span>
+<span class="fc" id="L58">        assertFalse(fetchedEntries.isEmpty());</span>
+<span class="fc" id="L59">        assertEquals(ratiuEntry, fetchedEntries.get(0));</span>
+<span class="fc" id="L60">    }</span>
+
+    @Test
+    @DisabledOnCIServer(&quot;CI server has no subscription to MathSciNet and thus gets 401 response&quot;)
+    void searchByQueryFindsEntry() throws Exception {
+<span class="nc" id="L65">        List&lt;BibEntry&gt; fetchedEntries = fetcher.performSearch(&quot;Existence and uniqueness theorems Two-Dimensional Ericksen Leslie System&quot;);</span>
+<span class="nc" id="L66">        assertFalse(fetchedEntries.isEmpty());</span>
+<span class="nc" id="L67">        assertEquals(ratiuEntry, fetchedEntries.get(1));</span>
+<span class="nc" id="L68">    }</span>
+
+    @Test
+    @DisabledOnCIServer(&quot;CI server has no subscription to MathSciNet and thus gets 401 response&quot;)
+    void searchByIdFindsEntry() throws Exception {
+<span class="fc" id="L73">        Optional&lt;BibEntry&gt; fetchedEntry = fetcher.performSearchById(&quot;3537908&quot;);</span>
+<span class="nc" id="L74">        assertEquals(Optional.of(ratiuEntry), fetchedEntry);</span>
+<span class="nc" id="L75">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

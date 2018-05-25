@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>FirstColumnComparator.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.util.comparator</a> &gt; <span class="el_source">FirstColumnComparator.java</span></div><h1>FirstColumnComparator.java</h1><pre class="source lang-java linenums">package org.jabref.gui.util.comparator;
+
+import java.util.Comparator;
+
+import org.jabref.logic.TypedBibEntry;
+import org.jabref.model.database.BibDatabaseContext;
+import org.jabref.model.entry.BibEntry;
+
+public class FirstColumnComparator implements Comparator&lt;BibEntry&gt; {
+
+    private final BibDatabaseContext database;
+
+<span class="nc" id="L13">    public FirstColumnComparator(BibDatabaseContext database) {</span>
+<span class="nc" id="L14">        this.database = database;</span>
+<span class="nc" id="L15">    }</span>
+
+    @Override
+    public int compare(BibEntry e1, BibEntry e2) {
+<span class="nc" id="L19">        int score1 = 0;</span>
+<span class="nc" id="L20">        int score2 = 0;</span>
+
+<span class="nc" id="L22">        TypedBibEntry typedEntry1 = new TypedBibEntry(e1, database);</span>
+<span class="nc" id="L23">        TypedBibEntry typedEntry2 = new TypedBibEntry(e2, database);</span>
+<span class="nc bnc" id="L24" title="All 2 branches missed.">        if (typedEntry1.hasAllRequiredFields()) {</span>
+<span class="nc" id="L25">            score1++;</span>
+        }
+
+<span class="nc bnc" id="L28" title="All 2 branches missed.">        if (typedEntry2.hasAllRequiredFields()) {</span>
+<span class="nc" id="L29">            score2++;</span>
+        }
+
+<span class="nc" id="L32">        return score1 - score2;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

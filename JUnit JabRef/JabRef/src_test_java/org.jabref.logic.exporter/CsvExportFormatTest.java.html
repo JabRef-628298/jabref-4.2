@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>CsvExportFormatTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.exporter</a> &gt; <span class="el_source">CsvExportFormatTest.java</span></div><h1>CsvExportFormatTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.exporter;
+
+import java.io.File;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.jabref.logic.layout.LayoutFormatterPreferences;
+import org.jabref.logic.xmp.XmpPreferences;
+import org.jabref.model.database.BibDatabaseContext;
+import org.jabref.model.entry.BibEntry;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.mockito.Answers;
+
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+
+<span class="fc" id="L27">public class CsvExportFormatTest {</span>
+    private Exporter exportFormat;
+    public BibDatabaseContext databaseContext;
+    public Charset charset;
+
+    @Rule
+<span class="fc" id="L33">    public TemporaryFolder testFolder = new TemporaryFolder();</span>
+
+    @Before
+    public void setUp() {
+<span class="fc" id="L37">        Map&lt;String, TemplateExporter&gt; customFormats = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L38">        LayoutFormatterPreferences layoutPreferences = mock(LayoutFormatterPreferences.class, Answers.RETURNS_DEEP_STUBS);</span>
+<span class="fc" id="L39">        SavePreferences savePreferences = mock(SavePreferences.class);</span>
+<span class="fc" id="L40">        XmpPreferences xmpPreferences = mock(XmpPreferences.class);</span>
+<span class="fc" id="L41">        ExporterFactory exporterFactory = ExporterFactory.create(customFormats, layoutPreferences, savePreferences, xmpPreferences);</span>
+
+<span class="fc" id="L43">        exportFormat = exporterFactory.getExporterByName(&quot;oocsv&quot;).get();</span>
+
+<span class="fc" id="L45">        databaseContext = new BibDatabaseContext();</span>
+<span class="fc" id="L46">        charset = StandardCharsets.UTF_8;</span>
+<span class="fc" id="L47">    }</span>
+
+    @After
+    public void tearDown() {
+<span class="fc" id="L51">        exportFormat = null;</span>
+<span class="fc" id="L52">    }</span>
+
+    @Test
+    public void testPerformExportForSingleAuthor() throws Exception {
+<span class="fc" id="L56">        File tmpFile = testFolder.newFile();</span>
+<span class="fc" id="L57">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L58">        entry.setField(&quot;author&quot;, &quot;Someone, Van Something&quot;);</span>
+<span class="fc" id="L59">        List&lt;BibEntry&gt; entries = Arrays.asList(entry);</span>
+
+<span class="fc" id="L61">        exportFormat.export(databaseContext, tmpFile.toPath(), charset, entries);</span>
+
+<span class="fc" id="L63">        List&lt;String&gt; lines = Files.readAllLines(tmpFile.toPath());</span>
+<span class="fc" id="L64">        assertEquals(2, lines.size());</span>
+<span class="fc" id="L65">        assertEquals(</span>
+<span class="fc" id="L66">                &quot;10,\&quot;\&quot;,\&quot;\&quot;,\&quot;Someone, Van Something\&quot;,\&quot;\&quot;,\&quot;\&quot;,,,\&quot;\&quot;,\&quot;\&quot;,,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;&quot;,</span>
+<span class="fc" id="L67">                lines.get(1));</span>
+<span class="fc" id="L68">    }</span>
+
+    @Test
+    public void testPerformExportForMultipleAuthors() throws Exception {
+<span class="fc" id="L72">        File tmpFile = testFolder.newFile();</span>
+<span class="fc" id="L73">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L74">        entry.setField(&quot;author&quot;, &quot;von Neumann, John and Smith, John and Black Brown, Peter&quot;);</span>
+<span class="fc" id="L75">        List&lt;BibEntry&gt; entries = Arrays.asList(entry);</span>
+
+<span class="fc" id="L77">        exportFormat.export(databaseContext, tmpFile.toPath(), charset, entries);</span>
+
+<span class="fc" id="L79">        List&lt;String&gt; lines = Files.readAllLines(tmpFile.toPath());</span>
+<span class="fc" id="L80">        assertEquals(2, lines.size());</span>
+<span class="fc" id="L81">        assertEquals(</span>
+<span class="fc" id="L82">                &quot;10,\&quot;\&quot;,\&quot;\&quot;,\&quot;von Neumann, John; Smith, John; Black Brown, Peter\&quot;,\&quot;\&quot;,\&quot;\&quot;,,,\&quot;\&quot;,\&quot;\&quot;,,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;&quot;,</span>
+<span class="fc" id="L83">                lines.get(1));</span>
+<span class="fc" id="L84">    }</span>
+
+    @Test
+    public void testPerformExportForSingleEditor() throws Exception {
+<span class="fc" id="L88">        File tmpFile = testFolder.newFile();</span>
+<span class="fc" id="L89">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L90">        entry.setField(&quot;editor&quot;, &quot;Someone, Van Something&quot;);</span>
+<span class="fc" id="L91">        List&lt;BibEntry&gt; entries = Arrays.asList(entry);</span>
+
+<span class="fc" id="L93">        exportFormat.export(databaseContext, tmpFile.toPath(), charset, entries);</span>
+
+<span class="fc" id="L95">        List&lt;String&gt; lines = Files.readAllLines(tmpFile.toPath());</span>
+<span class="fc" id="L96">        assertEquals(2, lines.size());</span>
+<span class="fc" id="L97">        assertEquals(</span>
+<span class="fc" id="L98">                &quot;10,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,,,\&quot;\&quot;,\&quot;\&quot;,,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;Someone, Van Something\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;&quot;,</span>
+<span class="fc" id="L99">                lines.get(1));</span>
+<span class="fc" id="L100">    }</span>
+
+    @Test
+    public void testPerformExportForMultipleEditors() throws Exception {
+<span class="fc" id="L104">        File tmpFile = testFolder.newFile();</span>
+<span class="fc" id="L105">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L106">        entry.setField(&quot;editor&quot;, &quot;von Neumann, John and Smith, John and Black Brown, Peter&quot;);</span>
+<span class="fc" id="L107">        List&lt;BibEntry&gt; entries = Arrays.asList(entry);</span>
+
+<span class="fc" id="L109">        exportFormat.export(databaseContext, tmpFile.toPath(), charset, entries);</span>
+
+<span class="fc" id="L111">        List&lt;String&gt; lines = Files.readAllLines(tmpFile.toPath());</span>
+<span class="fc" id="L112">        assertEquals(2, lines.size());</span>
+<span class="fc" id="L113">        assertEquals(</span>
+<span class="fc" id="L114">                &quot;10,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,,,\&quot;\&quot;,\&quot;\&quot;,,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;von Neumann, John; Smith, John; Black Brown, Peter\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;,\&quot;\&quot;&quot;,</span>
+<span class="fc" id="L115">                lines.get(1));</span>
+<span class="fc" id="L116">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

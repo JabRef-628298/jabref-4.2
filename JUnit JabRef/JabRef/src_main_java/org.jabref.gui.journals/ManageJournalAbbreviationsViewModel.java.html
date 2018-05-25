@@ -1,0 +1,404 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>ManageJournalAbbreviationsViewModel.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.journals</a> &gt; <span class="el_source">ManageJournalAbbreviationsViewModel.java</span></div><h1>ManageJournalAbbreviationsViewModel.java</h1><pre class="source lang-java linenums">package org.jabref.gui.journals;
+
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleListProperty;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
+
+import org.jabref.gui.AbstractViewModel;
+import org.jabref.gui.DialogService;
+import org.jabref.gui.util.BackgroundTask;
+import org.jabref.gui.util.FileDialogConfiguration;
+import org.jabref.gui.util.TaskExecutor;
+import org.jabref.logic.journals.Abbreviation;
+import org.jabref.logic.journals.JournalAbbreviationLoader;
+import org.jabref.logic.journals.JournalAbbreviationPreferences;
+import org.jabref.logic.l10n.Localization;
+import org.jabref.logic.util.FileType;
+import org.jabref.preferences.PreferencesService;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * This class provides a model for managing journal abbreviation lists.
+ * It provides all necessary methods to create, modify or delete journal
+ * abbreviations and files. To visualize the model one can bind the properties
+ * to ui elements.
+ */
+public class ManageJournalAbbreviationsViewModel extends AbstractViewModel {
+
+<span class="fc" id="L41">    private final Logger logger = LoggerFactory.getLogger(ManageJournalAbbreviationsViewModel.class);</span>
+<span class="fc" id="L42">    private final SimpleListProperty&lt;AbbreviationsFileViewModel&gt; journalFiles = new SimpleListProperty&lt;&gt;(FXCollections.observableArrayList());</span>
+<span class="fc" id="L43">    private final SimpleListProperty&lt;AbbreviationViewModel&gt; abbreviations = new SimpleListProperty&lt;&gt;(FXCollections.observableArrayList());</span>
+<span class="fc" id="L44">    private final SimpleIntegerProperty abbreviationsCount = new SimpleIntegerProperty();</span>
+<span class="fc" id="L45">    private final SimpleObjectProperty&lt;AbbreviationsFileViewModel&gt; currentFile = new SimpleObjectProperty&lt;&gt;();</span>
+<span class="fc" id="L46">    private final SimpleObjectProperty&lt;AbbreviationViewModel&gt; currentAbbreviation = new SimpleObjectProperty&lt;&gt;();</span>
+<span class="fc" id="L47">    private final SimpleBooleanProperty isFileRemovable = new SimpleBooleanProperty();</span>
+<span class="fc" id="L48">    private final SimpleBooleanProperty isLoading = new SimpleBooleanProperty(false);</span>
+<span class="fc" id="L49">    private final SimpleBooleanProperty isLoadingBuiltIn = new SimpleBooleanProperty(false);</span>
+<span class="fc" id="L50">    private final SimpleBooleanProperty isLoadingIeee = new SimpleBooleanProperty(false);</span>
+<span class="fc" id="L51">    private final SimpleBooleanProperty isAbbreviationEditableAndRemovable = new SimpleBooleanProperty();</span>
+    private final PreferencesService preferences;
+    private final DialogService dialogService;
+    private final TaskExecutor taskExecutor;
+    private final JournalAbbreviationPreferences abbreviationsPreferences;
+    private final JournalAbbreviationLoader journalAbbreviationLoader;
+<span class="fc" id="L57">    private boolean shouldWriteLists = false;</span>
+
+<span class="fc" id="L59">    public ManageJournalAbbreviationsViewModel(PreferencesService preferences, DialogService dialogService, TaskExecutor taskExecutor, JournalAbbreviationLoader journalAbbreviationLoader) {</span>
+<span class="fc" id="L60">        this.preferences = Objects.requireNonNull(preferences);</span>
+<span class="fc" id="L61">        this.dialogService = Objects.requireNonNull(dialogService);</span>
+<span class="fc" id="L62">        this.taskExecutor = Objects.requireNonNull(taskExecutor);</span>
+<span class="fc" id="L63">        this.journalAbbreviationLoader = Objects.requireNonNull(journalAbbreviationLoader);</span>
+<span class="fc" id="L64">        this.abbreviationsPreferences = preferences.getJournalAbbreviationPreferences();</span>
+
+<span class="fc" id="L66">        abbreviationsCount.bind(abbreviations.sizeProperty());</span>
+<span class="fc" id="L67">        currentAbbreviation.addListener((observable, oldvalue, newvalue) -&gt; {</span>
+<span class="fc bfc" id="L68" title="All 4 branches covered.">            boolean isAbbreviation = (newvalue != null) &amp;&amp; !newvalue.isPseudoAbbreviation();</span>
+<span class="fc bfc" id="L69" title="All 4 branches covered.">            boolean isEditableFile = (currentFile.get() != null) &amp;&amp; !currentFile.get().isBuiltInListProperty().get();</span>
+<span class="fc bfc" id="L70" title="All 4 branches covered.">            isAbbreviationEditableAndRemovable.set(isAbbreviation &amp;&amp; isEditableFile);</span>
+<span class="fc" id="L71">        });</span>
+<span class="fc" id="L72">        currentFile.addListener((observable, oldvalue, newvalue) -&gt; {</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">            if (oldvalue != null) {</span>
+<span class="fc" id="L74">                abbreviations.unbindBidirectional(oldvalue.abbreviationsProperty());</span>
+<span class="fc" id="L75">                currentAbbreviation.set(null);</span>
+            }
+<span class="fc bfc" id="L77" title="All 2 branches covered.">            if (newvalue != null) {</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">                isFileRemovable.set(!newvalue.isBuiltInListProperty().get());</span>
+<span class="fc" id="L79">                abbreviations.bindBidirectional(newvalue.abbreviationsProperty());</span>
+<span class="pc bpc" id="L80" title="1 of 2 branches missed.">                if (abbreviations.size() &gt; 0) {</span>
+<span class="fc" id="L81">                    currentAbbreviation.set(abbreviations.get(abbreviations.size() - 1));</span>
+                }
+<span class="fc" id="L83">            } else {</span>
+<span class="fc" id="L84">                isFileRemovable.set(false);</span>
+<span class="pc bpc" id="L85" title="1 of 2 branches missed.">                if (!journalFiles.isEmpty()) {</span>
+<span class="nc" id="L86">                    currentFile.set(journalFiles.get(0));</span>
+<span class="nc" id="L87">                } else {</span>
+<span class="fc" id="L88">                    currentAbbreviation.set(null);</span>
+<span class="fc" id="L89">                    abbreviations.clear();</span>
+                }
+            }
+<span class="fc" id="L92">        });</span>
+<span class="fc" id="L93">        journalFiles.addListener((ListChangeListener&lt;AbbreviationsFileViewModel&gt;) c -&gt; {</span>
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">            if (c.next()) {</span>
+<span class="pc bpc" id="L95" title="1 of 2 branches missed.">                if (!c.wasReplaced()) {</span>
+<span class="fc bfc" id="L96" title="All 4 branches covered.">                    if (c.wasAdded() &amp;&amp; !c.getAddedSubList().get(0).isBuiltInListProperty().get()) {</span>
+<span class="fc" id="L97">                        currentFile.set(c.getAddedSubList().get(0));</span>
+                    }
+                }
+            }
+<span class="fc" id="L101">        });</span>
+<span class="fc" id="L102">        isLoading.bind(isLoadingBuiltIn.and(isLoadingBuiltIn));</span>
+<span class="fc" id="L103">    }</span>
+
+    public SimpleBooleanProperty isLoadingProperty() {
+<span class="nc" id="L106">        return isLoading;</span>
+    }
+
+    public boolean isAbbreviationEditableAndRemovable() {
+<span class="nc" id="L110">        return isAbbreviationEditableAndRemovable.get();</span>
+    }
+
+    /**
+     * This will wrap the built in and ieee abbreviations in pseudo abbreviation files
+     * and add them to the list of journal abbreviation files.
+     */
+    void addBuiltInLists() {
+        BackgroundTask
+<span class="fc" id="L119">                .wrap(JournalAbbreviationLoader::getBuiltInAbbreviations)</span>
+<span class="fc" id="L120">                .onRunning(() -&gt; isLoadingBuiltIn.setValue(true))</span>
+<span class="fc" id="L121">                .onSuccess(result -&gt; {</span>
+<span class="fc" id="L122">                    isLoadingBuiltIn.setValue(false);</span>
+<span class="fc" id="L123">                    addList(Localization.lang(&quot;JabRef built in list&quot;), result);</span>
+<span class="fc" id="L124">                })</span>
+<span class="fc" id="L125">                .onFailure(dialogService::showErrorDialogAndWait)</span>
+<span class="fc" id="L126">                .executeWith(taskExecutor);</span>
+
+        BackgroundTask
+<span class="fc" id="L129">                .wrap(() -&gt; {</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">                    if (abbreviationsPreferences.useIEEEAbbreviations()) {</span>
+<span class="fc" id="L131">                        return JournalAbbreviationLoader.getOfficialIEEEAbbreviations();</span>
+                    } else {
+<span class="fc" id="L133">                        return JournalAbbreviationLoader.getStandardIEEEAbbreviations();</span>
+                    }
+                })
+<span class="fc" id="L136">                .onRunning(() -&gt; isLoadingIeee.setValue(true))</span>
+<span class="fc" id="L137">                .onSuccess(result -&gt; {</span>
+<span class="fc" id="L138">                    isLoadingIeee.setValue(false);</span>
+<span class="fc" id="L139">                    addList(Localization.lang(&quot;IEEE built in list&quot;), result);</span>
+<span class="fc" id="L140">                })</span>
+<span class="fc" id="L141">                .onFailure(dialogService::showErrorDialogAndWait)</span>
+<span class="fc" id="L142">                .executeWith(taskExecutor);</span>
+<span class="fc" id="L143">    }</span>
+
+    private void addList(String name, List&lt;Abbreviation&gt; abbreviations) {
+<span class="fc" id="L146">        List&lt;AbbreviationViewModel&gt; builtInListViewModel = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L147">        abbreviations.forEach(abbreviation -&gt; builtInListViewModel.add(new AbbreviationViewModel(abbreviation)));</span>
+<span class="fc" id="L148">        AbbreviationsFileViewModel fileViewModel = new AbbreviationsFileViewModel(builtInListViewModel, name);</span>
+<span class="fc" id="L149">        journalFiles.add(fileViewModel);</span>
+<span class="fc" id="L150">    }</span>
+
+    /**
+     * Read all saved file paths and read their abbreviations
+     */
+    public void createFileObjects() {
+<span class="fc" id="L156">        List&lt;String&gt; externalFiles = abbreviationsPreferences.getExternalJournalLists();</span>
+<span class="pc" id="L157">        externalFiles.forEach(name -&gt; openFile(Paths.get(name)));</span>
+<span class="fc" id="L158">    }</span>
+
+    /**
+     * This method shall be used to add a new journal abbreviation file to the
+     * set of journal abbreviation files. It basically just calls the
+     * {@link #openFile(Path)}} method
+     */
+    public void addNewFile() {
+<span class="fc" id="L166">        FileDialogConfiguration fileDialogConfiguration = new FileDialogConfiguration.Builder()</span>
+<span class="fc" id="L167">                .addExtensionFilter(FileType.TXT)</span>
+<span class="fc" id="L168">                .build();</span>
+
+<span class="fc" id="L170">        dialogService.showFileSaveDialog(fileDialogConfiguration).ifPresent(this::openFile);</span>
+<span class="fc" id="L171">    }</span>
+
+    /**
+     * Checks whether the file exists or if a new file should be opened.
+     * The file will be added to the set of journal abbreviation files.
+     * If the file also exists its abbreviations will be read and written
+     * to the abbreviations property.
+     *
+     * @param filePath to the file
+     */
+    private void openFile(Path filePath) {
+<span class="fc" id="L182">        AbbreviationsFileViewModel abbreviationsFile = new AbbreviationsFileViewModel(filePath);</span>
+<span class="fc bfc" id="L183" title="All 2 branches covered.">        if (journalFiles.contains(abbreviationsFile)) {</span>
+<span class="fc" id="L184">            dialogService.showErrorDialogAndWait(Localization.lang(&quot;Duplicated Journal File&quot;), Localization.lang(&quot;Journal file %s already added&quot;, filePath.toString()));</span>
+<span class="fc" id="L185">            return;</span>
+        }
+<span class="pc bpc" id="L187" title="1 of 2 branches missed.">        if (abbreviationsFile.exists()) {</span>
+            try {
+<span class="fc" id="L189">                abbreviationsFile.readAbbreviations();</span>
+<span class="pc" id="L190">            } catch (FileNotFoundException e) {</span>
+<span class="nc" id="L191">                logger.debug(e.getLocalizedMessage());</span>
+            }
+        }
+<span class="fc" id="L194">        journalFiles.add(abbreviationsFile);</span>
+<span class="fc" id="L195">    }</span>
+
+    public void openFile() {
+<span class="fc" id="L198">        FileDialogConfiguration fileDialogConfiguration = new FileDialogConfiguration.Builder()</span>
+<span class="fc" id="L199">                .addExtensionFilter(FileType.TXT)</span>
+<span class="fc" id="L200">                .build();</span>
+
+<span class="fc" id="L202">        dialogService.showFileOpenDialog(fileDialogConfiguration).ifPresent(this::openFile);</span>
+<span class="fc" id="L203">    }</span>
+
+    /**
+     * This method removes the currently selected file from the set of
+     * journal abbreviation files. This will not remove existing files from
+     * the file system. The {@code activeFile} property will always change
+     * to the previous file in the {@code journalFiles} list property, except
+     * the first file is selected. If so the next file will be selected except if
+     * there are no more files than the {@code activeFile} property will be set
+     * to {@code null}.
+     */
+    public void removeCurrentFile() {
+<span class="pc bpc" id="L215" title="1 of 2 branches missed.">        if (isFileRemovable.get()) {</span>
+<span class="fc" id="L216">            journalFiles.remove(currentFile.get());</span>
+<span class="pc bpc" id="L217" title="1 of 2 branches missed.">            if (journalFiles.isEmpty()) {</span>
+<span class="fc" id="L218">                currentFile.set(null);</span>
+            }
+        }
+<span class="fc" id="L221">    }</span>
+
+    /**
+     * Method to add a new abbreviation to the abbreviations list property.
+     * It also sets the currentAbbreviation property to the new abbreviation.
+     *
+     * @param name         of the abbreviation object
+     * @param abbreviation of the abbreviation object
+     */
+    public void addAbbreviation(String name, String abbreviation) {
+<span class="fc" id="L231">        Abbreviation abbreviationObject = new Abbreviation(name, abbreviation);</span>
+<span class="fc" id="L232">        AbbreviationViewModel abbreviationViewModel = new AbbreviationViewModel(abbreviationObject);</span>
+<span class="fc bfc" id="L233" title="All 2 branches covered.">        if (abbreviations.contains(abbreviationViewModel)) {</span>
+<span class="fc" id="L234">            dialogService.showErrorDialogAndWait(Localization.lang(&quot;Duplicated Journal Abbreviation&quot;), Localization.lang(&quot;Abbreviation %s for journal %s already defined.&quot;, abbreviation, name));</span>
+<span class="fc" id="L235">        } else {</span>
+<span class="fc" id="L236">            abbreviations.add(abbreviationViewModel);</span>
+<span class="fc" id="L237">            currentAbbreviation.set(abbreviationViewModel);</span>
+<span class="fc" id="L238">            shouldWriteLists = true;</span>
+        }
+<span class="fc" id="L240">    }</span>
+
+    /**
+     * Method to change the currentAbbrevaition property to a new abbreviation.
+     *
+     * @param name         of the abbreviation object
+     * @param abbreviation of the abbreviation object
+     */
+    public void editAbbreviation(String name, String abbreviation) {
+<span class="fc bfc" id="L249" title="All 2 branches covered.">        if (isAbbreviationEditableAndRemovable.get()) {</span>
+<span class="fc" id="L250">            Abbreviation abbreviationObject = new Abbreviation(name, abbreviation);</span>
+<span class="fc" id="L251">            AbbreviationViewModel abbViewModel = new AbbreviationViewModel(abbreviationObject);</span>
+<span class="fc bfc" id="L252" title="All 2 branches covered.">            if (abbreviations.contains(abbViewModel)) {</span>
+<span class="fc bfc" id="L253" title="All 2 branches covered.">                if (!abbViewModel.equals(currentAbbreviation.get())) {</span>
+<span class="fc" id="L254">                    dialogService.showErrorDialogAndWait(Localization.lang(&quot;Duplicated Journal Abbreviation&quot;), Localization.lang(&quot;Abbreviation %s for journal %s already defined.&quot;, abbreviation, name));</span>
+<span class="fc" id="L255">                } else {</span>
+<span class="fc" id="L256">                    setCurrentAbbreviationNameAndAbbreviationIfValid(name, abbreviation);</span>
+                }
+<span class="fc" id="L258">            } else {</span>
+<span class="fc" id="L259">                setCurrentAbbreviationNameAndAbbreviationIfValid(name, abbreviation);</span>
+            }
+        }
+<span class="fc" id="L262">    }</span>
+
+    /**
+     * Sets the name and the abbreviation of the {@code currentAbbreviation} property
+     * to the values of the {@code abbreviationsName} and {@code abbreviationsAbbreviation}
+     * properties.
+     */
+    private void setCurrentAbbreviationNameAndAbbreviationIfValid(String name, String abbreviation) {
+<span class="fc bfc" id="L270" title="All 2 branches covered.">        if (name.trim().isEmpty()) {</span>
+<span class="fc" id="L271">            dialogService.showErrorDialogAndWait(Localization.lang(&quot;Name cannot be empty&quot;));</span>
+<span class="fc" id="L272">            return;</span>
+<span class="fc bfc" id="L273" title="All 2 branches covered.">        } else if (abbreviation.trim().isEmpty()) {</span>
+<span class="fc" id="L274">            dialogService.showErrorDialogAndWait(Localization.lang(&quot;Abbreviation cannot be empty&quot;));</span>
+<span class="fc" id="L275">            return;</span>
+        }
+<span class="fc" id="L277">        currentAbbreviation.get().setName(name);</span>
+<span class="fc" id="L278">        currentAbbreviation.get().setAbbreviation(abbreviation);</span>
+<span class="fc" id="L279">        shouldWriteLists = true;</span>
+<span class="fc" id="L280">    }</span>
+
+    /**
+     * Method to delete the abbreviation set in the currentAbbreviation property.
+     * The currentAbbreviationProperty will be set to the previous or next abbreviation
+     * in the abbreviations property if applicable. Else it will be set to {@code null}
+     * if there are no abbreviations left.
+     */
+    public void deleteAbbreviation() {
+<span class="pc bpc" id="L289" title="1 of 2 branches missed.">        if (isAbbreviationEditableAndRemovable.get()) {</span>
+<span class="pc bpc" id="L290" title="2 of 4 branches missed.">            if ((currentAbbreviation.get() != null) &amp;&amp; !currentAbbreviation.get().isPseudoAbbreviation()) {</span>
+<span class="fc" id="L291">                int index = abbreviations.indexOf(currentAbbreviation.get());</span>
+<span class="fc bfc" id="L292" title="All 2 branches covered.">                if (index &gt; 1) {</span>
+<span class="fc" id="L293">                    currentAbbreviation.set(abbreviations.get(index - 1));</span>
+<span class="pc bpc" id="L294" title="1 of 2 branches missed.">                } else if ((index + 1) &lt; abbreviationsCount.get()) {</span>
+<span class="fc" id="L295">                    currentAbbreviation.set(abbreviations.get(index + 1));</span>
+<span class="fc" id="L296">                } else {</span>
+<span class="nc" id="L297">                    currentAbbreviation.set(null);</span>
+                }
+<span class="fc" id="L299">                abbreviations.remove(index);</span>
+<span class="fc" id="L300">                shouldWriteLists = true;</span>
+            }
+        }
+<span class="fc" id="L303">    }</span>
+
+    /**
+     * Calls the {@link AbbreviationsFileViewModel#writeOrCreate()} method for each file
+     * in the journalFiles property which will overwrite the existing files with
+     * the content of the abbreviations property of the AbbriviationsFile. Non
+     * existing files will be created.
+     */
+    public void saveJournalAbbreviationFiles() {
+<span class="fc" id="L312">        journalFiles.forEach(file -&gt; {</span>
+            try {
+<span class="fc" id="L314">                file.writeOrCreate();</span>
+<span class="pc" id="L315">            } catch (IOException e) {</span>
+<span class="nc" id="L316">                logger.debug(e.getLocalizedMessage());</span>
+            }
+<span class="fc" id="L318">        });</span>
+<span class="fc" id="L319">    }</span>
+
+    /**
+     * This method stores all file paths of the files in the journalFiles property
+     * to the global JabRef preferences. Pseudo abbreviation files will not be stored.
+     */
+    private void saveExternalFilesList() {
+<span class="fc" id="L326">        List&lt;String&gt; extFiles = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L327">        journalFiles.forEach(file -&gt; {</span>
+<span class="pc bpc" id="L328" title="1 of 2 branches missed.">            if (!file.isBuiltInListProperty().get()) {</span>
+<span class="fc" id="L329">                file.getAbsolutePath().ifPresent(path -&gt; extFiles.add(path.toAbsolutePath().toString()));</span>
+            }
+<span class="fc" id="L331">        });</span>
+<span class="fc" id="L332">        abbreviationsPreferences.setExternalJournalLists(extFiles);</span>
+<span class="fc" id="L333">    }</span>
+
+    /**
+     * This will set the {@code currentFile} property to the {@link AbbreviationsFileViewModel} object
+     * that was added to the {@code journalFiles} list property lastly. If there are no files in the list
+     * property this methode will do nothing as the {@code currentFile} property is already {@code null}.
+     */
+    public void selectLastJournalFile() {
+<span class="pc bpc" id="L341" title="1 of 2 branches missed.">        if (journalFiles.size() &gt; 0) {</span>
+<span class="fc" id="L342">            currentFile.set(journalFilesProperty().get(journalFilesProperty().size() - 1));</span>
+        }
+<span class="fc" id="L344">    }</span>
+
+    /**
+     * This method first saves all external files to its internal list, then writes all abbreviations
+     * to their files and finally updates the abbreviations auto complete. It basically calls
+     * {@link #saveExternalFilesList()}, {@link #saveJournalAbbreviationFiles() } and finally
+     * {@link JournalAbbreviationLoader#update(JournalAbbreviationPreferences)}.
+     */
+    public void saveEverythingAndUpdateAutoCompleter() {
+<span class="fc" id="L353">        saveExternalFilesList();</span>
+
+<span class="pc bpc" id="L355" title="1 of 2 branches missed.">        if (shouldWriteLists) {</span>
+<span class="nc" id="L356">            saveJournalAbbreviationFiles();</span>
+<span class="nc" id="L357">            shouldWriteLists = false;</span>
+        }
+
+        // Update journal abbreviation loader
+<span class="fc" id="L361">        journalAbbreviationLoader.update(abbreviationsPreferences);</span>
+
+<span class="fc" id="L363">        preferences.storeJournalAbbreviationPreferences(abbreviationsPreferences);</span>
+<span class="fc" id="L364">    }</span>
+
+    public SimpleListProperty&lt;AbbreviationsFileViewModel&gt; journalFilesProperty() {
+<span class="fc" id="L367">        return this.journalFiles;</span>
+    }
+
+    public SimpleListProperty&lt;AbbreviationViewModel&gt; abbreviationsProperty() {
+<span class="fc" id="L371">        return this.abbreviations;</span>
+    }
+
+    public SimpleIntegerProperty abbreviationsCountProperty() {
+<span class="fc" id="L375">        return this.abbreviationsCount;</span>
+    }
+
+    public SimpleObjectProperty&lt;AbbreviationsFileViewModel&gt; currentFileProperty() {
+<span class="fc" id="L379">        return this.currentFile;</span>
+    }
+
+    public SimpleObjectProperty&lt;AbbreviationViewModel&gt; currentAbbreviationProperty() {
+<span class="fc" id="L383">        return this.currentAbbreviation;</span>
+    }
+
+    public SimpleBooleanProperty isAbbreviationEditableAndRemovableProperty() {
+<span class="nc" id="L387">        return this.isAbbreviationEditableAndRemovable;</span>
+    }
+
+    public SimpleBooleanProperty isFileRemovableProperty() {
+<span class="nc" id="L391">        return this.isFileRemovable;</span>
+    }
+
+    public void addAbbreviation() {
+<span class="nc" id="L395">        addAbbreviation(Localization.lang(&quot;Name&quot;), Localization.lang(&quot;Abbreviation&quot;));</span>
+<span class="nc" id="L396">    }</span>
+
+    public void init() {
+<span class="nc" id="L399">        createFileObjects();</span>
+<span class="nc" id="L400">        selectLastJournalFile();</span>
+<span class="nc" id="L401">        addBuiltInLists();</span>
+<span class="nc" id="L402">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

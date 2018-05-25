@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>LayoutEntryTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.layout</a> &gt; <span class="el_source">LayoutEntryTest.java</span></div><h1>LayoutEntryTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.layout;
+
+import java.io.IOException;
+import java.io.StringReader;
+
+import org.jabref.model.entry.BibEntry;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+
+/**
+ * The test class LayoutEntryTest test the net.sf.jabref.export.layout.LayoutEntry.
+ * Indirectly the net.sf.jabref.export.layout.Layout is tested too.
+ * &lt;p/&gt;
+ * The LayoutEntry creates a human readable String assigned with HTML formatters.
+ * To test the Highlighting Feature, an instance of LayoutEntry will be instantiated via Layout and LayoutHelper.
+ * With these instance the doLayout() Method is called several times for each test case.
+ * To simulate a search, a BibEntry will be created, which will be used by LayoutEntry.
+ *
+ * There are five test cases:
+ * - The shown result text has no words which should be highlighted.
+ * - There is one word which will be highlighted ignoring case sensitivity.
+ * - There are two words which will be highlighted ignoring case sensitivity.
+ * - There is one word which will be highlighted case sensitivity.
+ * - There are more words which will be highlighted case sensitivity.
+ *
+ * @author Arne
+ */
+
+<span class="fc" id="L33">public class LayoutEntryTest {</span>
+
+    private BibEntry mBTE;
+
+
+    /**
+     * Initialize Preferences.
+     */
+    @BeforeEach
+    public void setUp() {
+
+        // create Bibtext Entry
+
+<span class="fc" id="L46">        mBTE = new BibEntry();</span>
+<span class="fc" id="L47">        mBTE.setField(&quot;abstract&quot;, &quot;In this paper, we initiate a formal study of security on Android: Google's new open-source platform for mobile devices. Tags: Paper android google Open-Source Devices&quot;);</span>
+        //  Specifically, we present a core typed language to describe Android applications, and to reason about their data-flow security properties. Our operational semantics and type system provide some necessary foundations to help both users and developers of Android applications deal with their security concerns.
+<span class="fc" id="L49">        mBTE.setField(&quot;keywords&quot;, &quot;android, mobile devices, security&quot;);</span>
+<span class="fc" id="L50">        mBTE.setField(&quot;posted-at&quot;, &quot;2010-08-11 15:00:49&quot;);</span>
+<span class="fc" id="L51">        mBTE.setField(&quot;location&quot;, &quot;Dublin, Ireland&quot;);</span>
+<span class="fc" id="L52">        mBTE.setField(&quot;bibtexkey&quot;, &quot;chaudhuri-plas09&quot;);</span>
+<span class="fc" id="L53">        mBTE.setField(&quot;pages&quot;, &quot;1--7&quot;);</span>
+<span class="fc" id="L54">        mBTE.setField(&quot;booktitle&quot;, &quot;PLAS '09: Proceedings of the ACM SIGPLAN Fourth Workshop on Programming Languages and Analysis for Security&quot;);</span>
+<span class="fc" id="L55">        mBTE.setField(&quot;citeulike-article-id&quot;, &quot;7615801&quot;);</span>
+<span class="fc" id="L56">        mBTE.setField(&quot;citeulike-linkout-1&quot;, &quot;http://dx.doi.org/10.1145/1554339.1554341&quot;);</span>
+<span class="fc" id="L57">        mBTE.setField(&quot;url&quot;, &quot;http://dx.doi.org/10.1145/1554339.1554341&quot;);</span>
+<span class="fc" id="L58">        mBTE.setField(&quot;publisher&quot;, &quot;ACM&quot;);</span>
+<span class="fc" id="L59">        mBTE.setField(&quot;timestamp&quot;, &quot;2010.11.11&quot;);</span>
+<span class="fc" id="L60">        mBTE.setField(&quot;author&quot;, &quot;Chaudhuri, Avik&quot;);</span>
+<span class="fc" id="L61">        mBTE.setField(&quot;title&quot;, &quot;Language-based security on Android&quot;);</span>
+<span class="fc" id="L62">        mBTE.setField(&quot;address&quot;, &quot;New York, NY, USA&quot;);</span>
+<span class="fc" id="L63">        mBTE.setField(&quot;priority&quot;, &quot;2&quot;);</span>
+<span class="fc" id="L64">        mBTE.setField(&quot;isbn&quot;, &quot;978-1-60558-645-8&quot;);</span>
+<span class="fc" id="L65">        mBTE.setField(&quot;owner&quot;, &quot;Arne&quot;);</span>
+<span class="fc" id="L66">        mBTE.setField(&quot;year&quot;, &quot;2009&quot;);</span>
+<span class="fc" id="L67">        mBTE.setField(&quot;citeulike-linkout-0&quot;, &quot;http://portal.acm.org/citation.cfm?id=1554339.1554341&quot;);</span>
+<span class="fc" id="L68">        mBTE.setField(&quot;doi&quot;, &quot;10.1145/1554339.1554341&quot;);</span>
+<span class="fc" id="L69">    }</span>
+
+    // helper Methods
+
+    public String layout(String layoutFile, BibEntry entry) throws IOException {
+<span class="nc" id="L74">        StringReader sr = new StringReader(layoutFile.replace(&quot;__NEWLINE__&quot;, &quot;\n&quot;));</span>
+<span class="nc" id="L75">        Layout layout = new LayoutHelper(sr, mock(LayoutFormatterPreferences.class)).getLayoutFromText();</span>
+
+<span class="nc" id="L77">        return layout.doLayout(entry, null);</span>
+    }
+
+    /*************************/
+    /****** tests Cases ******/
+    /*************************/
+
+    @Test
+    public void testParseMethodCalls() {
+
+<span class="fc" id="L87">        assertEquals(1, LayoutEntry.parseMethodsCalls(&quot;bla&quot;).size());</span>
+<span class="fc" id="L88">        assertEquals(&quot;bla&quot;, (LayoutEntry.parseMethodsCalls(&quot;bla&quot;).get(0)).get(0));</span>
+
+<span class="fc" id="L90">        assertEquals(1, LayoutEntry.parseMethodsCalls(&quot;bla,&quot;).size());</span>
+<span class="fc" id="L91">        assertEquals(&quot;bla&quot;, (LayoutEntry.parseMethodsCalls(&quot;bla,&quot;).get(0)).get(0));</span>
+
+<span class="fc" id="L93">        assertEquals(1, LayoutEntry.parseMethodsCalls(&quot;_bla.bla.blub,&quot;).size());</span>
+<span class="fc" id="L94">        assertEquals(&quot;_bla.bla.blub&quot;, (LayoutEntry.parseMethodsCalls(&quot;_bla.bla.blub,&quot;).get(0)).get(0));</span>
+
+<span class="fc" id="L96">        assertEquals(2, LayoutEntry.parseMethodsCalls(&quot;bla,foo&quot;).size());</span>
+<span class="fc" id="L97">        assertEquals(&quot;bla&quot;, (LayoutEntry.parseMethodsCalls(&quot;bla,foo&quot;).get(0)).get(0));</span>
+<span class="fc" id="L98">        assertEquals(&quot;foo&quot;, (LayoutEntry.parseMethodsCalls(&quot;bla,foo&quot;).get(1)).get(0));</span>
+
+<span class="fc" id="L100">        assertEquals(2, LayoutEntry.parseMethodsCalls(&quot;bla(\&quot;test\&quot;),foo(\&quot;fark\&quot;)&quot;).size());</span>
+<span class="fc" id="L101">        assertEquals(&quot;bla&quot;, (LayoutEntry.parseMethodsCalls(&quot;bla(\&quot;test\&quot;),foo(\&quot;fark\&quot;)&quot;).get(0)).get(0));</span>
+<span class="fc" id="L102">        assertEquals(&quot;foo&quot;, (LayoutEntry.parseMethodsCalls(&quot;bla(\&quot;test\&quot;),foo(\&quot;fark\&quot;)&quot;).get(1)).get(0));</span>
+<span class="fc" id="L103">        assertEquals(&quot;test&quot;, (LayoutEntry.parseMethodsCalls(&quot;bla(\&quot;test\&quot;),foo(\&quot;fark\&quot;)&quot;).get(0)).get(1));</span>
+<span class="fc" id="L104">        assertEquals(&quot;fark&quot;, (LayoutEntry.parseMethodsCalls(&quot;bla(\&quot;test\&quot;),foo(\&quot;fark\&quot;)&quot;).get(1)).get(1));</span>
+
+<span class="fc" id="L106">        assertEquals(2, LayoutEntry.parseMethodsCalls(&quot;bla(test),foo(fark)&quot;).size());</span>
+<span class="fc" id="L107">        assertEquals(&quot;bla&quot;, (LayoutEntry.parseMethodsCalls(&quot;bla(test),foo(fark)&quot;).get(0)).get(0));</span>
+<span class="fc" id="L108">        assertEquals(&quot;foo&quot;, (LayoutEntry.parseMethodsCalls(&quot;bla(test),foo(fark)&quot;).get(1)).get(0));</span>
+<span class="fc" id="L109">        assertEquals(&quot;test&quot;, (LayoutEntry.parseMethodsCalls(&quot;bla(test),foo(fark)&quot;).get(0)).get(1));</span>
+<span class="fc" id="L110">        assertEquals(&quot;fark&quot;, (LayoutEntry.parseMethodsCalls(&quot;bla(test),foo(fark)&quot;).get(1)).get(1));</span>
+<span class="fc" id="L111">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

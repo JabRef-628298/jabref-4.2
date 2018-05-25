@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MSBibConverter.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.msbib</a> &gt; <span class="el_source">MSBibConverter.java</span></div><h1>MSBibConverter.java</h1><pre class="source lang-java linenums">package org.jabref.logic.msbib;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.jabref.model.entry.Author;
+import org.jabref.model.entry.AuthorList;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.FieldName;
+import org.jabref.model.entry.Month;
+
+public class MSBibConverter {
+
+    private static final String MSBIB_PREFIX = &quot;msbib-&quot;;
+    private static final String BIBTEX_PREFIX = &quot;BIBTEX_&quot;;
+
+<span class="nc" id="L17">    private MSBibConverter() {</span>
+<span class="nc" id="L18">    }</span>
+
+    public static MSBibEntry convert(BibEntry entry) {
+<span class="nc" id="L21">        MSBibEntry result = new MSBibEntry();</span>
+
+        // memorize original type
+<span class="nc" id="L24">        result.fields.put(BIBTEX_PREFIX + &quot;Entry&quot;, entry.getType());</span>
+        // define new type
+<span class="nc" id="L26">        String msbibType = result.fields.put(&quot;SourceType&quot;, MSBibMapping.getMSBibEntryType(entry.getType()).name());</span>
+
+<span class="nc bnc" id="L28" title="All 2 branches missed.">        for (String field : entry.getFieldNames()) {</span>
+            // clean field
+<span class="nc" id="L30">            String unicodeField = entry.getLatexFreeField(field).orElse(&quot;&quot;);</span>
+
+<span class="nc bnc" id="L32" title="All 2 branches missed.">            if (MSBibMapping.getMSBibField(field) != null) {</span>
+<span class="nc" id="L33">                result.fields.put(MSBibMapping.getMSBibField(field), unicodeField);</span>
+            }
+        }
+
+        // Duplicate: also added as BookTitle
+<span class="nc" id="L38">        entry.getLatexFreeField(FieldName.BOOKTITLE).ifPresent(booktitle -&gt; result.conferenceName = booktitle);</span>
+<span class="nc" id="L39">        entry.getLatexFreeField(FieldName.PAGES).ifPresent(pages -&gt; result.pages = new PageNumbers(pages));</span>
+<span class="nc" id="L40">        entry.getLatexFreeField(MSBIB_PREFIX + &quot;accessed&quot;).ifPresent(accesed -&gt; result.dateAccessed = accesed);</span>
+
+        // TODO: currently this can never happen
+<span class="nc bnc" id="L43" title="All 2 branches missed.">        if (&quot;SoundRecording&quot;.equals(msbibType)) {</span>
+<span class="nc" id="L44">            result.albumTitle = entry.getLatexFreeField(FieldName.TITLE).orElse(null);</span>
+        }
+
+        // TODO: currently this can never happen
+<span class="nc bnc" id="L48" title="All 2 branches missed.">        if (&quot;Interview&quot;.equals(msbibType)) {</span>
+<span class="nc" id="L49">            result.broadcastTitle = entry.getLatexFreeField(FieldName.TITLE).orElse(null);</span>
+        }
+
+<span class="nc" id="L52">        result.number = entry.getLatexFreeField(FieldName.NUMBER).orElse(null);</span>
+
+<span class="nc bnc" id="L54" title="All 2 branches missed.">        if (&quot;Patent&quot;.equalsIgnoreCase(entry.getType())) {</span>
+<span class="nc" id="L55">            result.patentNumber = entry.getLatexFreeField(FieldName.NUMBER).orElse(null);</span>
+<span class="nc" id="L56">            result.number = null;</span>
+        }
+
+<span class="nc" id="L59">        result.day = entry.getFieldOrAliasLatexFree(FieldName.DAY).orElse(null);</span>
+<span class="nc" id="L60">        result.month = entry.getMonth().map(Month::getNumber).map(Object::toString).orElse(null);</span>
+
+<span class="nc bnc" id="L62" title="All 2 branches missed.">        if (!entry.getLatexFreeField(FieldName.YEAR).isPresent()) {</span>
+<span class="nc" id="L63">            result.year = entry.getFieldOrAliasLatexFree(FieldName.YEAR).orElse(null);</span>
+        }
+<span class="nc" id="L65">        result.journalName = entry.getFieldOrAliasLatexFree(FieldName.JOURNAL).orElse(null);</span>
+
+        // Value must be converted
+        //Currently only english is supported
+<span class="nc" id="L69">        entry.getLatexFreeField(FieldName.LANGUAGE)</span>
+<span class="nc" id="L70">                .ifPresent(lang -&gt; result.fields.put(&quot;LCID&quot;, String.valueOf(MSBibMapping.getLCID(lang))));</span>
+<span class="nc" id="L71">        StringBuilder sbNumber = new StringBuilder();</span>
+<span class="nc" id="L72">        entry.getLatexFreeField(FieldName.ISBN).ifPresent(isbn -&gt; sbNumber.append(&quot; ISBN: &quot; + isbn));</span>
+<span class="nc" id="L73">        entry.getLatexFreeField(FieldName.ISSN).ifPresent(issn -&gt; sbNumber.append(&quot; ISSN: &quot; + issn));</span>
+<span class="nc" id="L74">        entry.getLatexFreeField(&quot;lccn&quot;).ifPresent(lccn -&gt; sbNumber.append(&quot;LCCN: &quot; + lccn));</span>
+<span class="nc" id="L75">        entry.getLatexFreeField(&quot;mrnumber&quot;).ifPresent(mrnumber -&gt; sbNumber.append(&quot; MRN: &quot; + mrnumber));</span>
+
+<span class="nc" id="L77">        result.standardNumber = sbNumber.toString();</span>
+<span class="nc bnc" id="L78" title="All 2 branches missed.">        if (result.standardNumber.isEmpty()) {</span>
+<span class="nc" id="L79">            result.standardNumber = null;</span>
+        }
+
+<span class="nc" id="L82">        result.address = entry.getFieldOrAliasLatexFree(FieldName.ADDRESS).orElse(null);</span>
+
+<span class="nc bnc" id="L84" title="All 2 branches missed.">        if (entry.getLatexFreeField(FieldName.TYPE).isPresent()) {</span>
+<span class="nc" id="L85">            result.thesisType = entry.getLatexFreeField(FieldName.TYPE).get();</span>
+
+<span class="nc" id="L87">        } else {</span>
+<span class="nc bnc" id="L88" title="All 2 branches missed.">            if (&quot;techreport&quot;.equalsIgnoreCase(entry.getType())) {</span>
+<span class="nc" id="L89">                result.thesisType = &quot;Tech. rep.&quot;;</span>
+<span class="nc bnc" id="L90" title="All 2 branches missed.">            } else if (&quot;mastersthesis&quot;.equalsIgnoreCase(entry.getType())) {</span>
+<span class="nc" id="L91">                result.thesisType = &quot;Master's thesis&quot;;</span>
+<span class="nc bnc" id="L92" title="All 2 branches missed.">            } else if (&quot;phdthesis&quot;.equalsIgnoreCase(entry.getType())) {</span>
+<span class="nc" id="L93">                result.thesisType = &quot;Ph.D. dissertation&quot;;</span>
+<span class="nc bnc" id="L94" title="All 2 branches missed.">            } else if (&quot;unpublished&quot;.equalsIgnoreCase(entry.getType())) {</span>
+<span class="nc" id="L95">                result.thesisType = &quot;unpublished&quot;;</span>
+            }
+        }
+
+        // TODO: currently this can never happen
+<span class="nc bnc" id="L100" title="All 4 branches missed.">        if ((&quot;InternetSite&quot;.equals(msbibType) || &quot;DocumentFromInternetSite&quot;.equals(msbibType))) {</span>
+<span class="nc" id="L101">            result.internetSiteTitle = entry.getLatexFreeField(FieldName.TITLE).orElse(null);</span>
+        }
+
+        // TODO: currently only Misc can happen
+<span class="nc bnc" id="L105" title="All 6 branches missed.">        if (&quot;ElectronicSource&quot;.equals(msbibType) || &quot;Art&quot;.equals(msbibType) || &quot;Misc&quot;.equals(msbibType)) {</span>
+<span class="nc" id="L106">            result.publicationTitle = entry.getLatexFreeField(FieldName.TITLE).orElse(null);</span>
+        }
+
+<span class="nc" id="L109">        entry.getLatexFreeField(FieldName.AUTHOR).ifPresent(authors -&gt; result.authors = getAuthors(authors));</span>
+<span class="nc" id="L110">        entry.getLatexFreeField(FieldName.EDITOR).ifPresent(editors -&gt; result.editors = getAuthors(editors));</span>
+<span class="nc" id="L111">        entry.getLatexFreeField(FieldName.TRANSLATOR).ifPresent(translator -&gt; result.translators = getAuthors(translator));</span>
+
+<span class="nc" id="L113">        return result;</span>
+    }
+
+    private static List&lt;MsBibAuthor&gt; getAuthors(String authors) {
+<span class="nc" id="L117">        List&lt;MsBibAuthor&gt; result = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L118">        boolean corporate = false;</span>
+        //Only one corporate authors is supported
+<span class="nc bnc" id="L120" title="All 4 branches missed.">        if (authors.startsWith(&quot;{&quot;) &amp;&amp; authors.endsWith(&quot;}&quot;)) {</span>
+<span class="nc" id="L121">            corporate = true;</span>
+        }
+<span class="nc" id="L123">        AuthorList authorList = AuthorList.parse(authors);</span>
+
+<span class="nc bnc" id="L125" title="All 2 branches missed.">        for (Author author : authorList.getAuthors()) {</span>
+<span class="nc" id="L126">            result.add(new MsBibAuthor(author, corporate));</span>
+        }
+
+<span class="nc" id="L129">        return result;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

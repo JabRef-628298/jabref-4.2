@@ -1,0 +1,938 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>BiblatexEntryTypes.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.model.entry</a> &gt; <span class="el_source">BiblatexEntryTypes.java</span></div><h1>BiblatexEntryTypes.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">package org.jabref.model.entry;</span>
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+
+/**
+ * This class defines entry types for biblatex support.
+ * @see &lt;a href=&quot;http://mirrors.concertpass.com/tex-archive/macros/latex/contrib/biblatex/doc/biblatex.pdf&quot;&gt;biblatex documentation&lt;/a&gt;
+ */
+public class BiblatexEntryTypes {
+
+<span class="fc" id="L16">    public static final BiblatexEntryType ARTICLE = new BiblatexEntryType() {</span>
+
+<span class="fc" id="L18">        private final Set&lt;String&gt; primaryOptionalFields = Collections.unmodifiableSet(new LinkedHashSet&lt;&gt;(Arrays.asList(</span>
+<span class="fc" id="L19">                FieldName.SUBTITLE, FieldName.EDITOR, FieldName.SERIES, FieldName.VOLUME, FieldName.NUMBER,</span>
+<span class="fc" id="L20">                FieldName.EID, FieldName.ISSUE, FieldName.PAGES, FieldName.NOTE, FieldName.ISSN, FieldName.DOI,</span>
+<span class="fc" id="L21">                FieldName.EPRINT, FieldName.EPRINTCLASS, FieldName.EPRINTTYPE, FieldName.URL, FieldName.URLDATE)));</span>
+
+        {
+<span class="fc" id="L24">            addAllRequired(FieldName.AUTHOR, FieldName.TITLE,</span>
+<span class="fc" id="L25">                    FieldName.orFields(FieldName.JOURNAL, FieldName.JOURNALTITLE),</span>
+<span class="fc" id="L26">                    FieldName.orFields(FieldName.YEAR, FieldName.DATE));</span>
+<span class="fc" id="L27">            addAllOptional(FieldName.TRANSLATOR, FieldName.ANNOTATOR, FieldName.COMMENTATOR, FieldName.SUBTITLE,</span>
+<span class="fc" id="L28">                    FieldName.TITLEADDON, FieldName.EDITOR, FieldName.EDITORA, FieldName.EDITORB, FieldName.EDITORC,</span>
+<span class="fc" id="L29">                    FieldName.JOURNALSUBTITLE, FieldName.ISSUETITLE, FieldName.ISSUESUBTITLE, FieldName.LANGUAGE,</span>
+<span class="fc" id="L30">                    FieldName.ORIGLANGUAGE, FieldName.SERIES, FieldName.VOLUME, FieldName.NUMBER, FieldName.EID,</span>
+<span class="fc" id="L31">                    FieldName.ISSUE, FieldName.MONTH, FieldName.PAGES, FieldName.VERSION, FieldName.NOTE,</span>
+<span class="fc" id="L32">                    FieldName.ISSN, FieldName.ADDENDUM, FieldName.PUBSTATE, FieldName.DOI, FieldName.EPRINT,</span>
+<span class="fc" id="L33">                    FieldName.EPRINTCLASS, FieldName.EPRINTTYPE, FieldName.URL, FieldName.URLDATE);</span>
+        }
+
+        @Override
+        public String getName() {
+<span class="fc" id="L38">            return &quot;Article&quot;;</span>
+        }
+
+        @Override
+        public Set&lt;String&gt; getPrimaryOptionalFields() {
+<span class="nc" id="L43">            return primaryOptionalFields;</span>
+        }
+    };
+
+<span class="fc" id="L47">    public static final BiblatexEntryType BOOK = new BiblatexEntryType() {</span>
+
+<span class="fc" id="L49">        private final Set&lt;String&gt; primaryOptionalFields = Collections.unmodifiableSet(new LinkedHashSet&lt;&gt;(Arrays.asList(FieldName.EDITOR,</span>
+<span class="fc" id="L50">                FieldName.SUBTITLE, FieldName.TITLEADDON, FieldName.MAINTITLE, FieldName.MAINSUBTITLE,</span>
+<span class="fc" id="L51">                FieldName.MAINTITLEADDON, FieldName.VOLUME, FieldName.EDITION, FieldName.PUBLISHER, FieldName.ISBN,</span>
+<span class="fc" id="L52">                FieldName.CHAPTER, FieldName.PAGES, FieldName.PAGETOTAL, FieldName.DOI, FieldName.EPRINT,</span>
+<span class="fc" id="L53">                FieldName.EPRINTCLASS, FieldName.EPRINTTYPE, FieldName.URL, FieldName.URLDATE)));</span>
+
+        {
+<span class="fc" id="L56">            addAllRequired(FieldName.AUTHOR, FieldName.TITLE, FieldName.orFields(FieldName.YEAR, FieldName.DATE));</span>
+<span class="fc" id="L57">            addAllOptional(FieldName.EDITOR, FieldName.EDITORA, FieldName.EDITORB, FieldName.EDITORC,</span>
+<span class="fc" id="L58">                    FieldName.TRANSLATOR, FieldName.ANNOTATOR, FieldName.COMMENTATOR, FieldName.INTRODUCTION,</span>
+<span class="fc" id="L59">                    FieldName.FOREWORD, FieldName.AFTERWORD, FieldName.SUBTITLE, FieldName.TITLEADDON,</span>
+<span class="fc" id="L60">                    FieldName.MAINTITLE, FieldName.MAINSUBTITLE, FieldName.MAINTITLEADDON, FieldName.LANGUAGE,</span>
+<span class="fc" id="L61">                    FieldName.ORIGLANGUAGE, FieldName.VOLUME, FieldName.PART, FieldName.EDITION, FieldName.VOLUMES,</span>
+<span class="fc" id="L62">                    FieldName.SERIES, FieldName.NUMBER, FieldName.NOTE, FieldName.PUBLISHER, FieldName.LOCATION,</span>
+<span class="fc" id="L63">                    FieldName.ISBN, FieldName.CHAPTER, FieldName.PAGES, FieldName.PAGETOTAL, FieldName.ADDENDUM,</span>
+<span class="fc" id="L64">                    FieldName.PUBSTATE, FieldName.DOI, FieldName.EPRINT, FieldName.EPRINTCLASS, FieldName.EPRINTTYPE,</span>
+<span class="fc" id="L65">                    FieldName.URL, FieldName.URLDATE);</span>
+        }
+
+        @Override
+        public String getName() {
+<span class="fc" id="L70">            return &quot;Book&quot;;</span>
+        }
+
+        @Override
+        public Set&lt;String&gt; getPrimaryOptionalFields() {
+<span class="nc" id="L75">            return primaryOptionalFields;</span>
+        }
+    };
+
+<span class="fc" id="L79">    public static final BiblatexEntryType MVBOOK = new BiblatexEntryType() {</span>
+
+<span class="fc" id="L81">        private final Set&lt;String&gt; primaryOptionalFields = Collections.unmodifiableSet(new LinkedHashSet&lt;&gt;(</span>
+<span class="fc" id="L82">                Arrays.asList(FieldName.EDITOR, FieldName.SUBTITLE, FieldName.TITLEADDON, FieldName.EDITION,</span>
+<span class="fc" id="L83">                        FieldName.PUBLISHER, FieldName.ISBN, FieldName.PAGETOTAL, FieldName.DOI, FieldName.EPRINT,</span>
+<span class="fc" id="L84">                        FieldName.EPRINTCLASS, FieldName.EPRINTTYPE, FieldName.URL, FieldName.URLDATE)));</span>
+
+        {
+<span class="fc" id="L87">            addAllRequired(FieldName.AUTHOR, FieldName.TITLE, FieldName.orFields(FieldName.YEAR, FieldName.DATE));</span>
+<span class="fc" id="L88">            addAllOptional(FieldName.EDITOR, FieldName.EDITORA, FieldName.EDITORB, FieldName.EDITORC,</span>
+<span class="fc" id="L89">                    FieldName.TRANSLATOR, FieldName.ANNOTATOR, FieldName.COMMENTATOR, FieldName.INTRODUCTION,</span>
+<span class="fc" id="L90">                    FieldName.FOREWORD, FieldName.AFTERWORD, FieldName.SUBTITLE, FieldName.TITLEADDON,</span>
+<span class="fc" id="L91">                    FieldName.LANGUAGE, FieldName.ORIGLANGUAGE, FieldName.EDITION, FieldName.VOLUMES, FieldName.SERIES,</span>
+<span class="fc" id="L92">                    FieldName.NUMBER, FieldName.NOTE, FieldName.PUBLISHER, FieldName.LOCATION, FieldName.ISBN,</span>
+<span class="fc" id="L93">                    FieldName.PAGETOTAL, FieldName.ADDENDUM, FieldName.PUBSTATE, FieldName.DOI, FieldName.EPRINT,</span>
+<span class="fc" id="L94">                    FieldName.EPRINTCLASS, FieldName.EPRINTTYPE, FieldName.URL, FieldName.URLDATE);</span>
+        }
+
+        @Override
+        public String getName() {
+<span class="fc" id="L99">            return &quot;MvBook&quot;;</span>
+        }
+
+        @Override
+        public Set&lt;String&gt; getPrimaryOptionalFields() {
+<span class="nc" id="L104">            return primaryOptionalFields;</span>
+        }
+    };
+
+<span class="fc" id="L108">    public static final BiblatexEntryType INBOOK = new BiblatexEntryType() {</span>
+
+<span class="fc" id="L110">        private final Set&lt;String&gt; primaryOptionalFields = Collections.unmodifiableSet(new LinkedHashSet&lt;&gt;(</span>
+<span class="fc" id="L111">                Arrays.asList(FieldName.BOOKAUTHOR, FieldName.EDITOR, FieldName.SUBTITLE, FieldName.TITLEADDON,</span>
+<span class="fc" id="L112">                        FieldName.MAINTITLE, FieldName.MAINSUBTITLE, FieldName.MAINTITLEADDON, FieldName.BOOKSUBTITLE,</span>
+<span class="fc" id="L113">                        FieldName.BOOKTITLEADDON, FieldName.VOLUME, FieldName.EDITION, FieldName.PUBLISHER,</span>
+<span class="fc" id="L114">                        FieldName.ISBN, FieldName.CHAPTER, FieldName.PAGES, FieldName.DOI, FieldName.EPRINT,</span>
+<span class="fc" id="L115">                        FieldName.EPRINTCLASS, FieldName.EPRINTTYPE, FieldName.URL, FieldName.URLDATE)));</span>
+
+        {
+<span class="fc" id="L118">            addAllRequired(FieldName.AUTHOR, FieldName.TITLE, FieldName.BOOKTITLE,</span>
+<span class="fc" id="L119">                    FieldName.orFields(FieldName.YEAR, FieldName.DATE));</span>
+<span class="fc" id="L120">            addAllOptional(FieldName.BOOKAUTHOR, FieldName.EDITOR, FieldName.EDITORA, FieldName.EDITORB,</span>
+<span class="fc" id="L121">                    FieldName.EDITORC, FieldName.TRANSLATOR, FieldName.ANNOTATOR, FieldName.COMMENTATOR,</span>
+<span class="fc" id="L122">                    FieldName.INTRODUCTION, FieldName.FOREWORD, FieldName.AFTERWORD, FieldName.SUBTITLE,</span>
+<span class="fc" id="L123">                    FieldName.TITLEADDON, FieldName.MAINTITLE, FieldName.MAINSUBTITLE, FieldName.MAINTITLEADDON,</span>
+<span class="fc" id="L124">                    FieldName.BOOKSUBTITLE, FieldName.BOOKTITLEADDON, FieldName.LANGUAGE, FieldName.ORIGLANGUAGE,</span>
+<span class="fc" id="L125">                    FieldName.VOLUME, FieldName.PART, FieldName.EDITION, FieldName.VOLUMES, FieldName.SERIES,</span>
+<span class="fc" id="L126">                    FieldName.NUMBER, FieldName.NOTE, FieldName.PUBLISHER, FieldName.LOCATION, FieldName.ISBN,</span>
+<span class="fc" id="L127">                    FieldName.CHAPTER, FieldName.PAGES, FieldName.ADDENDUM, FieldName.PUBSTATE, FieldName.DOI,</span>
+<span class="fc" id="L128">                    FieldName.EPRINT, FieldName.EPRINTCLASS, FieldName.EPRINTTYPE, FieldName.URL, FieldName.URLDATE);</span>
+        }
+
+        @Override
+        public String getName() {
+<span class="fc" id="L133">            return &quot;InBook&quot;;</span>
+        }
+
+        @Override
+        public Set&lt;String&gt; getPrimaryOptionalFields() {
+<span class="nc" id="L138">            return primaryOptionalFields;</span>
+        }
+    };
+
+<span class="fc" id="L142">    public static final BiblatexEntryType BOOKINBOOK = new BiblatexEntryType() {</span>
+
+        @Override
+        public String getName() {
+<span class="fc" id="L146">            return &quot;BookInBook&quot;;</span>
+        }
+
+        // Same fields as &quot;INBOOK&quot; according to Biblatex 1.0:
+        @Override
+        public Set&lt;String&gt; getRequiredFields() {
+<span class="fc" id="L152">            return BiblatexEntryTypes.INBOOK.getRequiredFields();</span>
+        }
+
+        @Override
+        public Set&lt;String&gt; getOptionalFields() {
+<span class="fc" id="L157">            return BiblatexEntryTypes.INBOOK.getOptionalFields();</span>
+        }
+
+        @Override
+        public Set&lt;String&gt; getPrimaryOptionalFields() {
+<span class="nc" id="L162">            return BiblatexEntryTypes.INBOOK.getPrimaryOptionalFields();</span>
+        }
+    };
+
+<span class="fc" id="L166">    public static final BiblatexEntryType SUPPBOOK = new BiblatexEntryType() {</span>
+
+        @Override
+        public String getName() {
+<span class="fc" id="L170">            return &quot;SuppBook&quot;;</span>
+        }
+
+        // Same fields as &quot;INBOOK&quot; according to Biblatex 1.0:
+        @Override
+        public Set&lt;String&gt; getRequiredFields() {
+<span class="fc" id="L176">            return BiblatexEntryTypes.INBOOK.getRequiredFields();</span>
+        }
+
+        @Override
+        public Set&lt;String&gt; getOptionalFields() {
+<span class="fc" id="L181">            return BiblatexEntryTypes.INBOOK.getOptionalFields();</span>
+        }
+
+        @Override
+        public Set&lt;String&gt; getPrimaryOptionalFields() {
+<span class="nc" id="L186">            return BiblatexEntryTypes.INBOOK.getPrimaryOptionalFields();</span>
+        }
+    };
+
+<span class="fc" id="L190">    public static final BiblatexEntryType BOOKLET = new BiblatexEntryType() {</span>
+
+<span class="fc" id="L192">        private final Set&lt;String&gt; primaryOptionalFields = Collections</span>
+<span class="fc" id="L193">                .unmodifiableSet(new LinkedHashSet&lt;&gt;(Arrays.asList(FieldName.SUBTITLE, FieldName.TITLEADDON, FieldName.HOWPUBLISHED,</span>
+<span class="fc" id="L194">                        FieldName.CHAPTER, FieldName.PAGES, FieldName.DOI, FieldName.EPRINT, FieldName.EPRINTCLASS,</span>
+<span class="fc" id="L195">                        FieldName.EPRINTTYPE, FieldName.URL, FieldName.URLDATE)));</span>
+
+        {
+<span class="fc" id="L198">            addAllRequired(FieldName.orFields(FieldName.AUTHOR, FieldName.EDITOR), FieldName.TITLE,</span>
+<span class="fc" id="L199">                    FieldName.orFields(FieldName.YEAR, FieldName.DATE));</span>
+<span class="fc" id="L200">            addAllOptional(FieldName.SUBTITLE, FieldName.TITLEADDON, FieldName.LANGUAGE, FieldName.HOWPUBLISHED,</span>
+<span class="fc" id="L201">                    FieldName.TYPE, FieldName.NOTE, FieldName.LOCATION, FieldName.CHAPTER, FieldName.PAGES,</span>
+<span class="fc" id="L202">                    FieldName.PAGETOTAL, FieldName.ADDENDUM, FieldName.PUBSTATE, FieldName.DOI, FieldName.EPRINT,</span>
+<span class="fc" id="L203">                    FieldName.EPRINTCLASS, FieldName.EPRINTTYPE, FieldName.URL, FieldName.URLDATE);</span>
+        }
+
+        @Override
+        public String getName() {
+<span class="fc" id="L208">            return &quot;Booklet&quot;;</span>
+        }
+
+        @Override
+        public Set&lt;String&gt; getPrimaryOptionalFields() {
+<span class="nc" id="L213">            return primaryOptionalFields;</span>
+        }
+    };
+
+<span class="fc" id="L217">    public static final BiblatexEntryType COLLECTION = new BiblatexEntryType() {</span>
+
+<span class="fc" id="L219">        private final Set&lt;String&gt; primaryOptionalFields = Collections.unmodifiableSet(new LinkedHashSet&lt;&gt;(Arrays.asList(</span>
+<span class="fc" id="L220">                FieldName.TRANSLATOR, FieldName.SUBTITLE, FieldName.TITLEADDON, FieldName.MAINTITLE,</span>
+<span class="fc" id="L221">                FieldName.MAINSUBTITLE, FieldName.MAINTITLEADDON, FieldName.VOLUME, FieldName.EDITION,</span>
+<span class="fc" id="L222">                FieldName.PUBLISHER, FieldName.ISBN, FieldName.CHAPTER, FieldName.PAGES, FieldName.DOI,</span>
+<span class="fc" id="L223">                FieldName.EPRINT, FieldName.EPRINTCLASS, FieldName.EPRINTTYPE, FieldName.URL, FieldName.URLDATE)));</span>
+
+        {
+<span class="fc" id="L226">            addAllRequired(FieldName.EDITOR, FieldName.TITLE, FieldName.orFields(FieldName.YEAR, FieldName.DATE));</span>
+<span class="fc" id="L227">            addAllOptional(FieldName.EDITORA, FieldName.EDITORB, FieldName.EDITORC, FieldName.TRANSLATOR,</span>
+<span class="fc" id="L228">                    FieldName.ANNOTATOR, FieldName.COMMENTATOR, FieldName.INTRODUCTION, FieldName.FOREWORD,</span>
+<span class="fc" id="L229">                    FieldName.AFTERWORD, FieldName.SUBTITLE, FieldName.TITLEADDON, FieldName.MAINTITLE,</span>
+<span class="fc" id="L230">                    FieldName.MAINSUBTITLE, FieldName.MAINTITLEADDON, FieldName.LANGUAGE, FieldName.ORIGLANGUAGE,</span>
+<span class="fc" id="L231">                    FieldName.VOLUME, FieldName.PART, FieldName.EDITION, FieldName.VOLUMES, FieldName.SERIES,</span>
+<span class="fc" id="L232">                    FieldName.NUMBER, FieldName.NOTE, FieldName.PUBLISHER, FieldName.LOCATION, FieldName.ISBN,</span>
+<span class="fc" id="L233">                    FieldName.CHAPTER, FieldName.PAGES, FieldName.PAGETOTAL, FieldName.ADDENDUM, FieldName.PUBSTATE,</span>
+<span class="fc" id="L234">                    FieldName.DOI, FieldName.EPRINT, FieldName.EPRINTCLASS, FieldName.EPRINTTYPE, FieldName.URL,</span>
+<span class="fc" id="L235">                    FieldName.URLDATE);</span>
+        }
+
+        @Override
+        public String getName() {
+<span class="fc" id="L240">            return &quot;Collection&quot;;</span>
+        }
+
+        @Override
+        public Set&lt;String&gt; getPrimaryOptionalFields() {
+<span class="nc" id="L245">            return primaryOptionalFields;</span>
+        }
+    };
+
+<span class="fc" id="L249">    public static final BiblatexEntryType MVCOLLECTION = new BiblatexEntryType() {</span>
+
+<span class="fc" id="L251">        private final Set&lt;String&gt; primaryOptionalFields = Collections</span>
+<span class="fc" id="L252">                .unmodifiableSet(new LinkedHashSet&lt;&gt;(Arrays.asList(FieldName.TRANSLATOR, FieldName.SUBTITLE, FieldName.TITLEADDON,</span>
+<span class="fc" id="L253">                        FieldName.EDITION, FieldName.PUBLISHER, FieldName.ISBN, FieldName.DOI, FieldName.EPRINT,</span>
+<span class="fc" id="L254">                        FieldName.EPRINTCLASS, FieldName.EPRINTTYPE, FieldName.URL, FieldName.URLDATE)));</span>
+
+        {
+<span class="fc" id="L257">            addAllRequired(FieldName.EDITOR, FieldName.TITLE, FieldName.orFields(FieldName.YEAR, FieldName.DATE));</span>
+<span class="fc" id="L258">            addAllOptional(FieldName.EDITORA, FieldName.EDITORB, FieldName.EDITORC, FieldName.TRANSLATOR,</span>
+<span class="fc" id="L259">                    FieldName.ANNOTATOR, FieldName.COMMENTATOR, FieldName.INTRODUCTION, FieldName.FOREWORD,</span>
+<span class="fc" id="L260">                    FieldName.AFTERWORD, FieldName.SUBTITLE, FieldName.TITLEADDON, FieldName.LANGUAGE,</span>
+<span class="fc" id="L261">                    FieldName.ORIGLANGUAGE, FieldName.EDITION, FieldName.VOLUMES, FieldName.SERIES, FieldName.NUMBER,</span>
+<span class="fc" id="L262">                    FieldName.NOTE, FieldName.PUBLISHER, FieldName.LOCATION, FieldName.ISBN, FieldName.PAGETOTAL,</span>
+<span class="fc" id="L263">                    FieldName.ADDENDUM, FieldName.PUBSTATE, FieldName.DOI, FieldName.EPRINT, FieldName.EPRINTCLASS,</span>
+<span class="fc" id="L264">                    FieldName.EPRINTTYPE, FieldName.URL, FieldName.URLDATE);</span>
+        }
+
+        @Override
+        public String getName() {
+<span class="fc" id="L269">            return &quot;MvCollection&quot;;</span>
+        }
+
+        @Override
+        public Set&lt;String&gt; getPrimaryOptionalFields() {
+<span class="nc" id="L274">            return primaryOptionalFields;</span>
+        }
+    };
+
+<span class="fc" id="L278">    public static final BiblatexEntryType INCOLLECTION = new BiblatexEntryType() {</span>
+
+<span class="fc" id="L280">        private final Set&lt;String&gt; primaryOptionalFields = Collections</span>
+<span class="fc" id="L281">                .unmodifiableSet(new LinkedHashSet&lt;&gt;(Arrays.asList(FieldName.TRANSLATOR, FieldName.SUBTITLE, FieldName.TITLEADDON,</span>
+<span class="fc" id="L282">                        FieldName.MAINTITLE, FieldName.MAINSUBTITLE, FieldName.MAINTITLEADDON, FieldName.BOOKSUBTITLE,</span>
+<span class="fc" id="L283">                        FieldName.BOOKTITLEADDON, FieldName.VOLUME, FieldName.EDITION, FieldName.PUBLISHER,</span>
+<span class="fc" id="L284">                        FieldName.ISBN, FieldName.CHAPTER, FieldName.PAGES, FieldName.DOI, FieldName.EPRINT,</span>
+<span class="fc" id="L285">                        FieldName.EPRINTCLASS, FieldName.EPRINTTYPE, FieldName.URL, FieldName.URLDATE)));</span>
+
+        {
+<span class="fc" id="L288">            addAllRequired(FieldName.AUTHOR, FieldName.TITLE, FieldName.BOOKTITLE,</span>
+<span class="fc" id="L289">                    FieldName.orFields(FieldName.YEAR, FieldName.DATE));</span>
+<span class="fc" id="L290">            addAllOptional(FieldName.EDITOR, FieldName.EDITORA, FieldName.EDITORB, FieldName.EDITORC,</span>
+<span class="fc" id="L291">                    FieldName.TRANSLATOR, FieldName.ANNOTATOR, FieldName.COMMENTATOR, FieldName.INTRODUCTION,</span>
+<span class="fc" id="L292">                    FieldName.FOREWORD, FieldName.AFTERWORD, FieldName.SUBTITLE, FieldName.TITLEADDON,</span>
+<span class="fc" id="L293">                    FieldName.MAINTITLE, FieldName.MAINSUBTITLE, FieldName.MAINTITLEADDON, FieldName.BOOKSUBTITLE,</span>
+<span class="fc" id="L294">                    FieldName.BOOKTITLEADDON, FieldName.LANGUAGE, FieldName.ORIGLANGUAGE, FieldName.VOLUME,</span>
+<span class="fc" id="L295">                    FieldName.PART, FieldName.EDITION, FieldName.VOLUMES, FieldName.SERIES, FieldName.NUMBER,</span>
+<span class="fc" id="L296">                    FieldName.NOTE, FieldName.PUBLISHER, FieldName.LOCATION, FieldName.ISBN, FieldName.CHAPTER,</span>
+<span class="fc" id="L297">                    FieldName.PAGES, FieldName.ADDENDUM, FieldName.PUBSTATE, FieldName.DOI, FieldName.EPRINT,</span>
+<span class="fc" id="L298">                    FieldName.EPRINTCLASS, FieldName.EPRINTTYPE, FieldName.URL, FieldName.URLDATE);</span>
+        }
+
+        @Override
+        public String getName() {
+<span class="fc" id="L303">            return &quot;InCollection&quot;;</span>
+        }
+
+        @Override
+        public Set&lt;String&gt; getPrimaryOptionalFields() {
+<span class="nc" id="L308">            return primaryOptionalFields;</span>
+        }
+    };
+
+<span class="fc" id="L312">    public static final BiblatexEntryType SUPPCOLLECTION = new BiblatexEntryType() {</span>
+
+        @Override
+        public String getName() {
+<span class="fc" id="L316">            return &quot;SuppCollection&quot;;</span>
+        }
+
+        // Treated as alias of &quot;INCOLLECTION&quot; according to Biblatex 1.0:
+        @Override
+        public Set&lt;String&gt; getRequiredFields() {
+<span class="fc" id="L322">            return BiblatexEntryTypes.INCOLLECTION.getRequiredFields();</span>
+        }
+
+        @Override
+        public Set&lt;String&gt; getOptionalFields() {
+<span class="fc" id="L327">            return BiblatexEntryTypes.INCOLLECTION.getOptionalFields();</span>
+        }
+
+        @Override
+        public Set&lt;String&gt; getPrimaryOptionalFields() {
+<span class="nc" id="L332">            return BiblatexEntryTypes.INCOLLECTION.getPrimaryOptionalFields();</span>
+        }
+    };
+
+<span class="fc" id="L336">    public static final BiblatexEntryType MANUAL = new BiblatexEntryType() {</span>
+
+<span class="fc" id="L338">        private final Set&lt;String&gt; primaryOptionalFields = Collections.unmodifiableSet(</span>
+<span class="fc" id="L339">                new LinkedHashSet&lt;&gt;(Arrays.asList(FieldName.SUBTITLE, FieldName.TITLEADDON, FieldName.EDITION, FieldName.PUBLISHER,</span>
+<span class="fc" id="L340">                        FieldName.ISBN, FieldName.CHAPTER, FieldName.PAGES, FieldName.DOI, FieldName.EPRINT,</span>
+<span class="fc" id="L341">                        FieldName.EPRINTCLASS, FieldName.EPRINTTYPE, FieldName.URL, FieldName.URLDATE)));</span>
+
+        {
+<span class="fc" id="L344">            addAllRequired(FieldName.orFields(FieldName.AUTHOR, FieldName.EDITOR), FieldName.TITLE,</span>
+<span class="fc" id="L345">                    FieldName.orFields(FieldName.YEAR, FieldName.DATE));</span>
+<span class="fc" id="L346">            addAllOptional(FieldName.SUBTITLE, FieldName.TITLEADDON, FieldName.LANGUAGE, FieldName.EDITION,</span>
+<span class="fc" id="L347">                    FieldName.TYPE, FieldName.SERIES, FieldName.NUMBER, FieldName.VERSION, FieldName.NOTE,</span>
+<span class="fc" id="L348">                    FieldName.ORGANIZATION, FieldName.PUBLISHER, FieldName.LOCATION, FieldName.ISBN, FieldName.CHAPTER,</span>
+<span class="fc" id="L349">                    FieldName.PAGES, FieldName.PAGETOTAL, FieldName.ADDENDUM, FieldName.PUBSTATE, FieldName.DOI,</span>
+<span class="fc" id="L350">                    FieldName.EPRINT, FieldName.EPRINTCLASS, FieldName.EPRINTTYPE, FieldName.URL, FieldName.URLDATE);</span>
+        }
+
+        @Override
+        public String getName() {
+<span class="fc" id="L355">            return &quot;Manual&quot;;</span>
+        }
+
+        @Override
+        public Set&lt;String&gt; getPrimaryOptionalFields() {
+<span class="nc" id="L360">            return primaryOptionalFields;</span>
+        }
+    };
+
+<span class="fc" id="L364">    public static final BiblatexEntryType MISC = new BiblatexEntryType() {</span>
+
+<span class="fc" id="L366">        private final Set&lt;String&gt; primaryOptionalFields = Collections.unmodifiableSet(new LinkedHashSet&lt;&gt;(Arrays.asList(</span>
+<span class="fc" id="L367">                FieldName.SUBTITLE, FieldName.TITLEADDON, FieldName.HOWPUBLISHED, FieldName.LOCATION, FieldName.DOI,</span>
+<span class="fc" id="L368">                FieldName.EPRINT, FieldName.EPRINTCLASS, FieldName.EPRINTTYPE, FieldName.URL, FieldName.URLDATE)));</span>
+
+        {
+<span class="fc" id="L371">            addAllRequired(FieldName.orFields(FieldName.AUTHOR, FieldName.EDITOR), FieldName.TITLE,</span>
+<span class="fc" id="L372">                    FieldName.orFields(FieldName.YEAR, FieldName.DATE));</span>
+<span class="fc" id="L373">            addAllOptional(FieldName.SUBTITLE, FieldName.TITLEADDON, FieldName.LANGUAGE, FieldName.HOWPUBLISHED,</span>
+<span class="fc" id="L374">                    FieldName.TYPE, FieldName.VERSION, FieldName.NOTE, FieldName.ORGANIZATION, FieldName.LOCATION,</span>
+<span class="fc" id="L375">                    FieldName.MONTH, FieldName.ADDENDUM, FieldName.PUBSTATE, FieldName.DOI, FieldName.EPRINT,</span>
+<span class="fc" id="L376">                    FieldName.EPRINTCLASS, FieldName.EPRINTTYPE, FieldName.URL, FieldName.URLDATE);</span>
+        }
+
+        @Override
+        public String getName() {
+<span class="fc" id="L381">            return &quot;Misc&quot;;</span>
+        }
+
+        @Override
+        public Set&lt;String&gt; getPrimaryOptionalFields() {
+<span class="nc" id="L386">            return primaryOptionalFields;</span>
+        }
+    };
+
+<span class="fc" id="L390">    public static final BiblatexEntryType ONLINE = new BiblatexEntryType() {</span>
+
+<span class="fc" id="L392">        private final Set&lt;String&gt; primaryOptionalFields = Collections.unmodifiableSet(new LinkedHashSet&lt;&gt;(Arrays.asList(</span>
+<span class="fc" id="L393">                FieldName.SUBTITLE, FieldName.TITLEADDON, FieldName.NOTE, FieldName.ORGANIZATION, FieldName.URLDATE)));</span>
+
+        {
+<span class="fc" id="L396">            addAllRequired(FieldName.orFields(FieldName.AUTHOR, FieldName.EDITOR), FieldName.TITLE,</span>
+<span class="fc" id="L397">                    FieldName.orFields(FieldName.YEAR, FieldName.DATE), FieldName.URL);</span>
+<span class="fc" id="L398">            addAllOptional(FieldName.SUBTITLE, FieldName.TITLEADDON, FieldName.LANGUAGE, FieldName.VERSION,</span>
+<span class="fc" id="L399">                    FieldName.NOTE, FieldName.ORGANIZATION, FieldName.MONTH, FieldName.ADDENDUM, FieldName.PUBSTATE,</span>
+<span class="fc" id="L400">                    FieldName.URLDATE);</span>
+        }
+
+        @Override
+        public String getName() {
+<span class="fc" id="L405">            return &quot;Online&quot;;</span>
+        }
+
+        @Override
+        public Set&lt;String&gt; getPrimaryOptionalFields() {
+<span class="nc" id="L410">            return primaryOptionalFields;</span>
+        }
+    };
+
+<span class="fc" id="L414">    public static final BiblatexEntryType PATENT = new BiblatexEntryType() {</span>
+
+<span class="fc" id="L416">        private final Set&lt;String&gt; primaryOptionalFields = Collections.unmodifiableSet(new LinkedHashSet&lt;&gt;(Arrays.asList(FieldName.HOLDER,</span>
+<span class="fc" id="L417">                FieldName.SUBTITLE, FieldName.TITLEADDON, FieldName.DOI, FieldName.EPRINT, FieldName.EPRINTCLASS,</span>
+<span class="fc" id="L418">                FieldName.EPRINTTYPE, FieldName.URL, FieldName.URLDATE)));</span>
+
+        {
+<span class="fc" id="L421">            addAllRequired(FieldName.AUTHOR, FieldName.TITLE, FieldName.NUMBER,</span>
+<span class="fc" id="L422">                    FieldName.orFields(FieldName.YEAR, FieldName.DATE));</span>
+<span class="fc" id="L423">            addAllOptional(FieldName.HOLDER, FieldName.SUBTITLE, FieldName.TITLEADDON, FieldName.TYPE,</span>
+<span class="fc" id="L424">                    FieldName.VERSION, FieldName.LOCATION, FieldName.NOTE, FieldName.MONTH, FieldName.ADDENDUM,</span>
+<span class="fc" id="L425">                    FieldName.PUBSTATE, FieldName.DOI, FieldName.EPRINT, FieldName.EPRINTCLASS, FieldName.EPRINTTYPE,</span>
+<span class="fc" id="L426">                    FieldName.URL, FieldName.URLDATE);</span>
+        }
+
+        @Override
+        public String getName() {
+<span class="fc" id="L431">            return &quot;Patent&quot;;</span>
+        }
+
+        @Override
+        public Set&lt;String&gt; getPrimaryOptionalFields() {
+<span class="nc" id="L436">            return primaryOptionalFields;</span>
+        }
+    };
+
+<span class="fc" id="L440">    public static final BiblatexEntryType PERIODICAL = new BiblatexEntryType() {</span>
+
+<span class="fc" id="L442">        private final Set&lt;String&gt; primaryOptionalFields = Collections.unmodifiableSet(new LinkedHashSet&lt;&gt;(Arrays.asList(</span>
+<span class="fc" id="L443">                FieldName.SUBTITLE, FieldName.ISSUETITLE, FieldName.ISSUESUBTITLE, FieldName.ISSN, FieldName.DOI,</span>
+<span class="fc" id="L444">                FieldName.EPRINT, FieldName.EPRINTCLASS, FieldName.EPRINTTYPE, FieldName.URL, FieldName.URLDATE)));</span>
+
+        {
+<span class="fc" id="L447">            addAllRequired(FieldName.EDITOR, FieldName.TITLE, FieldName.orFields(FieldName.YEAR, FieldName.DATE));</span>
+<span class="fc" id="L448">            addAllOptional(FieldName.EDITORA, FieldName.EDITORB, FieldName.EDITORC, FieldName.SUBTITLE,</span>
+<span class="fc" id="L449">                    FieldName.ISSUETITLE, FieldName.ISSUESUBTITLE, FieldName.LANGUAGE, FieldName.SERIES,</span>
+<span class="fc" id="L450">                    FieldName.VOLUME, FieldName.NUMBER, FieldName.ISSUE, FieldName.MONTH, FieldName.NOTE,</span>
+<span class="fc" id="L451">                    FieldName.ISSN, FieldName.ADDENDUM, FieldName.PUBSTATE, FieldName.DOI, FieldName.EPRINT,</span>
+<span class="fc" id="L452">                    FieldName.EPRINTCLASS, FieldName.EPRINTTYPE, FieldName.URL, FieldName.URLDATE);</span>
+        }
+
+        @Override
+        public String getName() {
+<span class="fc" id="L457">            return &quot;Periodical&quot;;</span>
+        }
+
+        @Override
+        public Set&lt;String&gt; getPrimaryOptionalFields() {
+<span class="nc" id="L462">            return primaryOptionalFields;</span>
+        }
+    };
+
+<span class="fc" id="L466">    public static final BiblatexEntryType SUPPPERIODICAL = new BiblatexEntryType() {</span>
+
+        @Override
+        public String getName() {
+<span class="fc" id="L470">            return &quot;SuppPeriodical&quot;;</span>
+        }
+
+        // Treated as alias of &quot;ARTICLE&quot; according to Biblatex 1.0:
+        @Override
+        public Set&lt;String&gt; getRequiredFields() {
+<span class="fc" id="L476">            return BiblatexEntryTypes.ARTICLE.getRequiredFields();</span>
+        }
+
+        @Override
+        public Set&lt;String&gt; getOptionalFields() {
+<span class="fc" id="L481">            return BiblatexEntryTypes.ARTICLE.getOptionalFields();</span>
+        }
+
+        @Override
+        public Set&lt;String&gt; getPrimaryOptionalFields() {
+<span class="nc" id="L486">            return BiblatexEntryTypes.ARTICLE.getPrimaryOptionalFields();</span>
+        }
+    };
+
+<span class="fc" id="L490">    public static final BiblatexEntryType PROCEEDINGS = new BiblatexEntryType() {</span>
+
+<span class="fc" id="L492">        private final Set&lt;String&gt; primaryOptionalFields = Collections.unmodifiableSet(new LinkedHashSet&lt;&gt;(Arrays.asList(</span>
+<span class="fc" id="L493">                FieldName.SUBTITLE, FieldName.TITLEADDON, FieldName.MAINTITLE, FieldName.MAINSUBTITLE,</span>
+<span class="fc" id="L494">                FieldName.MAINTITLEADDON, FieldName.EVENTTITLE, FieldName.VOLUME, FieldName.PUBLISHER, FieldName.ISBN,</span>
+<span class="fc" id="L495">                FieldName.CHAPTER, FieldName.PAGES, FieldName.PAGETOTAL, FieldName.DOI, FieldName.EPRINT,</span>
+<span class="fc" id="L496">                FieldName.EPRINTCLASS, FieldName.EPRINTTYPE, FieldName.URL, FieldName.URLDATE)));</span>
+
+        {
+<span class="fc" id="L499">            addAllRequired(FieldName.TITLE, FieldName.orFields(FieldName.YEAR, FieldName.DATE));</span>
+<span class="fc" id="L500">            addAllOptional(FieldName.EDITOR, FieldName.SUBTITLE, FieldName.TITLEADDON, FieldName.MAINTITLE,</span>
+<span class="fc" id="L501">                    FieldName.MAINSUBTITLE, FieldName.MAINTITLEADDON, FieldName.EVENTTITLE, FieldName.EVENTTITLEADDON,</span>
+<span class="fc" id="L502">                    FieldName.EVENTDATE, FieldName.VENUE, FieldName.LANGUAGE, FieldName.VOLUME, FieldName.PART,</span>
+<span class="fc" id="L503">                    FieldName.VOLUMES, FieldName.SERIES, FieldName.NUMBER, FieldName.NOTE, FieldName.ORGANIZATION,</span>
+<span class="fc" id="L504">                    FieldName.PUBLISHER, FieldName.LOCATION, FieldName.MONTH, FieldName.YEAR, FieldName.ISBN,</span>
+<span class="fc" id="L505">                    FieldName.CHAPTER, FieldName.PAGES, FieldName.PAGETOTAL, FieldName.ADDENDUM, FieldName.PUBSTATE,</span>
+<span class="fc" id="L506">                    FieldName.DOI, FieldName.EPRINT, FieldName.EPRINTCLASS, FieldName.EPRINTTYPE, FieldName.URL,</span>
+<span class="fc" id="L507">                    FieldName.URLDATE);</span>
+        }
+
+        @Override
+        public String getName() {
+<span class="fc" id="L512">            return &quot;Proceedings&quot;;</span>
+        }
+
+        @Override
+        public Set&lt;String&gt; getPrimaryOptionalFields() {
+<span class="nc" id="L517">            return primaryOptionalFields;</span>
+        }
+    };
+
+<span class="fc" id="L521">    public static final BiblatexEntryType MVPROCEEDINGS = new BiblatexEntryType() {</span>
+
+<span class="fc" id="L523">        private final Set&lt;String&gt; primaryOptionalFields = Collections.unmodifiableSet(new LinkedHashSet&lt;&gt;(Arrays.asList(</span>
+<span class="fc" id="L524">                FieldName.SUBTITLE, FieldName.TITLEADDON, FieldName.MAINTITLE, FieldName.MAINSUBTITLE,</span>
+<span class="fc" id="L525">                FieldName.MAINTITLEADDON, FieldName.EVENTTITLE, FieldName.VOLUME, FieldName.PUBLISHER, FieldName.ISBN,</span>
+<span class="fc" id="L526">                FieldName.CHAPTER, FieldName.PAGES, FieldName.PAGETOTAL, FieldName.DOI, FieldName.EPRINT,</span>
+<span class="fc" id="L527">                FieldName.EPRINTCLASS, FieldName.EPRINTTYPE, FieldName.URL, FieldName.URLDATE)));</span>
+
+        {
+<span class="fc" id="L530">            addAllRequired(FieldName.TITLE, FieldName.orFields(FieldName.YEAR, FieldName.DATE));</span>
+<span class="fc" id="L531">            addAllOptional(FieldName.EDITOR, FieldName.SUBTITLE, FieldName.TITLEADDON, FieldName.EVENTTITLE,</span>
+<span class="fc" id="L532">                    FieldName.EVENTTITLEADDON, FieldName.EVENTDATE, FieldName.VENUE, FieldName.LANGUAGE,</span>
+<span class="fc" id="L533">                    FieldName.VOLUMES, FieldName.SERIES, FieldName.NUMBER, FieldName.NOTE, FieldName.ORGANIZATION,</span>
+<span class="fc" id="L534">                    FieldName.PUBLISHER, FieldName.LOCATION, FieldName.MONTH, FieldName.ISBN, FieldName.PAGETOTAL,</span>
+<span class="fc" id="L535">                    FieldName.ADDENDUM, FieldName.PUBSTATE, FieldName.DOI, FieldName.EPRINT, FieldName.EPRINTCLASS,</span>
+<span class="fc" id="L536">                    FieldName.EPRINTTYPE, FieldName.URL,</span>
+<span class="fc" id="L537">                    FieldName.URLDATE);</span>
+        }
+
+        @Override
+        public String getName() {
+<span class="fc" id="L542">            return &quot;MvProceedings&quot;;</span>
+        }
+
+        @Override
+        public Set&lt;String&gt; getPrimaryOptionalFields() {
+<span class="nc" id="L547">            return primaryOptionalFields;</span>
+        }
+    };
+
+<span class="fc" id="L551">    public static final BiblatexEntryType INPROCEEDINGS = new BiblatexEntryType() {</span>
+
+<span class="fc" id="L553">        private final Set&lt;String&gt; primaryOptionalFields = Collections</span>
+<span class="fc" id="L554">                .unmodifiableSet(new LinkedHashSet&lt;&gt;(Arrays.asList(FieldName.SUBTITLE, FieldName.TITLEADDON, FieldName.MAINTITLE,</span>
+<span class="fc" id="L555">                        FieldName.MAINSUBTITLE, FieldName.MAINTITLEADDON, FieldName.BOOKSUBTITLE,</span>
+<span class="fc" id="L556">                        FieldName.BOOKTITLEADDON, FieldName.EVENTTITLE, FieldName.VOLUME, FieldName.PUBLISHER,</span>
+<span class="fc" id="L557">                        FieldName.ISBN, FieldName.CHAPTER, FieldName.PAGES, FieldName.DOI, FieldName.EPRINT,</span>
+<span class="fc" id="L558">                        FieldName.EPRINTCLASS, FieldName.EPRINTTYPE, FieldName.URL, FieldName.URLDATE)));</span>
+
+        {
+<span class="fc" id="L561">            addAllRequired(FieldName.AUTHOR, FieldName.TITLE, FieldName.BOOKTITLE,</span>
+<span class="fc" id="L562">                    FieldName.orFields(FieldName.YEAR, FieldName.DATE));</span>
+<span class="fc" id="L563">            addAllOptional(FieldName.EDITOR, FieldName.SUBTITLE, FieldName.TITLEADDON, FieldName.MAINTITLE,</span>
+<span class="fc" id="L564">                    FieldName.MAINSUBTITLE, FieldName.MAINTITLEADDON, FieldName.BOOKSUBTITLE, FieldName.BOOKTITLEADDON,</span>
+<span class="fc" id="L565">                    FieldName.EVENTTITLE, FieldName.EVENTTITLEADDON, FieldName.EVENTDATE, FieldName.VENUE,</span>
+<span class="fc" id="L566">                    FieldName.LANGUAGE, FieldName.VOLUME, FieldName.PART, FieldName.VOLUMES, FieldName.SERIES,</span>
+<span class="fc" id="L567">                    FieldName.NUMBER, FieldName.NOTE, FieldName.ORGANIZATION, FieldName.PUBLISHER, FieldName.LOCATION,</span>
+<span class="fc" id="L568">                    FieldName.MONTH, FieldName.ISBN, FieldName.CHAPTER, FieldName.PAGES, FieldName.ADDENDUM,</span>
+<span class="fc" id="L569">                    FieldName.PUBSTATE, FieldName.DOI, FieldName.EPRINT, FieldName.EPRINTCLASS, FieldName.EPRINTTYPE,</span>
+<span class="fc" id="L570">                    FieldName.URL, FieldName.URLDATE);</span>
+        }
+
+        @Override
+        public String getName() {
+<span class="fc" id="L575">            return &quot;InProceedings&quot;;</span>
+        }
+
+        @Override
+        public Set&lt;String&gt; getPrimaryOptionalFields() {
+<span class="nc" id="L580">            return primaryOptionalFields;</span>
+        }
+    };
+
+<span class="fc" id="L584">    public static final BiblatexEntryType REFERENCE = new BiblatexEntryType() {</span>
+
+        @Override
+        public String getName() {
+<span class="fc" id="L588">            return &quot;Reference&quot;;</span>
+        }
+
+        // Treated as alias of &quot;COLLECTION&quot; according to Biblatex 1.0:
+        @Override
+        public Set&lt;String&gt; getRequiredFields() {
+<span class="fc" id="L594">            return BiblatexEntryTypes.COLLECTION.getRequiredFields();</span>
+        }
+
+        @Override
+        public Set&lt;String&gt; getOptionalFields() {
+<span class="fc" id="L599">            return BiblatexEntryTypes.COLLECTION.getOptionalFields();</span>
+        }
+
+        @Override
+        public Set&lt;String&gt; getPrimaryOptionalFields() {
+<span class="nc" id="L604">            return BiblatexEntryTypes.COLLECTION.getPrimaryOptionalFields();</span>
+        }
+    };
+
+<span class="fc" id="L608">    public static final BiblatexEntryType MVREFERENCE = new BiblatexEntryType() {</span>
+
+        @Override
+        public String getName() {
+<span class="fc" id="L612">            return &quot;MvReference&quot;;</span>
+        }
+
+        // Treated as alias of &quot;MVCOLLECTION&quot; according to Biblatex 1.0:
+        @Override
+        public Set&lt;String&gt; getRequiredFields() {
+<span class="fc" id="L618">            return BiblatexEntryTypes.MVCOLLECTION.getRequiredFields();</span>
+        }
+
+        @Override
+        public Set&lt;String&gt; getOptionalFields() {
+<span class="fc" id="L623">            return BiblatexEntryTypes.MVCOLLECTION.getOptionalFields();</span>
+        }
+
+        @Override
+        public Set&lt;String&gt; getPrimaryOptionalFields() {
+<span class="nc" id="L628">            return BiblatexEntryTypes.MVCOLLECTION.getPrimaryOptionalFields();</span>
+        }
+    };
+
+<span class="fc" id="L632">    public static final BiblatexEntryType INREFERENCE = new BiblatexEntryType() {</span>
+
+        @Override
+        public String getName() {
+<span class="fc" id="L636">            return &quot;InReference&quot;;</span>
+        }
+
+        // Treated as alias of &quot;INCOLLECTION&quot; according to Biblatex 1.0:
+        @Override
+        public Set&lt;String&gt; getRequiredFields() {
+<span class="fc" id="L642">            return BiblatexEntryTypes.INCOLLECTION.getRequiredFields();</span>
+        }
+
+        @Override
+        public Set&lt;String&gt; getOptionalFields() {
+<span class="fc" id="L647">            return BiblatexEntryTypes.INCOLLECTION.getOptionalFields();</span>
+        }
+
+        @Override
+        public Set&lt;String&gt; getPrimaryOptionalFields() {
+<span class="nc" id="L652">            return BiblatexEntryTypes.INCOLLECTION.getPrimaryOptionalFields();</span>
+        }
+    };
+
+<span class="fc" id="L656">    public static final BiblatexEntryType REPORT = new BiblatexEntryType() {</span>
+
+<span class="fc" id="L658">        private final Set&lt;String&gt; primaryOptionalFields = Collections.unmodifiableSet(new LinkedHashSet&lt;&gt;(</span>
+<span class="fc" id="L659">                Arrays.asList(FieldName.SUBTITLE, FieldName.TITLEADDON, FieldName.NUMBER, FieldName.ISRN,</span>
+<span class="fc" id="L660">                        FieldName.CHAPTER, FieldName.PAGES, FieldName.PAGETOTAL, FieldName.DOI, FieldName.EPRINT,</span>
+<span class="fc" id="L661">                        FieldName.EPRINTCLASS, FieldName.EPRINTTYPE, FieldName.URL, FieldName.URLDATE)));</span>
+
+        {
+<span class="fc" id="L664">            addAllRequired(FieldName.AUTHOR, FieldName.TITLE, FieldName.TYPE, FieldName.INSTITUTION,</span>
+<span class="fc" id="L665">                    FieldName.orFields(FieldName.YEAR, FieldName.DATE));</span>
+<span class="fc" id="L666">            addAllOptional(FieldName.SUBTITLE, FieldName.TITLEADDON, FieldName.LANGUAGE, FieldName.NUMBER,</span>
+<span class="fc" id="L667">                    FieldName.VERSION, FieldName.NOTE, FieldName.LOCATION, FieldName.MONTH, FieldName.ISRN,</span>
+<span class="fc" id="L668">                    FieldName.CHAPTER, FieldName.PAGES, FieldName.PAGETOTAL, FieldName.ADDENDUM, FieldName.PUBSTATE,</span>
+<span class="fc" id="L669">                    FieldName.DOI, FieldName.EPRINT, FieldName.EPRINTCLASS, FieldName.EPRINTTYPE, FieldName.URL,</span>
+<span class="fc" id="L670">                    FieldName.URLDATE);</span>
+        }
+
+        @Override
+        public String getName() {
+<span class="fc" id="L675">            return &quot;Report&quot;;</span>
+        }
+
+        @Override
+        public Set&lt;String&gt; getPrimaryOptionalFields() {
+<span class="nc" id="L680">            return primaryOptionalFields;</span>
+        }
+    };
+
+<span class="fc" id="L684">    public static final BiblatexEntryType SET = new BiblatexEntryType() {</span>
+
+        {
+<span class="fc" id="L687">            addAllRequired(FieldName.ENTRYSET, FieldName.CROSSREF);</span>
+        }
+
+        @Override
+        public String getName() {
+<span class="fc" id="L692">            return &quot;Set&quot;;</span>
+        }
+    };
+
+<span class="fc" id="L696">    public static final BiblatexEntryType THESIS = new BiblatexEntryType() {</span>
+
+<span class="fc" id="L698">        private final Set&lt;String&gt; primaryOptionalFields = Collections</span>
+<span class="fc" id="L699">                .unmodifiableSet(new LinkedHashSet&lt;&gt;(Arrays.asList(FieldName.SUBTITLE, FieldName.TITLEADDON, FieldName.CHAPTER,</span>
+<span class="fc" id="L700">                        FieldName.PAGES, FieldName.PAGETOTAL, FieldName.DOI, FieldName.EPRINT, FieldName.EPRINTCLASS,</span>
+<span class="fc" id="L701">                        FieldName.EPRINTTYPE, FieldName.URL, FieldName.URLDATE)));</span>
+
+        {
+<span class="fc" id="L704">            addAllRequired(FieldName.AUTHOR, FieldName.TITLE, FieldName.TYPE, FieldName.INSTITUTION,</span>
+<span class="fc" id="L705">                    FieldName.orFields(FieldName.YEAR, FieldName.DATE));</span>
+<span class="fc" id="L706">            addAllOptional(FieldName.SUBTITLE, FieldName.TITLEADDON, FieldName.LANGUAGE, FieldName.NOTE,</span>
+<span class="fc" id="L707">                    FieldName.LOCATION, FieldName.MONTH, FieldName.ISBN, FieldName.CHAPTER, FieldName.PAGES,</span>
+<span class="fc" id="L708">                    FieldName.PAGETOTAL, FieldName.ADDENDUM, FieldName.PUBSTATE, FieldName.DOI, FieldName.EPRINT,</span>
+<span class="fc" id="L709">                    FieldName.EPRINTCLASS, FieldName.EPRINTTYPE, FieldName.URL, FieldName.URLDATE);</span>
+        }
+
+        @Override
+        public String getName() {
+<span class="fc" id="L714">            return &quot;Thesis&quot;;</span>
+        }
+
+        @Override
+        public Set&lt;String&gt; getPrimaryOptionalFields() {
+<span class="nc" id="L719">            return primaryOptionalFields;</span>
+        }
+    };
+
+<span class="fc" id="L723">    public static final BiblatexEntryType UNPUBLISHED = new BiblatexEntryType() {</span>
+
+<span class="fc" id="L725">        private final Set&lt;String&gt; primaryOptionalFields = Collections</span>
+<span class="fc" id="L726">                .unmodifiableSet(new LinkedHashSet&lt;&gt;(Arrays.asList(FieldName.SUBTITLE, FieldName.TITLEADDON, FieldName.HOWPUBLISHED,</span>
+<span class="fc" id="L727">                        FieldName.PUBSTATE, FieldName.URL, FieldName.URLDATE)));</span>
+
+        {
+<span class="fc" id="L730">            addAllRequired(FieldName.AUTHOR, FieldName.TITLE, FieldName.orFields(FieldName.YEAR, FieldName.DATE));</span>
+<span class="fc" id="L731">            addAllOptional(FieldName.SUBTITLE, FieldName.TITLEADDON, FieldName.LANGUAGE, FieldName.HOWPUBLISHED,</span>
+<span class="fc" id="L732">                    FieldName.NOTE, FieldName.LOCATION, FieldName.MONTH, FieldName.ADDENDUM, FieldName.PUBSTATE,</span>
+<span class="fc" id="L733">                    FieldName.URL, FieldName.URLDATE);</span>
+        }
+
+        @Override
+        public String getName() {
+<span class="fc" id="L738">            return &quot;Unpublished&quot;;</span>
+        }
+
+        @Override
+        public Set&lt;String&gt; getPrimaryOptionalFields() {
+<span class="nc" id="L743">            return primaryOptionalFields;</span>
+        }
+    };
+
+    // === Type aliases: ===
+
+<span class="fc" id="L749">    public static final BiblatexEntryType CONFERENCE = new BiblatexEntryType() {</span>
+
+        @Override
+        public String getName() {
+<span class="fc" id="L753">            return &quot;Conference&quot;;</span>
+        }
+
+        // Treated as alias of &quot;INPROCEEDINGS&quot; according to Biblatex 1.0:
+        @Override
+        public Set&lt;String&gt; getRequiredFields() {
+<span class="fc" id="L759">            return BiblatexEntryTypes.INPROCEEDINGS.getRequiredFields();</span>
+        }
+
+        @Override
+        public Set&lt;String&gt; getOptionalFields() {
+<span class="fc" id="L764">            return BiblatexEntryTypes.INPROCEEDINGS.getOptionalFields();</span>
+        }
+
+        @Override
+        public Set&lt;String&gt; getPrimaryOptionalFields() {
+<span class="nc" id="L769">            return BiblatexEntryTypes.INPROCEEDINGS.getPrimaryOptionalFields();</span>
+        }
+    };
+
+<span class="fc" id="L773">    public static final BiblatexEntryType ELECTRONIC = new BiblatexEntryType() {</span>
+
+        @Override
+        public String getName() {
+<span class="fc" id="L777">            return &quot;Electronic&quot;;</span>
+        }
+
+        // Treated as alias of &quot;ONLINE&quot; according to Biblatex 1.0:
+        @Override
+        public Set&lt;String&gt; getRequiredFields() {
+<span class="fc" id="L783">            return BiblatexEntryTypes.ONLINE.getRequiredFields();</span>
+        }
+
+        @Override
+        public Set&lt;String&gt; getOptionalFields() {
+<span class="fc" id="L788">            return BiblatexEntryTypes.ONLINE.getOptionalFields();</span>
+        }
+
+        @Override
+        public Set&lt;String&gt; getPrimaryOptionalFields() {
+<span class="nc" id="L793">            return BiblatexEntryTypes.ONLINE.getPrimaryOptionalFields();</span>
+        }
+    };
+
+<span class="fc" id="L797">    public static final BiblatexEntryType MASTERSTHESIS = new BiblatexEntryType() {</span>
+
+<span class="fc" id="L799">        private final Set&lt;String&gt; primaryOptionalFields = Collections</span>
+<span class="fc" id="L800">                .unmodifiableSet(new LinkedHashSet&lt;&gt;(Arrays.asList(FieldName.SUBTITLE, FieldName.TITLEADDON, FieldName.TYPE,</span>
+<span class="fc" id="L801">                        FieldName.CHAPTER, FieldName.PAGES, FieldName.PAGETOTAL, FieldName.DOI, FieldName.EPRINT,</span>
+<span class="fc" id="L802">                        FieldName.EPRINTCLASS, FieldName.EPRINTTYPE, FieldName.URL, FieldName.URLDATE)));</span>
+
+        {
+            // Treated as alias of &quot;THESIS&quot;, except FieldName.TYPE field is optional
+<span class="fc" id="L806">            addAllRequired(FieldName.AUTHOR, FieldName.TITLE, FieldName.INSTITUTION,</span>
+<span class="fc" id="L807">                    FieldName.orFields(FieldName.YEAR, FieldName.DATE));</span>
+<span class="fc" id="L808">            addAllOptional(FieldName.TYPE, FieldName.SUBTITLE, FieldName.TITLEADDON, FieldName.LANGUAGE, FieldName.NOTE,</span>
+<span class="fc" id="L809">                    FieldName.LOCATION, FieldName.MONTH, FieldName.ISBN, FieldName.CHAPTER, FieldName.PAGES,</span>
+<span class="fc" id="L810">                    FieldName.PAGETOTAL, FieldName.ADDENDUM, FieldName.PUBSTATE, FieldName.DOI, FieldName.EPRINT,</span>
+<span class="fc" id="L811">                    FieldName.EPRINTCLASS, FieldName.EPRINTTYPE, FieldName.URL, FieldName.URLDATE);</span>
+        }
+
+        @Override
+        public String getName() {
+<span class="fc" id="L816">            return &quot;MastersThesis&quot;;</span>
+        }
+
+        @Override
+        public Set&lt;String&gt; getPrimaryOptionalFields() {
+<span class="nc" id="L821">            return primaryOptionalFields;</span>
+        }
+    };
+
+<span class="fc" id="L825">    public static final BiblatexEntryType PHDTHESIS = new BiblatexEntryType() {</span>
+
+<span class="fc" id="L827">        private final Set&lt;String&gt; primaryOptionalFields = Collections</span>
+<span class="fc" id="L828">                .unmodifiableSet(new LinkedHashSet&lt;&gt;(Arrays.asList(FieldName.SUBTITLE, FieldName.TITLEADDON, FieldName.TYPE,</span>
+<span class="fc" id="L829">                        FieldName.CHAPTER, FieldName.PAGES, FieldName.PAGETOTAL, FieldName.DOI, FieldName.EPRINT,</span>
+<span class="fc" id="L830">                        FieldName.EPRINTCLASS, FieldName.EPRINTTYPE, FieldName.URL, FieldName.URLDATE)));</span>
+
+        {
+            // Treated as alias of &quot;THESIS&quot;, except FieldName.TYPE field is optional
+<span class="fc" id="L834">            addAllRequired(FieldName.AUTHOR, FieldName.TITLE, FieldName.INSTITUTION,</span>
+<span class="fc" id="L835">                    FieldName.orFields(FieldName.YEAR, FieldName.DATE));</span>
+<span class="fc" id="L836">            addAllOptional(FieldName.TYPE, FieldName.SUBTITLE, FieldName.TITLEADDON, FieldName.LANGUAGE, FieldName.NOTE,</span>
+<span class="fc" id="L837">                    FieldName.LOCATION, FieldName.MONTH, FieldName.ISBN, FieldName.CHAPTER, FieldName.PAGES,</span>
+<span class="fc" id="L838">                    FieldName.PAGETOTAL, FieldName.ADDENDUM, FieldName.PUBSTATE, FieldName.DOI, FieldName.EPRINT,</span>
+<span class="fc" id="L839">                    FieldName.EPRINTCLASS, FieldName.EPRINTTYPE, FieldName.URL, FieldName.URLDATE);</span>
+        }
+
+        @Override
+        public String getName() {
+<span class="fc" id="L844">            return &quot;PhdThesis&quot;;</span>
+        }
+
+        @Override
+        public Set&lt;String&gt; getPrimaryOptionalFields() {
+<span class="nc" id="L849">            return primaryOptionalFields;</span>
+        }
+    };
+
+<span class="fc" id="L853">    public static final BiblatexEntryType TECHREPORT = new BiblatexEntryType() {</span>
+
+<span class="fc" id="L855">        private final Set&lt;String&gt; primaryOptionalFields = Collections.unmodifiableSet(new LinkedHashSet&lt;&gt;(Arrays.asList(</span>
+<span class="fc" id="L856">                FieldName.SUBTITLE, FieldName.TITLEADDON, FieldName.TYPE, FieldName.NUMBER, FieldName.ISRN,</span>
+<span class="fc" id="L857">                FieldName.CHAPTER, FieldName.PAGES, FieldName.PAGETOTAL, FieldName.DOI, FieldName.EPRINT,</span>
+<span class="fc" id="L858">                FieldName.EPRINTCLASS, FieldName.EPRINTTYPE, FieldName.URL, FieldName.URLDATE)));</span>
+
+        {
+            // Treated as alias of &quot;REPORT&quot;, except FieldName.TYPE field is optional
+<span class="fc" id="L862">            addAllRequired(FieldName.AUTHOR, FieldName.TITLE, FieldName.INSTITUTION,</span>
+<span class="fc" id="L863">                    FieldName.orFields(FieldName.YEAR, FieldName.DATE));</span>
+<span class="fc" id="L864">            addAllOptional(FieldName.TYPE, FieldName.SUBTITLE, FieldName.TITLEADDON, FieldName.LANGUAGE,</span>
+<span class="fc" id="L865">                    FieldName.NUMBER, FieldName.VERSION, FieldName.NOTE, FieldName.LOCATION, FieldName.MONTH,</span>
+<span class="fc" id="L866">                    FieldName.ISRN, FieldName.CHAPTER, FieldName.PAGES, FieldName.PAGETOTAL, FieldName.ADDENDUM,</span>
+<span class="fc" id="L867">                    FieldName.PUBSTATE, FieldName.DOI, FieldName.EPRINT, FieldName.EPRINTCLASS, FieldName.EPRINTTYPE,</span>
+<span class="fc" id="L868">                    FieldName.URL, FieldName.URLDATE);</span>
+        }
+
+        @Override
+        public String getName() {
+<span class="fc" id="L873">            return &quot;TechReport&quot;;</span>
+        }
+
+        @Override
+        public Set&lt;String&gt; getPrimaryOptionalFields() {
+<span class="nc" id="L878">            return primaryOptionalFields;</span>
+        }
+    };
+
+<span class="fc" id="L882">    public static final BiblatexEntryType WWW = new BiblatexEntryType() {</span>
+
+        @Override
+        public String getName() {
+<span class="fc" id="L886">            return &quot;WWW&quot;;</span>
+        }
+
+        // Treated as alias of &quot;ONLINE&quot; according to Biblatex 1.0:
+        @Override
+        public Set&lt;String&gt; getRequiredFields() {
+<span class="fc" id="L892">            return BiblatexEntryTypes.ONLINE.getRequiredFields();</span>
+        }
+
+        @Override
+        public Set&lt;String&gt; getOptionalFields() {
+<span class="fc" id="L897">            return BiblatexEntryTypes.ONLINE.getOptionalFields();</span>
+        }
+
+        @Override
+        public Set&lt;String&gt; getPrimaryOptionalFields() {
+<span class="nc" id="L902">            return BiblatexEntryTypes.ONLINE.getPrimaryOptionalFields();</span>
+        }
+    };
+
+    /**
+     * This type is used for IEEEtran.bst to control various
+     * be repeated or not. Not a very elegant solution, but it works...
+     */
+<span class="fc" id="L910">    public static final BiblatexEntryType IEEETRANBSTCTL = new BiblatexEntryType() {</span>
+
+        {
+<span class="fc" id="L913">            addAllOptional(FieldName.CTLUSE_ARTICLE_NUMBER, FieldName.CTLUSE_PAPER, FieldName.CTLUSE_FORCED_ETAL,</span>
+<span class="fc" id="L914">                    FieldName.CTLUSE_URL, FieldName.CTLMAX_NAMES_FORCED_ETAL, FieldName.CTLNAMES_SHOW_ETAL,</span>
+<span class="fc" id="L915">                    FieldName.CTLUSE_ALT_SPACING, FieldName.CTLALT_STRETCH_FACTOR, FieldName.CTLDASH_REPEATED_NAMES,</span>
+<span class="fc" id="L916">                    FieldName.CTLNAME_FORMAT_STRING, FieldName.CTLNAME_LATEX_CMD, FieldName.CTLNAME_URL_PREFIX);</span>
+        }
+
+        @Override
+        public String getName() {
+<span class="fc" id="L921">            return &quot;IEEEtranBSTCTL&quot;;</span>
+        }
+    };
+
+<span class="fc" id="L925">    public static final List&lt;EntryType&gt; ALL = Arrays.asList(ARTICLE, BOOK, MVBOOK, INBOOK, BOOKINBOOK, SUPPBOOK,</span>
+<span class="fc" id="L926">            BOOKLET, COLLECTION, MVCOLLECTION, INCOLLECTION, SUPPCOLLECTION, MANUAL, MISC, ONLINE, PATENT, PERIODICAL,</span>
+<span class="fc" id="L927">            SUPPPERIODICAL, PROCEEDINGS, MVPROCEEDINGS, INPROCEEDINGS, REFERENCE, MVREFERENCE, INREFERENCE, REPORT, SET,</span>
+<span class="fc" id="L928">            THESIS, UNPUBLISHED, CONFERENCE, ELECTRONIC, MASTERSTHESIS, PHDTHESIS, TECHREPORT, WWW, IEEETRANBSTCTL);</span>
+
+
+<span class="nc" id="L931">    private BiblatexEntryTypes() {</span>
+<span class="nc" id="L932">    }</span>
+
+    public static Optional&lt;EntryType&gt; getType(String name) {
+<span class="fc" id="L935">        return ALL.stream().filter(e -&gt; e.getName().equalsIgnoreCase(name)).findFirst();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

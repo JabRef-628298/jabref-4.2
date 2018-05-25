@@ -1,0 +1,1458 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>ImportInspectionDialog.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.importer</a> &gt; <span class="el_source">ImportInspectionDialog.java</span></div><h1>ImportInspectionDialog.java</h1><pre class="source lang-java linenums"><span class="nc" id="L1">package org.jabref.gui.importer;</span>
+
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+
+import javax.swing.AbstractAction;
+import javax.swing.Action;
+import javax.swing.ActionMap;
+import javax.swing.BorderFactory;
+import javax.swing.InputMap;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JComponent;
+import javax.swing.JDialog;
+import javax.swing.JLabel;
+import javax.swing.JMenu;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+import javax.swing.JProgressBar;
+import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
+import javax.swing.JTable;
+import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
+import javax.swing.table.TableCellRenderer;
+import javax.swing.table.TableColumnModel;
+import javax.swing.table.TableModel;
+
+import javafx.embed.swing.JFXPanel;
+import javafx.scene.Scene;
+
+import org.jabref.Globals;
+import org.jabref.JabRefExecutorService;
+import org.jabref.gui.BasePanel;
+import org.jabref.gui.DuplicateResolverDialog;
+import org.jabref.gui.DuplicateResolverDialog.DuplicateResolverResult;
+import org.jabref.gui.EntryMarker;
+import org.jabref.gui.GUIGlobals;
+import org.jabref.gui.IconTheme;
+import org.jabref.gui.JabRefDialog;
+import org.jabref.gui.JabRefFrame;
+import org.jabref.gui.PreviewPanel;
+import org.jabref.gui.customjfx.CustomJFXPanel;
+import org.jabref.gui.desktop.JabRefDesktop;
+import org.jabref.gui.externalfiles.AutoSetLinks;
+import org.jabref.gui.externalfiles.DownloadExternalFile;
+import org.jabref.gui.externalfiletype.ExternalFileMenuItem;
+import org.jabref.gui.filelist.FileListEntry;
+import org.jabref.gui.filelist.FileListEntryEditor;
+import org.jabref.gui.filelist.FileListTableModel;
+import org.jabref.gui.groups.GroupTreeNodeViewModel;
+import org.jabref.gui.groups.UndoableChangeEntriesOfGroup;
+import org.jabref.gui.help.HelpAction;
+import org.jabref.gui.keyboard.KeyBinding;
+import org.jabref.gui.renderer.GeneralRenderer;
+import org.jabref.gui.undo.NamedCompound;
+import org.jabref.gui.undo.UndoableInsertEntry;
+import org.jabref.gui.undo.UndoableRemoveEntry;
+import org.jabref.gui.util.comparator.IconComparator;
+import org.jabref.gui.util.component.CheckBoxMessage;
+import org.jabref.logic.bibtex.DuplicateCheck;
+import org.jabref.logic.bibtex.comparator.FieldComparator;
+import org.jabref.logic.bibtexkeypattern.BibtexKeyGenerator;
+import org.jabref.logic.help.HelpFile;
+import org.jabref.logic.importer.ImportInspector;
+import org.jabref.logic.importer.OutputPrinter;
+import org.jabref.logic.l10n.Localization;
+import org.jabref.logic.util.UpdateField;
+import org.jabref.model.Defaults;
+import org.jabref.model.FieldChange;
+import org.jabref.model.database.BibDatabase;
+import org.jabref.model.database.BibDatabaseContext;
+import org.jabref.model.entry.AuthorList;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.FieldName;
+import org.jabref.model.entry.FieldProperty;
+import org.jabref.model.entry.IdGenerator;
+import org.jabref.model.entry.InternalBibtexFields;
+import org.jabref.model.entry.LinkedFile;
+import org.jabref.model.groups.AllEntriesGroup;
+import org.jabref.model.groups.GroupEntryChanger;
+import org.jabref.model.groups.GroupTreeNode;
+import org.jabref.model.metadata.MetaData;
+import org.jabref.model.strings.StringUtil;
+import org.jabref.preferences.JabRefPreferences;
+
+import ca.odell.glazedlists.BasicEventList;
+import ca.odell.glazedlists.EventList;
+import ca.odell.glazedlists.SortedList;
+import ca.odell.glazedlists.event.ListEvent;
+import ca.odell.glazedlists.event.ListEventListener;
+import ca.odell.glazedlists.gui.AbstractTableComparatorChooser;
+import ca.odell.glazedlists.gui.TableFormat;
+import ca.odell.glazedlists.swing.DefaultEventSelectionModel;
+import ca.odell.glazedlists.swing.DefaultEventTableModel;
+import ca.odell.glazedlists.swing.GlazedListsSwing;
+import ca.odell.glazedlists.swing.TableComparatorChooser;
+import com.jgoodies.forms.builder.ButtonBarBuilder;
+import com.jgoodies.forms.builder.ButtonStackBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * Dialog to allow the selection of entries as part of an Import.
+ * &lt;p&gt;
+ * The usual way to use this class is to pass it to an Importer which will do
+ * the following:
+ * &lt;ul&gt;
+ * &lt;li&gt;Register itself as a callback to get notified if the user wants to stop
+ * the import.&lt;/li&gt;
+ * &lt;li&gt;Call setVisible(true) to display the dialog&lt;/li&gt;
+ * &lt;li&gt;For each entry that has been found call addEntry(...)&lt;/li&gt;
+ * &lt;li&gt;Call entryListComplete() after all entries have been fetched&lt;/li&gt;
+ * &lt;/ul&gt;
+ * &lt;p&gt;
+ * If the importer wants to cancel the import, it should call the dispose()
+ * method.
+ * &lt;p&gt;
+ * If the importer receives the stopFetching-call, it should stop fetching as
+ * soon as possible (it is not really critical, but good style to not contribute
+ * any more results via addEntry, call entryListComplete() or dispose(), after
+ * receiving this call).
+ */
+
+public class ImportInspectionDialog extends JabRefDialog implements ImportInspector, OutputPrinter {
+
+<span class="nc" id="L148">    private static final Logger LOGGER = LoggerFactory.getLogger(ImportInspectionDialog.class);</span>
+<span class="nc" id="L149">    private static final List&lt;String&gt; INSPECTION_FIELDS = Arrays.asList(FieldName.AUTHOR, FieldName.TITLE, FieldName.YEAR, BibEntry.KEY_FIELD);</span>
+    private static final int DUPL_COL = 1;
+    private static final int FILE_COL = 2;
+    private static final int URL_COL = 3;
+<span class="nc" id="L153">    private static final int PAD = 4;</span>
+    private final JabRefFrame frame;
+    private final BibDatabaseContext bibDatabaseContext;
+<span class="nc" id="L156">    private final JSplitPane contentPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);</span>
+    private final JTable glTable;
+    private final TableComparatorChooser&lt;BibEntry&gt; comparatorChooser;
+    private final DefaultEventSelectionModel&lt;BibEntry&gt; selectionModel;
+<span class="nc" id="L160">    private final JProgressBar progressBar = new JProgressBar(SwingConstants.HORIZONTAL);</span>
+<span class="nc" id="L161">    private final JButton ok = new JButton(Localization.lang(&quot;OK&quot;));</span>
+<span class="nc" id="L162">    private final JButton generate = new JButton(Localization.lang(&quot;Generate now&quot;));</span>
+<span class="nc" id="L163">    private final EventList&lt;BibEntry&gt; entries = new BasicEventList&lt;&gt;();</span>
+    private final SortedList&lt;BibEntry&gt; sortedList;
+    /**
+     * Duplicate resolving may require deletion of old entries.
+     */
+<span class="nc" id="L168">    private final List&lt;BibEntry&gt; entriesToDelete = new ArrayList&lt;&gt;();</span>
+    private final String undoName;
+<span class="nc" id="L170">    private final List&lt;CallBack&gt; callBacks = new ArrayList&lt;&gt;();</span>
+    private final boolean newDatabase;
+<span class="nc" id="L172">    private final JPopupMenu popup = new JPopupMenu();</span>
+<span class="nc" id="L173">    private final JButton deselectAllDuplicates = new JButton(Localization.lang(&quot;Deselect all duplicates&quot;));</span>
+<span class="nc" id="L174">    private final JButton stop = new JButton(Localization.lang(&quot;Stop&quot;));</span>
+    private final PreviewPanel preview;
+<span class="nc" id="L176">    private final Map&lt;BibEntry, Set&lt;GroupTreeNode&gt;&gt; groupAdditions = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L177">    private final JCheckBox autoGenerate = new JCheckBox(Localization.lang(&quot;Generate keys&quot;),</span>
+<span class="nc" id="L178">            Globals.prefs.getBoolean(JabRefPreferences.GENERATE_KEYS_AFTER_INSPECTION));</span>
+<span class="nc" id="L179">    private final JLabel duplLabel = new JLabel(IconTheme.JabRefIcon.DUPLICATE.getSmallIcon());</span>
+<span class="nc" id="L180">    private final JLabel fileLabel = new JLabel(IconTheme.JabRefIcon.FILE.getSmallIcon());</span>
+<span class="nc" id="L181">    private final JLabel urlLabel = new JLabel(IconTheme.JabRefIcon.WWW.getSmallIcon());</span>
+    private BasePanel panel;
+    private boolean generatedKeys; // Set to true after keys have been generated.
+<span class="nc" id="L184">    private boolean defaultSelected = true;</span>
+
+
+    /**
+     * Creates a dialog that displays the given list of fields in the table. The
+     * dialog allows another process to add entries dynamically while the dialog
+     * is shown.
+     *
+     * @param frame
+     * @param panel
+     */
+    public ImportInspectionDialog(JabRefFrame frame, BasePanel panel, String undoName, boolean newDatabase) {
+<span class="nc" id="L196">        super(frame, ImportInspectionDialog.class);</span>
+<span class="nc" id="L197">        this.frame = frame;</span>
+<span class="nc" id="L198">        this.panel = panel;</span>
+<span class="nc bnc" id="L199" title="All 2 branches missed.">        this.bibDatabaseContext = (panel == null) ? null : panel.getBibDatabaseContext();</span>
+<span class="nc" id="L200">        this.undoName = undoName;</span>
+<span class="nc" id="L201">        this.newDatabase = newDatabase;</span>
+<span class="nc" id="L202">        setIconImages(IconTheme.getLogoSet());</span>
+<span class="nc" id="L203">        preview = new PreviewPanel(panel, bibDatabaseContext);</span>
+
+<span class="nc" id="L205">        duplLabel.setToolTipText(Localization.lang(&quot;Possible duplicate of existing entry. Click to resolve.&quot;));</span>
+
+<span class="nc" id="L207">        sortedList = new SortedList&lt;&gt;(entries);</span>
+<span class="nc" id="L208">        DefaultEventTableModel&lt;BibEntry&gt; tableModelGl = (DefaultEventTableModel&lt;BibEntry&gt;) GlazedListsSwing</span>
+<span class="nc" id="L209">                .eventTableModelWithThreadProxyList(sortedList, new EntryTableFormat());</span>
+<span class="nc" id="L210">        glTable = new EntryTable(tableModelGl);</span>
+<span class="nc" id="L211">        GeneralRenderer renderer = new GeneralRenderer(Color.white);</span>
+<span class="nc" id="L212">        glTable.setDefaultRenderer(JLabel.class, renderer);</span>
+<span class="nc" id="L213">        glTable.setDefaultRenderer(String.class, renderer);</span>
+<span class="nc" id="L214">        glTable.getInputMap().put(Globals.getKeyPrefs().getKey(KeyBinding.DELETE_ENTRY), &quot;delete&quot;);</span>
+<span class="nc" id="L215">        DeleteListener deleteListener = new DeleteListener();</span>
+<span class="nc" id="L216">        glTable.getActionMap().put(&quot;delete&quot;, deleteListener);</span>
+
+<span class="nc" id="L218">        selectionModel = (DefaultEventSelectionModel&lt;BibEntry&gt;) GlazedListsSwing</span>
+<span class="nc" id="L219">                .eventSelectionModelWithThreadProxyList(sortedList);</span>
+<span class="nc" id="L220">        glTable.setSelectionModel(selectionModel);</span>
+<span class="nc" id="L221">        selectionModel.getSelected().addListEventListener(new EntrySelectionListener());</span>
+<span class="nc" id="L222">        comparatorChooser = TableComparatorChooser.install(glTable, sortedList,</span>
+<span class="nc" id="L223">                AbstractTableComparatorChooser.MULTIPLE_COLUMN_KEYBOARD);</span>
+<span class="nc" id="L224">        setupComparatorChooser();</span>
+<span class="nc" id="L225">        glTable.addMouseListener(new TableClickListener());</span>
+
+<span class="nc" id="L227">        setWidths();</span>
+
+<span class="nc" id="L229">        getContentPane().setLayout(new BorderLayout());</span>
+<span class="nc" id="L230">        progressBar.setIndeterminate(true);</span>
+<span class="nc" id="L231">        JPanel centerPan = new JPanel();</span>
+<span class="nc" id="L232">        centerPan.setLayout(new BorderLayout());</span>
+
+<span class="nc" id="L234">        contentPane.setTopComponent(new JScrollPane(glTable));</span>
+<span class="nc" id="L235">        JFXPanel container = CustomJFXPanel.wrap(new Scene(preview));</span>
+<span class="nc" id="L236">        contentPane.setBottomComponent(container);</span>
+
+<span class="nc" id="L238">        centerPan.add(contentPane, BorderLayout.CENTER);</span>
+<span class="nc" id="L239">        centerPan.add(progressBar, BorderLayout.SOUTH);</span>
+
+<span class="nc" id="L241">        popup.add(deleteListener);</span>
+<span class="nc" id="L242">        popup.addSeparator();</span>
+<span class="nc bnc" id="L243" title="All 6 branches missed.">        if (!newDatabase &amp;&amp; (bibDatabaseContext != null) &amp;&amp; bibDatabaseContext.getMetaData().getGroups().isPresent()) {</span>
+<span class="nc" id="L244">            GroupTreeNode node = bibDatabaseContext.getMetaData().getGroups().get();</span>
+<span class="nc" id="L245">            JMenu groupsAdd = new JMenu(Localization.lang(&quot;Add to group&quot;));</span>
+<span class="nc" id="L246">            groupsAdd.setEnabled(false); // Will get enabled if there are groups that can be added to.</span>
+<span class="nc" id="L247">            insertNodes(groupsAdd, node);</span>
+<span class="nc" id="L248">            popup.add(groupsAdd);</span>
+        }
+
+        // Add &quot;Attach file&quot; menu choices to right click menu:
+<span class="nc" id="L252">        popup.add(new LinkLocalFile());</span>
+<span class="nc" id="L253">        popup.add(new DownloadFile());</span>
+<span class="nc" id="L254">        popup.add(new InternalAutoSetLinks());</span>
+<span class="nc" id="L255">        popup.add(new AttachUrl());</span>
+<span class="nc" id="L256">        getContentPane().add(centerPan, BorderLayout.CENTER);</span>
+
+<span class="nc" id="L258">        ButtonBarBuilder bb = new ButtonBarBuilder();</span>
+<span class="nc" id="L259">        bb.addGlue();</span>
+<span class="nc" id="L260">        bb.addButton(ok);</span>
+<span class="nc" id="L261">        bb.addButton(stop);</span>
+<span class="nc" id="L262">        JButton cancel = new JButton(Localization.lang(&quot;Cancel&quot;));</span>
+<span class="nc" id="L263">        bb.addButton(cancel);</span>
+<span class="nc" id="L264">        bb.addRelatedGap();</span>
+<span class="nc" id="L265">        JButton help = new HelpAction(HelpFile.IMPORT_INSPECTION).getHelpButton();</span>
+<span class="nc" id="L266">        bb.addButton(help);</span>
+<span class="nc" id="L267">        bb.addGlue();</span>
+<span class="nc" id="L268">        bb.getPanel().setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));</span>
+
+<span class="nc" id="L270">        ButtonStackBuilder builder = new ButtonStackBuilder();</span>
+<span class="nc" id="L271">        JButton selectAll = new JButton(Localization.lang(&quot;Select all&quot;));</span>
+<span class="nc" id="L272">        builder.addButton(selectAll);</span>
+<span class="nc" id="L273">        JButton deselectAll = new JButton(Localization.lang(&quot;Deselect all&quot;));</span>
+<span class="nc" id="L274">        builder.addButton(deselectAll);</span>
+<span class="nc" id="L275">        builder.addButton(deselectAllDuplicates);</span>
+<span class="nc" id="L276">        builder.addRelatedGap();</span>
+<span class="nc" id="L277">        JButton delete = new JButton(Localization.lang(&quot;Delete&quot;));</span>
+<span class="nc" id="L278">        builder.addButton(delete);</span>
+<span class="nc" id="L279">        builder.addRelatedGap();</span>
+<span class="nc" id="L280">        builder.addFixed(autoGenerate);</span>
+<span class="nc" id="L281">        builder.addButton(generate);</span>
+<span class="nc" id="L282">        builder.getPanel().setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));</span>
+<span class="nc" id="L283">        centerPan.add(builder.getPanel(), BorderLayout.WEST);</span>
+
+<span class="nc" id="L285">        ok.setEnabled(false);</span>
+<span class="nc" id="L286">        generate.setEnabled(false);</span>
+<span class="nc" id="L287">        ok.addActionListener(new OkListener());</span>
+<span class="nc" id="L288">        cancel.addActionListener(e -&gt; {</span>
+<span class="nc" id="L289">            signalStopFetching();</span>
+<span class="nc" id="L290">            dispose();</span>
+<span class="nc" id="L291">            frame.output(Localization.lang(&quot;Import canceled by user&quot;));</span>
+<span class="nc" id="L292">        });</span>
+<span class="nc" id="L293">        generate.addActionListener(e -&gt; {</span>
+<span class="nc" id="L294">            generate.setEnabled(false);</span>
+<span class="nc" id="L295">            generatedKeys = true; // To prevent the button from getting</span>
+            // enabled again.
+<span class="nc" id="L297">            generateKeys(); // Generate the keys.</span>
+<span class="nc" id="L298">        });</span>
+<span class="nc" id="L299">        stop.addActionListener(e -&gt; {</span>
+<span class="nc" id="L300">            signalStopFetching();</span>
+<span class="nc" id="L301">            entryListComplete();</span>
+<span class="nc" id="L302">        });</span>
+<span class="nc" id="L303">        selectAll.addActionListener(new SelectionButton(true));</span>
+<span class="nc" id="L304">        deselectAll.addActionListener(new SelectionButton(false));</span>
+<span class="nc" id="L305">        deselectAllDuplicates.addActionListener(e -&gt; {</span>
+<span class="nc bnc" id="L306" title="All 2 branches missed.">            for (int i = 0; i &lt; glTable.getRowCount(); i++) {</span>
+<span class="nc bnc" id="L307" title="All 2 branches missed.">                if (glTable.getValueAt(i, DUPL_COL) != null) {</span>
+<span class="nc" id="L308">                    glTable.setValueAt(false, i, 0);</span>
+                }
+            }
+<span class="nc" id="L311">            glTable.repaint();</span>
+<span class="nc" id="L312">        });</span>
+<span class="nc" id="L313">        deselectAllDuplicates.setEnabled(false);</span>
+<span class="nc" id="L314">        delete.addActionListener(deleteListener);</span>
+<span class="nc" id="L315">        getContentPane().add(bb.getPanel(), BorderLayout.SOUTH);</span>
+
+        // Remember and default to last size:
+<span class="nc" id="L318">        setSize(new Dimension(Globals.prefs.getInt(JabRefPreferences.IMPORT_INSPECTION_DIALOG_WIDTH),</span>
+<span class="nc" id="L319">                Globals.prefs.getInt(JabRefPreferences.IMPORT_INSPECTION_DIALOG_HEIGHT)));</span>
+<span class="nc" id="L320">        addWindowListener(new WindowAdapter() {</span>
+
+            @Override
+            public void windowOpened(WindowEvent e) {
+<span class="nc" id="L324">                contentPane.setDividerLocation(0.5f);</span>
+<span class="nc" id="L325">            }</span>
+
+            @Override
+            public void windowClosed(WindowEvent e) {
+<span class="nc" id="L329">                Globals.prefs.putInt(JabRefPreferences.IMPORT_INSPECTION_DIALOG_WIDTH, getSize().width);</span>
+<span class="nc" id="L330">                Globals.prefs.putInt(JabRefPreferences.IMPORT_INSPECTION_DIALOG_HEIGHT, getSize().height);</span>
+<span class="nc" id="L331">            }</span>
+        });
+        // Key bindings:
+<span class="nc" id="L334">        Action closeAction = new AbstractAction() {</span>
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L338">                dispose();</span>
+<span class="nc" id="L339">            }</span>
+        };
+<span class="nc" id="L341">        ActionMap am = contentPane.getActionMap();</span>
+<span class="nc" id="L342">        InputMap im = contentPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);</span>
+<span class="nc" id="L343">        im.put(Globals.getKeyPrefs().getKey(KeyBinding.CLOSE_DIALOG), &quot;close&quot;);</span>
+<span class="nc" id="L344">        am.put(&quot;close&quot;, closeAction);</span>
+
+<span class="nc" id="L346">    }</span>
+
+    /* (non-Javadoc)
+     * @see package org.jabref.logic.importer.ImportInspector#setProgress(int, int)
+     */
+    @Override
+    public void setProgress(int current, int max) {
+<span class="nc" id="L353">        SwingUtilities.invokeLater(() -&gt; {</span>
+<span class="nc" id="L354">            progressBar.setIndeterminate(false);</span>
+<span class="nc" id="L355">            progressBar.setMinimum(0);</span>
+<span class="nc" id="L356">            progressBar.setMaximum(max);</span>
+<span class="nc" id="L357">            progressBar.setValue(current);</span>
+<span class="nc" id="L358">        });</span>
+<span class="nc" id="L359">    }</span>
+
+    /* (non-Javadoc)
+     * @see package org.jabref.logic.importer.ImportInspector#addEntry(org.jabref.model.entry.BibEntry)
+     */
+    @Override
+    public void addEntry(BibEntry entry) {
+<span class="nc" id="L366">        List&lt;BibEntry&gt; list = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L367">        list.add(entry);</span>
+<span class="nc" id="L368">        addEntries(list);</span>
+<span class="nc" id="L369">    }</span>
+
+    public void addEntries(Collection&lt;BibEntry&gt; entriesToAdd) {
+
+<span class="nc bnc" id="L373" title="All 2 branches missed.">        for (BibEntry entry : entriesToAdd) {</span>
+            // We exploit the entry's search status for indicating &quot;Keep&quot;
+            // status:
+<span class="nc" id="L376">            entry.setSearchHit(defaultSelected);</span>
+            // We exploit the entry's group status for indicating duplicate
+            // status.
+            // Checking duplicates means both checking against the background
+            // database (if
+            // applicable) and against entries already in the table.
+<span class="nc bnc" id="L382" title="All 2 branches missed.">            if ((panel != null) &amp;&amp; (DuplicateCheck</span>
+<span class="nc bnc" id="L383" title="All 2 branches missed.">                    .containsDuplicate(panel.getDatabase(), entry, panel.getBibDatabaseContext().getMode()).isPresent()</span>
+<span class="nc bnc" id="L384" title="All 2 branches missed.">                    || (internalDuplicate(this.entries, entry).isPresent()))) {</span>
+<span class="nc" id="L385">                entry.setGroupHit(true);</span>
+<span class="nc" id="L386">                SwingUtilities.invokeLater(() -&gt; deselectAllDuplicates.setEnabled(true));</span>
+            }
+<span class="nc" id="L388">            this.entries.getReadWriteLock().writeLock().lock();</span>
+            try {
+<span class="nc" id="L390">                this.entries.add(entry);</span>
+<span class="nc" id="L391">            } finally {</span>
+<span class="nc" id="L392">                this.entries.getReadWriteLock().writeLock().unlock();</span>
+<span class="nc" id="L393">            }</span>
+        }
+<span class="nc" id="L395">    }</span>
+
+    /**
+     * Checks if there are duplicates to the given entry in the Collection. Does
+     * not report the entry as duplicate of itself if it is in the Collection.
+     *
+     * @param entriesDupe A Collection of BibEntry instances.
+     * @param entry       The entry to search for duplicates of.
+     * @return A possible duplicate, if any, or null if none were found.
+     */
+    private Optional&lt;BibEntry&gt; internalDuplicate(Collection&lt;BibEntry&gt; entriesDupe, BibEntry entry) {
+<span class="nc bnc" id="L406" title="All 2 branches missed.">        for (BibEntry othEntry : entriesDupe) {</span>
+<span class="nc bnc" id="L407" title="All 2 branches missed.">            if (othEntry.equals(entry)) {</span>
+<span class="nc" id="L408">                continue; // Don't compare the entry to itself</span>
+            }
+<span class="nc bnc" id="L410" title="All 2 branches missed.">            if (DuplicateCheck.isDuplicate(entry, othEntry, panel.getBibDatabaseContext().getMode())) {</span>
+<span class="nc" id="L411">                return Optional.of(othEntry);</span>
+            }
+        }
+<span class="nc" id="L414">        return Optional.empty();</span>
+    }
+
+    public void entryListComplete() {
+<span class="nc" id="L418">        SwingUtilities.invokeLater(() -&gt; {</span>
+<span class="nc" id="L419">            progressBar.setIndeterminate(false);</span>
+<span class="nc" id="L420">            progressBar.setVisible(false);</span>
+<span class="nc" id="L421">            ok.setEnabled(true);</span>
+<span class="nc bnc" id="L422" title="All 2 branches missed.">            if (!generatedKeys) {</span>
+<span class="nc" id="L423">                generate.setEnabled(true);</span>
+            }
+<span class="nc" id="L425">            stop.setEnabled(false);</span>
+
+            //This is for selecting and displaying the first entry in the glTable
+<span class="nc" id="L428">            this.glTable.repaint();</span>
+<span class="nc bnc" id="L429" title="All 4 branches missed.">            if ((this.glTable.getSelectedRowCount() == 0) &amp;&amp; (this.glTable.getRowCount() &gt; 0)) {</span>
+<span class="nc" id="L430">                this.glTable.setRowSelectionInterval(0, 0); //Select first row in the table</span>
+            }
+<span class="nc" id="L432">        });</span>
+<span class="nc" id="L433">    }</span>
+
+    /**
+     * Generate key for an entry.
+     */
+    private void generateKeyForEntry(BibEntry entry) {
+
+<span class="nc" id="L440">        entries.getReadWriteLock().writeLock().lock();</span>
+        try {
+            BibDatabase database;
+            MetaData localMetaData;
+
+            // Relate to existing database, if any:
+<span class="nc bnc" id="L446" title="All 2 branches missed.">            if (panel == null) {</span>
+<span class="nc" id="L447">                database = new BibDatabase();</span>
+<span class="nc" id="L448">                localMetaData = new MetaData();</span>
+<span class="nc" id="L449">            } else {</span>
+<span class="nc" id="L450">                database = panel.getDatabase();</span>
+<span class="nc" id="L451">                localMetaData = panel.getBibDatabaseContext().getMetaData();</span>
+            }
+
+<span class="nc" id="L454">            entry.setId(IdGenerator.next());</span>
+            // Add the entry to the database we are working with:
+<span class="nc" id="L456">            database.insertEntry(entry);</span>
+
+            // Generate a unique key:
+<span class="nc" id="L459">            new BibtexKeyGenerator(localMetaData.getCiteKeyPattern(Globals.prefs.getBibtexKeyPatternPreferences().getKeyPattern()),</span>
+<span class="nc" id="L460">                    database, Globals.prefs.getBibtexKeyPatternPreferences()).generateAndSetKey(entry);</span>
+            // Remove the entry from the database again, since we only added it in
+            // order to
+            // make sure the key was unique:
+<span class="nc" id="L464">            database.removeEntry(entry);</span>
+<span class="nc" id="L465">        } finally {</span>
+<span class="nc" id="L466">            entries.getReadWriteLock().writeLock().unlock();</span>
+<span class="nc" id="L467">        }</span>
+<span class="nc" id="L468">        glTable.repaint();</span>
+<span class="nc" id="L469">    }</span>
+
+    /**
+     * Generate keys for all entries. All keys will be unique with respect to
+     * one another, and, if they are destined for an existing database, with
+     * respect to existing keys in the database.
+     */
+    private void generateKeys() {
+<span class="nc" id="L477">        entries.getReadWriteLock().writeLock().lock();</span>
+        try {
+
+            BibDatabase database;
+            MetaData localMetaData;
+
+            // Relate to existing database, if any:
+<span class="nc bnc" id="L484" title="All 2 branches missed.">            if (panel == null) {</span>
+<span class="nc" id="L485">                database = new BibDatabase();</span>
+<span class="nc" id="L486">                localMetaData = new MetaData();</span>
+<span class="nc" id="L487">            } else {</span>
+<span class="nc" id="L488">                database = panel.getDatabase();</span>
+<span class="nc" id="L489">                localMetaData = panel.getBibDatabaseContext().getMetaData();</span>
+            }
+
+<span class="nc" id="L492">            List&lt;Optional&lt;String&gt;&gt; keys = new ArrayList&lt;&gt;(entries.size());</span>
+            // Iterate over the entries, add them to the database we are working
+            // with,
+            // and generate unique keys:
+<span class="nc bnc" id="L496" title="All 2 branches missed.">            for (BibEntry entry : entries) {</span>
+
+<span class="nc" id="L498">                entry.setId(IdGenerator.next());</span>
+<span class="nc" id="L499">                database.insertEntry(entry);</span>
+
+<span class="nc" id="L501">                new BibtexKeyGenerator(localMetaData.getCiteKeyPattern(Globals.prefs.getBibtexKeyPatternPreferences().getKeyPattern()),</span>
+<span class="nc" id="L502">                        database, Globals.prefs.getBibtexKeyPatternPreferences()).generateAndSetKey(entry);</span>
+                // Add the generated key to our list:   -- TODO: Why??
+<span class="nc" id="L504">                keys.add(entry.getCiteKeyOptional());</span>
+            }
+
+<span class="nc" id="L507">            preview.update();</span>
+            // Remove the entries from the database again, since they are not
+            // supposed to
+            // added yet. They only needed to be in it while we generated the keys,
+            // to keep
+            // control over key uniqueness.
+<span class="nc bnc" id="L513" title="All 2 branches missed.">            for (BibEntry entry : entries) {</span>
+<span class="nc" id="L514">                database.removeEntry(entry);</span>
+            }
+<span class="nc" id="L516">        } finally {</span>
+<span class="nc" id="L517">            entries.getReadWriteLock().writeLock().unlock();</span>
+<span class="nc" id="L518">        }</span>
+
+<span class="nc" id="L520">        glTable.repaint();</span>
+<span class="nc" id="L521">    }</span>
+
+    private void insertNodes(JMenu menu, GroupTreeNode node) {
+<span class="nc" id="L524">        final AbstractAction action = getAction(node);</span>
+
+<span class="nc bnc" id="L526" title="All 2 branches missed.">        if (node.getNumberOfChildren() == 0) {</span>
+<span class="nc" id="L527">            menu.add(action);</span>
+<span class="nc bnc" id="L528" title="All 2 branches missed.">            if (action.isEnabled()) {</span>
+<span class="nc" id="L529">                menu.setEnabled(true);</span>
+            }
+<span class="nc" id="L531">            return;</span>
+        }
+
+        JMenu submenu;
+<span class="nc bnc" id="L535" title="All 2 branches missed.">        if (node.getGroup() instanceof AllEntriesGroup) {</span>
+<span class="nc bnc" id="L536" title="All 2 branches missed.">            for (GroupTreeNode child : node.getChildren()) {</span>
+<span class="nc" id="L537">                insertNodes(menu, child);</span>
+            }
+<span class="nc" id="L539">        } else {</span>
+<span class="nc" id="L540">            submenu = new JMenu('[' + node.getName() + ']');</span>
+            // setEnabled(true) is done above/below if at least one menu
+            // entry (item or submenu) is enabled
+<span class="nc" id="L543">            submenu.setEnabled(action.isEnabled());</span>
+<span class="nc" id="L544">            submenu.add(action);</span>
+<span class="nc" id="L545">            submenu.add(new JPopupMenu.Separator());</span>
+<span class="nc bnc" id="L546" title="All 2 branches missed.">            for (GroupTreeNode child : node.getChildren()) {</span>
+<span class="nc" id="L547">                insertNodes(submenu, child);</span>
+            }
+<span class="nc" id="L549">            menu.add(submenu);</span>
+<span class="nc bnc" id="L550" title="All 2 branches missed.">            if (submenu.isEnabled()) {</span>
+<span class="nc" id="L551">                menu.setEnabled(true);</span>
+            }
+        }
+<span class="nc" id="L554">    }</span>
+
+    private AbstractAction getAction(GroupTreeNode node) {
+<span class="nc" id="L557">        AbstractAction action = new AddToGroupAction(node);</span>
+<span class="nc" id="L558">        action.setEnabled(node.getGroup() instanceof GroupEntryChanger);</span>
+<span class="nc" id="L559">        return action;</span>
+    }
+
+    public void addCallBack(CallBack cb) {
+<span class="nc" id="L563">        callBacks.add(cb);</span>
+<span class="nc" id="L564">    }</span>
+
+    private void signalStopFetching() {
+<span class="nc" id="L567">        callBacks.forEach(CallBack::stopFetching);</span>
+<span class="nc" id="L568">    }</span>
+
+    private void setWidths() {
+<span class="nc" id="L571">        TableColumnModel cm = glTable.getColumnModel();</span>
+<span class="nc" id="L572">        cm.getColumn(0).setPreferredWidth(55);</span>
+<span class="nc" id="L573">        cm.getColumn(0).setMinWidth(55);</span>
+<span class="nc" id="L574">        cm.getColumn(0).setMaxWidth(55);</span>
+<span class="nc bnc" id="L575" title="All 2 branches missed.">        for (int i = 1; i &lt; PAD; i++) {</span>
+            // Lock the width of icon columns.
+<span class="nc" id="L577">            cm.getColumn(i).setPreferredWidth(GUIGlobals.WIDTH_ICON_COL);</span>
+<span class="nc" id="L578">            cm.getColumn(i).setMinWidth(GUIGlobals.WIDTH_ICON_COL);</span>
+<span class="nc" id="L579">            cm.getColumn(i).setMaxWidth(GUIGlobals.WIDTH_ICON_COL);</span>
+        }
+
+<span class="nc bnc" id="L582" title="All 2 branches missed.">        for (int i = 0; i &lt; INSPECTION_FIELDS.size(); i++) {</span>
+<span class="nc" id="L583">            int width = InternalBibtexFields.getFieldLength(INSPECTION_FIELDS.get(i));</span>
+<span class="nc" id="L584">            glTable.getColumnModel().getColumn(i + PAD).setPreferredWidth(width);</span>
+        }
+<span class="nc" id="L586">    }</span>
+
+    private void setupComparatorChooser() {
+        // First column:
+
+<span class="nc" id="L591">        List&lt;Comparator&gt; comparators = comparatorChooser.getComparatorsForColumn(0);</span>
+<span class="nc" id="L592">        comparators.clear();</span>
+
+<span class="nc" id="L594">        comparators = comparatorChooser.getComparatorsForColumn(1);</span>
+<span class="nc" id="L595">        comparators.clear();</span>
+
+        // Icon columns:
+<span class="nc bnc" id="L598" title="All 2 branches missed.">        for (int i = 2; i &lt; PAD; i++) {</span>
+<span class="nc" id="L599">            comparators = comparatorChooser.getComparatorsForColumn(i);</span>
+<span class="nc" id="L600">            comparators.clear();</span>
+<span class="nc bnc" id="L601" title="All 2 branches missed.">            if (i == FILE_COL) {</span>
+<span class="nc" id="L602">                comparators.add(new IconComparator(Collections.singletonList(FieldName.FILE)));</span>
+<span class="nc bnc" id="L603" title="All 2 branches missed.">            } else if (i == URL_COL) {</span>
+<span class="nc" id="L604">                comparators.add(new IconComparator(Collections.singletonList(FieldName.URL)));</span>
+            }
+        }
+        // Remaining columns:
+<span class="nc bnc" id="L608" title="All 2 branches missed.">        for (int i = PAD; i &lt; (PAD + INSPECTION_FIELDS.size()); i++) {</span>
+<span class="nc" id="L609">            comparators = comparatorChooser.getComparatorsForColumn(i);</span>
+<span class="nc" id="L610">            comparators.clear();</span>
+<span class="nc" id="L611">            comparators.add(new FieldComparator(INSPECTION_FIELDS.get(i - PAD)));</span>
+        }
+
+<span class="nc" id="L614">        sortedList.getReadWriteLock().writeLock().lock();</span>
+        try {
+<span class="nc" id="L616">            comparatorChooser.appendComparator(PAD, 0, false);</span>
+<span class="nc" id="L617">        } finally {</span>
+<span class="nc" id="L618">            sortedList.getReadWriteLock().writeLock().unlock();</span>
+<span class="nc" id="L619">        }</span>
+<span class="nc" id="L620">    }</span>
+
+    /**
+     * The &quot;defaultSelected&quot; boolean value determines if new entries added are
+     * selected for import or not. This value is true by default.
+     *
+     * @param defaultSelected The desired value.
+     */
+    public void setDefaultSelected(boolean defaultSelected) {
+<span class="nc" id="L629">        this.defaultSelected = defaultSelected;</span>
+<span class="nc" id="L630">    }</span>
+
+    @Override
+    public void setStatus(String s) {
+<span class="nc" id="L634">        frame.setStatus(s);</span>
+<span class="nc" id="L635">    }</span>
+
+    @Override
+    public void showMessage(String message, String title, int msgType) {
+<span class="nc" id="L639">        JOptionPane.showMessageDialog(this, message, title, msgType);</span>
+<span class="nc" id="L640">    }</span>
+
+    @Override
+    public void showMessage(String message) {
+<span class="nc" id="L644">        JOptionPane.showMessageDialog(this, message);</span>
+<span class="nc" id="L645">    }</span>
+
+    /**
+     * Displays a dialog which tells the user that an error occurred while fetching entries
+     */
+    public void showErrorMessage(String fetcherTitle, String localizedException) {
+<span class="nc" id="L651">        showMessage(Localization.lang(&quot;Error while fetching from %0&quot;, fetcherTitle) + &quot;\n&quot; +</span>
+<span class="nc" id="L652">                        Localization.lang(&quot;Please try again later and/or check your network connection.&quot;) + &quot;\n&quot; +</span>
+<span class="nc" id="L653">                        localizedException,</span>
+<span class="nc" id="L654">                Localization.lang(&quot;Search %0&quot;, fetcherTitle), JOptionPane.ERROR_MESSAGE);</span>
+<span class="nc" id="L655">    }</span>
+
+    public JabRefFrame getFrame() {
+<span class="nc" id="L658">        return frame;</span>
+    }
+
+    @FunctionalInterface
+    public interface CallBack {
+
+        /**
+         * This method is called by the dialog when the user has canceled or
+         * signaled a stop. It is expected that any long-running fetch
+         * operations will stop after this method is called.
+         */
+        void stopFetching();
+    }
+
+    /**
+     * Stores the information about the selected entries being scheduled for
+     * addition to this group. The entries are *not* added to the group at this
+     * time. &lt;p/&gt; Synchronizes on this.entries to prevent conflict with threads
+     * that modify the entry list.
+     */
+    class AddToGroupAction extends AbstractAction {
+
+        private final GroupTreeNode node;
+
+
+<span class="nc" id="L683">        public AddToGroupAction(GroupTreeNode node) {</span>
+<span class="nc" id="L684">            super(node.getName());</span>
+<span class="nc" id="L685">            this.node = node;</span>
+<span class="nc" id="L686">        }</span>
+
+        @Override
+        public void actionPerformed(ActionEvent event) {
+
+<span class="nc" id="L691">            selectionModel.getSelected().getReadWriteLock().writeLock().lock();</span>
+            try {
+<span class="nc bnc" id="L693" title="All 2 branches missed.">                for (BibEntry entry : selectionModel.getSelected()) {</span>
+                    // We store the groups this entry should be added to in a Set in
+                    // the Map:
+<span class="nc" id="L696">                    Set&lt;GroupTreeNode&gt; groups = groupAdditions.get(entry);</span>
+<span class="nc bnc" id="L697" title="All 2 branches missed.">                    if (groups == null) {</span>
+                        // No previous definitions, so we create the Set now:
+<span class="nc" id="L699">                        groups = new HashSet&lt;&gt;();</span>
+<span class="nc" id="L700">                        groupAdditions.put(entry, groups);</span>
+                    }
+                    // Add the group:
+<span class="nc" id="L703">                    groups.add(node);</span>
+                }
+<span class="nc" id="L705">            } finally {</span>
+<span class="nc" id="L706">                selectionModel.getSelected().getReadWriteLock().writeLock().unlock();</span>
+<span class="nc" id="L707">            }</span>
+<span class="nc" id="L708">        }</span>
+    }
+
+<span class="nc" id="L711">    private class OkListener implements ActionListener {</span>
+
+        @Override
+        public void actionPerformed(ActionEvent event) {
+
+            // First check if we are supposed to warn about duplicates. If so,
+            // see if there
+            // are unresolved duplicates, and warn if yes.
+<span class="nc bnc" id="L719" title="All 2 branches missed.">            if (Globals.prefs.getBoolean(JabRefPreferences.WARN_ABOUT_DUPLICATES_IN_INSPECTION)) {</span>
+<span class="nc bnc" id="L720" title="All 2 branches missed.">                for (BibEntry entry : entries) {</span>
+
+                    // Only check entries that are to be imported. Keep status
+                    // is indicated
+                    // through the search hit status of the entry:
+<span class="nc bnc" id="L725" title="All 2 branches missed.">                    if (!entry.isSearchHit()) {</span>
+<span class="nc" id="L726">                        continue;</span>
+                    }
+
+                    // Check if the entry is a suspected, unresolved, duplicate.
+                    // This status
+                    // is indicated by the entry's group hit status:
+<span class="nc bnc" id="L732" title="All 2 branches missed.">                    if (entry.isGroupHit()) {</span>
+<span class="nc" id="L733">                        CheckBoxMessage cbm = new CheckBoxMessage(</span>
+                                Localization
+<span class="nc" id="L735">                                        .lang(&quot;There are possible duplicates (marked with an icon) that haven't been resolved. Continue?&quot;),</span>
+<span class="nc" id="L736">                                Localization.lang(&quot;Disable this confirmation dialog&quot;), false);</span>
+<span class="nc" id="L737">                        int answer = JOptionPane.showConfirmDialog(ImportInspectionDialog.this, cbm,</span>
+<span class="nc" id="L738">                                Localization.lang(&quot;Duplicates found&quot;), JOptionPane.YES_NO_OPTION);</span>
+<span class="nc bnc" id="L739" title="All 2 branches missed.">                        if (cbm.isSelected()) {</span>
+<span class="nc" id="L740">                            Globals.prefs.putBoolean(JabRefPreferences.WARN_ABOUT_DUPLICATES_IN_INSPECTION, false);</span>
+                        }
+<span class="nc bnc" id="L742" title="All 2 branches missed.">                        if (answer == JOptionPane.NO_OPTION) {</span>
+<span class="nc" id="L743">                            return;</span>
+                        }
+                        break;
+                    }
+                }
+            }
+
+            // The compund undo action used to contain all changes made by this
+            // dialog.
+<span class="nc" id="L752">            NamedCompound ce = new NamedCompound(undoName);</span>
+
+            // See if we should remove any old entries for duplicate resolving:
+<span class="nc bnc" id="L755" title="All 2 branches missed.">            if (!entriesToDelete.isEmpty()) {</span>
+<span class="nc" id="L756">                removeEntriesToDelete(ce);</span>
+            }
+
+            // If &quot;Generate keys&quot; is checked, generate keys unless it's already
+            // been done:
+<span class="nc bnc" id="L761" title="All 4 branches missed.">            if (autoGenerate.isSelected() &amp;&amp; !generatedKeys) {</span>
+<span class="nc" id="L762">                generateKeys();</span>
+            }
+            // Remember the choice until next time:
+<span class="nc" id="L765">            Globals.prefs.putBoolean(JabRefPreferences.GENERATE_KEYS_AFTER_INSPECTION, autoGenerate.isSelected());</span>
+
+<span class="nc" id="L767">            final List&lt;BibEntry&gt; selected = getSelectedEntries();</span>
+
+<span class="nc bnc" id="L769" title="All 2 branches missed.">            if (!selected.isEmpty()) {</span>
+<span class="nc" id="L770">                addSelectedEntries(ce, selected);</span>
+            }
+
+<span class="nc" id="L773">            dispose();</span>
+<span class="nc" id="L774">            SwingUtilities.invokeLater(() -&gt; updateGUI(selected.size()));</span>
+<span class="nc" id="L775">        }</span>
+
+        private void updateGUI(int entryCount) {
+<span class="nc bnc" id="L778" title="All 2 branches missed.">            if (newDatabase) {</span>
+<span class="nc" id="L779">                frame.addTab(panel, true);</span>
+            }
+<span class="nc" id="L781">            panel.markBaseChanged();</span>
+
+<span class="nc bnc" id="L783" title="All 2 branches missed.">            if (entryCount == 0) {</span>
+<span class="nc" id="L784">                frame.output(Localization.lang(&quot;No entries imported.&quot;));</span>
+<span class="nc" id="L785">            } else {</span>
+<span class="nc" id="L786">                frame.output(Localization.lang(&quot;Number of entries successfully imported&quot;) + &quot;: &quot; + entryCount);</span>
+            }
+<span class="nc" id="L788">        }</span>
+
+        private void removeEntriesToDelete(NamedCompound ce) {
+<span class="nc bnc" id="L791" title="All 2 branches missed.">            for (BibEntry entry : entriesToDelete) {</span>
+<span class="nc" id="L792">                ce.addEdit(new UndoableRemoveEntry(panel.getDatabase(), entry, panel));</span>
+<span class="nc" id="L793">                panel.getDatabase().removeEntry(entry);</span>
+            }
+<span class="nc" id="L795">        }</span>
+
+        private void addSelectedEntries(NamedCompound ce, final List&lt;BibEntry&gt; selected) {
+<span class="nc bnc" id="L798" title="All 2 branches missed.">            if (newDatabase) {</span>
+                // Create a new BasePanel for the entries:
+<span class="nc" id="L800">                Defaults defaults = new Defaults(Globals.prefs.getDefaultBibDatabaseMode());</span>
+<span class="nc" id="L801">                panel = new BasePanel(frame, new BibDatabaseContext(defaults));</span>
+            }
+
+<span class="nc" id="L804">            boolean groupingCanceled = false;</span>
+
+            // Set owner/timestamp if options are enabled:
+<span class="nc" id="L807">            UpdateField.setAutomaticFields(selected, Globals.prefs.getUpdateFieldPreferences());</span>
+
+            // Mark entries if we should
+<span class="nc bnc" id="L810" title="All 2 branches missed.">            if (EntryMarker.shouldMarkEntries()) {</span>
+<span class="nc bnc" id="L811" title="All 2 branches missed.">                for (BibEntry entry : selected) {</span>
+<span class="nc" id="L812">                    EntryMarker.markEntry(entry, EntryMarker.IMPORT_MARK_LEVEL, false, new NamedCompound(&quot;&quot;));</span>
+                }
+            }
+            // Check if we should unmark entries before adding the new ones:
+<span class="nc bnc" id="L816" title="All 2 branches missed.">            if (Globals.prefs.getBoolean(JabRefPreferences.UNMARK_ALL_ENTRIES_BEFORE_IMPORTING)) {</span>
+<span class="nc bnc" id="L817" title="All 2 branches missed.">                for (BibEntry entry : panel.getDatabase().getEntries()) {</span>
+<span class="nc" id="L818">                    EntryMarker.unmarkEntry(entry, true, panel.getDatabase(), ce);</span>
+                }
+            }
+
+<span class="nc bnc" id="L822" title="All 2 branches missed.">            for (BibEntry entry : selected) {</span>
+                // Remove settings to group/search hit status:
+<span class="nc" id="L824">                entry.setSearchHit(false);</span>
+<span class="nc" id="L825">                entry.setGroupHit(false);</span>
+
+                // If this entry should be added to any groups, do it now:
+<span class="nc" id="L828">                Set&lt;GroupTreeNode&gt; groups = groupAdditions.get(entry);</span>
+<span class="nc bnc" id="L829" title="All 4 branches missed.">                if (!groupingCanceled &amp;&amp; (groups != null)) {</span>
+<span class="nc" id="L830">                    groupingCanceled = addToGroups(ce, entry, groups);</span>
+                }
+
+<span class="nc" id="L833">                entry.setId(IdGenerator.next());</span>
+<span class="nc" id="L834">                ce.addEdit(new UndoableInsertEntry(panel.getDatabase(), entry, panel));</span>
+            }
+<span class="nc" id="L836">            panel.getDatabase().insertEntries(selected);</span>
+
+<span class="nc" id="L838">            ce.end();</span>
+<span class="nc" id="L839">            panel.getUndoManager().addEdit(ce);</span>
+<span class="nc" id="L840">        }</span>
+
+        private boolean addToGroups(NamedCompound ce, BibEntry entry, Set&lt;GroupTreeNode&gt; groups) {
+<span class="nc" id="L843">            boolean groupingCanceled = false;</span>
+<span class="nc bnc" id="L844" title="All 2 branches missed.">            if (!entry.hasCiteKey()) {</span>
+                // The entry has no key, so it can't be added to the
+                // group.
+                // The best course of action is probably to ask the
+                // user if a key should be generated
+                // immediately.
+<span class="nc" id="L850">                int answer = JOptionPane.showConfirmDialog(ImportInspectionDialog.this,</span>
+<span class="nc" id="L851">                        Localization.lang(&quot;Cannot add entries to group without generating keys. Generate keys now?&quot;),</span>
+<span class="nc" id="L852">                        Localization.lang(&quot;Add to group&quot;), JOptionPane.YES_NO_OPTION);</span>
+<span class="nc bnc" id="L853" title="All 2 branches missed.">                if (answer == JOptionPane.YES_OPTION) {</span>
+<span class="nc" id="L854">                    generateKeys();</span>
+<span class="nc" id="L855">                } else {</span>
+<span class="nc" id="L856">                    groupingCanceled = true;</span>
+                }
+            }
+
+            // If the key existed, or exists now, go ahead:
+<span class="nc bnc" id="L861" title="All 2 branches missed.">            if (entry.hasCiteKey()) {</span>
+<span class="nc bnc" id="L862" title="All 2 branches missed.">                for (GroupTreeNode node : groups) {</span>
+<span class="nc bnc" id="L863" title="All 2 branches missed.">                    if (node.getGroup() instanceof GroupEntryChanger) {</span>
+                        // Add the entry:
+<span class="nc" id="L865">                        GroupEntryChanger entryChanger = (GroupEntryChanger)node.getGroup();</span>
+<span class="nc" id="L866">                        List&lt;FieldChange&gt; undo = entryChanger.add(Collections.singletonList(entry));</span>
+<span class="nc bnc" id="L867" title="All 2 branches missed.">                        if (!undo.isEmpty()) {</span>
+<span class="nc" id="L868">                            ce.addEdit(UndoableChangeEntriesOfGroup.getUndoableEdit(new GroupTreeNodeViewModel(node),</span>
+<span class="nc" id="L869">                                    undo));</span>
+                        }
+                    }
+                }
+            }
+<span class="nc" id="L874">            return groupingCanceled;</span>
+        }
+
+        /**
+         * This method returns a List containing all entries that are selected
+         * (checkbox checked).
+         *
+         * @return a List containing the selected entries.
+         */
+        private List&lt;BibEntry&gt; getSelectedEntries() {
+<span class="nc" id="L884">            List&lt;BibEntry&gt; selected = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L885" title="All 2 branches missed.">            for (BibEntry entry : entries) {</span>
+<span class="nc bnc" id="L886" title="All 2 branches missed.">                if (entry.isSearchHit()) {</span>
+<span class="nc" id="L887">                    selected.add(entry);</span>
+                }
+            }
+
+<span class="nc" id="L891">            return selected;</span>
+        }
+
+    }
+
+    private class DeleteListener extends AbstractAction {
+
+<span class="nc" id="L898">        public DeleteListener() {</span>
+<span class="nc" id="L899">            super(Localization.lang(&quot;Delete&quot;), IconTheme.JabRefIcon.DELETE_ENTRY.getSmallIcon());</span>
+<span class="nc" id="L900">        }</span>
+
+        @Override
+        public void actionPerformed(ActionEvent event) {
+<span class="nc" id="L904">            removeSelectedEntries();</span>
+<span class="nc" id="L905">        }</span>
+
+        /**
+         * Removes all selected entries from the table. Synchronizes on this.entries
+         * to prevent conflict with addition of new entries.
+         */
+        private void removeSelectedEntries() {
+<span class="nc" id="L912">            int row = glTable.getSelectedRow();</span>
+<span class="nc" id="L913">            List&lt;BibEntry&gt; toRemove = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L914">            toRemove.addAll(selectionModel.getSelected());</span>
+
+<span class="nc" id="L916">            entries.getReadWriteLock().writeLock().lock();</span>
+            try {
+<span class="nc bnc" id="L918" title="All 2 branches missed.">                for (BibEntry entry : toRemove) {</span>
+<span class="nc" id="L919">                    entries.remove(entry);</span>
+                }
+<span class="nc" id="L921">            } finally {</span>
+<span class="nc" id="L922">                entries.getReadWriteLock().writeLock().unlock();</span>
+<span class="nc" id="L923">            }</span>
+<span class="nc" id="L924">            glTable.clearSelection();</span>
+<span class="nc bnc" id="L925" title="All 4 branches missed.">            if ((row &gt;= 0) &amp;&amp; (!entries.isEmpty())) {</span>
+<span class="nc" id="L926">                row = Math.min(entries.size() - 1, row);</span>
+<span class="nc" id="L927">                glTable.addRowSelectionInterval(row, row);</span>
+            }
+<span class="nc" id="L929">        }</span>
+    }
+
+    private class SelectionButton implements ActionListener {
+
+        private final Boolean enable;
+
+
+<span class="nc" id="L937">        public SelectionButton(boolean enable) {</span>
+<span class="nc" id="L938">            this.enable = enable;</span>
+<span class="nc" id="L939">        }</span>
+
+        @Override
+        public void actionPerformed(ActionEvent event) {
+<span class="nc bnc" id="L943" title="All 2 branches missed.">            for (int i = 0; i &lt; glTable.getRowCount(); i++) {</span>
+<span class="nc" id="L944">                glTable.setValueAt(enable, i, 0);</span>
+            }
+<span class="nc" id="L946">            glTable.repaint();</span>
+<span class="nc" id="L947">        }</span>
+    }
+
+<span class="nc" id="L950">    private class EntrySelectionListener implements ListEventListener&lt;BibEntry&gt; {</span>
+
+        @Override
+        public void listChanged(ListEvent&lt;BibEntry&gt; listEvent) {
+<span class="nc bnc" id="L954" title="All 2 branches missed.">            if (listEvent.getSourceList().size() == 1) {</span>
+<span class="nc" id="L955">                preview.setEntry(listEvent.getSourceList().get(0));</span>
+<span class="nc" id="L956">                contentPane.setDividerLocation(0.5f);</span>
+            }
+<span class="nc" id="L958">        }</span>
+    }
+
+    /**
+     * This class handles clicks on the table that should trigger specific
+     * events, like opening the popup menu.
+     */
+<span class="nc" id="L965">    private class TableClickListener implements MouseListener {</span>
+
+        private boolean isIconColumn(int col) {
+<span class="nc bnc" id="L968" title="All 4 branches missed.">            return (col == FILE_COL) || (col == URL_COL);</span>
+        }
+
+        @Override
+        public void mouseClicked(MouseEvent e) {
+<span class="nc" id="L973">            final int col = glTable.columnAtPoint(e.getPoint());</span>
+<span class="nc" id="L974">            final int row = glTable.rowAtPoint(e.getPoint());</span>
+<span class="nc bnc" id="L975" title="All 2 branches missed.">            if (isIconColumn(col)) {</span>
+<span class="nc" id="L976">                BibEntry entry = sortedList.get(row);</span>
+
+<span class="nc bnc" id="L978" title="All 2 branches missed.">                if (col == FILE_COL) {</span>
+<span class="nc bnc" id="L979" title="All 2 branches missed.">                    if (entry.hasField(FieldName.FILE)) {</span>
+<span class="nc" id="L980">                        FileListTableModel tableModel = new FileListTableModel();</span>
+<span class="nc" id="L981">                        entry.getField(FieldName.FILE).ifPresent(tableModel::setContent);</span>
+<span class="nc bnc" id="L982" title="All 2 branches missed.">                        if (tableModel.getRowCount() == 0) {</span>
+<span class="nc" id="L983">                            return;</span>
+                        }
+<span class="nc" id="L985">                        FileListEntry fl = tableModel.getEntry(0);</span>
+<span class="nc" id="L986">                        (new ExternalFileMenuItem(frame, entry, &quot;&quot;, fl.getLink(), null, panel.getBibDatabaseContext(),</span>
+<span class="nc" id="L987">                                fl.getType())).actionPerformed(null);</span>
+                    }
+<span class="nc" id="L989">                } else { // Must be URL_COL</span>
+<span class="nc" id="L990">                    openExternalLink(FieldName.URL, e);</span>
+                }
+            }
+<span class="nc" id="L993">        }</span>
+
+        @Override
+        public void mouseEntered(MouseEvent e) {
+            // Nothing
+<span class="nc" id="L998">        }</span>
+
+        @Override
+        public void mouseExited(MouseEvent e) {
+            // Nothing
+<span class="nc" id="L1003">        }</span>
+
+        /**
+         * Show right-click menu. If the click happened in an icon column that
+         * presents its own popup menu, show that. Otherwise, show the ordinary
+         * popup menu.
+         *
+         * @param e The mouse event that triggered the popup.
+         */
+        private void showPopup(MouseEvent e) {
+<span class="nc" id="L1013">            final int col = glTable.columnAtPoint(e.getPoint());</span>
+<span class="nc bnc" id="L1014" title="All 2 branches missed.">            if (col == FILE_COL) {</span>
+<span class="nc" id="L1015">                showFileFieldMenu(e);</span>
+<span class="nc" id="L1016">            } else {</span>
+<span class="nc" id="L1017">                showOrdinaryRightClickMenu(e);</span>
+            }
+<span class="nc" id="L1019">        }</span>
+
+        private void showOrdinaryRightClickMenu(MouseEvent e) {
+<span class="nc" id="L1022">            popup.show(glTable, e.getX(), e.getY());</span>
+<span class="nc" id="L1023">        }</span>
+
+        /**
+         * Show the popup menu for the FILE field.
+         *
+         * @param e The mouse event that triggered the popup.
+         */
+        private void showFileFieldMenu(MouseEvent e) {
+<span class="nc" id="L1031">            final int row = glTable.rowAtPoint(e.getPoint());</span>
+<span class="nc" id="L1032">            BibEntry entry = sortedList.get(row);</span>
+<span class="nc" id="L1033">            JPopupMenu menu = new JPopupMenu();</span>
+<span class="nc" id="L1034">            int count = 0;</span>
+<span class="nc" id="L1035">            FileListTableModel fileList = new FileListTableModel();</span>
+<span class="nc" id="L1036">            entry.getField(FieldName.FILE).ifPresent(fileList::setContent);</span>
+            // If there are one or more links, open the first one:
+<span class="nc bnc" id="L1038" title="All 2 branches missed.">            for (int i = 0; i &lt; fileList.getRowCount(); i++) {</span>
+<span class="nc" id="L1039">                FileListEntry flEntry = fileList.getEntry(i);</span>
+<span class="nc" id="L1040">                String description = flEntry.getDescription();</span>
+<span class="nc bnc" id="L1041" title="All 4 branches missed.">                if ((description == null) || (description.trim().isEmpty())) {</span>
+<span class="nc" id="L1042">                    description = flEntry.getLink();</span>
+                }
+<span class="nc" id="L1044">                menu.add(new ExternalFileMenuItem(panel.frame(), entry, description, flEntry.getLink(),</span>
+<span class="nc" id="L1045">                        flEntry.getType().get().getIcon(), panel.getBibDatabaseContext(), flEntry.getType()));</span>
+<span class="nc" id="L1046">                count++;</span>
+            }
+<span class="nc bnc" id="L1048" title="All 2 branches missed.">            if (count == 0) {</span>
+<span class="nc" id="L1049">                showOrdinaryRightClickMenu(e);</span>
+<span class="nc" id="L1050">            } else {</span>
+<span class="nc" id="L1051">                menu.show(glTable, e.getX(), e.getY());</span>
+            }
+<span class="nc" id="L1053">        }</span>
+
+        /**
+         * Open old-style external links after user clicks icon.
+         *
+         * @param fieldName The name of the BibTeX field this icon is used for.
+         * @param e         The MouseEvent that triggered this operation.
+         */
+        private void openExternalLink(String fieldName, MouseEvent e) {
+<span class="nc" id="L1062">            final int row = glTable.rowAtPoint(e.getPoint());</span>
+<span class="nc" id="L1063">            BibEntry entry = sortedList.get(row);</span>
+
+<span class="nc" id="L1065">            entry.getField(fieldName).ifPresent(link -&gt; {</span>
+                try {
+<span class="nc" id="L1067">                    JabRefDesktop.openExternalViewer(panel.getBibDatabaseContext(), link, fieldName);</span>
+<span class="nc" id="L1068">                } catch (IOException ex) {</span>
+<span class="nc" id="L1069">                    LOGGER.warn(&quot;Could not open link&quot;, ex);</span>
+                }
+<span class="nc" id="L1071">            });</span>
+<span class="nc" id="L1072">        }</span>
+
+        @Override
+        public void mouseReleased(MouseEvent e) {
+            // Check if the user has right-clicked. If so, open the right-click
+            // menu.
+<span class="nc bnc" id="L1078" title="All 2 branches missed.">            if (e.isPopupTrigger()) {</span>
+<span class="nc" id="L1079">                showPopup(e);</span>
+            }
+<span class="nc" id="L1081">        }</span>
+
+        @Override
+        public void mousePressed(MouseEvent e) {
+            // Check if the user has right-clicked. If so, open the right-click
+            // menu.
+<span class="nc bnc" id="L1087" title="All 2 branches missed.">            if (e.isPopupTrigger()) {</span>
+<span class="nc" id="L1088">                showPopup(e);</span>
+<span class="nc" id="L1089">                return;</span>
+            }
+
+            // Check if any other action should be taken:
+<span class="nc" id="L1093">            final int col = glTable.columnAtPoint(e.getPoint());</span>
+<span class="nc" id="L1094">            final int row = glTable.rowAtPoint(e.getPoint());</span>
+            // Is this the duplicate icon column, and is there an icon?
+<span class="nc bnc" id="L1096" title="All 4 branches missed.">            if ((col == DUPL_COL) &amp;&amp; (glTable.getValueAt(row, col) != null)) {</span>
+<span class="nc" id="L1097">                BibEntry first = sortedList.get(row);</span>
+<span class="nc" id="L1098">                Optional&lt;BibEntry&gt; other = DuplicateCheck.containsDuplicate(panel.getDatabase(), first,</span>
+<span class="nc" id="L1099">                        panel.getBibDatabaseContext().getMode());</span>
+<span class="nc bnc" id="L1100" title="All 2 branches missed.">                if (other.isPresent()) {</span>
+                    // This will be true if the duplicate is in the existing
+                    // database.
+<span class="nc" id="L1103">                    DuplicateResolverDialog diag = new DuplicateResolverDialog(ImportInspectionDialog.this, other.get(),</span>
+<span class="nc" id="L1104">                            first, DuplicateResolverDialog.DuplicateResolverType.INSPECTION);</span>
+<span class="nc" id="L1105">                    diag.setLocationRelativeTo(ImportInspectionDialog.this);</span>
+<span class="nc" id="L1106">                    diag.setVisible(true);</span>
+<span class="nc" id="L1107">                    ImportInspectionDialog.this.toFront();</span>
+<span class="nc bnc" id="L1108" title="All 2 branches missed.">                    if (diag.getSelected() == DuplicateResolverResult.KEEP_LEFT) {</span>
+                        // Remove old entry. Or... add it to a list of entries
+                        // to be deleted. We only delete
+                        // it after Ok is clicked.
+<span class="nc" id="L1112">                        entriesToDelete.add(other.get());</span>
+                        // Clear duplicate icon, which is controlled by the
+                        // group hit
+                        // field of the entry:
+
+<span class="nc" id="L1117">                        entries.getReadWriteLock().writeLock().lock();</span>
+                        try {
+<span class="nc" id="L1119">                            first.setGroupHit(false);</span>
+<span class="nc" id="L1120">                        } finally {</span>
+<span class="nc" id="L1121">                            entries.getReadWriteLock().writeLock().unlock();</span>
+<span class="nc" id="L1122">                        }</span>
+
+<span class="nc bnc" id="L1124" title="All 2 branches missed.">                    } else if (diag.getSelected() == DuplicateResolverResult.KEEP_RIGHT) {</span>
+                        // Remove the entry from the import inspection dialog.
+<span class="nc" id="L1126">                        entries.getReadWriteLock().writeLock().lock();</span>
+                        try {
+<span class="nc" id="L1128">                            entries.remove(first);</span>
+<span class="nc" id="L1129">                        } finally {</span>
+<span class="nc" id="L1130">                            entries.getReadWriteLock().writeLock().unlock();</span>
+<span class="nc" id="L1131">                        }</span>
+<span class="nc bnc" id="L1132" title="All 2 branches missed.">                    } else if (diag.getSelected() == DuplicateResolverResult.KEEP_BOTH) {</span>
+                        // Do nothing.
+<span class="nc" id="L1134">                        entries.getReadWriteLock().writeLock().lock();</span>
+                        try {
+<span class="nc" id="L1136">                            first.setGroupHit(false);</span>
+<span class="nc" id="L1137">                        } finally {</span>
+<span class="nc" id="L1138">                            entries.getReadWriteLock().writeLock().unlock();</span>
+<span class="nc" id="L1139">                        }</span>
+<span class="nc bnc" id="L1140" title="All 2 branches missed.">                    } else if (diag.getSelected() == DuplicateResolverResult.KEEP_MERGE) {</span>
+                        // Remove old entry. Or... add it to a list of entries
+                        // to be deleted. We only delete
+                        // it after Ok is clicked.
+<span class="nc" id="L1144">                        entriesToDelete.add(other.get());</span>
+                        // Store merged entry for later adding
+                        // Clear duplicate icon, which is controlled by the
+                        // group hit
+                        // field of the entry:
+<span class="nc" id="L1149">                        entries.getReadWriteLock().writeLock().lock();</span>
+                        try {
+<span class="nc" id="L1151">                            diag.getMergedEntry().setGroupHit(false);</span>
+<span class="nc" id="L1152">                            diag.getMergedEntry().setSearchHit(true);</span>
+<span class="nc" id="L1153">                            entries.add(diag.getMergedEntry());</span>
+<span class="nc" id="L1154">                            entries.remove(first);</span>
+<span class="nc" id="L1155">                            first = new BibEntry(); // Reset first so the next duplicate doesn't trigger</span>
+<span class="nc" id="L1156">                        } finally {</span>
+<span class="nc" id="L1157">                            entries.getReadWriteLock().writeLock().unlock();</span>
+<span class="nc" id="L1158">                        }</span>
+                    }
+                }
+                // Check if the duplicate is of another entry in the import:
+<span class="nc" id="L1162">                other = internalDuplicate(entries, first);</span>
+<span class="nc bnc" id="L1163" title="All 2 branches missed.">                if (other.isPresent()) {</span>
+<span class="nc" id="L1164">                    DuplicateResolverDialog diag = new DuplicateResolverDialog(ImportInspectionDialog.this, first,</span>
+<span class="nc" id="L1165">                            other.get(), DuplicateResolverDialog.DuplicateResolverType.DUPLICATE_SEARCH);</span>
+<span class="nc" id="L1166">                    diag.setLocationRelativeTo(ImportInspectionDialog.this);</span>
+<span class="nc" id="L1167">                    diag.setVisible(true);</span>
+<span class="nc" id="L1168">                    ImportInspectionDialog.this.toFront();</span>
+<span class="nc" id="L1169">                    DuplicateResolverResult answer = diag.getSelected();</span>
+<span class="nc bnc" id="L1170" title="All 2 branches missed.">                    if (answer == DuplicateResolverResult.KEEP_LEFT) {</span>
+<span class="nc" id="L1171">                        entries.remove(other.get());</span>
+<span class="nc" id="L1172">                        first.setGroupHit(false);</span>
+<span class="nc bnc" id="L1173" title="All 2 branches missed.">                    } else if (answer == DuplicateResolverResult.KEEP_RIGHT) {</span>
+<span class="nc" id="L1174">                        entries.remove(first);</span>
+<span class="nc bnc" id="L1175" title="All 2 branches missed.">                    } else if (answer == DuplicateResolverResult.KEEP_BOTH) {</span>
+<span class="nc" id="L1176">                        first.setGroupHit(false);</span>
+<span class="nc bnc" id="L1177" title="All 2 branches missed.">                    } else if (answer == DuplicateResolverResult.KEEP_MERGE) {</span>
+<span class="nc" id="L1178">                        diag.getMergedEntry().setGroupHit(false);</span>
+<span class="nc" id="L1179">                        diag.getMergedEntry().setSearchHit(true);</span>
+<span class="nc" id="L1180">                        entries.add(diag.getMergedEntry());</span>
+<span class="nc" id="L1181">                        entries.remove(first);</span>
+<span class="nc" id="L1182">                        entries.remove(other.get());</span>
+                    }
+                }
+            }
+<span class="nc" id="L1186">        }</span>
+    }
+
+    class AttachUrl extends JMenuItem implements ActionListener {
+
+<span class="nc" id="L1191">        public AttachUrl() {</span>
+<span class="nc" id="L1192">            super(Localization.lang(&quot;Attach URL&quot;));</span>
+<span class="nc" id="L1193">            addActionListener(this);</span>
+<span class="nc" id="L1194">        }</span>
+
+        @Override
+        public void actionPerformed(ActionEvent event) {
+<span class="nc bnc" id="L1198" title="All 2 branches missed.">            if (selectionModel.getSelected().size() != 1) {</span>
+<span class="nc" id="L1199">                return;</span>
+            }
+<span class="nc" id="L1201">            BibEntry entry = selectionModel.getSelected().get(0);</span>
+<span class="nc" id="L1202">            String result = JOptionPane.showInputDialog(ImportInspectionDialog.this, Localization.lang(&quot;Enter URL&quot;),</span>
+<span class="nc" id="L1203">                    entry.getField(FieldName.URL).orElse(&quot;&quot;));</span>
+<span class="nc" id="L1204">            entries.getReadWriteLock().writeLock().lock();</span>
+            try {
+<span class="nc bnc" id="L1206" title="All 2 branches missed.">                if (result != null) {</span>
+<span class="nc bnc" id="L1207" title="All 2 branches missed.">                    if (result.isEmpty()) {</span>
+<span class="nc" id="L1208">                        entry.clearField(FieldName.URL);</span>
+<span class="nc" id="L1209">                    } else {</span>
+<span class="nc" id="L1210">                        entry.setField(FieldName.URL, result);</span>
+                    }
+                }
+<span class="nc" id="L1213">            } finally {</span>
+<span class="nc" id="L1214">                entries.getReadWriteLock().writeLock().unlock();</span>
+<span class="nc" id="L1215">            }</span>
+<span class="nc" id="L1216">            glTable.repaint();</span>
+<span class="nc" id="L1217">        }</span>
+    }
+
+    class DownloadFile extends JMenuItem implements ActionListener, DownloadExternalFile.DownloadCallback {
+
+        private BibEntry entry;
+
+
+<span class="nc" id="L1225">        public DownloadFile() {</span>
+<span class="nc" id="L1226">            super(Localization.lang(&quot;Download file&quot;));</span>
+<span class="nc" id="L1227">            addActionListener(this);</span>
+<span class="nc" id="L1228">        }</span>
+
+        @Override
+        public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc bnc" id="L1232" title="All 2 branches missed.">            if (selectionModel.getSelected().size() != 1) {</span>
+<span class="nc" id="L1233">                return;</span>
+            }
+<span class="nc" id="L1235">            entry = selectionModel.getSelected().get(0);</span>
+<span class="nc bnc" id="L1236" title="All 2 branches missed.">            if (!entry.getCiteKeyOptional().isPresent()) {</span>
+<span class="nc" id="L1237">                int answer = JOptionPane.showConfirmDialog(frame,</span>
+<span class="nc" id="L1238">                        Localization.lang(&quot;This entry has no BibTeX key. Generate key now?&quot;),</span>
+<span class="nc" id="L1239">                        Localization.lang(&quot;Download file&quot;), JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);</span>
+<span class="nc bnc" id="L1240" title="All 2 branches missed.">                if (answer == JOptionPane.OK_OPTION) {</span>
+<span class="nc" id="L1241">                    generateKeyForEntry(entry);</span>
+                }
+            }
+<span class="nc" id="L1244">            DownloadExternalFile def = new DownloadExternalFile(frame, bibDatabaseContext, entry);</span>
+            try {
+<span class="nc" id="L1246">                def.download(this);</span>
+<span class="nc" id="L1247">            } catch (IOException ex) {</span>
+<span class="nc" id="L1248">                LOGGER.warn(&quot;Could not download file&quot;, ex);</span>
+            }
+<span class="nc" id="L1250">        }</span>
+
+        @Override
+        public void downloadComplete(LinkedFile file) {
+<span class="nc" id="L1254">            ImportInspectionDialog.this.toFront(); // Hack</span>
+<span class="nc" id="L1255">            entries.getReadWriteLock().writeLock().lock();</span>
+            try {
+<span class="nc" id="L1257">                entry.addFile(file);</span>
+<span class="nc" id="L1258">            } finally {</span>
+<span class="nc" id="L1259">                entries.getReadWriteLock().writeLock().unlock();</span>
+<span class="nc" id="L1260">            }</span>
+<span class="nc" id="L1261">            glTable.repaint();</span>
+<span class="nc" id="L1262">        }</span>
+    }
+
+    private class InternalAutoSetLinks extends JMenuItem implements ActionListener {
+
+<span class="nc" id="L1267">        public InternalAutoSetLinks() {</span>
+<span class="nc" id="L1268">            super(Localization.lang(&quot;Automatically set file links&quot;));</span>
+<span class="nc" id="L1269">            addActionListener(this);</span>
+<span class="nc" id="L1270">        }</span>
+
+        @Override
+        public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc bnc" id="L1274" title="All 2 branches missed.">            if (selectionModel.getSelected().size() != 1) {</span>
+<span class="nc" id="L1275">                return;</span>
+            }
+<span class="nc" id="L1277">            final BibEntry entry = selectionModel.getSelected().get(0);</span>
+<span class="nc bnc" id="L1278" title="All 2 branches missed.">            if (!entry.hasCiteKey()) {</span>
+<span class="nc" id="L1279">                int answer = JOptionPane.showConfirmDialog(frame,</span>
+<span class="nc" id="L1280">                        Localization.lang(&quot;This entry has no BibTeX key. Generate key now?&quot;),</span>
+<span class="nc" id="L1281">                        Localization.lang(&quot;Download file&quot;), JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);</span>
+<span class="nc bnc" id="L1282" title="All 2 branches missed.">                if (answer == JOptionPane.OK_OPTION) {</span>
+<span class="nc" id="L1283">                    generateKeyForEntry(entry);</span>
+<span class="nc" id="L1284">                } else {</span>
+<span class="nc" id="L1285">                    return; // Can't go on without the bibtex key.</span>
+                }
+            }
+<span class="nc" id="L1288">            final FileListTableModel localModel = new FileListTableModel();</span>
+<span class="nc" id="L1289">            entry.getField(FieldName.FILE).ifPresent(localModel::setContent);</span>
+            // We have a static utility method for searching for all relevant
+            // links:
+<span class="nc" id="L1292">            JDialog diag = new JDialog(ImportInspectionDialog.this, true);</span>
+<span class="nc" id="L1293">            JabRefExecutorService.INSTANCE</span>
+<span class="nc" id="L1294">                    .execute(AutoSetLinks.autoSetLinks(entry, bibDatabaseContext, e -&gt; {</span>
+<span class="nc bnc" id="L1295" title="All 2 branches missed.">                        if (e.getID() &gt; 0) {</span>
+
+<span class="nc" id="L1297">                            entries.getReadWriteLock().writeLock().lock();</span>
+                            try {
+<span class="nc" id="L1299">                                entry.setField(FieldName.FILE, localModel.getStringRepresentation());</span>
+<span class="nc" id="L1300">                            } finally {</span>
+<span class="nc" id="L1301">                                entries.getReadWriteLock().writeLock().unlock();</span>
+<span class="nc" id="L1302">                            }</span>
+<span class="nc" id="L1303">                            glTable.repaint();</span>
+                        }
+<span class="nc" id="L1305">                    } , diag));</span>
+
+<span class="nc" id="L1307">        }</span>
+    }
+
+    private class LinkLocalFile extends JMenuItem implements ActionListener, DownloadExternalFile.DownloadCallback {
+
+        private BibEntry entry;
+
+
+<span class="nc" id="L1315">        public LinkLocalFile() {</span>
+<span class="nc" id="L1316">            super(Localization.lang(&quot;Link local file&quot;));</span>
+<span class="nc" id="L1317">            addActionListener(this);</span>
+<span class="nc" id="L1318">        }</span>
+
+        @Override
+        public void actionPerformed(ActionEvent actionEvent) {
+<span class="nc bnc" id="L1322" title="All 2 branches missed.">            if (selectionModel.getSelected().size() != 1) {</span>
+<span class="nc" id="L1323">                return;</span>
+            }
+<span class="nc" id="L1325">            entry = selectionModel.getSelected().get(0);</span>
+<span class="nc" id="L1326">            LinkedFile flEntry = new LinkedFile(&quot;&quot;, &quot;&quot;, &quot;&quot;);</span>
+<span class="nc" id="L1327">            FileListEntryEditor editor = new FileListEntryEditor(flEntry, false, true, bibDatabaseContext, true);</span>
+<span class="nc" id="L1328">            editor.setVisible(true, true);</span>
+<span class="nc bnc" id="L1329" title="All 2 branches missed.">            if (editor.okPressed()) {</span>
+<span class="nc" id="L1330">                entries.getReadWriteLock().writeLock().lock();</span>
+                try {
+<span class="nc" id="L1332">                    entry.addFile(flEntry);</span>
+<span class="nc" id="L1333">                } finally {</span>
+<span class="nc" id="L1334">                    entries.getReadWriteLock().writeLock().unlock();</span>
+<span class="nc" id="L1335">                }</span>
+<span class="nc" id="L1336">                glTable.repaint();</span>
+            }
+<span class="nc" id="L1338">        }</span>
+
+        @Override
+        public void downloadComplete(LinkedFile file) {
+<span class="nc" id="L1342">            ImportInspectionDialog.this.toFront(); // Hack</span>
+<span class="nc" id="L1343">            entries.getReadWriteLock().writeLock().lock();</span>
+            try {
+<span class="nc" id="L1345">                entry.addFile(file);</span>
+<span class="nc" id="L1346">            } finally {</span>
+<span class="nc" id="L1347">                entries.getReadWriteLock().writeLock().unlock();</span>
+<span class="nc" id="L1348">            }</span>
+<span class="nc" id="L1349">            glTable.repaint();</span>
+<span class="nc" id="L1350">        }</span>
+    }
+
+    class EntryTable extends JTable {
+
+<span class="nc" id="L1355">        private final GeneralRenderer renderer = new GeneralRenderer(Color.white);</span>
+
+
+<span class="nc" id="L1358">        public EntryTable(TableModel model) {</span>
+<span class="nc" id="L1359">            super(model);</span>
+<span class="nc" id="L1360">            getTableHeader().setReorderingAllowed(false);</span>
+<span class="nc" id="L1361">        }</span>
+
+        @Override
+        public TableCellRenderer getCellRenderer(int row, int column) {
+<span class="nc bnc" id="L1365" title="All 2 branches missed.">            return column == 0 ? getDefaultRenderer(Boolean.class) : renderer;</span>
+        }
+
+        @Override
+        public Class&lt;?&gt; getColumnClass(int col) {
+<span class="nc bnc" id="L1370" title="All 2 branches missed.">            if (col == 0) {</span>
+<span class="nc" id="L1371">                return Boolean.class;</span>
+<span class="nc bnc" id="L1372" title="All 2 branches missed.">            } else if (col &lt; PAD) {</span>
+<span class="nc" id="L1373">                return JLabel.class;</span>
+            } else {
+<span class="nc" id="L1375">                return String.class;</span>
+            }
+        }
+
+        @Override
+        public boolean isCellEditable(int row, int column) {
+<span class="nc bnc" id="L1381" title="All 2 branches missed.">            return column == 0;</span>
+        }
+
+        @Override
+        public void setValueAt(Object value, int row, int column) {
+            // Only column 0, which is controlled by BibEntry.searchHit, is
+            // editable:
+<span class="nc" id="L1388">            entries.getReadWriteLock().writeLock().lock();</span>
+            try {
+<span class="nc" id="L1390">                BibEntry entry = sortedList.get(row);</span>
+<span class="nc" id="L1391">                entry.setSearchHit((Boolean) value);</span>
+<span class="nc" id="L1392">            } finally {</span>
+<span class="nc" id="L1393">                entries.getReadWriteLock().writeLock().unlock();</span>
+<span class="nc" id="L1394">            }</span>
+<span class="nc" id="L1395">        }</span>
+    }
+
+<span class="nc" id="L1398">    private class EntryTableFormat implements TableFormat&lt;BibEntry&gt; {</span>
+
+        @Override
+        public int getColumnCount() {
+<span class="nc" id="L1402">            return PAD + INSPECTION_FIELDS.size();</span>
+        }
+
+        @Override
+        public String getColumnName(int i) {
+<span class="nc bnc" id="L1407" title="All 2 branches missed.">            if (i == 0) {</span>
+<span class="nc" id="L1408">                return Localization.lang(&quot;Keep&quot;);</span>
+            }
+<span class="nc bnc" id="L1410" title="All 2 branches missed.">            if (i &gt;= PAD) {</span>
+<span class="nc" id="L1411">                return StringUtil.capitalizeFirst(INSPECTION_FIELDS.get(i - PAD));</span>
+            }
+<span class="nc" id="L1413">            return &quot;&quot;;</span>
+        }
+
+        @Override
+        public Object getColumnValue(BibEntry entry, int i) {
+<span class="nc bnc" id="L1418" title="All 2 branches missed.">            if (i == 0) {</span>
+<span class="nc bnc" id="L1419" title="All 2 branches missed.">                return entry.isSearchHit() ? Boolean.TRUE : Boolean.FALSE;</span>
+<span class="nc bnc" id="L1420" title="All 2 branches missed.">            } else if (i &lt; PAD) {</span>
+<span class="nc bnc" id="L1421" title="All 4 branches missed.">                switch (i) {</span>
+                case DUPL_COL:
+<span class="nc bnc" id="L1423" title="All 2 branches missed.">                    return entry.isGroupHit() ? duplLabel : null;</span>
+                case FILE_COL:
+<span class="nc bnc" id="L1425" title="All 2 branches missed.">                    if (entry.hasField(FieldName.FILE)) {</span>
+<span class="nc" id="L1426">                        FileListTableModel model = new FileListTableModel();</span>
+<span class="nc" id="L1427">                        entry.getField(FieldName.FILE).ifPresent(model::setContent);</span>
+<span class="nc" id="L1428">                        fileLabel.setToolTipText(model.getToolTipHTMLRepresentation());</span>
+<span class="nc bnc" id="L1429" title="All 4 branches missed.">                        if ((model.getRowCount() &gt; 0) &amp;&amp; model.getEntry(0).getType().isPresent()) {</span>
+<span class="nc" id="L1430">                            fileLabel.setIcon(model.getEntry(0).getType().get().getIcon());</span>
+                        }
+<span class="nc" id="L1432">                        return fileLabel;</span>
+                    } else {
+<span class="nc" id="L1434">                        return null;</span>
+                    }
+                case URL_COL:
+<span class="nc bnc" id="L1437" title="All 2 branches missed.">                    if (entry.hasField(FieldName.URL)) {</span>
+<span class="nc" id="L1438">                        urlLabel.setToolTipText(entry.getField(FieldName.URL).orElse(&quot;&quot;));</span>
+<span class="nc" id="L1439">                        return urlLabel;</span>
+                    } else {
+<span class="nc" id="L1441">                        return null;</span>
+                    }
+                default:
+<span class="nc" id="L1444">                    return null;</span>
+                }
+            } else {
+<span class="nc" id="L1447">                String field = INSPECTION_FIELDS.get(i - PAD);</span>
+<span class="nc bnc" id="L1448" title="All 2 branches missed.">                if (InternalBibtexFields.getFieldProperties(field).contains(FieldProperty.PERSON_NAMES)) {</span>
+<span class="nc" id="L1449">                    return entry.getField(field).map(AuthorList::fixAuthorNatbib).orElse(&quot;&quot;);</span>
+                } else {
+<span class="nc" id="L1451">                    return entry.getField(field).orElse(null);</span>
+                }
+            }
+        }
+
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

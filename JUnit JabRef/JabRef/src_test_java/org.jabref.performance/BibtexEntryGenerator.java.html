@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>BibtexEntryGenerator.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.performance</a> &gt; <span class="el_source">BibtexEntryGenerator.java</span></div><h1>BibtexEntryGenerator.java</h1><pre class="source lang-java linenums">package org.jabref.performance;
+
+<span class="nc" id="L3">public class BibtexEntryGenerator {</span>
+
+    public String generateBibtexEntries(int number) {
+<span class="nc" id="L6">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc bnc" id="L7" title="All 2 branches missed.">        for (int i = 0; i &lt; number; i++) {</span>
+<span class="nc" id="L8">            sb.append(generateBibtexEntry(i));</span>
+<span class="nc" id="L9">            sb.append(&quot;\n&quot;);</span>
+        }
+<span class="nc" id="L11">        return sb.toString();</span>
+    }
+
+    private String generateBibtexEntry(int i) {
+<span class="nc" id="L15">        return &quot;@article{einstein1916grundlage&quot; + i + &quot;,\n&quot; +</span>
+<span class="nc" id="L16">                &quot;  title={Die grundlage der allgemeinen relativit{\\\&quot;a}tstheorie},\n&quot; +</span>
+<span class="nc" id="L17">                &quot;  author={Einstein, Albert},\n&quot; +</span>
+<span class="nc" id="L18">                &quot;  journal={Annalen der Physik},\n&quot; +</span>
+<span class="nc" id="L19">                &quot;  volume={354},\n&quot; +</span>
+<span class="nc" id="L20">                &quot;  number={7},\n&quot; +</span>
+<span class="nc" id="L21">                &quot;  pages={769--822},\n&quot; +</span>
+<span class="nc" id="L22">                &quot;  year={1916},\n&quot; +</span>
+<span class="nc" id="L23">                &quot;  publisher={Wiley Online Library}\n&quot; +</span>
+<span class="nc" id="L24">                &quot;}\n&quot;;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

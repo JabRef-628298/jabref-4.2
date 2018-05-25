@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>PreferencesFilterDialog.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.preftabs</a> &gt; <span class="el_source">PreferencesFilterDialog.java</span></div><h1>PreferencesFilterDialog.java</h1><pre class="source lang-java linenums">package org.jabref.gui.preftabs;
+
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.util.List;
+import java.util.Objects;
+
+import javax.swing.JCheckBox;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.table.AbstractTableModel;
+
+import org.jabref.gui.JabRefDialog;
+import org.jabref.gui.WrapLayout;
+import org.jabref.logic.l10n.Localization;
+import org.jabref.preferences.JabRefPreferencesFilter;
+
+class PreferencesFilterDialog extends JabRefDialog {
+
+    private final JabRefPreferencesFilter preferencesFilter;
+
+    private final JTable table;
+    private final JCheckBox showOnlyDeviatingPreferenceOptions;
+    private final JLabel count;
+
+    public PreferencesFilterDialog(JabRefPreferencesFilter preferencesFilter, JFrame frame) {
+<span class="nc" id="L31">        super(frame, true, PreferencesFilterDialog.class); // is modal</span>
+
+<span class="nc" id="L33">        this.preferencesFilter = Objects.requireNonNull(preferencesFilter);</span>
+
+<span class="nc" id="L35">        this.setTitle(Localization.lang(&quot;Preferences&quot;));</span>
+<span class="nc" id="L36">        this.setSize(new Dimension(800, 600));</span>
+
+<span class="nc" id="L38">        JPanel panel = new JPanel();</span>
+<span class="nc" id="L39">        panel.setLayout(new BorderLayout());</span>
+
+<span class="nc" id="L41">        JPanel northPanel = new JPanel();</span>
+<span class="nc" id="L42">        northPanel.setLayout(new WrapLayout(FlowLayout.LEFT));</span>
+<span class="nc" id="L43">        showOnlyDeviatingPreferenceOptions = new JCheckBox(Localization.lang(&quot;Show only preferences deviating from their default value&quot;), false);</span>
+<span class="nc" id="L44">        showOnlyDeviatingPreferenceOptions.addChangeListener(x -&gt; updateModel());</span>
+<span class="nc" id="L45">        northPanel.add(showOnlyDeviatingPreferenceOptions);</span>
+<span class="nc" id="L46">        count = new JLabel();</span>
+<span class="nc" id="L47">        northPanel.add(count);</span>
+<span class="nc" id="L48">        panel.add(northPanel, BorderLayout.NORTH);</span>
+
+<span class="nc" id="L50">        table = new JTable();</span>
+<span class="nc" id="L51">        table.setAutoCreateRowSorter(true);</span>
+
+<span class="nc" id="L53">        updateModel();</span>
+<span class="nc" id="L54">        panel.add(new JScrollPane(table), BorderLayout.CENTER);</span>
+
+<span class="nc" id="L56">        this.getContentPane().add(panel);</span>
+<span class="nc" id="L57">    }</span>
+
+    private void updateModel() {
+        List&lt;JabRefPreferencesFilter.PreferenceOption&gt; preferenceOptions;
+
+<span class="nc bnc" id="L62" title="All 2 branches missed.">        if (showOnlyDeviatingPreferenceOptions.isSelected()) {</span>
+<span class="nc" id="L63">            preferenceOptions = preferencesFilter.getDeviatingPreferences();</span>
+<span class="nc" id="L64">        } else {</span>
+<span class="nc" id="L65">            preferenceOptions = preferencesFilter.getPreferenceOptions();</span>
+        }
+
+<span class="nc" id="L68">        table.setModel(new PreferencesTableModel(preferenceOptions));</span>
+<span class="nc" id="L69">        count.setText(String.format(&quot;(%d)&quot;, preferenceOptions.size()));</span>
+<span class="nc" id="L70">    }</span>
+
+    private static class PreferencesTableModel extends AbstractTableModel {
+
+        private final List&lt;JabRefPreferencesFilter.PreferenceOption&gt; preferences;
+
+<span class="nc" id="L76">        public PreferencesTableModel(List&lt;JabRefPreferencesFilter.PreferenceOption&gt; preferences) {</span>
+<span class="nc" id="L77">            this.preferences = Objects.requireNonNull(preferences);</span>
+<span class="nc" id="L78">        }</span>
+
+        @Override
+        public String getColumnName(int column) {
+<span class="nc bnc" id="L82" title="All 2 branches missed.">            if (column == 0) {</span>
+<span class="nc" id="L83">                return Localization.lang(&quot;type&quot;);</span>
+<span class="nc bnc" id="L84" title="All 2 branches missed.">            } else if (column == 1) {</span>
+<span class="nc" id="L85">                return Localization.lang(&quot;key&quot;);</span>
+<span class="nc bnc" id="L86" title="All 2 branches missed.">            } else if (column == 2) {</span>
+<span class="nc" id="L87">                return Localization.lang(&quot;value&quot;);</span>
+<span class="nc bnc" id="L88" title="All 2 branches missed.">            } else if (column == 3) {</span>
+<span class="nc" id="L89">                return Localization.lang(&quot;default&quot;);</span>
+            } else {
+<span class="nc" id="L91">                return &quot;n/a&quot;;</span>
+            }
+        }
+
+        @Override
+        public int getRowCount() {
+<span class="nc" id="L97">            return preferences.size();</span>
+        }
+
+        @Override
+        public int getColumnCount() {
+<span class="nc" id="L102">            return 4;</span>
+        }
+
+        @Override
+        public Object getValueAt(int rowIndex, int columnIndex) {
+<span class="nc bnc" id="L107" title="All 4 branches missed.">            if ((rowIndex &lt; 0) || ((rowIndex - 1) &gt; preferences.size())) {</span>
+<span class="nc" id="L108">                return &quot;n/a&quot;;</span>
+            }
+
+<span class="nc" id="L111">            JabRefPreferencesFilter.PreferenceOption preferenceOption = preferences.get(rowIndex);</span>
+<span class="nc bnc" id="L112" title="All 2 branches missed.">            if (columnIndex == 0) {</span>
+<span class="nc" id="L113">                return preferenceOption.getType();</span>
+<span class="nc bnc" id="L114" title="All 2 branches missed.">            } else if (columnIndex == 1) {</span>
+<span class="nc" id="L115">                return preferenceOption.getKey();</span>
+<span class="nc bnc" id="L116" title="All 2 branches missed.">            } else if (columnIndex == 2) {</span>
+<span class="nc" id="L117">                return preferenceOption.getValue();</span>
+<span class="nc bnc" id="L118" title="All 2 branches missed.">            } else if (columnIndex == 3) {</span>
+<span class="nc" id="L119">                return preferenceOption.getDefaultValue().orElse(&quot;NULL&quot;);</span>
+            } else {
+<span class="nc" id="L121">                return &quot;n/a&quot;;</span>
+            }
+        }
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

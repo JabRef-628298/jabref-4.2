@@ -1,0 +1,411 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MedlinePlainImporter.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.importer.fileformat</a> &gt; <span class="el_source">MedlinePlainImporter.java</span></div><h1>MedlinePlainImporter.java</h1><pre class="source lang-java linenums">package org.jabref.logic.importer.fileformat;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.regex.Pattern;
+
+import org.jabref.logic.importer.Importer;
+import org.jabref.logic.importer.ParserResult;
+import org.jabref.logic.util.FileType;
+import org.jabref.logic.util.OS;
+import org.jabref.model.entry.AuthorList;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.FieldName;
+
+/**
+ * Importer for the MEDLINE Plain format.
+ *
+ * check here for details on the format
+ * http://www.nlm.nih.gov/bsd/mms/medlineelements.html
+ *
+ * @author vegeziel
+ */
+<span class="fc" id="L29">public class MedlinePlainImporter extends Importer {</span>
+
+<span class="fc" id="L31">    private static final Pattern PMID_PATTERN = Pattern.compile(&quot;PMID.*-.*&quot;);</span>
+<span class="fc" id="L32">    private static final Pattern PMC_PATTERN = Pattern.compile(&quot;PMC.*-.*&quot;);</span>
+<span class="fc" id="L33">    private static final Pattern PMCR_PATTERN = Pattern.compile(&quot;PMCR.*-.*&quot;);</span>
+<span class="fc" id="L34">    private static final Pattern CREATE_DATE_PATTERN = Pattern.compile(&quot;\\d{4}/[0123]?\\d/\\s?[012]\\d:[0-5]\\d&quot;);</span>
+<span class="fc" id="L35">    private static final Pattern COMPLETE_DATE_PATTERN = Pattern.compile(&quot;\\d{8}&quot;);</span>
+
+    @Override
+    public String getName() {
+<span class="fc" id="L39">        return &quot;Medline/PubMed Plain&quot;;</span>
+    }
+
+    @Override
+    public FileType getFileType() {
+<span class="fc" id="L44">        return FileType.MEDLINE_PLAIN;</span>
+    }
+
+    @Override
+    public String getDescription() {
+<span class="fc" id="L49">        return &quot;Importer for the MedlinePlain format.&quot;;</span>
+    }
+
+    @Override
+    public String getId() {
+<span class="fc" id="L54">        return &quot;medlineplain&quot;;</span>
+    }
+
+    @Override
+    public boolean isRecognizedFormat(BufferedReader reader) throws IOException {
+
+        // Our strategy is to look for the &quot;PMID  - *&quot;, &quot;PMC.*-.*&quot;, or &quot;PMCR.*-.*&quot; line
+        // (i.e., PubMed Unique Identifier, PubMed Central Identifier, PubMed Central Release)
+        String str;
+<span class="fc bfc" id="L63" title="All 2 branches covered.">        while ((str = reader.readLine()) != null) {</span>
+<span class="fc bfc" id="L64" title="All 4 branches covered.">            if (PMID_PATTERN.matcher(str).find() || PMC_PATTERN.matcher(str).find()</span>
+<span class="pc bpc" id="L65" title="1 of 2 branches missed.">                    || PMCR_PATTERN.matcher(str).find()) {</span>
+<span class="fc" id="L66">                return true;</span>
+            }
+        }
+<span class="fc" id="L69">        return false;</span>
+    }
+
+    @Override
+    public ParserResult importDatabase(BufferedReader reader) throws IOException {
+<span class="fc" id="L74">        List&lt;BibEntry&gt; bibitems = new ArrayList&lt;&gt;();</span>
+
+        //use optional here, so that no exception will be thrown if the file is empty
+<span class="fc" id="L77">        Optional&lt;String&gt; OptionalLines = reader.lines().reduce((line, nextline) -&gt; line + &quot;\n&quot; + nextline);</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">        String linesAsString = OptionalLines.isPresent() ? OptionalLines.get() : &quot;&quot;;</span>
+
+<span class="fc" id="L80">        String[] entries = linesAsString.replace(&quot;\u2013&quot;, &quot;-&quot;).replace(&quot;\u2014&quot;, &quot;--&quot;).replace(&quot;\u2015&quot;, &quot;--&quot;)</span>
+<span class="fc" id="L81">                .split(&quot;\\n\\n&quot;);</span>
+
+<span class="fc bfc" id="L83" title="All 2 branches covered.">        for (String entry1 : entries) {</span>
+
+<span class="fc bfc" id="L85" title="All 4 branches covered.">            if (entry1.trim().isEmpty() || !entry1.contains(&quot;-&quot;)) {</span>
+<span class="fc" id="L86">                continue;</span>
+            }
+
+<span class="fc" id="L89">            String type = BibEntry.DEFAULT_TYPE;</span>
+<span class="fc" id="L90">            String author = &quot;&quot;;</span>
+<span class="fc" id="L91">            String editor = &quot;&quot;;</span>
+<span class="fc" id="L92">            String comment = &quot;&quot;;</span>
+<span class="fc" id="L93">            Map&lt;String, String&gt; fields = new HashMap&lt;&gt;();</span>
+
+<span class="fc" id="L95">            String[] lines = entry1.split(&quot;\n&quot;);</span>
+
+<span class="fc bfc" id="L97" title="All 2 branches covered.">            for (int j = 0; j &lt; lines.length; j++) {</span>
+
+<span class="fc" id="L99">                StringBuilder current = new StringBuilder(lines[j]);</span>
+<span class="fc" id="L100">                boolean done = false;</span>
+
+<span class="fc bfc" id="L102" title="All 4 branches covered.">                while (!done &amp;&amp; (j &lt; (lines.length - 1))) {</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">                    if (lines[j + 1].length() &lt;= 4) {</span>
+<span class="fc" id="L104">                        j++;</span>
+<span class="fc" id="L105">                        continue;</span>
+                    }
+<span class="fc bfc" id="L107" title="All 2 branches covered.">                    if (lines[j + 1].charAt(4) != '-') {</span>
+<span class="pc bpc" id="L108" title="1 of 4 branches missed.">                        if ((current.length() &gt; 0) &amp;&amp; !Character.isWhitespace(current.charAt(current.length() - 1))) {</span>
+<span class="fc" id="L109">                            current.append(' ');</span>
+                        }
+<span class="fc" id="L111">                        current.append(lines[j + 1].trim());</span>
+<span class="fc" id="L112">                        j++;</span>
+<span class="fc" id="L113">                    } else {</span>
+<span class="fc" id="L114">                        done = true;</span>
+                    }
+                }
+<span class="fc" id="L117">                String entry = current.toString();</span>
+<span class="fc bfc" id="L118" title="All 2 branches covered.">                if (!checkLineValidity(entry)) {</span>
+<span class="fc" id="L119">                    continue;</span>
+                }
+
+<span class="fc" id="L122">                String label = entry.substring(0, entry.indexOf('-')).trim();</span>
+<span class="fc" id="L123">                String value = entry.substring(entry.indexOf('-') + 1).trim();</span>
+
+<span class="fc bfc" id="L125" title="All 2 branches covered.">                if (&quot;PT&quot;.equals(label)) {</span>
+<span class="fc" id="L126">                    type = addSourceType(value, type);</span>
+                }
+<span class="fc" id="L128">                addDates(fields, label, value);</span>
+<span class="fc" id="L129">                addAbstract(fields, label, value);</span>
+<span class="fc" id="L130">                addTitles(fields, label, value, type);</span>
+<span class="fc" id="L131">                addIDs(fields, label, value);</span>
+<span class="fc" id="L132">                addStandardNumber(fields, label, value);</span>
+
+<span class="fc bfc" id="L134" title="All 2 branches covered.">                if (&quot;FAU&quot;.equals(label)) {</span>
+<span class="fc bfc" id="L135" title="All 2 branches covered.">                    if (&quot;&quot;.equals(author)) {</span>
+<span class="fc" id="L136">                        author = value;</span>
+<span class="fc" id="L137">                    } else {</span>
+<span class="fc" id="L138">                        author += &quot; and &quot; + value;</span>
+                    }
+<span class="fc bfc" id="L140" title="All 2 branches covered.">                } else if (&quot;FED&quot;.equals(label)) {</span>
+<span class="fc bfc" id="L141" title="All 2 branches covered.">                    if (&quot;&quot;.equals(editor)) {</span>
+<span class="fc" id="L142">                        editor = value;</span>
+<span class="fc" id="L143">                    } else {</span>
+<span class="fc" id="L144">                        editor += &quot; and &quot; + value;</span>
+                    }
+                }
+
+                //store the fields in a map
+<span class="fc" id="L149">                Map&lt;String, String&gt; hashMap = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L150">                hashMap.put(&quot;PG&quot;, FieldName.PAGES);</span>
+<span class="fc" id="L151">                hashMap.put(&quot;PL&quot;, FieldName.ADDRESS);</span>
+<span class="fc" id="L152">                hashMap.put(&quot;PHST&quot;, &quot;history&quot;);</span>
+<span class="fc" id="L153">                hashMap.put(&quot;PST&quot;, &quot;publication-status&quot;);</span>
+<span class="fc" id="L154">                hashMap.put(&quot;VI&quot;, FieldName.VOLUME);</span>
+<span class="fc" id="L155">                hashMap.put(&quot;LA&quot;, FieldName.LANGUAGE);</span>
+<span class="fc" id="L156">                hashMap.put(&quot;PUBM&quot;, &quot;model&quot;);</span>
+<span class="fc" id="L157">                hashMap.put(&quot;RN&quot;, &quot;registry-number&quot;);</span>
+<span class="fc" id="L158">                hashMap.put(&quot;NM&quot;, &quot;substance-name&quot;);</span>
+<span class="fc" id="L159">                hashMap.put(&quot;OCI&quot;, &quot;copyright-owner&quot;);</span>
+<span class="fc" id="L160">                hashMap.put(&quot;CN&quot;, &quot;corporate&quot;);</span>
+<span class="fc" id="L161">                hashMap.put(&quot;IP&quot;, FieldName.ISSUE);</span>
+<span class="fc" id="L162">                hashMap.put(&quot;EN&quot;, FieldName.EDITION);</span>
+<span class="fc" id="L163">                hashMap.put(&quot;GS&quot;, &quot;gene-symbol&quot;);</span>
+<span class="fc" id="L164">                hashMap.put(&quot;GN&quot;, FieldName.NOTE);</span>
+<span class="fc" id="L165">                hashMap.put(&quot;GR&quot;, &quot;grantno&quot;);</span>
+<span class="fc" id="L166">                hashMap.put(&quot;SO&quot;, &quot;source&quot;);</span>
+<span class="fc" id="L167">                hashMap.put(&quot;NR&quot;, &quot;number-of-references&quot;);</span>
+<span class="fc" id="L168">                hashMap.put(&quot;SFM&quot;, &quot;space-flight-mission&quot;);</span>
+<span class="fc" id="L169">                hashMap.put(&quot;STAT&quot;, &quot;status&quot;);</span>
+<span class="fc" id="L170">                hashMap.put(&quot;SB&quot;, &quot;subset&quot;);</span>
+<span class="fc" id="L171">                hashMap.put(&quot;OTO&quot;, &quot;termowner&quot;);</span>
+<span class="fc" id="L172">                hashMap.put(&quot;OWN&quot;, FieldName.OWNER);</span>
+
+                //add the fields to hm
+<span class="fc bfc" id="L175" title="All 2 branches covered.">                for (Map.Entry&lt;String, String&gt; mapEntry : hashMap.entrySet()) {</span>
+<span class="fc" id="L176">                    String medlineKey = mapEntry.getKey();</span>
+<span class="fc" id="L177">                    String bibtexKey = mapEntry.getValue();</span>
+<span class="fc bfc" id="L178" title="All 2 branches covered.">                    if (medlineKey.equals(label)) {</span>
+<span class="fc" id="L179">                        fields.put(bibtexKey, value);</span>
+                    }
+                }
+
+<span class="fc bfc" id="L183" title="All 6 branches covered.">                if (&quot;IRAD&quot;.equals(label) || &quot;IR&quot;.equals(label) || &quot;FIR&quot;.equals(label)) {</span>
+<span class="fc" id="L184">                    String oldInvestigator = fields.get(&quot;investigator&quot;);</span>
+<span class="fc bfc" id="L185" title="All 2 branches covered.">                    if (oldInvestigator == null) {</span>
+<span class="fc" id="L186">                        fields.put(&quot;investigator&quot;, value);</span>
+<span class="fc" id="L187">                    } else {</span>
+<span class="fc" id="L188">                        fields.put(&quot;investigator&quot;, oldInvestigator + &quot;, &quot; + value);</span>
+                    }
+<span class="fc bfc" id="L190" title="All 4 branches covered.">                } else if (&quot;MH&quot;.equals(label) || &quot;OT&quot;.equals(label)) {</span>
+<span class="fc bfc" id="L191" title="All 2 branches covered.">                    if (!fields.containsKey(FieldName.KEYWORDS)) {</span>
+<span class="fc" id="L192">                        fields.put(FieldName.KEYWORDS, value);</span>
+<span class="fc" id="L193">                    } else {</span>
+<span class="fc" id="L194">                        String kw = fields.get(FieldName.KEYWORDS);</span>
+<span class="fc" id="L195">                        fields.put(FieldName.KEYWORDS, kw + &quot;, &quot; + value);</span>
+                    }
+<span class="fc bfc" id="L197" title="All 8 branches covered.">                } else if (&quot;CON&quot;.equals(label) || &quot;CIN&quot;.equals(label) || &quot;EIN&quot;.equals(label) || &quot;EFR&quot;.equals(label)</span>
+<span class="fc bfc" id="L198" title="All 8 branches covered.">                        || &quot;CRI&quot;.equals(label) || &quot;CRF&quot;.equals(label) || &quot;PRIN&quot;.equals(label) || &quot;PROF&quot;.equals(label)</span>
+<span class="fc bfc" id="L199" title="All 8 branches covered.">                        || &quot;RPI&quot;.equals(label) || &quot;RPF&quot;.equals(label) || &quot;RIN&quot;.equals(label) || &quot;ROF&quot;.equals(label)</span>
+<span class="fc bfc" id="L200" title="All 8 branches covered.">                        || &quot;UIN&quot;.equals(label) || &quot;UOF&quot;.equals(label) || &quot;SPIN&quot;.equals(label) || &quot;ORI&quot;.equals(label)) {</span>
+<span class="fc bfc" id="L201" title="All 2 branches covered.">                    if (!comment.isEmpty()) {</span>
+<span class="fc" id="L202">                        comment = comment + &quot;\n&quot;;</span>
+                    }
+<span class="fc" id="L204">                    comment = comment + value;</span>
+                }
+            }
+<span class="fc" id="L207">            fixAuthors(fields, author, FieldName.AUTHOR);</span>
+<span class="fc" id="L208">            fixAuthors(fields, editor, FieldName.EDITOR);</span>
+<span class="fc bfc" id="L209" title="All 2 branches covered.">            if (!comment.isEmpty()) {</span>
+<span class="fc" id="L210">                fields.put(FieldName.COMMENT, comment);</span>
+            }
+
+<span class="fc" id="L213">            BibEntry b = new BibEntry(type);</span>
+
+            // Remove empty fields:
+<span class="fc" id="L216">            fields.entrySet().stream().filter(n -&gt; n.getValue().trim().isEmpty()).forEach(fields::remove);</span>
+
+            // create one here
+<span class="fc" id="L219">            b.setField(fields);</span>
+<span class="fc" id="L220">            bibitems.add(b);</span>
+        }
+
+<span class="fc" id="L223">        return new ParserResult(bibitems);</span>
+
+    }
+
+    private boolean checkLineValidity(String line) {
+<span class="fc bfc" id="L228" title="All 4 branches covered.">        return (line.length() &gt;= 5) &amp;&amp; (line.charAt(4) == '-');</span>
+    }
+
+    private String addSourceType(String value, String type) {
+<span class="fc" id="L232">        String val = value.toLowerCase(Locale.ENGLISH);</span>
+<span class="fc" id="L233">        String theType = type;</span>
+<span class="pc bpc" id="L234" title="13 of 40 branches missed.">        switch (val) {</span>
+        case &quot;book&quot;:
+<span class="fc" id="L236">            theType = &quot;book&quot;;</span>
+<span class="fc" id="L237">            break;</span>
+        case &quot;journal article&quot;:
+        case &quot;classical article&quot;:
+        case &quot;corrected and republished article&quot;:
+        case &quot;historical article&quot;:
+        case &quot;introductory journal article&quot;:
+        case &quot;newspaper article&quot;:
+<span class="fc" id="L244">            theType = &quot;article&quot;;</span>
+<span class="fc" id="L245">            break;</span>
+        case &quot;clinical conference&quot;:
+        case &quot;consensus development conference&quot;:
+        case &quot;consensus development conference, nih&quot;:
+<span class="fc" id="L249">            theType = &quot;conference&quot;;</span>
+<span class="fc" id="L250">            break;</span>
+        case &quot;technical report&quot;:
+<span class="fc" id="L252">            theType = &quot;techreport&quot;;</span>
+<span class="fc" id="L253">            break;</span>
+        case &quot;editorial&quot;:
+<span class="fc" id="L255">            theType = &quot;inproceedings&quot;;</span>
+<span class="fc" id="L256">            break;</span>
+        case &quot;overall&quot;:
+<span class="fc" id="L258">            theType = &quot;proceedings&quot;;</span>
+<span class="fc" id="L259">            break;</span>
+        default:
+            break;
+        }
+<span class="pc bpc" id="L263" title="1 of 2 branches missed.">        if (&quot;&quot;.equals(theType)) {</span>
+<span class="nc" id="L264">            theType = &quot;other&quot;;</span>
+        }
+<span class="fc" id="L266">        return theType;</span>
+    }
+
+    private void addStandardNumber(Map&lt;String, String&gt; hm, String lab, String value) {
+<span class="fc bfc" id="L270" title="All 2 branches covered.">        if (&quot;IS&quot;.equals(lab)) {</span>
+<span class="fc" id="L271">            String key = FieldName.ISSN;</span>
+            //it is possible to have two issn, one for electronic and for print
+            //if there are two then it comes at the end in brackets (electronic) or (print)
+            //so search for the brackets
+<span class="fc bfc" id="L275" title="All 2 branches covered.">            if (value.indexOf('(') &gt; 0) {</span>
+<span class="fc" id="L276">                int keyStart = value.indexOf('(');</span>
+<span class="fc" id="L277">                int keyEnd = value.indexOf(')');</span>
+<span class="fc" id="L278">                key = value.substring(keyStart + 1, keyEnd) + &quot;-&quot; + key;</span>
+<span class="fc" id="L279">                String numberValue = value.substring(0, keyStart - 1);</span>
+<span class="fc" id="L280">                hm.put(key, numberValue);</span>
+<span class="fc" id="L281">            } else {</span>
+<span class="fc" id="L282">                hm.put(key, value);</span>
+            }
+<span class="fc bfc" id="L284" title="All 2 branches covered.">        } else if (&quot;ISBN&quot;.equals(lab)) {</span>
+<span class="fc" id="L285">            hm.put(FieldName.ISBN, value);</span>
+        }
+<span class="fc" id="L287">    }</span>
+
+    private void fixAuthors(Map&lt;String, String&gt; hm, String author, String field) {
+<span class="fc bfc" id="L290" title="All 2 branches covered.">        if (!author.isEmpty()) {</span>
+<span class="fc" id="L291">            String fixedAuthor = AuthorList.fixAuthorLastNameFirst(author);</span>
+<span class="fc" id="L292">            hm.put(field, fixedAuthor);</span>
+        }
+<span class="fc" id="L294">    }</span>
+
+    private void addIDs(Map&lt;String, String&gt; hm, String lab, String value) {
+<span class="fc bfc" id="L297" title="All 2 branches covered.">        if (&quot;AID&quot;.equals(lab)) {</span>
+<span class="fc" id="L298">            String key = &quot;article-id&quot;;</span>
+<span class="fc" id="L299">            String idValue = value;</span>
+<span class="fc bfc" id="L300" title="All 2 branches covered.">            if (value.startsWith(&quot;doi:&quot;)) {</span>
+<span class="fc" id="L301">                idValue = idValue.replaceAll(&quot;(?i)doi:&quot;, &quot;&quot;).trim();</span>
+<span class="fc" id="L302">                key = FieldName.DOI;</span>
+<span class="fc bfc" id="L303" title="All 2 branches covered.">            } else if (value.indexOf('[') &gt; 0) {</span>
+<span class="fc" id="L304">                int startOfIdentifier = value.indexOf('[');</span>
+<span class="fc" id="L305">                int endOfIdentifier = value.indexOf(']');</span>
+<span class="fc" id="L306">                key = &quot;article-&quot; + value.substring(startOfIdentifier + 1, endOfIdentifier);</span>
+<span class="fc" id="L307">                idValue = value.substring(0, startOfIdentifier - 1);</span>
+            }
+<span class="fc" id="L309">            hm.put(key, idValue);</span>
+
+<span class="fc bfc" id="L311" title="All 2 branches covered.">        } else if (&quot;LID&quot;.equals(lab)) {</span>
+<span class="fc" id="L312">            hm.put(&quot;location-id&quot;, value);</span>
+<span class="fc bfc" id="L313" title="All 2 branches covered.">        } else if (&quot;MID&quot;.equals(lab)) {</span>
+<span class="fc" id="L314">            hm.put(&quot;manuscript-id&quot;, value);</span>
+<span class="fc bfc" id="L315" title="All 2 branches covered.">        } else if (&quot;JID&quot;.equals(lab)) {</span>
+<span class="fc" id="L316">            hm.put(&quot;nlm-unique-id&quot;, value);</span>
+<span class="fc bfc" id="L317" title="All 2 branches covered.">        } else if (&quot;OID&quot;.equals(lab)) {</span>
+<span class="fc" id="L318">            hm.put(&quot;other-id&quot;, value);</span>
+<span class="fc bfc" id="L319" title="All 2 branches covered.">        } else if (&quot;SI&quot;.equals(lab)) {</span>
+<span class="fc" id="L320">            hm.put(&quot;second-id&quot;, value);</span>
+        }
+<span class="fc" id="L322">    }</span>
+
+    private void addTitles(Map&lt;String, String&gt; hm, String lab, String val, String type) {
+<span class="fc bfc" id="L325" title="All 2 branches covered.">        if (&quot;TI&quot;.equals(lab)) {</span>
+<span class="fc" id="L326">            String oldVal = hm.get(FieldName.TITLE);</span>
+<span class="fc bfc" id="L327" title="All 2 branches covered.">            if (oldVal == null) {</span>
+<span class="fc" id="L328">                hm.put(FieldName.TITLE, val);</span>
+<span class="fc" id="L329">            } else {</span>
+<span class="fc bfc" id="L330" title="All 6 branches covered.">                if (oldVal.endsWith(&quot;:&quot;) || oldVal.endsWith(&quot;.&quot;) || oldVal.endsWith(&quot;?&quot;)) {</span>
+<span class="fc" id="L331">                    hm.put(FieldName.TITLE, oldVal + &quot; &quot; + val);</span>
+<span class="fc" id="L332">                } else {</span>
+<span class="fc" id="L333">                    hm.put(FieldName.TITLE, oldVal + &quot;: &quot; + val);</span>
+                }
+            }
+<span class="fc bfc" id="L336" title="All 4 branches covered.">        } else if (&quot;BTI&quot;.equals(lab) || &quot;CTI&quot;.equals(lab)) {</span>
+<span class="fc" id="L337">            hm.put(FieldName.BOOKTITLE, val);</span>
+<span class="fc bfc" id="L338" title="All 2 branches covered.">        } else if (&quot;JT&quot;.equals(lab)) {</span>
+<span class="fc bfc" id="L339" title="All 2 branches covered.">            if (&quot;inproceedings&quot;.equals(type)) {</span>
+<span class="fc" id="L340">                hm.put(FieldName.BOOKTITLE, val);</span>
+<span class="fc" id="L341">            } else {</span>
+<span class="fc" id="L342">                hm.put(FieldName.JOURNAL, val);</span>
+            }
+<span class="pc bpc" id="L344" title="1 of 2 branches missed.">        } else if (&quot;CTI&quot;.equals(lab)) {</span>
+<span class="nc" id="L345">            hm.put(&quot;collection-title&quot;, val);</span>
+<span class="pc bfc" id="L346" title="All 2 branches covered.">        } else if (&quot;TA&quot;.equals(lab)) {</span>
+<span class="fc" id="L347">            hm.put(&quot;title-abbreviation&quot;, val);</span>
+<span class="fc bfc" id="L348" title="All 2 branches covered.">        } else if (&quot;TT&quot;.equals(lab)) {</span>
+<span class="fc" id="L349">            hm.put(&quot;transliterated-title&quot;, val);</span>
+<span class="fc bfc" id="L350" title="All 2 branches covered.">        } else if (&quot;VTI&quot;.equals(lab)) {</span>
+<span class="fc" id="L351">            hm.put(&quot;volume-title&quot;, val);</span>
+        }
+<span class="fc" id="L353">    }</span>
+
+    private void addAbstract(Map&lt;String, String&gt; hm, String lab, String value) {
+<span class="fc" id="L356">        String abstractValue = &quot;&quot;;</span>
+<span class="fc bfc" id="L357" title="All 2 branches covered.">        if (&quot;AB&quot;.equals(lab)) {</span>
+            //adds copyright information that comes at the end of an abstract
+<span class="fc bfc" id="L359" title="All 2 branches covered.">            if (value.contains(&quot;Copyright&quot;)) {</span>
+<span class="fc" id="L360">                int copyrightIndex = value.lastIndexOf(&quot;Copyright&quot;);</span>
+                //remove the copyright from the field since the name of the field is copyright
+<span class="fc" id="L362">                String copyrightInfo = value.substring(copyrightIndex, value.length()).replaceAll(&quot;Copyright &quot;, &quot;&quot;);</span>
+<span class="fc" id="L363">                hm.put(&quot;copyright&quot;, copyrightInfo);</span>
+<span class="fc" id="L364">                abstractValue = value.substring(0, copyrightIndex);</span>
+<span class="fc" id="L365">            } else {</span>
+<span class="fc" id="L366">                abstractValue = value;</span>
+            }
+<span class="fc" id="L368">            String oldAb = hm.get(FieldName.ABSTRACT);</span>
+<span class="fc bfc" id="L369" title="All 2 branches covered.">            if (oldAb == null) {</span>
+<span class="fc" id="L370">                hm.put(FieldName.ABSTRACT, abstractValue);</span>
+<span class="fc" id="L371">            } else {</span>
+<span class="fc" id="L372">                hm.put(FieldName.ABSTRACT, oldAb + OS.NEWLINE + abstractValue);</span>
+            }
+<span class="fc bfc" id="L374" title="All 4 branches covered.">        } else if (&quot;OAB&quot;.equals(lab) || &quot;OABL&quot;.equals(lab)) {</span>
+<span class="fc" id="L375">            hm.put(&quot;other-abstract&quot;, value);</span>
+        }
+<span class="fc" id="L377">    }</span>
+
+    private void addDates(Map&lt;String, String&gt; hm, String lab, String val) {
+<span class="pc bpc" id="L380" title="1 of 4 branches missed.">        if (&quot;CRDT&quot;.equals(lab) &amp;&amp; isCreateDateFormat(val)) {</span>
+<span class="nc" id="L381">            hm.put(&quot;create-date&quot;, val);</span>
+<span class="pc bpc" id="L382" title="1 of 4 branches missed.">        } else if (&quot;DEP&quot;.equals(lab) &amp;&amp; isDateFormat(val)) {</span>
+<span class="fc" id="L383">            hm.put(&quot;electronic-publication&quot;, val);</span>
+<span class="pc bpc" id="L384" title="1 of 4 branches missed.">        } else if (&quot;DA&quot;.equals(lab) &amp;&amp; isDateFormat(val)) {</span>
+<span class="fc" id="L385">            hm.put(&quot;date-created&quot;, val);</span>
+<span class="pc bpc" id="L386" title="1 of 4 branches missed.">        } else if (&quot;DCOM&quot;.equals(lab) &amp;&amp; isDateFormat(val)) {</span>
+<span class="fc" id="L387">            hm.put(&quot;completed&quot;, val);</span>
+<span class="pc bpc" id="L388" title="1 of 4 branches missed.">        } else if (&quot;LR&quot;.equals(lab) &amp;&amp; isDateFormat(val)) {</span>
+<span class="fc" id="L389">            hm.put(&quot;revised&quot;, val);</span>
+<span class="fc bfc" id="L390" title="All 2 branches covered.">        } else if (&quot;DP&quot;.equals(lab)) {</span>
+<span class="fc" id="L391">            String[] parts = val.split(&quot; &quot;);</span>
+<span class="fc" id="L392">            hm.put(FieldName.YEAR, parts[0]);</span>
+<span class="fc bfc" id="L393" title="All 4 branches covered.">            if ((parts.length &gt; 1) &amp;&amp; !parts[1].isEmpty()) {</span>
+<span class="fc" id="L394">                hm.put(FieldName.MONTH, parts[1]);</span>
+            }
+<span class="pc bpc" id="L396" title="1 of 4 branches missed.">        } else if (&quot;EDAT&quot;.equals(lab) &amp;&amp; isCreateDateFormat(val)) {</span>
+<span class="nc" id="L397">            hm.put(&quot;publication&quot;, val);</span>
+<span class="pc bpc" id="L398" title="1 of 4 branches missed.">        } else if (&quot;MHDA&quot;.equals(lab) &amp;&amp; isCreateDateFormat(val)) {</span>
+<span class="nc" id="L399">            hm.put(&quot;mesh-date&quot;, val);</span>
+        }
+<span class="fc" id="L401">    }</span>
+
+    private boolean isCreateDateFormat(String value) {
+<span class="fc" id="L404">        return CREATE_DATE_PATTERN.matcher(value).matches();</span>
+    }
+
+    private boolean isDateFormat(String value) {
+<span class="fc" id="L408">        return COMPLETE_DATE_PATTERN.matcher(value).matches();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

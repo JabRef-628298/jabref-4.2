@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>EntryEditorTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.entryeditor</a> &gt; <span class="el_source">EntryEditorTest.java</span></div><h1>EntryEditorTest.java</h1><pre class="source lang-java linenums">package org.jabref.gui.entryeditor;
+
+import javafx.scene.Scene;
+import javafx.scene.control.Label;
+import javafx.scene.control.Tab;
+import javafx.scene.control.TabPane;
+import javafx.stage.Stage;
+
+import org.jabref.gui.undo.CountingUndoManager;
+import org.jabref.logic.bibtex.LatexFieldFormatterPreferences;
+import org.jabref.model.database.BibDatabaseContext;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.util.DummyFileUpdateMonitor;
+import org.jabref.preferences.JabRefPreferences;
+
+import org.fxmisc.richtext.CodeArea;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.mockito.Answers;
+import org.testfx.framework.junit.ApplicationTest;
+
+import static org.mockito.Mockito.mock;
+
+<span class="nc" id="L24">public class EntryEditorTest extends ApplicationTest {</span>
+
+    private Stage stage;
+    private Scene scene;
+    private CodeArea area;
+    private TabPane pane;
+    private SourceTab sourceTab;
+
+    @Override
+    public void start(Stage stage) throws Exception {
+<span class="nc" id="L34">        area = new CodeArea();</span>
+<span class="nc" id="L35">        area.appendText(&quot;some example\n text to go here\n across a couple of \n lines....&quot;);</span>
+<span class="nc" id="L36">        JabRefPreferences preferences = mock(JabRefPreferences.class, Answers.RETURNS_DEEP_STUBS);</span>
+<span class="nc" id="L37">        sourceTab = new SourceTab(new BibDatabaseContext(), new CountingUndoManager(), new LatexFieldFormatterPreferences(), preferences, new DummyFileUpdateMonitor());</span>
+<span class="nc" id="L38">        pane = new TabPane(</span>
+<span class="nc" id="L39">                new Tab(&quot;main area&quot;, area),</span>
+<span class="nc" id="L40">                new Tab(&quot;other tab&quot;, new Label(&quot;some text&quot;)),</span>
+<span class="nc" id="L41">                sourceTab</span>
+        );
+<span class="nc" id="L43">        scene = new Scene(pane);</span>
+<span class="nc" id="L44">        this.stage = stage;</span>
+
+<span class="nc" id="L46">        stage.setScene(scene);</span>
+<span class="nc" id="L47">        stage.setWidth(400);</span>
+<span class="nc" id="L48">        stage.setHeight(400);</span>
+<span class="nc" id="L49">        stage.show();</span>
+
+        // select the area's tab
+<span class="nc" id="L52">        pane.getSelectionModel().select(0);</span>
+<span class="nc" id="L53">    }</span>
+
+    @Ignore
+    @Test
+    public void switchingFromSourceTabDoesNotThrowException() throws Exception {
+<span class="nc" id="L58">        BibEntry entry = new BibEntry();</span>
+<span class="nc" id="L59">        entry.setField(&quot;test&quot;, &quot;testvalue&quot;);</span>
+
+        // Update source editor
+<span class="nc" id="L62">        interact(() -&gt; pane.getSelectionModel().select(2));</span>
+<span class="nc" id="L63">        interact(() -&gt; sourceTab.bindToEntry(entry));</span>
+<span class="nc" id="L64">        clickOn(1200, 500);</span>
+<span class="nc" id="L65">        interrupt(100);</span>
+
+        // Switch to different tab &amp; update entry
+<span class="nc" id="L68">        interact(() -&gt; pane.getSelectionModel().select(1));</span>
+<span class="nc" id="L69">        interact(() -&gt; stage.setWidth(600));</span>
+<span class="nc" id="L70">        interact(() -&gt; entry.setField(&quot;test&quot;, &quot;new value&quot;));</span>
+
+        // No exception should be thrown
+<span class="nc" id="L73">        interrupt(100);</span>
+<span class="nc" id="L74">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

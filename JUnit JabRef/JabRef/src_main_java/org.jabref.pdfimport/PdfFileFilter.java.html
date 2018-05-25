@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>PdfFileFilter.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.pdfimport</a> &gt; <span class="el_source">PdfFileFilter.java</span></div><h1>PdfFileFilter.java</h1><pre class="source lang-java linenums">package org.jabref.pdfimport;
+
+import java.io.File;
+import java.io.FileFilter;
+
+<span class="nc" id="L6">public class PdfFileFilter implements FileFilter {</span>
+
+    @Override
+    public boolean accept(File file) {
+<span class="nc" id="L10">        String path = file.getPath();</span>
+
+<span class="nc" id="L12">        return isMatchingFileFilter(path);</span>
+    }
+
+    public static boolean accept(String path) {
+<span class="nc bnc" id="L16" title="All 6 branches missed.">        if ((path == null) || path.isEmpty() || !path.contains(&quot;.&quot;)) {</span>
+<span class="nc" id="L17">            return false;</span>
+        }
+
+<span class="nc" id="L20">        return isMatchingFileFilter(path);</span>
+    }
+
+    private static boolean isMatchingFileFilter(String path) {
+<span class="nc" id="L24">        String extension = path.substring(path.lastIndexOf('.') + 1);</span>
+<span class="nc" id="L25">        return &quot;pdf&quot;.equalsIgnoreCase(extension);</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

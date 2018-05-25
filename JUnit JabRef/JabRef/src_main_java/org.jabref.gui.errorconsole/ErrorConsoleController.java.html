@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>ErrorConsoleController.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.errorconsole</a> &gt; <span class="el_source">ErrorConsoleController.java</span></div><h1>ErrorConsoleController.java</h1><pre class="source lang-java linenums"><span class="nc" id="L1">package org.jabref.gui.errorconsole;</span>
+
+import javax.inject.Inject;
+
+import javafx.collections.ListChangeListener;
+import javafx.collections.ObservableList;
+import javafx.fxml.FXML;
+import javafx.scene.Node;
+import javafx.scene.control.Button;
+import javafx.scene.control.ContentDisplay;
+import javafx.scene.control.Label;
+import javafx.scene.control.ListCell;
+import javafx.scene.control.ListView;
+import javafx.scene.control.SelectionMode;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
+import javafx.util.Callback;
+
+import org.jabref.gui.AbstractController;
+import org.jabref.gui.ClipBoardManager;
+import org.jabref.gui.DialogService;
+import org.jabref.gui.IconTheme;
+import org.jabref.gui.keyboard.KeyBinding;
+import org.jabref.gui.keyboard.KeyBindingRepository;
+import org.jabref.logic.util.BuildInfo;
+
+<span class="nc" id="L28">public class ErrorConsoleController extends AbstractController&lt;ErrorConsoleViewModel&gt; {</span>
+
+    @FXML private Button copyLogButton;
+    @FXML private Button clearLogButton;
+    @FXML private Button createIssueButton;
+    @FXML private ListView&lt;LogEventViewModel&gt; messagesListView;
+    @FXML private Label descriptionLabel;
+
+    @Inject private DialogService dialogService;
+    @Inject private ClipBoardManager clipBoardManager;
+    @Inject private BuildInfo buildInfo;
+    @Inject private KeyBindingRepository keyBindingRepository;
+
+    @FXML
+    private void initialize() {
+<span class="nc" id="L43">        viewModel = new ErrorConsoleViewModel(dialogService, clipBoardManager, buildInfo);</span>
+
+<span class="nc" id="L45">        messagesListView.setCellFactory(createCellFactory());</span>
+<span class="nc" id="L46">        messagesListView.itemsProperty().bind(viewModel.allMessagesDataProperty());</span>
+<span class="nc" id="L47">        messagesListView.scrollTo(viewModel.allMessagesDataProperty().getSize() - 1);</span>
+<span class="nc" id="L48">        messagesListView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);</span>
+<span class="nc" id="L49">        viewModel.allMessagesDataProperty().addListener((ListChangeListener&lt;LogEventViewModel&gt;) (change -&gt; {</span>
+<span class="nc" id="L50">            int size = viewModel.allMessagesDataProperty().size();</span>
+<span class="nc bnc" id="L51" title="All 2 branches missed.">            if (size &gt; 0) {</span>
+<span class="nc" id="L52">                messagesListView.scrollTo(size - 1);</span>
+            }
+<span class="nc" id="L54">        }));</span>
+<span class="nc" id="L55">        descriptionLabel.setGraphic(IconTheme.JabRefIcon.CONSOLE.getGraphicNode());</span>
+<span class="nc" id="L56">    }</span>
+
+    private Callback&lt;ListView&lt;LogEventViewModel&gt;, ListCell&lt;LogEventViewModel&gt;&gt; createCellFactory() {
+<span class="nc" id="L59">        return cell -&gt; new ListCell&lt;LogEventViewModel&gt;() {</span>
+
+            private HBox graphic;
+            private Node icon;
+            private VBox message;
+            private Label heading;
+            private Label stacktrace;
+
+            {
+<span class="nc" id="L68">                graphic = new HBox(10);</span>
+<span class="nc" id="L69">                heading = new Label();</span>
+<span class="nc" id="L70">                stacktrace = new Label();</span>
+<span class="nc" id="L71">                message = new VBox();</span>
+<span class="nc" id="L72">                message.getChildren().setAll(heading, stacktrace);</span>
+<span class="nc" id="L73">                setContentDisplay(ContentDisplay.GRAPHIC_ONLY);</span>
+            }
+
+            @Override
+            public void updateItem(LogEventViewModel event, boolean empty) {
+<span class="nc" id="L78">                super.updateItem(event, empty);</span>
+
+<span class="nc bnc" id="L80" title="All 4 branches missed.">                if (event == null || empty) {</span>
+<span class="nc" id="L81">                    setGraphic(null);</span>
+<span class="nc" id="L82">                } else {</span>
+<span class="nc" id="L83">                    icon = event.getIcon().getGraphicNode();</span>
+<span class="nc" id="L84">                    heading.setText(event.getDisplayText());</span>
+<span class="nc" id="L85">                    heading.getStyleClass().setAll(event.getStyleClass());</span>
+<span class="nc" id="L86">                    stacktrace.setText(event.getStackTrace().orElse(&quot;&quot;));</span>
+<span class="nc" id="L87">                    graphic.getStyleClass().setAll(event.getStyleClass());</span>
+<span class="nc" id="L88">                    graphic.getChildren().setAll(icon, message);</span>
+<span class="nc" id="L89">                    setGraphic(graphic);</span>
+                }
+<span class="nc" id="L91">            }</span>
+<span class="nc" id="L92">        };</span>
+    }
+
+    @FXML
+    private void copySelectedLogEntries(KeyEvent event) {
+<span class="nc bnc" id="L97" title="All 2 branches missed.">        if (keyBindingRepository.checkKeyCombinationEquality(KeyBinding.COPY, event)) {</span>
+<span class="nc" id="L98">            ObservableList&lt;LogEventViewModel&gt; selectedEntries = messagesListView.getSelectionModel().getSelectedItems();</span>
+<span class="nc" id="L99">            viewModel.copyLog(selectedEntries);</span>
+        }
+<span class="nc" id="L101">    }</span>
+
+    @FXML
+    private void copyLog() {
+<span class="nc" id="L105">        viewModel.copyLog();</span>
+<span class="nc" id="L106">    }</span>
+
+    @FXML
+    private void clearLog() {
+<span class="nc" id="L110">        viewModel.clearLog();</span>
+<span class="nc" id="L111">    }</span>
+
+    @FXML
+    private void createIssue() {
+<span class="nc" id="L115">        viewModel.reportIssue();</span>
+<span class="nc" id="L116">    }</span>
+
+    @FXML
+    private void closeErrorDialog() {
+<span class="nc" id="L120">        getStage().close();</span>
+<span class="nc" id="L121">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

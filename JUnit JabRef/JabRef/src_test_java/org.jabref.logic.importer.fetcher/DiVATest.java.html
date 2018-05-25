@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>DiVATest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.importer.fetcher</a> &gt; <span class="el_source">DiVATest.java</span></div><h1>DiVATest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.importer.fetcher;
+
+import java.util.Optional;
+
+import org.jabref.logic.help.HelpFile;
+import org.jabref.logic.importer.ImportFormatPreferences;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.testutils.category.FetcherTest;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Answers;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+
+@FetcherTest
+<span class="fc" id="L20">public class DiVATest {</span>
+
+    private DiVA fetcher;
+
+    @BeforeEach
+    public void setUp() {
+<span class="fc" id="L26">        fetcher = new DiVA(mock(ImportFormatPreferences.class, Answers.RETURNS_DEEP_STUBS));</span>
+<span class="fc" id="L27">    }</span>
+
+    @Test
+    public void testGetName() {
+<span class="fc" id="L31">        assertEquals(&quot;DiVA&quot;, fetcher.getName());</span>
+<span class="fc" id="L32">    }</span>
+
+    @Test
+    public void testGetHelpPage() {
+<span class="fc" id="L36">        assertEquals(HelpFile.FETCHER_DIVA, HelpFile.FETCHER_DIVA);</span>
+<span class="fc" id="L37">    }</span>
+
+    @Test
+    public void testPerformSearchById() throws Exception {
+<span class="fc" id="L41">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L42">        entry.setType(&quot;article&quot;);</span>
+<span class="fc" id="L43">        entry.setField(&quot;author&quot;, &quot;Gustafsson, Oscar&quot;);</span>
+<span class="fc" id="L44">        entry.setField(&quot;institution&quot;, &quot;Linköping University, The Institute of Technology&quot;);</span>
+<span class="fc" id="L45">        entry.setCiteKey(&quot;Gustafsson260746&quot;);</span>
+<span class="fc" id="L46">        entry.setField(&quot;journal&quot;,</span>
+<span class="fc" id="L47">                &quot;IEEE transactions on circuits and systems. 2, Analog and digital signal processing (Print)&quot;);</span>
+<span class="fc" id="L48">        entry.setField(&quot;number&quot;, &quot;11&quot;);</span>
+<span class="fc" id="L49">        entry.setField(&quot;pages&quot;, &quot;974--978&quot;);</span>
+<span class="fc" id="L50">        entry.setField(&quot;title&quot;, &quot;Lower bounds for constant multiplication problems&quot;);</span>
+<span class="fc" id="L51">        entry.setField(&quot;volume&quot;, &quot;54&quot;);</span>
+<span class="fc" id="L52">        entry.setField(&quot;year&quot;, &quot;2007&quot;);</span>
+<span class="fc" id="L53">        entry.setField(&quot;abstract&quot;, &quot;Lower bounds for problems related to realizing multiplication by constants with shifts, adders, and subtracters are presented. These lower bounds are straightforwardly calculated and have applications in proving the optimality of solutions obtained by heuristics. &quot;);</span>
+<span class="fc" id="L54">        entry.setField(&quot;doi&quot;, &quot;10.1109/TCSII.2007.903212&quot;);</span>
+
+<span class="fc" id="L56">        assertEquals(Optional.of(entry), fetcher.performSearchById(&quot;diva2:260746&quot;));</span>
+<span class="fc" id="L57">    }</span>
+
+    @Test
+    public void testValidIdentifier() {
+<span class="fc" id="L61">        assertTrue(fetcher.isValidId(&quot;diva2:260746&quot;));</span>
+<span class="fc" id="L62">    }</span>
+
+    @Test
+    public void testInvalidIdentifier() {
+<span class="fc" id="L66">        assertFalse(fetcher.isValidId(&quot;banana&quot;));</span>
+<span class="fc" id="L67">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

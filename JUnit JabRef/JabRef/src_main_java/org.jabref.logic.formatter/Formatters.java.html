@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>Formatters.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.formatter</a> &gt; <span class="el_source">Formatters.java</span></div><h1>Formatters.java</h1><pre class="source lang-java linenums">package org.jabref.logic.formatter;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+
+import org.jabref.logic.formatter.bibtexfields.ClearFormatter;
+import org.jabref.logic.formatter.bibtexfields.EscapeUnderscoresFormatter;
+import org.jabref.logic.formatter.bibtexfields.HtmlToLatexFormatter;
+import org.jabref.logic.formatter.bibtexfields.HtmlToUnicodeFormatter;
+import org.jabref.logic.formatter.bibtexfields.LatexCleanupFormatter;
+import org.jabref.logic.formatter.bibtexfields.NormalizeDateFormatter;
+import org.jabref.logic.formatter.bibtexfields.NormalizeMonthFormatter;
+import org.jabref.logic.formatter.bibtexfields.NormalizeNamesFormatter;
+import org.jabref.logic.formatter.bibtexfields.NormalizePagesFormatter;
+import org.jabref.logic.formatter.bibtexfields.OrdinalsToSuperscriptFormatter;
+import org.jabref.logic.formatter.bibtexfields.RegexFormatter;
+import org.jabref.logic.formatter.bibtexfields.RemoveBracesFormatter;
+import org.jabref.logic.formatter.bibtexfields.UnicodeToLatexFormatter;
+import org.jabref.logic.formatter.bibtexfields.UnitsToLatexFormatter;
+import org.jabref.logic.formatter.casechanger.CapitalizeFormatter;
+import org.jabref.logic.formatter.casechanger.LowerCaseFormatter;
+import org.jabref.logic.formatter.casechanger.SentenceCaseFormatter;
+import org.jabref.logic.formatter.casechanger.TitleCaseFormatter;
+import org.jabref.logic.formatter.casechanger.UpperCaseFormatter;
+import org.jabref.logic.formatter.minifier.MinifyNameListFormatter;
+import org.jabref.logic.layout.format.LatexToUnicodeFormatter;
+import org.jabref.model.cleanup.Formatter;
+
+public class Formatters {
+
+<span class="fc" id="L34">    private static final List&lt;Formatter&gt; CONVERTERS = Arrays.asList(</span>
+<span class="fc" id="L35">            new HtmlToLatexFormatter(),</span>
+<span class="fc" id="L36">            new HtmlToUnicodeFormatter(),</span>
+<span class="fc" id="L37">            new LatexToUnicodeFormatter(),</span>
+<span class="fc" id="L38">            new UnicodeToLatexFormatter()</span>
+    );
+
+<span class="fc" id="L41">    private static final List&lt;Formatter&gt; CASE_CHANGERS = Arrays.asList(</span>
+<span class="fc" id="L42">            new CapitalizeFormatter(),</span>
+<span class="fc" id="L43">            new LowerCaseFormatter(),</span>
+<span class="fc" id="L44">            new SentenceCaseFormatter(),</span>
+<span class="fc" id="L45">            new TitleCaseFormatter(),</span>
+<span class="fc" id="L46">            new UpperCaseFormatter()</span>
+    );
+
+<span class="fc" id="L49">    private static final List&lt;Formatter&gt; OTHERS = Arrays.asList(</span>
+<span class="fc" id="L50">            new ClearFormatter(),</span>
+<span class="fc" id="L51">            new LatexCleanupFormatter(),</span>
+<span class="fc" id="L52">            new MinifyNameListFormatter(),</span>
+<span class="fc" id="L53">            new NormalizeDateFormatter(),</span>
+<span class="fc" id="L54">            new NormalizeMonthFormatter(),</span>
+<span class="fc" id="L55">            new NormalizeNamesFormatter(),</span>
+<span class="fc" id="L56">            new NormalizePagesFormatter(),</span>
+<span class="fc" id="L57">            new OrdinalsToSuperscriptFormatter(),</span>
+<span class="fc" id="L58">            new RegexFormatter(),</span>
+<span class="fc" id="L59">            new RemoveBracesFormatter(),</span>
+<span class="fc" id="L60">            new UnitsToLatexFormatter(),</span>
+<span class="fc" id="L61">            new EscapeUnderscoresFormatter()</span>
+    );
+
+    private static final String REGEX = &quot;regex&quot;;
+
+<span class="fc" id="L66">    private static final int LENGTH_OF_REGEX_PREFIX = REGEX.length();</span>
+
+<span class="nc" id="L68">    private Formatters() {</span>
+<span class="nc" id="L69">    }</span>
+
+    public static final List&lt;Formatter&gt; getConverters() {
+<span class="nc" id="L72">        List&lt;Formatter&gt; converters = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L73">        converters.addAll(CONVERTERS);</span>
+<span class="nc" id="L74">        return converters;</span>
+    }
+
+    public static final List&lt;Formatter&gt; getCaseChangers() {
+<span class="nc" id="L78">        List&lt;Formatter&gt; caseChangers = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L79">        caseChangers.addAll(CASE_CHANGERS);</span>
+<span class="nc" id="L80">        return caseChangers;</span>
+    }
+
+    public static final List&lt;Formatter&gt; getOthers() {
+<span class="nc" id="L84">        List&lt;Formatter&gt; others = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L85">        others.addAll(OTHERS);</span>
+<span class="nc" id="L86">        return others;</span>
+    }
+
+    public static final List&lt;Formatter&gt; getAll() {
+<span class="fc" id="L90">        List&lt;Formatter&gt; all = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L91">        all.addAll(CONVERTERS);</span>
+<span class="fc" id="L92">        all.addAll(CASE_CHANGERS);</span>
+<span class="fc" id="L93">        all.addAll(OTHERS);</span>
+<span class="fc" id="L94">        return all;</span>
+    }
+
+    public static Optional&lt;Formatter&gt; getFormatterForModifier(String modifier) {
+<span class="fc" id="L98">        Objects.requireNonNull(modifier);</span>
+        Optional&lt;Formatter&gt; formatter;
+<span class="fc" id="L100">        List&lt;Formatter&gt; all = getAll();</span>
+
+<span class="fc bfc" id="L102" title="All 2 branches covered.">        if (modifier.matches(&quot;regex.*&quot;)) {</span>
+<span class="fc" id="L103">            String regex = modifier.substring(LENGTH_OF_REGEX_PREFIX);</span>
+<span class="fc" id="L104">            RegexFormatter.setRegex(regex);</span>
+<span class="fc" id="L105">            formatter = all.stream().filter(f -&gt; f.getKey().equals(&quot;regex&quot;)).findAny();</span>
+<span class="fc" id="L106">        } else {</span>
+<span class="fc" id="L107">            formatter = all.stream().filter(f -&gt; f.getKey().equals(modifier)).findAny();</span>
+        }
+<span class="fc bfc" id="L109" title="All 2 branches covered.">        if (formatter.isPresent()) {</span>
+<span class="fc" id="L110">            return formatter;</span>
+        }
+<span class="pc bpc" id="L112" title="2 of 7 branches missed.">        switch (modifier) {</span>
+            case &quot;lower&quot;:
+<span class="fc" id="L114">                return Optional.of(new LowerCaseFormatter());</span>
+            case &quot;upper&quot;:
+<span class="fc" id="L116">                return Optional.of(new UpperCaseFormatter());</span>
+            default:
+<span class="fc" id="L118">                return Optional.empty();</span>
+        }
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

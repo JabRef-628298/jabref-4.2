@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>JavaVersionTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.util</a> &gt; <span class="el_source">JavaVersionTest.java</span></div><h1>JavaVersionTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.util;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+
+/**
+ * Tests for ensuring we can compare most appearing version strings
+ */
+<span class="fc" id="L15">public class JavaVersionTest {</span>
+
+<span class="fc" id="L17">    private static List&lt;String&gt; java = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L18">    private static List&lt;String &gt; java9 = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L20">    private final static JavaVersion nullCheck = new JavaVersion(null);</span>
+<span class="fc" id="L21">    private final static JavaVersion noSenseCheck = new JavaVersion(&quot;U.N.K.N.O.W.N&quot;);</span>
+
+
+    static {
+<span class="fc" id="L25">        java.add(&quot;1.6.0_10&quot;); // Oracle</span>
+<span class="fc" id="L26">        java.add(&quot;1.6.0_45&quot;); // Oracle</span>
+<span class="fc" id="L27">        java.add(&quot;1.7.0_13&quot;); // Oracle</span>
+<span class="fc" id="L28">        java.add(&quot;1.8.0_76-release&quot;); //openjdk</span>
+<span class="fc" id="L29">        java.add(&quot;1.8.0_92&quot;); //Oracle</span>
+<span class="fc" id="L30">        java.add(&quot;1.8.0_111&quot;); //Oracle</span>
+<span class="fc" id="L31">        java.add(&quot;1.8.0_112-release&quot;); //openjdk</span>
+<span class="fc" id="L32">        java.add(&quot;1.8.0_152-release&quot;); //openjdk</span>
+<span class="fc" id="L33">        java.add(&quot;1.8.0_144&quot;); //Oracle</span>
+
+        // Examples http://openjdk.java.net/jeps/223
+        // Note that it might be possible that java 9 versions are either 9.1.4+8 or new style 1.9.0_31-b08
+<span class="fc" id="L37">        java9.add(&quot;9-internal&quot;); // openjdk</span>
+<span class="fc" id="L38">        java9.add(&quot;1.9.0_20-b62&quot;);</span>
+<span class="fc" id="L39">        java9.add(&quot;1.9.0_20-b62&quot;);</span>
+<span class="fc" id="L40">        java9.add(&quot;9.2.4+45&quot;);</span>
+<span class="fc" id="L41">    }</span>
+
+    @Test
+    public void isJava9() throws Exception {
+        // Check that all valid java versions below 9 are recognized as not java 9
+<span class="fc bfc" id="L46" title="All 2 branches covered.">        for (String versionString : java) {</span>
+<span class="fc" id="L47">            final JavaVersion java8 = new JavaVersion(versionString);</span>
+<span class="fc" id="L48">            assertFalse(java8.isJava9());</span>
+        }
+        // Check if all valid version 9 strings are recognized as being version 9
+<span class="fc bfc" id="L51" title="All 2 branches covered.">        for (String version9String : java9) {</span>
+<span class="fc" id="L52">            final JavaVersion java9 = new JavaVersion(version9String);</span>
+<span class="fc" id="L53">            assertTrue(java9.isJava9());</span>
+        }
+
+        // For impossible comparisons we assume it's not java 9
+<span class="fc" id="L57">        assertFalse(nullCheck.isJava9());</span>
+<span class="fc" id="L58">        assertFalse(noSenseCheck.isJava9());</span>
+<span class="fc" id="L59">    }</span>
+
+    @Test
+    public void isAtLeast() throws Exception {
+<span class="fc" id="L63">        final JavaVersion java8 = new JavaVersion(&quot;1.8&quot;);</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">        for (String version8 : java) {</span>
+<span class="fc" id="L65">            assertTrue(java8.isAtLeast(version8));</span>
+<span class="fc" id="L66">            final JavaVersion java8Example = new JavaVersion(version8);</span>
+<span class="fc" id="L67">            assertTrue(java8Example.isAtLeast(&quot;1.5&quot;));</span>
+
+            // Check if we optimistically return true if we cannot determine the result
+<span class="fc" id="L70">            assertTrue(java8Example.isAtLeast(null));</span>
+<span class="fc" id="L71">            assertTrue(nullCheck.isAtLeast(version8));</span>
+<span class="fc" id="L72">            assertTrue(noSenseCheck.isAtLeast(version8));</span>
+<span class="fc" id="L73">            assertTrue(java8Example.isAtLeast(&quot;useless&quot;));</span>
+
+
+            // Check against all java 9 entries in both directions
+<span class="fc bfc" id="L77" title="All 2 branches covered.">            for (String version9 : java9) {</span>
+<span class="fc" id="L78">                assertFalse(java8Example.isAtLeast(version9));</span>
+<span class="fc" id="L79">                final JavaVersion java9 = new JavaVersion(version9);</span>
+<span class="fc" id="L80">                assertTrue(java9.isAtLeast(version8));</span>
+            }
+        }
+<span class="fc" id="L83">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

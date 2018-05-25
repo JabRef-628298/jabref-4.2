@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>AuthorListParameterTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.model.entry</a> &gt; <span class="el_source">AuthorListParameterTest.java</span></div><h1>AuthorListParameterTest.java</h1><pre class="source lang-java linenums">package org.jabref.model.entry;
+
+import java.util.Arrays;
+import java.util.Collection;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
+
+import static org.junit.Assert.assertEquals;
+
+@RunWith(Parameterized.class)
+<span class="fc" id="L15">public class AuthorListParameterTest {</span>
+
+    @Parameter(value = 0)
+    public String authorsString;
+
+    @Parameter(value = 1)
+    public AuthorList authorsParsed;
+
+
+    @Parameters(name = &quot;{index}: parse({0})={1}&quot;)
+    public static Collection&lt;Object[]&gt; data() {
+
+<span class="fc" id="L27">        return Arrays.asList(new Object[][] {</span>
+<span class="fc" id="L28">            { &quot;Doe, John&quot;, authorList(new Author(&quot;John&quot;, &quot;J.&quot;, null, &quot;Doe&quot;, null)) },</span>
+<span class="fc" id="L29">            { &quot;von Berlichingen zu Hornberg, Johann Gottfried&quot;,</span>
+<span class="fc" id="L30">                    authorList(new Author(&quot;Johann Gottfried&quot;, &quot;J. G.&quot;, &quot;von&quot;, &quot;Berlichingen zu Hornberg&quot;, null)) },</span>
+            //{ &quot;Robert and Sons, Inc.&quot;, authorList(new Author(null, null, null, &quot;Robert and Sons, Inc.&quot;, null)) },
+                //{ &quot;al-Ṣāliḥ, Abdallāh&quot;, authorList(new Author(&quot;Abdallāh&quot;, &quot;A.&quot;, null, &quot;al-Ṣāliḥ&quot;, null)) },
+<span class="fc" id="L33">                {&quot;de la Vallée Poussin, Jean Charles Gabriel&quot;,</span>
+<span class="fc" id="L34">                        authorList(new Author(&quot;Jean Charles Gabriel&quot;, &quot;J. C. G.&quot;, &quot;de la&quot;, &quot;Vallée Poussin&quot;, null))},</span>
+<span class="fc" id="L35">                {&quot;de la Vallée Poussin, J. C. G.&quot;,</span>
+<span class="fc" id="L36">                        authorList(new Author(&quot;J. C. G.&quot;, &quot;J. C. G.&quot;, &quot;de la&quot;, &quot;Vallée Poussin&quot;, null))},</span>
+<span class="fc" id="L37">            { &quot;{K}ent-{B}oswell, E. S.&quot;, authorList(new Author(&quot;E. S.&quot;, &quot;E. S.&quot;, null, &quot;{K}ent-{B}oswell&quot;, null)) },</span>
+        });
+    }
+
+    public static AuthorList authorList(Author author) {
+<span class="fc" id="L42">        return new AuthorList(Arrays.asList(author));</span>
+    }
+
+    @Test
+    public void parseCorrectly() {
+<span class="fc" id="L47">        AuthorListParser parser = new AuthorListParser();</span>
+<span class="fc" id="L48">        assertEquals(authorsParsed, parser.parse(authorsString));</span>
+<span class="fc" id="L49">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

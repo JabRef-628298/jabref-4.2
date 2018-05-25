@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>RTFCharsTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.layout.format</a> &gt; <span class="el_source">RTFCharsTest.java</span></div><h1>RTFCharsTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.layout.format;
+
+import org.jabref.logic.layout.LayoutFormatter;
+
+import org.junit.After;
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+<span class="fc" id="L10">public class RTFCharsTest {</span>
+    private LayoutFormatter formatter;
+
+    @BeforeEach
+    public void setUp() {
+<span class="fc" id="L15">        formatter = new RTFChars();</span>
+<span class="fc" id="L16">    }</span>
+
+    @After
+    public void tearDown() {
+<span class="nc" id="L20">        formatter = null;</span>
+<span class="nc" id="L21">    }</span>
+
+    @Test
+    public void testBasicFormat() {
+<span class="fc" id="L25">        assertEquals(&quot;&quot;, formatter.format(&quot;&quot;));</span>
+
+<span class="fc" id="L27">        assertEquals(&quot;hallo&quot;, formatter.format(&quot;hallo&quot;));</span>
+
+<span class="fc" id="L29">        assertEquals(&quot;R\\u233eflexions sur le timing de la quantit\\u233e&quot;,</span>
+<span class="fc" id="L30">                formatter.format(&quot;Réflexions sur le timing de la quantité&quot;));</span>
+
+<span class="fc" id="L32">        assertEquals(&quot;h\\'e1llo&quot;, formatter.format(&quot;h\\'allo&quot;));</span>
+<span class="fc" id="L33">        assertEquals(&quot;h\\'e1llo&quot;, formatter.format(&quot;h\\'allo&quot;));</span>
+<span class="fc" id="L34">    }</span>
+
+    @Test
+    public void testLaTeXHighlighting() {
+<span class="fc" id="L38">        assertEquals(&quot;{\\i hallo}&quot;, formatter.format(&quot;\\emph{hallo}&quot;));</span>
+<span class="fc" id="L39">        assertEquals(&quot;{\\i hallo}&quot;, formatter.format(&quot;{\\emph hallo}&quot;));</span>
+<span class="fc" id="L40">        assertEquals(&quot;An article title with {\\i a book title} emphasized&quot;, formatter.format(&quot;An article title with \\emph{a book title} emphasized&quot;));</span>
+
+<span class="fc" id="L42">        assertEquals(&quot;{\\i hallo}&quot;, formatter.format(&quot;\\textit{hallo}&quot;));</span>
+<span class="fc" id="L43">        assertEquals(&quot;{\\i hallo}&quot;, formatter.format(&quot;{\\textit hallo}&quot;));</span>
+
+<span class="fc" id="L45">        assertEquals(&quot;{\\b hallo}&quot;, formatter.format(&quot;\\textbf{hallo}&quot;));</span>
+<span class="fc" id="L46">        assertEquals(&quot;{\\b hallo}&quot;, formatter.format(&quot;{\\textbf hallo}&quot;));</span>
+<span class="fc" id="L47">    }</span>
+
+    @Test
+    public void testComplicated() {
+<span class="fc" id="L51">        assertEquals(&quot;R\\u233eflexions sur le timing de la quantit\\u233e {\\u230ae} should be \\u230ae&quot;,</span>
+<span class="fc" id="L52">                formatter.format(&quot;Réflexions sur le timing de la quantité {\\ae} should be æ&quot;));</span>
+<span class="fc" id="L53">    }</span>
+
+    @Test
+    public void  testComplicated2() {
+<span class="fc" id="L57">        assertEquals(&quot;h\\'e1ll{\\u339oe}&quot;, formatter.format(&quot;h\\'all{\\oe}&quot;));</span>
+<span class="fc" id="L58">    }</span>
+
+    @Test
+    public void testComplicated3() {
+<span class="fc" id="L62">        assertEquals(&quot;Le c\\u339oeur d\\u233e\\u231cu mais l'\\u226ame plut\\u244ot na\\u239ive, Lou\\u255ys r&quot; +</span>
+                &quot;\\u234eva de crapa\\u252?ter en cano\\u235e au del\\u224a des \\u238iles, pr\\u232es du m\\u228alstr&quot; +
+<span class="fc" id="L64">                &quot;\\u246om o\\u249u br\\u251ulent les nov\\u230ae.&quot;, formatter.format(&quot;Le cœur déçu mais l'âme plutôt &quot; +</span>
+                &quot;naïve, Louÿs rêva de crapaüter en canoë au delà des îles, près du mälström où brûlent les novæ.&quot;));
+<span class="fc" id="L66">    }</span>
+
+    @Test
+    public void testComplicated4() {
+<span class="fc" id="L70">        assertEquals(&quot;l'\\u238ile exigu\\u235e\n&quot; +</span>
+                &quot;  O\\u249u l'ob\\u232ese jury m\\u251ur\n&quot; +
+                &quot;  F\\u234ete l'ha\\u239i volap\\u252?k,\n&quot; +
+                &quot;  \\u194Ane ex a\\u233equo au whist,\n&quot; +
+<span class="fc" id="L74">                &quot;  \\u212Otez ce v\\u339oeu d\\u233e\\u231cu.&quot;, formatter.format(&quot;l'île exiguë\n&quot; +</span>
+                &quot;  Où l'obèse jury mûr\n&quot; +
+                &quot;  Fête l'haï volapük,\n&quot; +
+                &quot;  Âne ex aéquo au whist,\n&quot; +
+                &quot;  Ôtez ce vœu déçu.&quot;));
+<span class="fc" id="L79">    }</span>
+
+    @Test
+    public void testComplicated5() {
+<span class="fc" id="L83">        assertEquals(&quot;\\u193Arv\\u237izt\\u369?r\\u337? t\\u252?k\\u246orf\\u250ur\\u243og\\u233ep&quot;,</span>
+<span class="fc" id="L84">                formatter.format(&quot;Árvíztűrő tükörfúrógép&quot;));</span>
+<span class="fc" id="L85">    }</span>
+
+    @Test
+    public void testComplicated6() {
+<span class="fc" id="L89">        assertEquals(&quot;Pchn\\u261a\\u263c w t\\u281e \\u322l\\u243od\\u378z je\\u380za lub o\\u347sm skrzy\\u324n fig&quot;</span>
+<span class="fc" id="L90">                ,formatter.format(&quot;Pchnąć w tę łódź jeża lub ośm skrzyń fig&quot;));</span>
+<span class="fc" id="L91">    }</span>
+
+    @Test
+    public void testSpecialCharacters() {
+<span class="fc" id="L95">        assertEquals(&quot;\\'f3&quot;, formatter.format(&quot;\\'{o}&quot;)); // ó</span>
+<span class="fc" id="L96">        assertEquals(&quot;\\'f2&quot;, formatter.format(&quot;\\`{o}&quot;)); // ò</span>
+<span class="fc" id="L97">        assertEquals(&quot;\\'f4&quot;, formatter.format(&quot;\\^{o}&quot;)); // ô</span>
+<span class="fc" id="L98">        assertEquals(&quot;\\'f6&quot;, formatter.format(&quot;\\\&quot;{o}&quot;)); // ö</span>
+<span class="fc" id="L99">        assertEquals(&quot;\\u245o&quot;, formatter.format(&quot;\\~{o}&quot;)); // õ</span>
+<span class="fc" id="L100">        assertEquals(&quot;\\u333o&quot;, formatter.format(&quot;\\={o}&quot;));</span>
+<span class="fc" id="L101">        assertEquals(&quot;\\u335o&quot;, formatter.format(&quot;{\\uo}&quot;));</span>
+<span class="fc" id="L102">        assertEquals(&quot;\\u231c&quot;, formatter.format(&quot;{\\cc}&quot;)); // ç</span>
+<span class="fc" id="L103">        assertEquals(&quot;{\\u339oe}&quot;, formatter.format(&quot;{\\oe}&quot;));</span>
+<span class="fc" id="L104">        assertEquals(&quot;{\\u338OE}&quot;, formatter.format(&quot;{\\OE}&quot;));</span>
+<span class="fc" id="L105">        assertEquals(&quot;{\\u230ae}&quot;, formatter.format(&quot;{\\ae}&quot;)); // æ</span>
+<span class="fc" id="L106">        assertEquals(&quot;{\\u198AE}&quot;, formatter.format(&quot;{\\AE}&quot;)); // Æ</span>
+
+<span class="fc" id="L108">        assertEquals(&quot;&quot;, formatter.format(&quot;\\.{o}&quot;)); // ???</span>
+<span class="fc" id="L109">        assertEquals(&quot;&quot;, formatter.format(&quot;\\vo&quot;)); // ???</span>
+<span class="fc" id="L110">        assertEquals(&quot;&quot;, formatter.format(&quot;\\Ha&quot;)); // ã // ???</span>
+<span class="fc" id="L111">        assertEquals(&quot;&quot;, formatter.format(&quot;\\too&quot;));</span>
+<span class="fc" id="L112">        assertEquals(&quot;&quot;, formatter.format(&quot;\\do&quot;)); // ???</span>
+<span class="fc" id="L113">        assertEquals(&quot;&quot;, formatter.format(&quot;\\bo&quot;)); // ???</span>
+<span class="fc" id="L114">        assertEquals(&quot;\\u229a&quot;, formatter.format(&quot;{\\aa}&quot;)); // å</span>
+<span class="fc" id="L115">        assertEquals(&quot;\\u197A&quot;, formatter.format(&quot;{\\AA}&quot;)); // Å</span>
+<span class="fc" id="L116">        assertEquals(&quot;\\u248o&quot;, formatter.format(&quot;{\\o}&quot;)); // ø</span>
+<span class="fc" id="L117">        assertEquals(&quot;\\u216O&quot;, formatter.format(&quot;{\\O}&quot;)); // Ø</span>
+<span class="fc" id="L118">        assertEquals(&quot;\\u322l&quot;, formatter.format(&quot;{\\l}&quot;));</span>
+<span class="fc" id="L119">        assertEquals(&quot;\\u321L&quot;, formatter.format(&quot;{\\L}&quot;));</span>
+<span class="fc" id="L120">        assertEquals(&quot;\\u223ss&quot;, formatter.format(&quot;{\\ss}&quot;)); // ß</span>
+<span class="fc" id="L121">        assertEquals(&quot;\\u191?&quot;, formatter.format(&quot;\\`?&quot;)); // ¿</span>
+<span class="fc" id="L122">        assertEquals(&quot;\\u161!&quot;, formatter.format(&quot;\\`!&quot;)); // ¡</span>
+
+<span class="fc" id="L124">        assertEquals(&quot;&quot;, formatter.format(&quot;\\dag&quot;));</span>
+<span class="fc" id="L125">        assertEquals(&quot;&quot;, formatter.format(&quot;\\ddag&quot;));</span>
+<span class="fc" id="L126">        assertEquals(&quot;\\u167S&quot;, formatter.format(&quot;{\\S}&quot;)); // §</span>
+<span class="fc" id="L127">        assertEquals(&quot;\\u182P&quot;, formatter.format(&quot;{\\P}&quot;)); // ¶</span>
+<span class="fc" id="L128">        assertEquals(&quot;\\u169?&quot;, formatter.format(&quot;{\\copyright}&quot;)); // ©</span>
+<span class="fc" id="L129">        assertEquals(&quot;\\u163?&quot;, formatter.format(&quot;{\\pounds}&quot;)); // £</span>
+<span class="fc" id="L130">    }</span>
+
+    @Test
+    public void testRTFCharacters(){
+<span class="fc" id="L134">        assertEquals(&quot;\\'e0&quot;,formatter.format(&quot;\\`{a}&quot;));</span>
+<span class="fc" id="L135">        assertEquals(&quot;\\'e8&quot;,formatter.format(&quot;\\`{e}&quot;));</span>
+<span class="fc" id="L136">        assertEquals(&quot;\\'ec&quot;,formatter.format(&quot;\\`{i}&quot;));</span>
+<span class="fc" id="L137">        assertEquals(&quot;\\'f2&quot;,formatter.format(&quot;\\`{o}&quot;));</span>
+<span class="fc" id="L138">        assertEquals(&quot;\\'f9&quot;,formatter.format(&quot;\\`{u}&quot;));</span>
+
+<span class="fc" id="L140">        assertEquals(&quot;\\'e1&quot;,formatter.format(&quot;\\'a&quot;));</span>
+<span class="fc" id="L141">        assertEquals(&quot;\\'e9&quot;,formatter.format(&quot;\\'e&quot;));</span>
+<span class="fc" id="L142">        assertEquals(&quot;\\'ed&quot;,formatter.format(&quot;\\'i&quot;));</span>
+<span class="fc" id="L143">        assertEquals(&quot;\\'f3&quot;,formatter.format(&quot;\\'o&quot;));</span>
+<span class="fc" id="L144">        assertEquals(&quot;\\'fa&quot;,formatter.format(&quot;\\'u&quot;));</span>
+
+<span class="fc" id="L146">        assertEquals(&quot;\\'e2&quot;,formatter.format(&quot;\\^a&quot;));</span>
+<span class="fc" id="L147">        assertEquals(&quot;\\'ea&quot;,formatter.format(&quot;\\^e&quot;));</span>
+<span class="fc" id="L148">        assertEquals(&quot;\\'ee&quot;,formatter.format(&quot;\\^i&quot;));</span>
+<span class="fc" id="L149">        assertEquals(&quot;\\'f4&quot;,formatter.format(&quot;\\^o&quot;));</span>
+<span class="fc" id="L150">        assertEquals(&quot;\\'fa&quot;,formatter.format(&quot;\\^u&quot;));</span>
+
+<span class="fc" id="L152">        assertEquals(&quot;\\'e4&quot;,formatter.format(&quot;\\\&quot;a&quot;));</span>
+<span class="fc" id="L153">        assertEquals(&quot;\\'eb&quot;,formatter.format(&quot;\\\&quot;e&quot;));</span>
+<span class="fc" id="L154">        assertEquals(&quot;\\'ef&quot;,formatter.format(&quot;\\\&quot;i&quot;));</span>
+<span class="fc" id="L155">        assertEquals(&quot;\\'f6&quot;,formatter.format(&quot;\\\&quot;o&quot;));</span>
+<span class="fc" id="L156">        assertEquals(&quot;\\u252u&quot;,formatter.format(&quot;\\\&quot;u&quot;));</span>
+
+<span class="fc" id="L158">        assertEquals(&quot;\\'f1&quot;,formatter.format(&quot;\\~n&quot;));</span>
+<span class="fc" id="L159">    }</span>
+
+    @Test
+    public void testRTFCharactersCapital() {
+<span class="fc" id="L163">        assertEquals(&quot;\\'c0&quot;,formatter.format(&quot;\\`A&quot;));</span>
+<span class="fc" id="L164">        assertEquals(&quot;\\'c8&quot;,formatter.format(&quot;\\`E&quot;));</span>
+<span class="fc" id="L165">        assertEquals(&quot;\\'cc&quot;,formatter.format(&quot;\\`I&quot;));</span>
+<span class="fc" id="L166">        assertEquals(&quot;\\'d2&quot;,formatter.format(&quot;\\`O&quot;));</span>
+<span class="fc" id="L167">        assertEquals(&quot;\\'d9&quot;,formatter.format(&quot;\\`U&quot;));</span>
+
+<span class="fc" id="L169">        assertEquals(&quot;\\'c1&quot;,formatter.format(&quot;\\'A&quot;));</span>
+<span class="fc" id="L170">        assertEquals(&quot;\\'c9&quot;,formatter.format(&quot;\\'E&quot;));</span>
+<span class="fc" id="L171">        assertEquals(&quot;\\'cd&quot;,formatter.format(&quot;\\'I&quot;));</span>
+<span class="fc" id="L172">        assertEquals(&quot;\\'d3&quot;,formatter.format(&quot;\\'O&quot;));</span>
+<span class="fc" id="L173">        assertEquals(&quot;\\'da&quot;,formatter.format(&quot;\\'U&quot;));</span>
+
+<span class="fc" id="L175">        assertEquals(&quot;\\'c2&quot;,formatter.format(&quot;\\^A&quot;));</span>
+<span class="fc" id="L176">        assertEquals(&quot;\\'ca&quot;,formatter.format(&quot;\\^E&quot;));</span>
+<span class="fc" id="L177">        assertEquals(&quot;\\'ce&quot;,formatter.format(&quot;\\^I&quot;));</span>
+<span class="fc" id="L178">        assertEquals(&quot;\\'d4&quot;,formatter.format(&quot;\\^O&quot;));</span>
+<span class="fc" id="L179">        assertEquals(&quot;\\'db&quot;,formatter.format(&quot;\\^U&quot;));</span>
+
+<span class="fc" id="L181">        assertEquals(&quot;\\'c4&quot;,formatter.format(&quot;\\\&quot;A&quot;));</span>
+<span class="fc" id="L182">        assertEquals(&quot;\\'cb&quot;,formatter.format(&quot;\\\&quot;E&quot;));</span>
+<span class="fc" id="L183">        assertEquals(&quot;\\'cf&quot;,formatter.format(&quot;\\\&quot;I&quot;));</span>
+<span class="fc" id="L184">        assertEquals(&quot;\\'d6&quot;,formatter.format(&quot;\\\&quot;O&quot;));</span>
+<span class="fc" id="L185">        assertEquals(&quot;\\'dc&quot;,formatter.format(&quot;\\\&quot;U&quot;));</span>
+<span class="fc" id="L186">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

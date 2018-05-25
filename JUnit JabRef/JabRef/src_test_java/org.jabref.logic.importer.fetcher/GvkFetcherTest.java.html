@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>GvkFetcherTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.importer.fetcher</a> &gt; <span class="el_source">GvkFetcherTest.java</span></div><h1>GvkFetcherTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.importer.fetcher;
+
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.Collections;
+import java.util.List;
+
+import org.jabref.logic.importer.FetcherException;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.BiblatexEntryTypes;
+import org.jabref.testutils.category.FetcherTest;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+@FetcherTest
+<span class="fc" id="L21">public class GvkFetcherTest {</span>
+
+    private GvkFetcher fetcher;
+    private BibEntry bibEntryPPN591166003;
+    private BibEntry bibEntryPPN66391437X;
+
+    @BeforeEach
+    public void setUp() {
+<span class="fc" id="L29">        fetcher = new GvkFetcher();</span>
+
+<span class="fc" id="L31">        bibEntryPPN591166003 = new BibEntry();</span>
+<span class="fc" id="L32">        bibEntryPPN591166003.setType(BiblatexEntryTypes.BOOK);</span>
+<span class="fc" id="L33">        bibEntryPPN591166003.setField(&quot;title&quot;, &quot;Effective Java&quot;);</span>
+<span class="fc" id="L34">        bibEntryPPN591166003.setField(&quot;publisher&quot;, &quot;Addison-Wesley&quot;);</span>
+<span class="fc" id="L35">        bibEntryPPN591166003.setField(&quot;year&quot;, &quot;2008&quot;);</span>
+<span class="fc" id="L36">        bibEntryPPN591166003.setField(&quot;author&quot;, &quot;Joshua Bloch&quot;);</span>
+<span class="fc" id="L37">        bibEntryPPN591166003.setField(&quot;series&quot;, &quot;The @Java series&quot;);</span>
+<span class="fc" id="L38">        bibEntryPPN591166003.setField(&quot;address&quot;, &quot;Upper Saddle River, NJ [u.a.]&quot;);</span>
+<span class="fc" id="L39">        bibEntryPPN591166003.setField(&quot;edition&quot;, &quot;2. ed., 5. print.&quot;);</span>
+<span class="fc" id="L40">        bibEntryPPN591166003.setField(&quot;note&quot;, &quot;Literaturverz. S. 321 - 325&quot;);</span>
+<span class="fc" id="L41">        bibEntryPPN591166003.setField(&quot;isbn&quot;, &quot;9780321356680&quot;);</span>
+<span class="fc" id="L42">        bibEntryPPN591166003.setField(&quot;pagetotal&quot;, &quot;XXI, 346&quot;);</span>
+<span class="fc" id="L43">        bibEntryPPN591166003.setField(&quot;ppn_gvk&quot;, &quot;591166003&quot;);</span>
+<span class="fc" id="L44">        bibEntryPPN591166003.setField(&quot;subtitle&quot;, &quot;[revised and updated for JAVA SE 6]&quot;);</span>
+
+<span class="fc" id="L46">        bibEntryPPN66391437X = new BibEntry();</span>
+<span class="fc" id="L47">        bibEntryPPN66391437X.setType(BiblatexEntryTypes.BOOK);</span>
+<span class="fc" id="L48">        bibEntryPPN66391437X.setField(&quot;title&quot;, &quot;Effective unit testing&quot;);</span>
+<span class="fc" id="L49">        bibEntryPPN66391437X.setField(&quot;publisher&quot;, &quot;Manning&quot;);</span>
+<span class="fc" id="L50">        bibEntryPPN66391437X.setField(&quot;year&quot;, &quot;2013&quot;);</span>
+<span class="fc" id="L51">        bibEntryPPN66391437X.setField(&quot;author&quot;, &quot;Lasse Koskela&quot;);</span>
+<span class="fc" id="L52">        bibEntryPPN66391437X.setField(&quot;address&quot;, &quot;Shelter Island, NY&quot;);</span>
+<span class="fc" id="L53">        bibEntryPPN66391437X.setField(&quot;isbn&quot;, &quot;9781935182573&quot;);</span>
+<span class="fc" id="L54">        bibEntryPPN66391437X.setField(&quot;pagetotal&quot;, &quot;XXIV, 223&quot;);</span>
+<span class="fc" id="L55">        bibEntryPPN66391437X.setField(&quot;ppn_gvk&quot;, &quot;66391437X&quot;);</span>
+<span class="fc" id="L56">        bibEntryPPN66391437X.setField(&quot;subtitle&quot;, &quot;A guide for Java developers&quot;);</span>
+<span class="fc" id="L57">    }</span>
+
+    @Test
+    public void testGetName() {
+<span class="fc" id="L61">        assertEquals(&quot;GVK&quot;, fetcher.getName());</span>
+<span class="fc" id="L62">    }</span>
+
+    @Test
+    public void testGetHelpPage() {
+<span class="fc" id="L66">        assertEquals(&quot;GVK&quot;, fetcher.getHelpPage().getPageName());</span>
+<span class="fc" id="L67">    }</span>
+
+    @Test
+    public void simpleSearchQueryStringCorrect() {
+<span class="fc" id="L71">        String query = &quot;java jdk&quot;;</span>
+<span class="fc" id="L72">        String result = fetcher.getSearchQueryString(query);</span>
+<span class="fc" id="L73">        assertEquals(&quot;pica.all=java jdk&quot;, result);</span>
+<span class="fc" id="L74">    }</span>
+
+    @Test
+    public void simpleSearchQueryURLCorrect() throws MalformedURLException, URISyntaxException, FetcherException {
+<span class="fc" id="L78">        String query = &quot;java jdk&quot;;</span>
+<span class="fc" id="L79">        URL url = fetcher.getURLForQuery(query);</span>
+<span class="fc" id="L80">        assertEquals(&quot;http://sru.gbv.de/gvk?version=1.1&amp;operation=searchRetrieve&amp;query=pica.all%3Djava+jdk&amp;maximumRecords=50&amp;recordSchema=picaxml&amp;sortKeys=Year%2C%2C1&quot;, url.toString());</span>
+<span class="fc" id="L81">    }</span>
+
+    @Test
+    public void complexSearchQueryStringCorrect() {
+<span class="fc" id="L85">        String query = &quot;kon java tit jdk&quot;;</span>
+<span class="fc" id="L86">        String result = fetcher.getSearchQueryString(query);</span>
+<span class="fc" id="L87">        assertEquals(&quot;pica.kon=java and pica.tit=jdk&quot;, result);</span>
+<span class="fc" id="L88">    }</span>
+
+    @Test
+    public void complexSearchQueryURLCorrect() throws MalformedURLException, URISyntaxException, FetcherException {
+<span class="fc" id="L92">        String query = &quot;kon java tit jdk&quot;;</span>
+<span class="fc" id="L93">        URL url = fetcher.getURLForQuery(query);</span>
+<span class="fc" id="L94">        assertEquals(&quot;http://sru.gbv.de/gvk?version=1.1&amp;operation=searchRetrieve&amp;query=pica.kon%3Djava+and+pica.tit%3Djdk&amp;maximumRecords=50&amp;recordSchema=picaxml&amp;sortKeys=Year%2C%2C1&quot;, url.toString());</span>
+<span class="fc" id="L95">    }</span>
+
+    @Test
+    public void testPerformSearchMatchingMultipleEntries() throws FetcherException {
+<span class="fc" id="L99">        List&lt;BibEntry&gt; searchResult = fetcher.performSearch(&quot;tit effective java&quot;);</span>
+<span class="fc" id="L100">        assertTrue(searchResult.contains(bibEntryPPN591166003));</span>
+<span class="fc" id="L101">        assertTrue(searchResult.contains(bibEntryPPN66391437X));</span>
+<span class="fc" id="L102">    }</span>
+
+    @Test
+    public void testPerformSearch591166003() throws FetcherException {
+<span class="fc" id="L106">        List&lt;BibEntry&gt; searchResult = fetcher.performSearch(&quot;ppn 591166003&quot;);</span>
+<span class="fc" id="L107">        assertEquals(Collections.singletonList(bibEntryPPN591166003), searchResult);</span>
+<span class="fc" id="L108">    }</span>
+
+    @Test
+    public void testPerformSearch66391437X() throws FetcherException {
+<span class="fc" id="L112">        List&lt;BibEntry&gt; searchResult = fetcher.performSearch(&quot;ppn 66391437X&quot;);</span>
+<span class="fc" id="L113">        assertEquals(Collections.singletonList(bibEntryPPN66391437X), searchResult);</span>
+<span class="fc" id="L114">    }</span>
+
+    @Test
+    public void testPerformSearchEmpty() throws FetcherException {
+<span class="fc" id="L118">        List&lt;BibEntry&gt; searchResult = fetcher.performSearch(&quot;&quot;);</span>
+<span class="fc" id="L119">        assertEquals(Collections.emptyList(), searchResult);</span>
+<span class="fc" id="L120">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

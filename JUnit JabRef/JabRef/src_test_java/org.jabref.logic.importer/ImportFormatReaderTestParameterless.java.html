@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>ImportFormatReaderTestParameterless.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.importer</a> &gt; <span class="el_source">ImportFormatReaderTestParameterless.java</span></div><h1>ImportFormatReaderTestParameterless.java</h1><pre class="source lang-java linenums">package org.jabref.logic.importer;
+
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+import org.jabref.logic.xmp.XmpPreferences;
+import org.jabref.model.util.DummyFileUpdateMonitor;
+import org.jabref.model.util.FileUpdateMonitor;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Answers;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+<span class="fc" id="L19">public class ImportFormatReaderTestParameterless {</span>
+
+    private ImportFormatReader reader;
+<span class="fc" id="L22">    private final FileUpdateMonitor fileMonitor = new DummyFileUpdateMonitor();</span>
+
+    @BeforeEach
+    public void setUp() {
+<span class="fc" id="L26">        reader = new ImportFormatReader();</span>
+<span class="fc" id="L27">        ImportFormatPreferences importFormatPreferences = mock(ImportFormatPreferences.class, Answers.RETURNS_DEEP_STUBS);</span>
+<span class="fc" id="L28">        when(importFormatPreferences.getEncoding()).thenReturn(StandardCharsets.UTF_8);</span>
+<span class="fc" id="L29">        reader.resetImportFormats(importFormatPreferences, mock(XmpPreferences.class), fileMonitor);</span>
+<span class="fc" id="L30">    }</span>
+
+    @Test
+    public void importUnknownFormatThrowsExceptionIfNoMatchingImporterWasFound() throws Exception {
+<span class="fc" id="L34">        Path file = Paths.get(ImportFormatReaderTestParameterless.class.getResource(&quot;fileformat/emptyFile.xml&quot;).toURI());</span>
+<span class="nc" id="L35">        assertThrows(NullPointerException.class, () -&gt; reader.importUnknownFormat(file, fileMonitor));</span>
+<span class="nc" id="L36">    }</span>
+
+    @Test
+    public void testNullImportUnknownFormatPath() throws Exception {
+<span class="pc" id="L40">        assertThrows(NullPointerException.class, () -&gt; reader.importUnknownFormat(null, fileMonitor));</span>
+
+<span class="fc" id="L42">    }</span>
+
+    @Test
+    public void testNullImportUnknownFormatString() throws Exception {
+<span class="pc" id="L46">        assertThrows(NullPointerException.class, () -&gt; reader.importUnknownFormat(null));</span>
+
+<span class="fc" id="L48">    }</span>
+
+    @Test
+    public void importFromFileWithUnknownFormatThrowsException() throws Exception {
+<span class="nc" id="L52">        assertThrows(NullPointerException.class, () -&gt; reader.importFromFile(&quot;someunknownformat&quot;, Paths.get(&quot;somepath&quot;)));</span>
+<span class="nc" id="L53">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

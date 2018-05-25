@@ -1,0 +1,515 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>OOBibStyleTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.openoffice</a> &gt; <span class="el_source">OOBibStyleTest.java</span></div><h1>OOBibStyleTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.openoffice;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.jabref.logic.importer.ImportFormatPreferences;
+import org.jabref.logic.importer.Importer;
+import org.jabref.logic.importer.ParserResult;
+import org.jabref.logic.importer.fileformat.BibtexParser;
+import org.jabref.logic.layout.Layout;
+import org.jabref.logic.layout.LayoutFormatterPreferences;
+import org.jabref.model.database.BibDatabase;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.util.DummyFileUpdateMonitor;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Answers;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+
+<span class="fc" id="L36">public class OOBibStyleTest {</span>
+    private LayoutFormatterPreferences layoutFormatterPreferences;
+    private ImportFormatPreferences importFormatPreferences;
+
+    @BeforeEach
+    public void setUp() {
+<span class="fc" id="L42">        layoutFormatterPreferences = mock(LayoutFormatterPreferences.class, Answers.RETURNS_DEEP_STUBS);</span>
+<span class="fc" id="L43">        importFormatPreferences = mock(ImportFormatPreferences.class, Answers.RETURNS_DEEP_STUBS);</span>
+<span class="fc" id="L44">    }</span>
+
+    @Test
+    public void testAuthorYear() throws IOException {
+<span class="fc" id="L48">        OOBibStyle style = new OOBibStyle(StyleLoader.DEFAULT_AUTHORYEAR_STYLE_PATH, layoutFormatterPreferences);</span>
+<span class="fc" id="L49">        assertTrue(style.isValid());</span>
+<span class="fc" id="L50">        assertTrue(style.isFromResource());</span>
+<span class="fc" id="L51">        assertFalse(style.isBibtexKeyCiteMarkers());</span>
+<span class="fc" id="L52">        assertFalse(style.isBoldCitations());</span>
+<span class="fc" id="L53">        assertFalse(style.isFormatCitations());</span>
+<span class="fc" id="L54">        assertFalse(style.isItalicCitations());</span>
+<span class="fc" id="L55">        assertFalse(style.isNumberEntries());</span>
+<span class="fc" id="L56">        assertFalse(style.isSortByPosition());</span>
+<span class="fc" id="L57">    }</span>
+
+    @Test
+    public void testAuthorYearAsFile() throws URISyntaxException, IOException {
+<span class="fc" id="L61">        File defFile = Paths.get(OOBibStyleTest.class.getResource(StyleLoader.DEFAULT_AUTHORYEAR_STYLE_PATH).toURI())</span>
+<span class="fc" id="L62">                .toFile();</span>
+<span class="fc" id="L63">        OOBibStyle style = new OOBibStyle(defFile, layoutFormatterPreferences, StandardCharsets.UTF_8);</span>
+<span class="fc" id="L64">        assertTrue(style.isValid());</span>
+<span class="fc" id="L65">        assertFalse(style.isFromResource());</span>
+<span class="fc" id="L66">        assertFalse(style.isBibtexKeyCiteMarkers());</span>
+<span class="fc" id="L67">        assertFalse(style.isBoldCitations());</span>
+<span class="fc" id="L68">        assertFalse(style.isFormatCitations());</span>
+<span class="fc" id="L69">        assertFalse(style.isItalicCitations());</span>
+<span class="fc" id="L70">        assertFalse(style.isNumberEntries());</span>
+<span class="fc" id="L71">        assertFalse(style.isSortByPosition());</span>
+<span class="fc" id="L72">    }</span>
+
+    @Test
+    public void testNumerical() throws IOException {
+<span class="fc" id="L76">        OOBibStyle style = new OOBibStyle(StyleLoader.DEFAULT_NUMERICAL_STYLE_PATH,</span>
+<span class="fc" id="L77">                layoutFormatterPreferences);</span>
+<span class="fc" id="L78">        assertTrue(style.isValid());</span>
+<span class="fc" id="L79">        assertFalse(style.isBibtexKeyCiteMarkers());</span>
+<span class="fc" id="L80">        assertFalse(style.isBoldCitations());</span>
+<span class="fc" id="L81">        assertFalse(style.isFormatCitations());</span>
+<span class="fc" id="L82">        assertFalse(style.isItalicCitations());</span>
+<span class="fc" id="L83">        assertTrue(style.isNumberEntries());</span>
+<span class="fc" id="L84">        assertTrue(style.isSortByPosition());</span>
+<span class="fc" id="L85">    }</span>
+
+    @Test
+    public void testGetNumCitationMarker() throws IOException {
+<span class="fc" id="L89">        OOBibStyle style = new OOBibStyle(StyleLoader.DEFAULT_NUMERICAL_STYLE_PATH,</span>
+<span class="fc" id="L90">                layoutFormatterPreferences);</span>
+<span class="fc" id="L91">        assertEquals(&quot;[1] &quot;, style.getNumCitationMarker(Arrays.asList(1), -1, true));</span>
+<span class="fc" id="L92">        assertEquals(&quot;[1]&quot;, style.getNumCitationMarker(Arrays.asList(1), -1, false));</span>
+<span class="fc" id="L93">        assertEquals(&quot;[1] &quot;, style.getNumCitationMarker(Arrays.asList(1), 0, true));</span>
+<span class="fc" id="L94">        assertEquals(&quot;[1-3] &quot;, style.getNumCitationMarker(Arrays.asList(1, 2, 3), 1, true));</span>
+<span class="fc" id="L95">        assertEquals(&quot;[1; 2; 3] &quot;, style.getNumCitationMarker(Arrays.asList(1, 2, 3), 5, true));</span>
+<span class="fc" id="L96">        assertEquals(&quot;[1; 2; 3] &quot;, style.getNumCitationMarker(Arrays.asList(1, 2, 3), -1, true));</span>
+<span class="fc" id="L97">        assertEquals(&quot;[1; 3; 12] &quot;, style.getNumCitationMarker(Arrays.asList(1, 12, 3), 1, true));</span>
+<span class="fc" id="L98">        assertEquals(&quot;[3-5; 7; 10-12] &quot;, style.getNumCitationMarker(Arrays.asList(12, 7, 3, 4, 11, 10, 5), 1, true));</span>
+
+<span class="fc" id="L100">        String citation = style.getNumCitationMarker(Arrays.asList(1), -1, false);</span>
+<span class="fc" id="L101">        assertEquals(&quot;[1; pp. 55-56]&quot;, style.insertPageInfo(citation, &quot;pp. 55-56&quot;));</span>
+<span class="fc" id="L102">    }</span>
+
+    @Test
+    public void testGetNumCitationMarkerUndefined() throws IOException {
+<span class="fc" id="L106">        OOBibStyle style = new OOBibStyle(StyleLoader.DEFAULT_NUMERICAL_STYLE_PATH,</span>
+<span class="fc" id="L107">                layoutFormatterPreferences);</span>
+<span class="fc" id="L108">        assertEquals(&quot;[&quot; + OOBibStyle.UNDEFINED_CITATION_MARKER + &quot;; 2-4] &quot;,</span>
+<span class="fc" id="L109">                style.getNumCitationMarker(Arrays.asList(4, 2, 3, 0), 1, true));</span>
+
+<span class="fc" id="L111">        assertEquals(&quot;[&quot; + OOBibStyle.UNDEFINED_CITATION_MARKER + &quot;] &quot;,</span>
+<span class="fc" id="L112">                style.getNumCitationMarker(Arrays.asList(0), 1, true));</span>
+
+<span class="fc" id="L114">        assertEquals(&quot;[&quot; + OOBibStyle.UNDEFINED_CITATION_MARKER + &quot;; 1-3] &quot;,</span>
+<span class="fc" id="L115">                style.getNumCitationMarker(Arrays.asList(1, 2, 3, 0), 1, true));</span>
+
+<span class="fc" id="L117">        assertEquals(&quot;[&quot; + OOBibStyle.UNDEFINED_CITATION_MARKER + &quot;; &quot; + OOBibStyle.UNDEFINED_CITATION_MARKER + &quot;; &quot;</span>
+                + OOBibStyle.UNDEFINED_CITATION_MARKER + &quot;] &quot;,
+<span class="fc" id="L119">                style.getNumCitationMarker(Arrays.asList(0, 0, 0), 1, true));</span>
+<span class="fc" id="L120">    }</span>
+
+    @Test
+    public void testGetCitProperty() throws IOException {
+<span class="fc" id="L124">        OOBibStyle style = new OOBibStyle(StyleLoader.DEFAULT_NUMERICAL_STYLE_PATH,</span>
+<span class="fc" id="L125">                layoutFormatterPreferences);</span>
+<span class="fc" id="L126">        assertEquals(&quot;, &quot;, style.getStringCitProperty(&quot;AuthorSeparator&quot;));</span>
+<span class="fc" id="L127">        assertEquals(3, style.getIntCitProperty(&quot;MaxAuthors&quot;));</span>
+<span class="fc" id="L128">        assertTrue(style.getBooleanCitProperty(OOBibStyle.MULTI_CITE_CHRONOLOGICAL));</span>
+<span class="fc" id="L129">        assertEquals(&quot;Default&quot;, style.getCitationCharacterFormat());</span>
+<span class="fc" id="L130">        assertEquals(&quot;Default [number] style file.&quot;, style.getName());</span>
+<span class="fc" id="L131">        Set&lt;String&gt; journals = style.getJournals();</span>
+<span class="fc" id="L132">        assertTrue(journals.contains(&quot;Journal name 1&quot;));</span>
+<span class="fc" id="L133">    }</span>
+
+    /**
+     * In IntelliJ: When running this test, ensure that the working directory is &lt;code&gt;%MODULE_WORKING_DIR%&quot;&lt;/code&gt;
+     */
+    @Test
+    public void testGetCitationMarker() throws IOException {
+<span class="fc" id="L140">        Path testBibtexFile = Paths.get(&quot;src/test/resources/testbib/complex.bib&quot;);</span>
+<span class="fc" id="L141">        ParserResult result = new BibtexParser(importFormatPreferences, new DummyFileUpdateMonitor()).parse(Importer.getReader(testBibtexFile, StandardCharsets.UTF_8));</span>
+<span class="fc" id="L142">        OOBibStyle style = new OOBibStyle(StyleLoader.DEFAULT_NUMERICAL_STYLE_PATH,</span>
+<span class="fc" id="L143">                layoutFormatterPreferences);</span>
+<span class="fc" id="L144">        Map&lt;BibEntry, BibDatabase&gt; entryDBMap = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L145">        BibDatabase db = result.getDatabase();</span>
+<span class="fc bfc" id="L146" title="All 2 branches covered.">        for (BibEntry entry : db.getEntries()) {</span>
+<span class="fc" id="L147">            entryDBMap.put(entry, db);</span>
+        }
+
+<span class="fc" id="L150">        BibEntry entry = db.getEntryByKey(&quot;1137631&quot;).get();</span>
+<span class="fc" id="L151">        assertEquals(&quot;[Boström et al., 2006]&quot;,</span>
+<span class="fc" id="L152">                style.getCitationMarker(Arrays.asList(entry), entryDBMap, true, null, null));</span>
+<span class="fc" id="L153">        assertEquals(&quot;Boström et al. [2006]&quot;,</span>
+<span class="fc" id="L154">                style.getCitationMarker(Arrays.asList(entry), entryDBMap, false, null, new int[] {3}));</span>
+<span class="fc" id="L155">        assertEquals(&quot;[Boström, Wäyrynen, Bodén, Beznosov &amp; Kruchten, 2006]&quot;,</span>
+<span class="fc" id="L156">                style.getCitationMarker(Arrays.asList(entry), entryDBMap, true, null, new int[] {5}));</span>
+<span class="fc" id="L157">    }</span>
+
+    /**
+     * In IntelliJ: When running this test, ensure that the working directory is &lt;code&gt;%MODULE_WORKING_DIR%&quot;&lt;/code&gt;
+     */
+    @Test
+    public void testLayout() throws IOException {
+<span class="fc" id="L164">        Path testBibtexFile = Paths.get(&quot;src/test/resources/testbib/complex.bib&quot;);</span>
+<span class="fc" id="L165">        ParserResult result = new BibtexParser(importFormatPreferences, new DummyFileUpdateMonitor()).parse(Importer.getReader(testBibtexFile, StandardCharsets.UTF_8));</span>
+<span class="fc" id="L166">        OOBibStyle style = new OOBibStyle(StyleLoader.DEFAULT_NUMERICAL_STYLE_PATH,</span>
+<span class="fc" id="L167">                layoutFormatterPreferences);</span>
+<span class="fc" id="L168">        BibDatabase db = result.getDatabase();</span>
+
+<span class="fc" id="L170">        Layout l = style.getReferenceFormat(&quot;default&quot;);</span>
+<span class="fc" id="L171">        l.setPostFormatter(new OOPreFormatter());</span>
+<span class="fc" id="L172">        BibEntry entry = db.getEntryByKey(&quot;1137631&quot;).get();</span>
+<span class="fc" id="L173">        assertEquals(</span>
+<span class="fc" id="L174">                &quot;Boström, G.; Wäyrynen, J.; Bodén, M.; Beznosov, K. and Kruchten, P. (&lt;b&gt;2006&lt;/b&gt;). &lt;i&gt;Extending XP practices to support security requirements engineering&lt;/i&gt;,   : 11-18.&quot;,</span>
+<span class="fc" id="L175">                l.doLayout(entry, db));</span>
+
+<span class="fc" id="L177">        l = style.getReferenceFormat(&quot;incollection&quot;);</span>
+<span class="fc" id="L178">        l.setPostFormatter(new OOPreFormatter());</span>
+<span class="fc" id="L179">        assertEquals(</span>
+<span class="fc" id="L180">                &quot;Boström, G.; Wäyrynen, J.; Bodén, M.; Beznosov, K. and Kruchten, P. (&lt;b&gt;2006&lt;/b&gt;). &lt;i&gt;Extending XP practices to support security requirements engineering&lt;/i&gt;. In:  (Ed.), &lt;i&gt;SESS '06: Proceedings of the 2006 international workshop on Software engineering for secure systems&lt;/i&gt;, ACM.&quot;,</span>
+<span class="fc" id="L181">                l.doLayout(entry, db));</span>
+<span class="fc" id="L182">    }</span>
+
+    @Test
+    public void testInstitutionAuthor() throws IOException {
+<span class="fc" id="L186">        OOBibStyle style = new OOBibStyle(StyleLoader.DEFAULT_NUMERICAL_STYLE_PATH,</span>
+<span class="fc" id="L187">                layoutFormatterPreferences);</span>
+<span class="fc" id="L188">        BibDatabase database = new BibDatabase();</span>
+
+<span class="fc" id="L190">        Layout l = style.getReferenceFormat(&quot;article&quot;);</span>
+<span class="fc" id="L191">        l.setPostFormatter(new OOPreFormatter());</span>
+
+<span class="fc" id="L193">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L194">        entry.setType(&quot;article&quot;);</span>
+<span class="fc" id="L195">        entry.setField(&quot;author&quot;, &quot;{JabRef Development Team}&quot;);</span>
+<span class="fc" id="L196">        entry.setField(&quot;title&quot;, &quot;JabRef Manual&quot;);</span>
+<span class="fc" id="L197">        entry.setField(&quot;year&quot;, &quot;2016&quot;);</span>
+<span class="fc" id="L198">        database.insertEntry(entry);</span>
+<span class="fc" id="L199">        assertEquals(&quot;&lt;b&gt;JabRef Development Team&lt;/b&gt; (&lt;b&gt;2016&lt;/b&gt;). &lt;i&gt;JabRef Manual&lt;/i&gt;,  .&quot;,</span>
+<span class="fc" id="L200">                l.doLayout(entry, database));</span>
+<span class="fc" id="L201">    }</span>
+
+    @Test
+    public void testVonAuthor() throws IOException {
+<span class="fc" id="L205">        OOBibStyle style = new OOBibStyle(StyleLoader.DEFAULT_NUMERICAL_STYLE_PATH,</span>
+<span class="fc" id="L206">                layoutFormatterPreferences);</span>
+<span class="fc" id="L207">        BibDatabase database = new BibDatabase();</span>
+
+<span class="fc" id="L209">        Layout l = style.getReferenceFormat(&quot;article&quot;);</span>
+<span class="fc" id="L210">        l.setPostFormatter(new OOPreFormatter());</span>
+
+<span class="fc" id="L212">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L213">        entry.setType(&quot;article&quot;);</span>
+<span class="fc" id="L214">        entry.setField(&quot;author&quot;, &quot;Alpha von Beta&quot;);</span>
+<span class="fc" id="L215">        entry.setField(&quot;title&quot;, &quot;JabRef Manual&quot;);</span>
+<span class="fc" id="L216">        entry.setField(&quot;year&quot;, &quot;2016&quot;);</span>
+<span class="fc" id="L217">        database.insertEntry(entry);</span>
+<span class="fc" id="L218">        assertEquals(&quot;&lt;b&gt;von Beta, A.&lt;/b&gt; (&lt;b&gt;2016&lt;/b&gt;). &lt;i&gt;JabRef Manual&lt;/i&gt;,  .&quot;,</span>
+<span class="fc" id="L219">                l.doLayout(entry, database));</span>
+<span class="fc" id="L220">    }</span>
+
+    @Test
+    public void testInstitutionAuthorMarker() throws IOException {
+<span class="fc" id="L224">        OOBibStyle style = new OOBibStyle(StyleLoader.DEFAULT_NUMERICAL_STYLE_PATH,</span>
+<span class="fc" id="L225">                layoutFormatterPreferences);</span>
+
+<span class="fc" id="L227">        Map&lt;BibEntry, BibDatabase&gt; entryDBMap = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L228">        List&lt;BibEntry&gt; entries = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L229">        BibDatabase database = new BibDatabase();</span>
+
+<span class="fc" id="L231">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L232">        entry.setType(&quot;article&quot;);</span>
+<span class="fc" id="L233">        entry.setField(&quot;author&quot;, &quot;{JabRef Development Team}&quot;);</span>
+<span class="fc" id="L234">        entry.setField(&quot;title&quot;, &quot;JabRef Manual&quot;);</span>
+<span class="fc" id="L235">        entry.setField(&quot;year&quot;, &quot;2016&quot;);</span>
+<span class="fc" id="L236">        database.insertEntry(entry);</span>
+<span class="fc" id="L237">        entries.add(entry);</span>
+<span class="fc" id="L238">        entryDBMap.put(entry, database);</span>
+<span class="fc" id="L239">        assertEquals(&quot;[JabRef Development Team, 2016]&quot;, style.getCitationMarker(entries, entryDBMap, true, null, null));</span>
+<span class="fc" id="L240">    }</span>
+
+    @Test
+    public void testVonAuthorMarker() throws IOException {
+<span class="fc" id="L244">        OOBibStyle style = new OOBibStyle(StyleLoader.DEFAULT_NUMERICAL_STYLE_PATH,</span>
+<span class="fc" id="L245">                layoutFormatterPreferences);</span>
+
+<span class="fc" id="L247">        Map&lt;BibEntry, BibDatabase&gt; entryDBMap = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L248">        List&lt;BibEntry&gt; entries = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L249">        BibDatabase database = new BibDatabase();</span>
+
+<span class="fc" id="L251">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L252">        entry.setType(&quot;article&quot;);</span>
+<span class="fc" id="L253">        entry.setField(&quot;author&quot;, &quot;Alpha von Beta&quot;);</span>
+<span class="fc" id="L254">        entry.setField(&quot;title&quot;, &quot;JabRef Manual&quot;);</span>
+<span class="fc" id="L255">        entry.setField(&quot;year&quot;, &quot;2016&quot;);</span>
+<span class="fc" id="L256">        database.insertEntry(entry);</span>
+<span class="fc" id="L257">        entries.add(entry);</span>
+<span class="fc" id="L258">        entryDBMap.put(entry, database);</span>
+<span class="fc" id="L259">        assertEquals(&quot;[von Beta, 2016]&quot;, style.getCitationMarker(entries, entryDBMap, true, null, null));</span>
+<span class="fc" id="L260">    }</span>
+
+    @Test
+    public void testNullAuthorMarker() throws IOException {
+<span class="fc" id="L264">        OOBibStyle style = new OOBibStyle(StyleLoader.DEFAULT_NUMERICAL_STYLE_PATH,</span>
+<span class="fc" id="L265">                layoutFormatterPreferences);</span>
+
+<span class="fc" id="L267">        Map&lt;BibEntry, BibDatabase&gt; entryDBMap = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L268">        List&lt;BibEntry&gt; entries = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L269">        BibDatabase database = new BibDatabase();</span>
+
+<span class="fc" id="L271">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L272">        entry.setType(&quot;article&quot;);</span>
+<span class="fc" id="L273">        entry.setField(&quot;year&quot;, &quot;2016&quot;);</span>
+<span class="fc" id="L274">        database.insertEntry(entry);</span>
+<span class="fc" id="L275">        entries.add(entry);</span>
+<span class="fc" id="L276">        entryDBMap.put(entry, database);</span>
+<span class="fc" id="L277">        assertEquals(&quot;[, 2016]&quot;, style.getCitationMarker(entries, entryDBMap, true, null, null));</span>
+<span class="fc" id="L278">    }</span>
+
+    @Test
+    public void testNullYearMarker() throws IOException {
+<span class="fc" id="L282">        OOBibStyle style = new OOBibStyle(StyleLoader.DEFAULT_NUMERICAL_STYLE_PATH,</span>
+<span class="fc" id="L283">                layoutFormatterPreferences);</span>
+
+<span class="fc" id="L285">        Map&lt;BibEntry, BibDatabase&gt; entryDBMap = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L286">        List&lt;BibEntry&gt; entries = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L287">        BibDatabase database = new BibDatabase();</span>
+
+<span class="fc" id="L289">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L290">        entry.setType(&quot;article&quot;);</span>
+<span class="fc" id="L291">        entry.setField(&quot;author&quot;, &quot;Alpha von Beta&quot;);</span>
+<span class="fc" id="L292">        database.insertEntry(entry);</span>
+<span class="fc" id="L293">        entries.add(entry);</span>
+<span class="fc" id="L294">        entryDBMap.put(entry, database);</span>
+<span class="fc" id="L295">        assertEquals(&quot;[von Beta, ]&quot;, style.getCitationMarker(entries, entryDBMap, true, null, null));</span>
+<span class="fc" id="L296">    }</span>
+
+    @Test
+    public void testEmptyEntryMarker() throws IOException {
+<span class="fc" id="L300">        OOBibStyle style = new OOBibStyle(StyleLoader.DEFAULT_NUMERICAL_STYLE_PATH,</span>
+<span class="fc" id="L301">                layoutFormatterPreferences);</span>
+
+<span class="fc" id="L303">        Map&lt;BibEntry, BibDatabase&gt; entryDBMap = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L304">        List&lt;BibEntry&gt; entries = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L305">        BibDatabase database = new BibDatabase();</span>
+
+<span class="fc" id="L307">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L308">        entry.setType(&quot;article&quot;);</span>
+<span class="fc" id="L309">        database.insertEntry(entry);</span>
+<span class="fc" id="L310">        entries.add(entry);</span>
+<span class="fc" id="L311">        entryDBMap.put(entry, database);</span>
+<span class="fc" id="L312">        assertEquals(&quot;[, ]&quot;, style.getCitationMarker(entries, entryDBMap, true, null, null));</span>
+<span class="fc" id="L313">    }</span>
+
+    @Test
+    public void testGetCitationMarkerInParenthesisUniquefiers() throws IOException {
+<span class="fc" id="L317">        OOBibStyle style = new OOBibStyle(StyleLoader.DEFAULT_NUMERICAL_STYLE_PATH,</span>
+<span class="fc" id="L318">                layoutFormatterPreferences);</span>
+
+<span class="fc" id="L320">        Map&lt;BibEntry, BibDatabase&gt; entryDBMap = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L321">        List&lt;BibEntry&gt; entries = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L322">        BibDatabase database = new BibDatabase();</span>
+
+<span class="fc" id="L324">        BibEntry entry1 = new BibEntry();</span>
+<span class="fc" id="L325">        entry1.setField(&quot;author&quot;, &quot;Alpha Beta&quot;);</span>
+<span class="fc" id="L326">        entry1.setField(&quot;title&quot;, &quot;Paper 1&quot;);</span>
+<span class="fc" id="L327">        entry1.setField(&quot;year&quot;, &quot;2000&quot;);</span>
+<span class="fc" id="L328">        entries.add(entry1);</span>
+<span class="fc" id="L329">        database.insertEntry(entry1);</span>
+<span class="fc" id="L330">        BibEntry entry3 = new BibEntry();</span>
+<span class="fc" id="L331">        entry3.setField(&quot;author&quot;, &quot;Alpha Beta&quot;);</span>
+<span class="fc" id="L332">        entry3.setField(&quot;title&quot;, &quot;Paper 2&quot;);</span>
+<span class="fc" id="L333">        entry3.setField(&quot;year&quot;, &quot;2000&quot;);</span>
+<span class="fc" id="L334">        entries.add(entry3);</span>
+<span class="fc" id="L335">        database.insertEntry(entry3);</span>
+<span class="fc" id="L336">        BibEntry entry2 = new BibEntry();</span>
+<span class="fc" id="L337">        entry2.setField(&quot;author&quot;, &quot;Gamma Epsilon&quot;);</span>
+<span class="fc" id="L338">        entry2.setField(&quot;year&quot;, &quot;2001&quot;);</span>
+<span class="fc" id="L339">        entries.add(entry2);</span>
+<span class="fc" id="L340">        database.insertEntry(entry2);</span>
+<span class="fc bfc" id="L341" title="All 2 branches covered.">        for (BibEntry entry : database.getEntries()) {</span>
+<span class="fc" id="L342">            entryDBMap.put(entry, database);</span>
+        }
+
+<span class="fc" id="L345">        assertEquals(&quot;[Beta, 2000; Beta, 2000; Epsilon, 2001]&quot;,</span>
+<span class="fc" id="L346">                style.getCitationMarker(entries, entryDBMap, true, null, null));</span>
+<span class="fc" id="L347">        assertEquals(&quot;[Beta, 2000a,b; Epsilon, 2001]&quot;,</span>
+<span class="fc" id="L348">                style.getCitationMarker(entries, entryDBMap, true, new String[] {&quot;a&quot;, &quot;b&quot;, &quot;&quot;}, new int[] {1, 1, 1}));</span>
+<span class="fc" id="L349">    }</span>
+
+    @Test
+    public void testGetCitationMarkerInTextUniquefiers() throws IOException {
+<span class="fc" id="L353">        OOBibStyle style = new OOBibStyle(StyleLoader.DEFAULT_NUMERICAL_STYLE_PATH,</span>
+<span class="fc" id="L354">                layoutFormatterPreferences);</span>
+
+<span class="fc" id="L356">        Map&lt;BibEntry, BibDatabase&gt; entryDBMap = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L357">        List&lt;BibEntry&gt; entries = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L358">        BibDatabase database = new BibDatabase();</span>
+
+<span class="fc" id="L360">        BibEntry entry1 = new BibEntry();</span>
+<span class="fc" id="L361">        entry1.setField(&quot;author&quot;, &quot;Alpha Beta&quot;);</span>
+<span class="fc" id="L362">        entry1.setField(&quot;title&quot;, &quot;Paper 1&quot;);</span>
+<span class="fc" id="L363">        entry1.setField(&quot;year&quot;, &quot;2000&quot;);</span>
+<span class="fc" id="L364">        entries.add(entry1);</span>
+<span class="fc" id="L365">        database.insertEntry(entry1);</span>
+<span class="fc" id="L366">        BibEntry entry3 = new BibEntry();</span>
+<span class="fc" id="L367">        entry3.setField(&quot;author&quot;, &quot;Alpha Beta&quot;);</span>
+<span class="fc" id="L368">        entry3.setField(&quot;title&quot;, &quot;Paper 2&quot;);</span>
+<span class="fc" id="L369">        entry3.setField(&quot;year&quot;, &quot;2000&quot;);</span>
+<span class="fc" id="L370">        entries.add(entry3);</span>
+<span class="fc" id="L371">        database.insertEntry(entry3);</span>
+<span class="fc" id="L372">        BibEntry entry2 = new BibEntry();</span>
+<span class="fc" id="L373">        entry2.setField(&quot;author&quot;, &quot;Gamma Epsilon&quot;);</span>
+<span class="fc" id="L374">        entry2.setField(&quot;year&quot;, &quot;2001&quot;);</span>
+<span class="fc" id="L375">        entries.add(entry2);</span>
+<span class="fc" id="L376">        database.insertEntry(entry2);</span>
+<span class="fc bfc" id="L377" title="All 2 branches covered.">        for (BibEntry entry : database.getEntries()) {</span>
+<span class="fc" id="L378">            entryDBMap.put(entry, database);</span>
+        }
+
+<span class="fc" id="L381">        assertEquals(&quot;Beta [2000]; Beta [2000]; Epsilon [2001]&quot;,</span>
+<span class="fc" id="L382">                style.getCitationMarker(entries, entryDBMap, false, null, null));</span>
+<span class="fc" id="L383">        assertEquals(&quot;Beta [2000a,b]; Epsilon [2001]&quot;,</span>
+<span class="fc" id="L384">                style.getCitationMarker(entries, entryDBMap, false, new String[] {&quot;a&quot;, &quot;b&quot;, &quot;&quot;}, new int[] {1, 1, 1}));</span>
+<span class="fc" id="L385">    }</span>
+
+    @Test
+    public void testGetCitationMarkerInParenthesisUniquefiersThreeSameAuthor() throws IOException {
+<span class="fc" id="L389">        OOBibStyle style = new OOBibStyle(StyleLoader.DEFAULT_NUMERICAL_STYLE_PATH,</span>
+<span class="fc" id="L390">                layoutFormatterPreferences);</span>
+
+<span class="fc" id="L392">        Map&lt;BibEntry, BibDatabase&gt; entryDBMap = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L393">        List&lt;BibEntry&gt; entries = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L394">        BibDatabase database = new BibDatabase();</span>
+
+<span class="fc" id="L396">        BibEntry entry1 = new BibEntry();</span>
+<span class="fc" id="L397">        entry1.setField(&quot;author&quot;, &quot;Alpha Beta&quot;);</span>
+<span class="fc" id="L398">        entry1.setField(&quot;title&quot;, &quot;Paper 1&quot;);</span>
+<span class="fc" id="L399">        entry1.setField(&quot;year&quot;, &quot;2000&quot;);</span>
+<span class="fc" id="L400">        entries.add(entry1);</span>
+<span class="fc" id="L401">        database.insertEntry(entry1);</span>
+<span class="fc" id="L402">        BibEntry entry2 = new BibEntry();</span>
+<span class="fc" id="L403">        entry2.setField(&quot;author&quot;, &quot;Alpha Beta&quot;);</span>
+<span class="fc" id="L404">        entry2.setField(&quot;title&quot;, &quot;Paper 2&quot;);</span>
+<span class="fc" id="L405">        entry2.setField(&quot;year&quot;, &quot;2000&quot;);</span>
+<span class="fc" id="L406">        entries.add(entry2);</span>
+<span class="fc" id="L407">        database.insertEntry(entry2);</span>
+<span class="fc" id="L408">        BibEntry entry3 = new BibEntry();</span>
+<span class="fc" id="L409">        entry3.setField(&quot;author&quot;, &quot;Alpha Beta&quot;);</span>
+<span class="fc" id="L410">        entry3.setField(&quot;title&quot;, &quot;Paper 3&quot;);</span>
+<span class="fc" id="L411">        entry3.setField(&quot;year&quot;, &quot;2000&quot;);</span>
+<span class="fc" id="L412">        entries.add(entry3);</span>
+<span class="fc" id="L413">        database.insertEntry(entry3);</span>
+<span class="fc bfc" id="L414" title="All 2 branches covered.">        for (BibEntry entry : database.getEntries()) {</span>
+<span class="fc" id="L415">            entryDBMap.put(entry, database);</span>
+        }
+
+<span class="fc" id="L418">        assertEquals(&quot;[Beta, 2000a,b,c]&quot;,</span>
+<span class="fc" id="L419">                style.getCitationMarker(entries, entryDBMap, true, new String[] {&quot;a&quot;, &quot;b&quot;, &quot;c&quot;}, new int[] {1, 1, 1}));</span>
+<span class="fc" id="L420">    }</span>
+
+    @Test
+    public void testGetCitationMarkerInTextUniquefiersThreeSameAuthor() throws IOException {
+<span class="fc" id="L424">        OOBibStyle style = new OOBibStyle(StyleLoader.DEFAULT_NUMERICAL_STYLE_PATH,</span>
+<span class="fc" id="L425">                layoutFormatterPreferences);</span>
+
+<span class="fc" id="L427">        Map&lt;BibEntry, BibDatabase&gt; entryDBMap = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L428">        List&lt;BibEntry&gt; entries = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L429">        BibDatabase database = new BibDatabase();</span>
+
+<span class="fc" id="L431">        BibEntry entry1 = new BibEntry();</span>
+<span class="fc" id="L432">        entry1.setField(&quot;author&quot;, &quot;Alpha Beta&quot;);</span>
+<span class="fc" id="L433">        entry1.setField(&quot;title&quot;, &quot;Paper 1&quot;);</span>
+<span class="fc" id="L434">        entry1.setField(&quot;year&quot;, &quot;2000&quot;);</span>
+<span class="fc" id="L435">        entries.add(entry1);</span>
+<span class="fc" id="L436">        database.insertEntry(entry1);</span>
+<span class="fc" id="L437">        BibEntry entry2 = new BibEntry();</span>
+<span class="fc" id="L438">        entry2.setField(&quot;author&quot;, &quot;Alpha Beta&quot;);</span>
+<span class="fc" id="L439">        entry2.setField(&quot;title&quot;, &quot;Paper 2&quot;);</span>
+<span class="fc" id="L440">        entry2.setField(&quot;year&quot;, &quot;2000&quot;);</span>
+<span class="fc" id="L441">        entries.add(entry2);</span>
+<span class="fc" id="L442">        database.insertEntry(entry2);</span>
+<span class="fc" id="L443">        BibEntry entry3 = new BibEntry();</span>
+<span class="fc" id="L444">        entry3.setField(&quot;author&quot;, &quot;Alpha Beta&quot;);</span>
+<span class="fc" id="L445">        entry3.setField(&quot;title&quot;, &quot;Paper 3&quot;);</span>
+<span class="fc" id="L446">        entry3.setField(&quot;year&quot;, &quot;2000&quot;);</span>
+<span class="fc" id="L447">        entries.add(entry3);</span>
+<span class="fc" id="L448">        database.insertEntry(entry3);</span>
+<span class="fc bfc" id="L449" title="All 2 branches covered.">        for (BibEntry entry : database.getEntries()) {</span>
+<span class="fc" id="L450">            entryDBMap.put(entry, database);</span>
+        }
+
+<span class="fc" id="L453">        assertEquals(&quot;Beta [2000a,b,c]&quot;,</span>
+<span class="fc" id="L454">                style.getCitationMarker(entries, entryDBMap, false, new String[] {&quot;a&quot;, &quot;b&quot;, &quot;c&quot;}, new int[] {1, 1, 1}));</span>
+<span class="fc" id="L455">    }</span>
+
+    @Test
+    // TODO: equals only work when initialized from file, not from reader
+    public void testEquals() throws IOException {
+<span class="fc" id="L460">        OOBibStyle style1 = new OOBibStyle(StyleLoader.DEFAULT_NUMERICAL_STYLE_PATH,</span>
+<span class="fc" id="L461">                layoutFormatterPreferences);</span>
+<span class="fc" id="L462">        OOBibStyle style2 = new OOBibStyle(StyleLoader.DEFAULT_NUMERICAL_STYLE_PATH,</span>
+<span class="fc" id="L463">                layoutFormatterPreferences);</span>
+<span class="fc" id="L464">        assertEquals(style1, style2);</span>
+<span class="fc" id="L465">    }</span>
+
+    @Test
+    // TODO: equals only work when initialized from file, not from reader
+    public void testNotEquals() throws IOException {
+<span class="fc" id="L470">        OOBibStyle style1 = new OOBibStyle(StyleLoader.DEFAULT_NUMERICAL_STYLE_PATH,</span>
+<span class="fc" id="L471">                layoutFormatterPreferences);</span>
+<span class="fc" id="L472">        OOBibStyle style2 = new OOBibStyle(StyleLoader.DEFAULT_AUTHORYEAR_STYLE_PATH,</span>
+<span class="fc" id="L473">                layoutFormatterPreferences);</span>
+<span class="fc" id="L474">        assertNotEquals(style1, style2);</span>
+<span class="fc" id="L475">    }</span>
+
+    @Test
+    public void testCompareToEqual() throws IOException {
+<span class="fc" id="L479">        OOBibStyle style1 = new OOBibStyle(StyleLoader.DEFAULT_NUMERICAL_STYLE_PATH,</span>
+<span class="fc" id="L480">                layoutFormatterPreferences);</span>
+<span class="fc" id="L481">        OOBibStyle style2 = new OOBibStyle(StyleLoader.DEFAULT_NUMERICAL_STYLE_PATH,</span>
+<span class="fc" id="L482">                layoutFormatterPreferences);</span>
+<span class="fc" id="L483">        assertEquals(0, style1.compareTo(style2));</span>
+<span class="fc" id="L484">    }</span>
+
+    @Test
+    public void testCompareToNotEqual() throws IOException {
+<span class="fc" id="L488">        OOBibStyle style1 = new OOBibStyle(StyleLoader.DEFAULT_NUMERICAL_STYLE_PATH,</span>
+<span class="fc" id="L489">                layoutFormatterPreferences);</span>
+<span class="fc" id="L490">        OOBibStyle style2 = new OOBibStyle(StyleLoader.DEFAULT_AUTHORYEAR_STYLE_PATH,</span>
+<span class="fc" id="L491">                layoutFormatterPreferences);</span>
+<span class="pc bpc" id="L492" title="1 of 2 branches missed.">        assertTrue(style1.compareTo(style2) &gt; 0);</span>
+<span class="pc bpc" id="L493" title="1 of 2 branches missed.">        assertFalse(style2.compareTo(style1) &gt; 0);</span>
+<span class="fc" id="L494">    }</span>
+
+    @Test
+    public void testEmptyStringPropertyAndOxfordComma() throws URISyntaxException, IOException {
+<span class="fc" id="L498">        OOBibStyle style = new OOBibStyle(&quot;test.jstyle&quot;, layoutFormatterPreferences);</span>
+<span class="fc" id="L499">        Map&lt;BibEntry, BibDatabase&gt; entryDBMap = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L500">        List&lt;BibEntry&gt; entries = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L501">        BibDatabase database = new BibDatabase();</span>
+
+<span class="fc" id="L503">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L504">        entry.setType(&quot;article&quot;);</span>
+<span class="fc" id="L505">        entry.setField(&quot;author&quot;, &quot;Alpha von Beta and Gamma Epsilon and Ypsilon Tau&quot;);</span>
+<span class="fc" id="L506">        entry.setField(&quot;title&quot;, &quot;JabRef Manual&quot;);</span>
+<span class="fc" id="L507">        entry.setField(&quot;year&quot;, &quot;2016&quot;);</span>
+<span class="fc" id="L508">        database.insertEntry(entry);</span>
+<span class="fc" id="L509">        entries.add(entry);</span>
+<span class="fc" id="L510">        entryDBMap.put(entry, database);</span>
+<span class="fc" id="L511">        assertEquals(&quot;von Beta, Epsilon, &amp; Tau, 2016&quot;,</span>
+<span class="fc" id="L512">                style.getCitationMarker(entries, entryDBMap, true, null, null));</span>
+<span class="fc" id="L513">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

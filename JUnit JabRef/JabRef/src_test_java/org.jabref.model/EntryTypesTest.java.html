@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>EntryTypesTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.model</a> &gt; <span class="el_source">EntryTypesTest.java</span></div><h1>EntryTypesTest.java</h1><pre class="source lang-java linenums">package org.jabref.model;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+
+import org.jabref.model.database.BibDatabaseMode;
+import org.jabref.model.entry.BiblatexEntryTypes;
+import org.jabref.model.entry.BibtexEntryTypes;
+import org.jabref.model.entry.CustomEntryType;
+import org.jabref.model.entry.EntryType;
+import org.jabref.model.entry.FieldName;
+import org.jabref.model.entry.IEEETranEntryTypes;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+
+@RunWith(Parameterized.class)
+public class EntryTypesTest {
+
+    private final BibDatabaseMode mode;
+    private final BibDatabaseMode otherMode;
+    private final EntryType standardArticleType;
+    private final EntryType defaultType;
+
+    private CustomEntryType newCustomType;
+    private CustomEntryType overwrittenStandardType;
+
+<span class="fc" id="L37">    public EntryTypesTest(BibDatabaseMode mode) {</span>
+<span class="fc" id="L38">        this.mode = mode;</span>
+<span class="fc bfc" id="L39" title="All 2 branches covered.">        this.otherMode = (mode == BibDatabaseMode.BIBLATEX) ? BibDatabaseMode.BIBTEX : BibDatabaseMode.BIBLATEX;</span>
+<span class="fc bfc" id="L40" title="All 2 branches covered.">        this.standardArticleType = (mode == BibDatabaseMode.BIBLATEX) ? BiblatexEntryTypes.ARTICLE : BibtexEntryTypes.ARTICLE;</span>
+<span class="fc bfc" id="L41" title="All 2 branches covered.">        this.defaultType = (mode == BibDatabaseMode.BIBLATEX) ? BiblatexEntryTypes.MISC : BibtexEntryTypes.MISC;</span>
+<span class="fc" id="L42">    }</span>
+
+    @Parameterized.Parameters
+    public static Object[] data() {
+<span class="fc" id="L46">        return new Object[] {BibDatabaseMode.BIBTEX, BibDatabaseMode.BIBLATEX};</span>
+    }
+
+    @Before
+    public void setUp() {
+<span class="fc" id="L51">        newCustomType = new CustomEntryType(&quot;customType&quot;, &quot;required&quot;, &quot;optional&quot;);</span>
+<span class="fc" id="L52">        List&lt;String&gt; newRequiredFields = new ArrayList&lt;&gt;(BibtexEntryTypes.ARTICLE.getRequiredFields());</span>
+<span class="fc" id="L53">        newRequiredFields.add(&quot;additional&quot;);</span>
+<span class="fc" id="L54">        overwrittenStandardType = new CustomEntryType(BibtexEntryTypes.ARTICLE.getName(), newRequiredFields,</span>
+<span class="fc" id="L55">                Collections.singletonList(&quot;optional&quot;));</span>
+<span class="fc" id="L56">    }</span>
+
+    @After
+    public void tearDown() {
+<span class="fc" id="L60">        EntryTypes.removeAllCustomEntryTypes();</span>
+<span class="fc" id="L61">    }</span>
+
+    @Test
+    public void assertDefaultValuesBibtex() {
+<span class="fc" id="L65">        List&lt;EntryType&gt; sortedDefaultType = new ArrayList&lt;&gt;(BibtexEntryTypes.ALL);</span>
+<span class="fc" id="L66">        sortedDefaultType.addAll(IEEETranEntryTypes.ALL);</span>
+<span class="fc" id="L67">        Collections.sort(sortedDefaultType);</span>
+
+<span class="fc" id="L69">        List&lt;EntryType&gt; sortedEntryTypes = new ArrayList&lt;&gt;(EntryTypes.getAllValues(BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L70">        Collections.sort(sortedEntryTypes);</span>
+
+<span class="fc" id="L72">        assertEquals(sortedDefaultType, sortedEntryTypes);</span>
+<span class="fc" id="L73">    }</span>
+
+    @Test
+    public void assertDefaultValuesBiblatex() {
+<span class="fc" id="L77">        List&lt;EntryType&gt; sortedDefaultType = new ArrayList&lt;&gt;(BiblatexEntryTypes.ALL);</span>
+<span class="fc" id="L78">        Collections.sort(sortedDefaultType);</span>
+
+<span class="fc" id="L80">        List&lt;EntryType&gt; sortedEntryTypes = new ArrayList&lt;&gt;(EntryTypes.getAllValues(BibDatabaseMode.BIBLATEX));</span>
+<span class="fc" id="L81">        Collections.sort(sortedEntryTypes);</span>
+
+<span class="fc" id="L83">        assertEquals(sortedDefaultType, sortedEntryTypes);</span>
+<span class="fc" id="L84">    }</span>
+
+    @Test
+    public void unknownTypeIsNotFound() {
+<span class="fc" id="L88">        assertEquals(Optional.empty(), EntryTypes.getType(&quot;aaaaarticle&quot;, mode));</span>
+<span class="fc" id="L89">        assertEquals(Optional.empty(), EntryTypes.getStandardType(&quot;aaaaarticle&quot;, mode));</span>
+<span class="fc" id="L90">    }</span>
+
+    @Test
+    public void unknownTypeIsConvertedToMiscByGetTypeOrDefault() {
+<span class="fc" id="L94">        assertEquals(defaultType, EntryTypes.getTypeOrDefault(&quot;unknowntype&quot;, mode));</span>
+<span class="fc" id="L95">    }</span>
+
+    @Test
+    public void registerCustomEntryType() {
+<span class="fc" id="L99">        EntryTypes.addOrModifyCustomEntryType(newCustomType, mode);</span>
+<span class="fc" id="L100">        assertEquals(Optional.of(newCustomType), EntryTypes.getType(&quot;customType&quot;, mode));</span>
+<span class="fc" id="L101">    }</span>
+
+    @Test
+    public void registeredCustomEntryTypeIsContainedInListOfCustomizedEntryTypes() {
+<span class="fc" id="L105">        EntryTypes.addOrModifyCustomEntryType(newCustomType, mode);</span>
+<span class="fc" id="L106">        assertEquals(Arrays.asList(newCustomType), EntryTypes.getAllCustomTypes(mode));</span>
+<span class="fc" id="L107">    }</span>
+
+    @Test
+    public void registerCustomEntryTypeDoesNotAffectOtherMode() {
+<span class="fc" id="L111">        EntryTypes.addOrModifyCustomEntryType(newCustomType, mode);</span>
+<span class="fc" id="L112">        assertFalse(EntryTypes.getAllValues(otherMode).contains(newCustomType));</span>
+<span class="fc" id="L113">    }</span>
+
+    @Test
+    public void overwriteCustomEntryTypeFields() {
+<span class="fc" id="L117">        EntryTypes.addOrModifyCustomEntryType(newCustomType, mode);</span>
+<span class="fc" id="L118">        CustomEntryType newCustomEntryTypeAuthorRequired = new CustomEntryType(&quot;customType&quot;, FieldName.AUTHOR, &quot;optional&quot;);</span>
+<span class="fc" id="L119">        EntryTypes.addOrModifyCustomEntryType(newCustomEntryTypeAuthorRequired, mode);</span>
+<span class="fc" id="L120">        assertEquals(Optional.of(newCustomEntryTypeAuthorRequired), EntryTypes.getType(&quot;customType&quot;, mode));</span>
+<span class="fc" id="L121">    }</span>
+
+    @Test
+    public void overwriteStandardTypeRequiredFields() {
+<span class="fc" id="L125">        EntryTypes.addOrModifyCustomEntryType(overwrittenStandardType, mode);</span>
+<span class="fc" id="L126">        assertEquals(Optional.of(overwrittenStandardType), EntryTypes.getType(overwrittenStandardType.getName(), mode));</span>
+<span class="fc" id="L127">    }</span>
+
+    @Test
+    public void registeredCustomizedStandardEntryTypeIsContainedInListOfCustomizedEntryTypes() {
+<span class="fc" id="L131">        EntryTypes.addOrModifyCustomEntryType(overwrittenStandardType, mode);</span>
+<span class="fc" id="L132">        assertEquals(Arrays.asList(overwrittenStandardType), EntryTypes.getAllModifiedStandardTypes(mode));</span>
+<span class="fc" id="L133">    }</span>
+
+
+    @Test
+    public void standardTypeIsStillAcessibleIfOverwritten() {
+<span class="fc" id="L138">        EntryTypes.addOrModifyCustomEntryType(overwrittenStandardType, mode);</span>
+<span class="fc" id="L139">        assertEquals(Optional.of(standardArticleType), EntryTypes.getStandardType(overwrittenStandardType.getName(), mode));</span>
+<span class="fc" id="L140">    }</span>
+
+    @Test
+    public void standardTypeIsRestoredAfterDeletionOfOverwrittenType() {
+<span class="fc" id="L144">        EntryTypes.addOrModifyCustomEntryType(overwrittenStandardType, mode);</span>
+<span class="fc" id="L145">        EntryTypes.removeType(overwrittenStandardType.getName(), mode);</span>
+<span class="fc" id="L146">        assertEquals(Optional.of(standardArticleType), EntryTypes.getType(overwrittenStandardType.getName(), mode));</span>
+<span class="fc" id="L147">    }</span>
+
+    @Test
+    public void standardTypeCannotBeRemoved() {
+<span class="fc" id="L151">        EntryTypes.removeType(standardArticleType.getName(), mode);</span>
+<span class="fc" id="L152">        assertEquals(Optional.of(standardArticleType), EntryTypes.getType(standardArticleType.getName(), mode));</span>
+<span class="fc" id="L153">    }</span>
+
+    @Test
+    public void overwriteStandardTypeRequiredFieldsDoesNotAffectOtherMode() {
+<span class="fc" id="L157">        EntryTypes.addOrModifyCustomEntryType(overwrittenStandardType, mode);</span>
+<span class="fc" id="L158">        assertFalse(EntryTypes.getAllValues(otherMode).contains(overwrittenStandardType));</span>
+<span class="fc" id="L159">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>HTMLCharsTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.layout.format</a> &gt; <span class="el_source">HTMLCharsTest.java</span></div><h1>HTMLCharsTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.layout.format;
+
+import org.jabref.logic.layout.LayoutFormatter;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+<span class="fc" id="L10">public class HTMLCharsTest {</span>
+
+    private LayoutFormatter layout;
+
+    @BeforeEach
+    public void setUp() {
+<span class="fc" id="L16">        layout = new HTMLChars();</span>
+<span class="fc" id="L17">    }</span>
+
+    @Test
+    public void testBasicFormat() {
+
+<span class="fc" id="L22">        assertEquals(&quot;&quot;, layout.format(&quot;&quot;));</span>
+
+<span class="fc" id="L24">        assertEquals(&quot;hallo&quot;, layout.format(&quot;hallo&quot;));</span>
+
+<span class="fc" id="L26">        assertEquals(&quot;Réflexions sur le timing de la quantité&quot;,</span>
+<span class="fc" id="L27">                layout.format(&quot;Réflexions sur le timing de la quantité&quot;));</span>
+
+<span class="fc" id="L29">        assertEquals(&quot;h&amp;aacute;llo&quot;, layout.format(&quot;h\\'allo&quot;));</span>
+
+<span class="fc" id="L31">        assertEquals(&quot;&amp;imath; &amp;imath;&quot;, layout.format(&quot;\\i \\i&quot;));</span>
+<span class="fc" id="L32">        assertEquals(&quot;&amp;imath;&quot;, layout.format(&quot;\\i&quot;));</span>
+<span class="fc" id="L33">        assertEquals(&quot;&amp;imath;&quot;, layout.format(&quot;\\{i}&quot;));</span>
+<span class="fc" id="L34">        assertEquals(&quot;&amp;imath;&amp;imath;&quot;, layout.format(&quot;\\i\\i&quot;));</span>
+
+<span class="fc" id="L36">        assertEquals(&quot;&amp;auml;&quot;, layout.format(&quot;{\\\&quot;{a}}&quot;));</span>
+<span class="fc" id="L37">        assertEquals(&quot;&amp;auml;&quot;, layout.format(&quot;{\\\&quot;a}&quot;));</span>
+<span class="fc" id="L38">        assertEquals(&quot;&amp;auml;&quot;, layout.format(&quot;\\\&quot;a&quot;));</span>
+
+<span class="fc" id="L40">        assertEquals(&quot;&amp;Ccedil;&quot;, layout.format(&quot;{\\c{C}}&quot;));</span>
+
+<span class="fc" id="L42">        assertEquals(&quot;&amp;Oogon;&amp;imath;&quot;, layout.format(&quot;\\k{O}\\i&quot;));</span>
+
+<span class="fc" id="L44">        assertEquals(&quot;&amp;ntilde; &amp;ntilde; &amp;iacute; &amp;imath; &amp;imath;&quot;, layout.format(&quot;\\~{n} \\~n \\'i \\i \\i&quot;));</span>
+<span class="fc" id="L45">    }</span>
+
+    @Test
+    public void testLaTeXHighlighting() {
+<span class="fc" id="L49">        assertEquals(&quot;&lt;em&gt;hallo&lt;/em&gt;&quot;, layout.format(&quot;\\emph{hallo}&quot;));</span>
+<span class="fc" id="L50">        assertEquals(&quot;&lt;em&gt;hallo&lt;/em&gt;&quot;, layout.format(&quot;{\\emph hallo}&quot;));</span>
+<span class="fc" id="L51">        assertEquals(&quot;&lt;em&gt;hallo&lt;/em&gt;&quot;, layout.format(&quot;{\\em hallo}&quot;));</span>
+
+<span class="fc" id="L53">        assertEquals(&quot;&lt;i&gt;hallo&lt;/i&gt;&quot;, layout.format(&quot;\\textit{hallo}&quot;));</span>
+<span class="fc" id="L54">        assertEquals(&quot;&lt;i&gt;hallo&lt;/i&gt;&quot;, layout.format(&quot;{\\textit hallo}&quot;));</span>
+<span class="fc" id="L55">        assertEquals(&quot;&lt;i&gt;hallo&lt;/i&gt;&quot;, layout.format(&quot;{\\it hallo}&quot;));</span>
+
+<span class="fc" id="L57">        assertEquals(&quot;&lt;b&gt;hallo&lt;/b&gt;&quot;, layout.format(&quot;\\textbf{hallo}&quot;));</span>
+<span class="fc" id="L58">        assertEquals(&quot;&lt;b&gt;hallo&lt;/b&gt;&quot;, layout.format(&quot;{\\textbf hallo}&quot;));</span>
+<span class="fc" id="L59">        assertEquals(&quot;&lt;b&gt;hallo&lt;/b&gt;&quot;, layout.format(&quot;{\\bf hallo}&quot;));</span>
+
+<span class="fc" id="L61">        assertEquals(&quot;&lt;sup&gt;hallo&lt;/sup&gt;&quot;, layout.format(&quot;\\textsuperscript{hallo}&quot;));</span>
+<span class="fc" id="L62">        assertEquals(&quot;&lt;sub&gt;hallo&lt;/sub&gt;&quot;, layout.format(&quot;\\textsubscript{hallo}&quot;));</span>
+
+<span class="fc" id="L64">        assertEquals(&quot;&lt;u&gt;hallo&lt;/u&gt;&quot;, layout.format(&quot;\\underline{hallo}&quot;));</span>
+<span class="fc" id="L65">        assertEquals(&quot;&lt;s&gt;hallo&lt;/s&gt;&quot;, layout.format(&quot;\\sout{hallo}&quot;));</span>
+<span class="fc" id="L66">        assertEquals(&quot;&lt;tt&gt;hallo&lt;/tt&gt;&quot;, layout.format(&quot;\\texttt{hallo}&quot;));</span>
+
+<span class="fc" id="L68">    }</span>
+
+    @Test
+    public void testEquations() {
+<span class="fc" id="L72">        assertEquals(&quot;&amp;dollar;&quot;, layout.format(&quot;\\$&quot;));</span>
+<span class="fc" id="L73">        assertEquals(&quot;&amp;sigma;&quot;, layout.format(&quot;$\\sigma$&quot;));</span>
+<span class="fc" id="L74">        assertEquals(&quot;A 32&amp;nbsp;mA &amp;Sigma;&amp;Delta;-modulator&quot;,</span>
+<span class="fc" id="L75">                layout.format(&quot;A 32~{mA} {$\\Sigma\\Delta$}-modulator&quot;));</span>
+<span class="fc" id="L76">    }</span>
+
+    @Test
+    public void testNewLine() {
+<span class="fc" id="L80">        assertEquals(&quot;a&lt;br&gt;b&quot;, layout.format(&quot;a\nb&quot;));</span>
+<span class="fc" id="L81">        assertEquals(&quot;a&lt;p&gt;b&quot;, layout.format(&quot;a\n\nb&quot;));</span>
+<span class="fc" id="L82">    }</span>
+    /*
+     * Is missing a lot of test cases for the individual chars...
+     */
+
+    @Test
+    public void testQuoteSingle() {
+<span class="fc" id="L89">        assertEquals(&quot;&amp;#39;&quot;, layout.format(&quot;{\\textquotesingle}&quot;));</span>
+<span class="fc" id="L90">    }</span>
+
+    @Test
+    public void unknownCommandIsKept() {
+<span class="fc" id="L94">        assertEquals(&quot;aaaa&quot;, layout.format(&quot;\\aaaa&quot;));</span>
+<span class="fc" id="L95">    }</span>
+
+    @Test
+    public void unknownCommandKeepsArgument() {
+<span class="fc" id="L99">        assertEquals(&quot;bbbb&quot;, layout.format(&quot;\\aaaa{bbbb}&quot;));</span>
+<span class="fc" id="L100">    }</span>
+
+    @Test
+    public void unknownCommandWithEmptyArgumentIsKept() {
+<span class="fc" id="L104">        assertEquals(&quot;aaaa&quot;, layout.format(&quot;\\aaaa{}&quot;));</span>
+<span class="fc" id="L105">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

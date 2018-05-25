@@ -1,0 +1,305 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>JabRefGUI.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref</a> &gt; <span class="el_source">JabRefGUI.java</span></div><h1>JabRefGUI.java</h1><pre class="source lang-java linenums">package org.jabref;
+
+import java.awt.Frame;
+import java.io.File;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.Iterator;
+import java.util.List;
+
+import javax.swing.JOptionPane;
+import javax.swing.UIDefaults;
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
+import javax.swing.plaf.FontUIResource;
+
+import org.jabref.gui.BasePanel;
+import org.jabref.gui.GUIGlobals;
+import org.jabref.gui.JabRefFrame;
+import org.jabref.gui.dialogs.BackupUIManager;
+import org.jabref.gui.importer.ParserResultWarningDialog;
+import org.jabref.gui.importer.actions.OpenDatabaseAction;
+import org.jabref.gui.shared.SharedDatabaseUIManager;
+import org.jabref.gui.worker.VersionWorker;
+import org.jabref.logic.autosaveandbackup.BackupManager;
+import org.jabref.logic.importer.OpenDatabase;
+import org.jabref.logic.importer.ParserResult;
+import org.jabref.logic.l10n.Localization;
+import org.jabref.logic.shared.exception.InvalidDBMSConnectionPropertiesException;
+import org.jabref.logic.shared.exception.NotASharedDatabaseException;
+import org.jabref.logic.util.OS;
+import org.jabref.logic.util.Version;
+import org.jabref.model.database.shared.DatabaseNotSupportedException;
+import org.jabref.preferences.JabRefPreferences;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class JabRefGUI {
+
+<span class="fc" id="L42">    private static final Logger LOGGER = LoggerFactory.getLogger(JabRefGUI.class);</span>
+<span class="fc" id="L43">    private static JabRefFrame mainFrame;</span>
+
+    private final List&lt;ParserResult&gt; bibDatabases;
+    private final boolean isBlank;
+<span class="fc" id="L47">    private final List&lt;ParserResult&gt; failed = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L48">    private final List&lt;ParserResult&gt; toOpenTab = new ArrayList&lt;&gt;();</span>
+
+    private final String focusedFile;
+
+<span class="fc" id="L52">    public JabRefGUI(List&lt;ParserResult&gt; argsDatabases, boolean isBlank) {</span>
+<span class="fc" id="L53">        this.bibDatabases = argsDatabases;</span>
+<span class="fc" id="L54">        this.isBlank = isBlank;</span>
+
+        // passed file (we take the first one) should be focused
+<span class="fc" id="L57">        focusedFile = argsDatabases.stream().findFirst().flatMap(ParserResult::getFile).map(File::getAbsolutePath)</span>
+<span class="fc" id="L58">                .orElse(Globals.prefs.get(JabRefPreferences.LAST_FOCUSED));</span>
+
+<span class="fc" id="L60">        openWindow();</span>
+<span class="fc" id="L61">        JabRefGUI.checkForNewVersion(false);</span>
+<span class="fc" id="L62">    }</span>
+
+    public static void checkForNewVersion(boolean manualExecution) {
+<span class="fc" id="L65">        Version toBeIgnored = Globals.prefs.getVersionPreferences().getIgnoredVersion();</span>
+<span class="fc" id="L66">        Version currentVersion = Globals.BUILD_INFO.getVersion();</span>
+<span class="fc" id="L67">        new VersionWorker(JabRefGUI.getMainFrame(), manualExecution, currentVersion, toBeIgnored).execute();</span>
+<span class="fc" id="L68">    }</span>
+
+    private void openWindow() {
+
+        // This property is set to make the Mac OSX Java VM move the menu bar to the top of the screen
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">        if (OS.OS_X) {</span>
+<span class="nc" id="L74">            System.setProperty(&quot;apple.laf.useScreenMenuBar&quot;, &quot;true&quot;);</span>
+        }
+
+        // Set antialiasing on everywhere. This only works in JRE &gt;= 1.5.
+        // Or... it doesn't work, period.
+        // TODO test and maybe remove this! I found this commented out with no additional info ( payload@lavabit.com )
+        // Enabled since JabRef 2.11 beta 4
+<span class="fc" id="L81">        System.setProperty(&quot;swing.aatext&quot;, &quot;true&quot;);</span>
+        // Default is &quot;on&quot;.
+        // &quot;lcd&quot; instead of &quot;on&quot; because of http://wiki.netbeans.org/FaqFontRendering and http://docs.oracle.com/javase/6/docs/technotes/guides/2d/flags.html#aaFonts
+<span class="fc" id="L84">        System.setProperty(&quot;awt.useSystemAAFontSettings&quot;, &quot;lcd&quot;);</span>
+
+        // look and feel. This MUST be the first thing to do before loading any Swing-specific code!
+<span class="fc" id="L87">        setLookAndFeel();</span>
+
+        // If the option is enabled, open the last edited libraries, if any.
+<span class="pc bpc" id="L90" title="2 of 4 branches missed.">        if (!isBlank &amp;&amp; Globals.prefs.getBoolean(JabRefPreferences.OPEN_LAST_EDITED)) {</span>
+<span class="fc" id="L91">            openLastEditedDatabases();</span>
+        }
+
+<span class="fc" id="L94">        GUIGlobals.init();</span>
+
+<span class="fc" id="L96">        LOGGER.debug(&quot;Initializing frame&quot;);</span>
+<span class="fc" id="L97">        JabRefGUI.mainFrame = new JabRefFrame();</span>
+
+        // Add all bibDatabases databases to the frame:
+<span class="fc" id="L100">        boolean first = false;</span>
+<span class="pc bpc" id="L101" title="1 of 2 branches missed.">        if (!bibDatabases.isEmpty()) {</span>
+<span class="nc bnc" id="L102" title="All 2 branches missed.">            for (Iterator&lt;ParserResult&gt; parserResultIterator = bibDatabases.iterator(); parserResultIterator.hasNext();) {</span>
+<span class="nc" id="L103">                ParserResult pr = parserResultIterator.next();</span>
+                // Define focused tab
+<span class="nc bnc" id="L105" title="All 2 branches missed.">                if (pr.getFile().filter(path -&gt; path.getAbsolutePath().equals(focusedFile)).isPresent()) {</span>
+<span class="nc" id="L106">                    first = true;</span>
+                }
+
+<span class="nc bnc" id="L109" title="All 2 branches missed.">                if (pr.isInvalid()) {</span>
+<span class="nc" id="L110">                    failed.add(pr);</span>
+<span class="nc" id="L111">                    parserResultIterator.remove();</span>
+<span class="nc bnc" id="L112" title="All 2 branches missed.">                } else if (pr.getDatabase().isShared()) {</span>
+                    try {
+<span class="nc" id="L114">                        new SharedDatabaseUIManager(mainFrame).openSharedDatabaseFromParserResult(pr);</span>
+<span class="nc" id="L115">                    } catch (SQLException | DatabaseNotSupportedException | InvalidDBMSConnectionPropertiesException |</span>
+<span class="nc" id="L116">                            NotASharedDatabaseException e) {</span>
+<span class="nc" id="L117">                        pr.getDatabaseContext().clearDatabaseFile(); // do not open the original file</span>
+<span class="nc" id="L118">                        pr.getDatabase().clearSharedDatabaseID();</span>
+
+<span class="nc" id="L120">                        LOGGER.error(&quot;Connection error&quot;, e);</span>
+<span class="nc" id="L121">                        JOptionPane.showMessageDialog(mainFrame,</span>
+<span class="nc" id="L122">                                e.getMessage() + &quot;\n\n&quot; + Localization.lang(&quot;A local copy will be opened.&quot;),</span>
+<span class="nc" id="L123">                                Localization.lang(&quot;Connection error&quot;), JOptionPane.WARNING_MESSAGE);</span>
+                    }
+<span class="nc" id="L125">                    toOpenTab.add(pr);</span>
+<span class="nc bnc" id="L126" title="All 2 branches missed.">                } else if (pr.toOpenTab()) {</span>
+                    // things to be appended to an opened tab should be done after opening all tabs
+                    // add them to the list
+<span class="nc" id="L129">                    toOpenTab.add(pr);</span>
+<span class="nc" id="L130">                } else {</span>
+<span class="nc" id="L131">                    JabRefGUI.getMainFrame().addParserResult(pr, first);</span>
+<span class="nc" id="L132">                    first = false;</span>
+                }
+            }
+        }
+
+        // finally add things to the currently opened tab
+<span class="pc bpc" id="L138" title="1 of 2 branches missed.">        for (ParserResult pr : toOpenTab) {</span>
+<span class="nc" id="L139">            JabRefGUI.getMainFrame().addParserResult(pr, first);</span>
+<span class="nc" id="L140">            first = false;</span>
+        }
+
+        // If we are set to remember the window location, we also remember the maximised
+        // state. This needs to be set after the window has been made visible, so we
+        // do it here:
+<span class="pc bpc" id="L146" title="1 of 2 branches missed.">        if (Globals.prefs.getBoolean(JabRefPreferences.WINDOW_MAXIMISED)) {</span>
+<span class="nc" id="L147">            JabRefGUI.getMainFrame().setExtendedState(Frame.MAXIMIZED_BOTH);</span>
+        }
+
+<span class="fc" id="L150">        JabRefGUI.getMainFrame().setVisible(true);</span>
+
+<span class="pc bpc" id="L152" title="1 of 2 branches missed.">        for (ParserResult pr : failed) {</span>
+<span class="nc" id="L153">            String message = &quot;&lt;html&gt;&quot; + Localization.lang(&quot;Error opening file '%0'.&quot;, pr.getFile().get().getName())</span>
+<span class="nc" id="L154">                    + &quot;&lt;p&gt;&quot;</span>
+<span class="nc" id="L155">                    + pr.getErrorMessage() + &quot;&lt;/html&gt;&quot;;</span>
+
+<span class="nc" id="L157">            JOptionPane.showMessageDialog(JabRefGUI.getMainFrame(), message, Localization.lang(&quot;Error opening file&quot;),</span>
+<span class="nc" id="L158">                    JOptionPane.ERROR_MESSAGE);</span>
+        }
+
+        // Display warnings, if any
+<span class="fc" id="L162">        int tabNumber = 0;</span>
+<span class="pc bpc" id="L163" title="1 of 2 branches missed.">        for (ParserResult pr : bibDatabases) {</span>
+<span class="nc" id="L164">            ParserResultWarningDialog.showParserResultWarningDialog(pr, JabRefGUI.getMainFrame(), tabNumber++);</span>
+        }
+
+        // After adding the databases, go through each and see if
+        // any post open actions need to be done. For instance, checking
+        // if we found new entry types that can be imported, or checking
+        // if the database contents should be modified due to new features
+        // in this version of JabRef.
+        // Note that we have to check whether i does not go over getBasePanelCount().
+        // This is because importToOpen might have been used, which adds to
+        // loadedDatabases, but not to getBasePanelCount()
+
+<span class="pc bpc" id="L176" title="3 of 4 branches missed.">        for (int i = 0; (i &lt; bibDatabases.size()) &amp;&amp; (i &lt; JabRefGUI.getMainFrame().getBasePanelCount()); i++) {</span>
+<span class="nc" id="L177">            ParserResult pr = bibDatabases.get(i);</span>
+<span class="nc" id="L178">            BasePanel panel = JabRefGUI.getMainFrame().getBasePanelAt(i);</span>
+<span class="nc" id="L179">            OpenDatabaseAction.performPostOpenActions(panel, pr);</span>
+        }
+
+<span class="fc" id="L182">        LOGGER.debug(&quot;Finished adding panels&quot;);</span>
+
+<span class="pc bpc" id="L184" title="1 of 2 branches missed.">        if (!bibDatabases.isEmpty()) {</span>
+<span class="nc" id="L185">            JabRefGUI.getMainFrame().getCurrentBasePanel().getMainTable().requestFocus();</span>
+        }
+<span class="fc" id="L187">    }</span>
+
+    private void openLastEditedDatabases() {
+<span class="pc bpc" id="L190" title="1 of 2 branches missed.">        if (Globals.prefs.get(JabRefPreferences.LAST_EDITED) == null) {</span>
+<span class="nc" id="L191">            return;</span>
+        }
+<span class="fc" id="L193">        List&lt;String&gt; lastFiles = Globals.prefs.getStringList(JabRefPreferences.LAST_EDITED);</span>
+
+<span class="pc bpc" id="L195" title="1 of 2 branches missed.">        for (String fileName : lastFiles) {</span>
+<span class="nc" id="L196">            File dbFile = new File(fileName);</span>
+
+            // Already parsed via command line parameter, e.g., &quot;jabref.jar somefile.bib&quot;
+<span class="nc bnc" id="L199" title="All 4 branches missed.">            if (isLoaded(dbFile) || !dbFile.exists()) {</span>
+<span class="nc" id="L200">                continue;</span>
+            }
+
+<span class="nc bnc" id="L203" title="All 2 branches missed.">            if (BackupManager.checkForBackupFile(dbFile.toPath())) {</span>
+<span class="nc" id="L204">                BackupUIManager.showRestoreBackupDialog(mainFrame, dbFile.toPath());</span>
+            }
+
+<span class="nc" id="L207">            ParserResult parsedDatabase = OpenDatabase.loadDatabase(fileName,</span>
+<span class="nc" id="L208">                    Globals.prefs.getImportFormatPreferences(), Globals.getFileUpdateMonitor());</span>
+
+<span class="nc bnc" id="L210" title="All 2 branches missed.">            if (parsedDatabase.isEmpty()) {</span>
+<span class="nc" id="L211">                LOGGER.error(Localization.lang(&quot;Error opening file&quot;) + &quot; '&quot; + dbFile.getPath() + &quot;'&quot;);</span>
+<span class="nc" id="L212">            } else {</span>
+<span class="nc" id="L213">                bibDatabases.add(parsedDatabase);</span>
+            }
+        }
+<span class="fc" id="L216">    }</span>
+
+    private boolean isLoaded(File fileToOpen) {
+<span class="nc bnc" id="L219" title="All 2 branches missed.">        for (ParserResult pr : bibDatabases) {</span>
+<span class="nc bnc" id="L220" title="All 4 branches missed.">            if (pr.getFile().isPresent() &amp;&amp; pr.getFile().get().equals(fileToOpen)) {</span>
+<span class="nc" id="L221">                return true;</span>
+            }
+        }
+<span class="nc" id="L224">        return false;</span>
+    }
+
+    private void setLookAndFeel() {
+        try {
+            String lookFeel;
+<span class="fc" id="L230">            String systemLookFeel = UIManager.getSystemLookAndFeelClassName();</span>
+
+<span class="pc bpc" id="L232" title="1 of 2 branches missed.">            if (Globals.prefs.getBoolean(JabRefPreferences.USE_DEFAULT_LOOK_AND_FEEL)) {</span>
+                // FIXME: Problems with OpenJDK and GTK L&amp;F
+                // See https://github.com/JabRef/jabref/issues/393, https://github.com/JabRef/jabref/issues/638
+<span class="pc bpc" id="L235" title="1 of 2 branches missed.">                if (System.getProperty(&quot;java.runtime.name&quot;).contains(&quot;OpenJDK&quot;)) {</span>
+                    // Metal L&amp;F
+<span class="nc" id="L237">                    lookFeel = UIManager.getCrossPlatformLookAndFeelClassName();</span>
+<span class="nc" id="L238">                    LOGGER.warn(</span>
+<span class="nc" id="L239">                            &quot;There seem to be problems with OpenJDK and the default GTK Look&amp;Feel. Using Metal L&amp;F instead. Change to another L&amp;F with caution.&quot;);</span>
+<span class="nc" id="L240">                } else {</span>
+<span class="fc" id="L241">                    lookFeel = systemLookFeel;</span>
+                }
+<span class="fc" id="L243">            } else {</span>
+<span class="nc" id="L244">                lookFeel = Globals.prefs.get(JabRefPreferences.WIN_LOOK_AND_FEEL);</span>
+            }
+
+            // FIXME: Open JDK problem
+<span class="pc bpc" id="L248" title="1 of 2 branches missed.">            if (UIManager.getCrossPlatformLookAndFeelClassName().equals(lookFeel)</span>
+<span class="nc bnc" id="L249" title="All 2 branches missed.">                    &amp;&amp; !System.getProperty(&quot;java.runtime.name&quot;).contains(&quot;OpenJDK&quot;)) {</span>
+                // try to avoid ending up with the ugly Metal L&amp;F
+<span class="nc" id="L251">                UIManager.setLookAndFeel(&quot;javax.swing.plaf.nimbus.NimbusLookAndFeel&quot;);</span>
+<span class="nc" id="L252">            } else {</span>
+                try {
+<span class="fc" id="L254">                    UIManager.setLookAndFeel(lookFeel);</span>
+<span class="fc" id="L255">                } catch (ClassNotFoundException | InstantiationException | IllegalAccessException |</span>
+<span class="nc" id="L256">                        UnsupportedLookAndFeelException e) {</span>
+                    // specified look and feel does not exist on the classpath, so use system l&amp;f
+<span class="nc" id="L258">                    UIManager.setLookAndFeel(systemLookFeel);</span>
+                    // also set system l&amp;f as default
+<span class="nc" id="L260">                    Globals.prefs.put(JabRefPreferences.WIN_LOOK_AND_FEEL, systemLookFeel);</span>
+                    // notify the user
+<span class="nc" id="L262">                    JOptionPane.showMessageDialog(JabRefGUI.getMainFrame(),</span>
+                            Localization
+<span class="nc" id="L264">                                    .lang(&quot;Unable to find the requested look and feel and thus the default one is used.&quot;),</span>
+<span class="nc" id="L265">                            Localization.lang(&quot;Warning&quot;), JOptionPane.WARNING_MESSAGE);</span>
+<span class="nc" id="L266">                    LOGGER.warn(&quot;Unable to find requested look and feel&quot;, e);</span>
+                }
+            }
+
+            // On Linux, Java FX fonts look blurry per default. This can be improved by using a non-default rendering
+            // setting. See https://github.com/woky/javafx-hates-linux
+<span class="pc bpc" id="L272" title="1 of 2 branches missed.">            if (Globals.prefs.getBoolean(JabRefPreferences.FX_FONT_RENDERING_TWEAK)) {</span>
+<span class="fc" id="L273">                System.setProperty(&quot;prism.text&quot;, &quot;t2k&quot;);</span>
+<span class="fc" id="L274">                System.setProperty(&quot;prism.lcdtext&quot;, &quot;true&quot;);</span>
+            }
+<span class="pc" id="L276">        } catch (Exception e) {</span>
+<span class="nc" id="L277">            LOGGER.warn(&quot;Look and feel could not be set&quot;, e);</span>
+        }
+
+        // In JabRef v2.8, we did it only on NON-Mac. Now, we try on all platforms
+<span class="fc" id="L281">        boolean overrideDefaultFonts = Globals.prefs.getBoolean(JabRefPreferences.OVERRIDE_DEFAULT_FONTS);</span>
+<span class="pc bpc" id="L282" title="1 of 2 branches missed.">        if (overrideDefaultFonts) {</span>
+<span class="nc" id="L283">            int fontSize = Globals.prefs.getInt(JabRefPreferences.MENU_FONT_SIZE);</span>
+<span class="nc" id="L284">            UIDefaults defaults = UIManager.getDefaults();</span>
+<span class="nc" id="L285">            Enumeration&lt;Object&gt; keys = defaults.keys();</span>
+<span class="nc bnc" id="L286" title="All 2 branches missed.">            for (Object key : Collections.list(keys)) {</span>
+<span class="nc bnc" id="L287" title="All 4 branches missed.">                if ((key instanceof String) &amp;&amp; ((String) key).endsWith(&quot;.font&quot;)) {</span>
+<span class="nc" id="L288">                    FontUIResource font = (FontUIResource) UIManager.get(key);</span>
+<span class="nc" id="L289">                    font = new FontUIResource(font.getName(), font.getStyle(), fontSize);</span>
+<span class="nc" id="L290">                    defaults.put(key, font);</span>
+                }
+            }
+        }
+<span class="fc" id="L294">    }</span>
+
+    public static JabRefFrame getMainFrame() {
+<span class="fc" id="L297">        return mainFrame;</span>
+    }
+
+    // Only used for testing, other than that do NOT set the mainFrame...
+    public static void setMainFrame(JabRefFrame mainFrame) {
+<span class="fc" id="L302">        JabRefGUI.mainFrame = mainFrame;</span>
+<span class="fc" id="L303">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>TextField.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.fieldeditors</a> &gt; <span class="el_source">TextField.java</span></div><h1>TextField.java</h1><pre class="source lang-java linenums"><span class="nc" id="L1">package org.jabref.gui.fieldeditors;</span>
+
+import java.awt.Color;
+import java.awt.event.ActionEvent;
+import java.lang.reflect.InvocationTargetException;
+
+import javax.swing.AbstractAction;
+import javax.swing.JComponent;
+import javax.swing.SwingUtilities;
+import javax.swing.text.Document;
+import javax.swing.undo.CannotRedoException;
+import javax.swing.undo.CannotUndoException;
+import javax.swing.undo.UndoManager;
+
+import org.jabref.Globals;
+import org.jabref.gui.GUIGlobals;
+import org.jabref.gui.actions.Actions;
+import org.jabref.gui.util.component.JTextFieldWithPlaceholder;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * An implementation of the FieldEditor backed by a JTextField. Used for single-line input, only BibTex key at the
+ * moment?!
+ */
+public class TextField extends JTextFieldWithPlaceholder implements FieldEditor {
+
+<span class="nc" id="L29">    private static final Logger LOGGER = LoggerFactory.getLogger(TextField.class);</span>
+
+    private final String fieldName;
+    private UndoManager undo;
+
+    public TextField(String fieldName, String content, boolean changeColorOnFocus) {
+<span class="nc" id="L35">        this(fieldName, content, changeColorOnFocus, &quot;&quot;);</span>
+<span class="nc" id="L36">    }</span>
+
+    public TextField(String fieldName, String content, boolean changeColorOnFocus, String title) {
+<span class="nc" id="L39">        super(content, title);</span>
+
+<span class="nc" id="L41">        setupPasteListener();</span>
+<span class="nc" id="L42">        setupUndoRedo();</span>
+
+<span class="nc" id="L44">        updateFont();</span>
+
+        // Add the global focus listener, so a menu item can see if this field
+        // was focused when
+        // an action was called.
+<span class="nc" id="L49">        addFocusListener(Globals.getFocusListener());</span>
+<span class="nc bnc" id="L50" title="All 2 branches missed.">        if (changeColorOnFocus) {</span>
+<span class="nc" id="L51">            addFocusListener(new FieldEditorFocusListener());</span>
+        }
+<span class="nc" id="L53">        this.fieldName = fieldName;</span>
+<span class="nc" id="L54">        setBackground(GUIGlobals.validFieldBackgroundColor);</span>
+<span class="nc" id="L55">        setForeground(GUIGlobals.editorTextColor);</span>
+<span class="nc" id="L56">    }</span>
+
+    @Override
+    public void setText(String t) {
+<span class="nc" id="L60">        super.setText(t);</span>
+<span class="nc bnc" id="L61" title="All 2 branches missed.">        if (undo != null) {</span>
+<span class="nc" id="L62">            undo.discardAllEdits();</span>
+        }
+<span class="nc" id="L64">    }</span>
+
+    @Override
+    public void append(String text) {
+<span class="nc" id="L68">        setText(getText() + text);</span>
+<span class="nc" id="L69">    }</span>
+
+    @Override
+    public String getFieldName() {
+<span class="nc" id="L73">        return fieldName;</span>
+    }
+
+    @Override
+    public JComponent getPane() {
+<span class="nc" id="L78">        return this;</span>
+    }
+
+    @Override
+    public JComponent getTextComponent() {
+<span class="nc" id="L83">        return this;</span>
+
+    }
+
+    @Override
+    public void setActiveBackgroundColor() {
+<span class="nc" id="L89">        setBackgroundColor(GUIGlobals.activeBackgroundColor);</span>
+<span class="nc" id="L90">    }</span>
+
+    @Override
+    public void setValidBackgroundColor() {
+<span class="nc" id="L94">        setBackgroundColor(GUIGlobals.validFieldBackgroundColor);</span>
+<span class="nc" id="L95">    }</span>
+
+    @Override
+    public void setInvalidBackgroundColor() {
+<span class="nc" id="L99">        setBackgroundColor(GUIGlobals.invalidFieldBackgroundColor);</span>
+<span class="nc" id="L100">    }</span>
+
+    private void setBackgroundColor(Color color) {
+<span class="nc bnc" id="L103" title="All 2 branches missed.">        if (SwingUtilities.isEventDispatchThread()) {</span>
+<span class="nc" id="L104">            setBackground(color);</span>
+<span class="nc" id="L105">        } else {</span>
+            try {
+<span class="nc" id="L107">                SwingUtilities.invokeAndWait(() -&gt; setBackground(color));</span>
+<span class="nc" id="L108">            } catch (InvocationTargetException | InterruptedException e) {</span>
+<span class="nc" id="L109">                LOGGER.info(&quot;Problem setting background color&quot;, e);</span>
+            }
+        }
+
+<span class="nc" id="L113">    }</span>
+
+    private void updateFont() {
+<span class="nc" id="L116">        setFont(GUIGlobals.currentFont);</span>
+<span class="nc" id="L117">    }</span>
+
+    @Override
+    // Only replaces selected text if found
+    public void paste(String textToInsert) {
+<span class="nc" id="L122">        replaceSelection(textToInsert);</span>
+<span class="nc" id="L123">    }</span>
+
+    @Override
+    public void undo() {
+        // Nothing
+<span class="nc" id="L128">    }</span>
+
+    @Override
+    public void redo() {
+        // Nothing
+<span class="nc" id="L133">    }</span>
+
+    private void setupPasteListener() {
+        // Bind paste command to KeyBinds.PASTE
+<span class="nc" id="L137">        getInputMap().put(Globals.getKeyPrefs().getKey(org.jabref.gui.keyboard.KeyBinding.PASTE), Actions.PASTE);</span>
+<span class="nc" id="L138">    }</span>
+
+    private void setupUndoRedo() {
+<span class="nc" id="L141">        undo = new UndoManager();</span>
+<span class="nc" id="L142">        Document doc = getDocument();</span>
+
+        // Listen for undo and redo events
+<span class="nc" id="L145">        doc.addUndoableEditListener(evt -&gt; undo.addEdit(evt.getEdit()));</span>
+
+        // Create an undo action and add it to the text component
+<span class="nc" id="L148">        getActionMap().put(&quot;Undo&quot;, new AbstractAction(&quot;Undo&quot;) {</span>
+
+            @Override
+            public void actionPerformed(ActionEvent evt) {
+                try {
+<span class="nc bnc" id="L153" title="All 2 branches missed.">                    if (undo.canUndo()) {</span>
+<span class="nc" id="L154">                        undo.undo();</span>
+                    }
+<span class="nc" id="L156">                } catch (CannotUndoException ignored) {</span>
+                    // Ignored
+                }
+<span class="nc" id="L159">            }</span>
+        });
+
+        // Bind the undo action to ctl-Z
+<span class="nc" id="L163">        getInputMap().put(Globals.getKeyPrefs().getKey(org.jabref.gui.keyboard.KeyBinding.UNDO), &quot;Undo&quot;);</span>
+
+        // Create a redo action and add it to the text component
+<span class="nc" id="L166">        getActionMap().put(&quot;Redo&quot;, new AbstractAction(Actions.REDO) {</span>
+
+            @Override
+            public void actionPerformed(ActionEvent evt) {
+                try {
+<span class="nc bnc" id="L171" title="All 2 branches missed.">                    if (undo.canRedo()) {</span>
+<span class="nc" id="L172">                        undo.redo();</span>
+                    }
+<span class="nc" id="L174">                } catch (CannotRedoException ignored) {</span>
+                    // Ignored
+                }
+<span class="nc" id="L177">            }</span>
+        });
+
+        // Bind the redo action to ctl-Y
+<span class="nc" id="L181">        getInputMap().put(Globals.getKeyPrefs().getKey(org.jabref.gui.keyboard.KeyBinding.REDO), &quot;Redo&quot;);</span>
+<span class="nc" id="L182">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

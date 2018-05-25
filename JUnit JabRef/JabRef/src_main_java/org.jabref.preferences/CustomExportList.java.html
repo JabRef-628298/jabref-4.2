@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>CustomExportList.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.preferences</a> &gt; <span class="el_source">CustomExportList.java</span></div><h1>CustomExportList.java</h1><pre class="source lang-java linenums">package org.jabref.preferences;
+
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.TreeMap;
+
+import org.jabref.logic.exporter.SavePreferences;
+import org.jabref.logic.exporter.TemplateExporter;
+import org.jabref.logic.journals.JournalAbbreviationLoader;
+import org.jabref.logic.layout.LayoutFormatterPreferences;
+import org.jabref.logic.util.FileType;
+
+import ca.odell.glazedlists.BasicEventList;
+import ca.odell.glazedlists.EventList;
+import ca.odell.glazedlists.SortedList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * This class handles user defined custom export formats. They are initially
+ * read from Preferences, and kept alphabetically (sorted by name). Formats can
+ * be added or removed. When modified, the sort() method must be called to make
+ * sure the formats stay properly sorted. When the method store() is called,
+ * export formats are written to Preferences.
+ */
+
+public class CustomExportList {
+
+    private static final int EXPORTER_NAME_INDEX = 0;
+    private static final int EXPORTER_FILENAME_INDEX = 1;
+    private static final int EXPORTER_EXTENSION_INDEX = 2;
+
+<span class="fc" id="L37">    private static final Logger LOGGER = LoggerFactory.getLogger(CustomExportList.class);</span>
+    private final EventList&lt;List&lt;String&gt;&gt; list;
+    private final SortedList&lt;List&lt;String&gt;&gt; sorted;
+
+<span class="fc" id="L41">    private final Map&lt;String, TemplateExporter&gt; formats = new TreeMap&lt;&gt;();</span>
+
+<span class="fc" id="L43">    public CustomExportList(Comparator&lt;List&lt;String&gt;&gt; comp) {</span>
+<span class="fc" id="L44">        list = new BasicEventList&lt;&gt;();</span>
+<span class="fc" id="L45">        sorted = new SortedList&lt;&gt;(list, comp);</span>
+<span class="fc" id="L46">    }</span>
+
+    public int size() {
+<span class="nc" id="L49">        return list.size();</span>
+    }
+
+    public EventList&lt;List&lt;String&gt;&gt; getSortedList() {
+<span class="nc" id="L53">        return sorted;</span>
+    }
+
+    public Map&lt;String, TemplateExporter&gt; getCustomExportFormats(JabRefPreferences prefs,
+            JournalAbbreviationLoader loader) {
+<span class="fc" id="L58">        Objects.requireNonNull(prefs);</span>
+<span class="fc" id="L59">        Objects.requireNonNull(loader);</span>
+<span class="fc" id="L60">        formats.clear();</span>
+<span class="fc" id="L61">        readPrefs(prefs, loader);</span>
+<span class="fc" id="L62">        return formats;</span>
+    }
+
+    private void readPrefs(JabRefPreferences prefs, JournalAbbreviationLoader loader) {
+<span class="fc" id="L66">        Objects.requireNonNull(prefs);</span>
+<span class="fc" id="L67">        Objects.requireNonNull(loader);</span>
+<span class="fc" id="L68">        formats.clear();</span>
+<span class="fc" id="L69">        list.clear();</span>
+<span class="fc" id="L70">        int i = 0;</span>
+        List&lt;String&gt; s;
+<span class="fc" id="L72">        LayoutFormatterPreferences layoutPreferences = prefs.getLayoutFormatterPreferences(loader);</span>
+<span class="fc" id="L73">        SavePreferences savePreferences = prefs.loadForExportFromPreferences();</span>
+<span class="pc bpc" id="L74" title="1 of 2 branches missed.">        while (!((s = prefs.getStringList(JabRefPreferences.CUSTOM_EXPORT_FORMAT + i)).isEmpty())) {</span>
+<span class="nc" id="L75">            Optional&lt;TemplateExporter&gt; format = createFormat(s.get(EXPORTER_NAME_INDEX), s.get(EXPORTER_FILENAME_INDEX), s.get(EXPORTER_EXTENSION_INDEX), layoutPreferences, savePreferences);</span>
+<span class="nc bnc" id="L76" title="All 2 branches missed.">            if (format.isPresent()) {</span>
+<span class="nc" id="L77">                formats.put(format.get().getId(), format.get());</span>
+<span class="nc" id="L78">                list.add(s);</span>
+<span class="nc" id="L79">            } else {</span>
+<span class="nc" id="L80">                String customExportFormat = prefs.get(JabRefPreferences.CUSTOM_EXPORT_FORMAT + i);</span>
+<span class="nc" id="L81">                LOGGER.error(&quot;Error initializing custom export format from string &quot; + customExportFormat);</span>
+            }
+<span class="nc" id="L83">            i++;</span>
+        }
+<span class="fc" id="L85">    }</span>
+
+    private Optional&lt;TemplateExporter&gt; createFormat(String exporterName, String filename, String extension, LayoutFormatterPreferences layoutPreferences,
+            SavePreferences savePreferences) {
+
+        String lfFileName;
+<span class="nc bnc" id="L91" title="All 2 branches missed.">        if (extension.endsWith(&quot;.layout&quot;)) {</span>
+<span class="nc" id="L92">            lfFileName = filename.substring(0, filename.length() - &quot;.layout&quot;.length());</span>
+<span class="nc" id="L93">        } else {</span>
+<span class="nc" id="L94">            lfFileName = filename;</span>
+        }
+<span class="nc" id="L96">        TemplateExporter format = new TemplateExporter(exporterName, filename, lfFileName, null, FileType.parse(extension), layoutPreferences,</span>
+<span class="nc" id="L97">                savePreferences);</span>
+<span class="nc" id="L98">        format.setCustomExport(true);</span>
+<span class="nc" id="L99">        return Optional.of(format);</span>
+    }
+
+    public void store(JabRefPreferences prefs) {
+
+<span class="pc bpc" id="L104" title="1 of 2 branches missed.">        if (list.isEmpty()) {</span>
+<span class="fc" id="L105">            purge(0, prefs);</span>
+<span class="fc" id="L106">        } else {</span>
+<span class="nc bnc" id="L107" title="All 2 branches missed.">            for (int i = 0; i &lt; list.size(); i++) {</span>
+<span class="nc" id="L108">                prefs.putStringList(JabRefPreferences.CUSTOM_EXPORT_FORMAT + i, list.get(i));</span>
+            }
+<span class="nc" id="L110">            purge(list.size(), prefs);</span>
+        }
+<span class="fc" id="L112">    }</span>
+
+    private void purge(int from, JabRefPreferences prefs) {
+<span class="fc" id="L115">        int i = from;</span>
+<span class="pc bpc" id="L116" title="1 of 2 branches missed.">        while (!prefs.getStringList(JabRefPreferences.CUSTOM_EXPORT_FORMAT + i).isEmpty()) {</span>
+<span class="nc" id="L117">            prefs.remove(JabRefPreferences.CUSTOM_EXPORT_FORMAT + i);</span>
+<span class="nc" id="L118">            i++;</span>
+        }
+<span class="fc" id="L120">    }</span>
+
+    public void remove(List&lt;String&gt; toRemove, LayoutFormatterPreferences layoutPreferences,
+            SavePreferences savePreferences) {
+<span class="nc" id="L124">        createFormat(toRemove.get(EXPORTER_NAME_INDEX), toRemove.get(EXPORTER_FILENAME_INDEX), toRemove.get(EXPORTER_EXTENSION_INDEX), layoutPreferences, savePreferences).ifPresent(format -&gt; {</span>
+<span class="nc" id="L125">            formats.remove(format.getId());</span>
+<span class="nc" id="L126">            list.remove(toRemove);</span>
+<span class="nc" id="L127">        });</span>
+<span class="nc" id="L128">    }</span>
+
+    public void addFormat(String name, String layoutFile, String extension, LayoutFormatterPreferences layoutPreferences, SavePreferences savePreferences) {
+<span class="nc" id="L131">        createFormat(name, layoutFile, extension, layoutPreferences, savePreferences).ifPresent(format -&gt; {</span>
+<span class="nc" id="L132">            formats.put(format.getId(), format);</span>
+<span class="nc" id="L133">            list.add(Arrays.asList(name, layoutFile, extension));</span>
+<span class="nc" id="L134">        });</span>
+
+<span class="nc" id="L136">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

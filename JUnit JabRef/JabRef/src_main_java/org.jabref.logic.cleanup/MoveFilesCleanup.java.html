@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MoveFilesCleanup.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.cleanup</a> &gt; <span class="el_source">MoveFilesCleanup.java</span></div><h1>MoveFilesCleanup.java</h1><pre class="source lang-java linenums">package org.jabref.logic.cleanup;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import org.jabref.logic.layout.LayoutFormatterPreferences;
+import org.jabref.logic.util.io.FileUtil;
+import org.jabref.model.FieldChange;
+import org.jabref.model.cleanup.CleanupJob;
+import org.jabref.model.database.BibDatabaseContext;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.LinkedFile;
+import org.jabref.model.metadata.FileDirectoryPreferences;
+import org.jabref.model.util.FileHelper;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class MoveFilesCleanup implements CleanupJob {
+
+<span class="fc" id="L30">    private static final Logger LOGGER = LoggerFactory.getLogger(MoveFilesCleanup.class);</span>
+    private final BibDatabaseContext databaseContext;
+    private final FileDirectoryPreferences fileDirectoryPreferences;
+
+    private final String fileDirPattern;
+
+    private LinkedFile singleFileFieldCleanup;
+
+    // FIXME: remove unused parameter 'layoutPrefs' later S.G.
+<span class="fc" id="L39">    public MoveFilesCleanup(BibDatabaseContext databaseContext, String fileDirPattern,</span>
+            FileDirectoryPreferences fileDirectoryPreferences, LayoutFormatterPreferences layoutPrefs) {
+<span class="fc" id="L41">        this.databaseContext = Objects.requireNonNull(databaseContext);</span>
+<span class="fc" id="L42">        this.fileDirPattern = Objects.requireNonNull(fileDirPattern);</span>
+<span class="fc" id="L43">        this.fileDirectoryPreferences = Objects.requireNonNull(fileDirectoryPreferences);</span>
+<span class="fc" id="L44">    }</span>
+
+    public MoveFilesCleanup(BibDatabaseContext databaseContext, String fileDirPattern,
+            FileDirectoryPreferences fileDirectoryPreferences, LayoutFormatterPreferences prefs,
+            LinkedFile field) {
+
+<span class="nc" id="L50">        this(databaseContext, fileDirPattern, fileDirectoryPreferences, prefs);</span>
+<span class="nc" id="L51">        this.singleFileFieldCleanup = field;</span>
+<span class="nc" id="L52">    }</span>
+
+    @Override
+    public List&lt;FieldChange&gt; cleanup(BibEntry entry) {
+<span class="fc" id="L56">        Optional&lt;Path&gt; firstExistingFileDir = databaseContext.getFirstExistingFileDir(fileDirectoryPreferences);</span>
+
+<span class="pc bpc" id="L58" title="1 of 2 branches missed.">        if (!firstExistingFileDir.isPresent()) {</span>
+<span class="nc" id="L59">            return Collections.emptyList();</span>
+        }
+
+<span class="fc" id="L62">        List&lt;Path&gt; paths = databaseContext.getFileDirectoriesAsPaths(fileDirectoryPreferences);</span>
+<span class="fc" id="L63">        String defaultFileDirectory = firstExistingFileDir.get().toString();</span>
+<span class="fc" id="L64">        Optional&lt;Path&gt; targetDirectory = FileHelper.expandFilenameAsPath(defaultFileDirectory, paths);</span>
+
+<span class="pc bpc" id="L66" title="1 of 2 branches missed.">        if (!targetDirectory.isPresent()) {</span>
+<span class="nc" id="L67">            return Collections.emptyList();</span>
+        }
+
+        List&lt;LinkedFile&gt; fileList;
+        List&lt;LinkedFile&gt; newFileList;
+
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">        if (singleFileFieldCleanup != null) {</span>
+<span class="nc" id="L74">            fileList = Arrays.asList(singleFileFieldCleanup);</span>
+            //Add all other except the current selected file
+<span class="nc bnc" id="L76" title="All 2 branches missed.">            newFileList = entry.getFiles().stream().filter(name -&gt; !name.equals(singleFileFieldCleanup))</span>
+<span class="nc" id="L77">                    .collect(Collectors.toList());</span>
+<span class="nc" id="L78">        } else {</span>
+<span class="fc" id="L79">            newFileList = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L80">            fileList = entry.getFiles();</span>
+        }
+
+<span class="fc" id="L83">        boolean changed = false;</span>
+<span class="fc bfc" id="L84" title="All 2 branches covered.">        for (LinkedFile fileEntry : fileList) {</span>
+<span class="fc" id="L85">            String oldFileName = fileEntry.getLink();</span>
+
+<span class="fc" id="L87">            Optional&lt;Path&gt; oldFile = fileEntry.findIn(paths);</span>
+<span class="pc bpc" id="L88" title="2 of 4 branches missed.">            if (!oldFile.isPresent() || !Files.exists(oldFile.get())) {</span>
+<span class="nc" id="L89">                newFileList.add(fileEntry);</span>
+<span class="nc" id="L90">                continue;</span>
+            }
+<span class="fc" id="L92">            String targetDirName = &quot;&quot;;</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">            if (!fileDirPattern.isEmpty()) {</span>
+<span class="fc" id="L94">                targetDirName = FileUtil.createDirNameFromPattern(databaseContext.getDatabase(), entry, fileDirPattern);</span>
+            }
+
+<span class="fc" id="L97">            Path newTargetFile = targetDirectory.get().resolve(targetDirName).resolve(oldFile.get().getFileName());</span>
+<span class="pc bpc" id="L98" title="1 of 2 branches missed.">            if (Files.exists(newTargetFile)) {</span>
+                // We do not overwrite already existing files
+<span class="nc" id="L100">                newFileList.add(fileEntry);</span>
+<span class="nc" id="L101">                continue;</span>
+            }
+
+            try {
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">                if (!Files.exists(newTargetFile)) {</span>
+<span class="fc" id="L106">                    Files.createDirectories(newTargetFile);</span>
+                }
+<span class="pc" id="L108">            } catch (IOException e) {</span>
+<span class="nc" id="L109">                LOGGER.error(&quot;Could no create necessary target directoires for renaming&quot;, e);</span>
+            }
+
+<span class="fc bfc" id="L112" title="All 2 branches covered.">            if (FileUtil.renameFile(oldFile.get(), newTargetFile, true)) {</span>
+<span class="fc" id="L113">                changed = true;</span>
+
+<span class="fc" id="L115">                String newEntryFilePath = Paths.get(defaultFileDirectory).relativize(newTargetFile).toString();</span>
+<span class="fc" id="L116">                LinkedFile newFileEntry = fileEntry;</span>
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">                if (!oldFileName.equals(newTargetFile.toString())) {</span>
+<span class="fc" id="L118">                    newFileEntry = new LinkedFile(fileEntry.getDescription(), newEntryFilePath,</span>
+<span class="fc" id="L119">                            fileEntry.getFileType());</span>
+<span class="fc" id="L120">                    changed = true;</span>
+                }
+<span class="fc" id="L122">                newFileList.add(newFileEntry);</span>
+            }
+        }
+
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">        if (changed) {</span>
+<span class="fc" id="L127">            Optional&lt;FieldChange&gt; change = entry.setFiles(newFileList);</span>
+<span class="pc bpc" id="L128" title="1 of 2 branches missed.">            if (change.isPresent()) {</span>
+<span class="fc" id="L129">                return Collections.singletonList(change.get());</span>
+            } else {
+<span class="nc" id="L131">                return Collections.emptyList();</span>
+            }
+        }
+
+<span class="nc" id="L135">        return Collections.emptyList();</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

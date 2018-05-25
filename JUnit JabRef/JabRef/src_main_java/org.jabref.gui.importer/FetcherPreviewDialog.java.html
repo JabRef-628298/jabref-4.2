@@ -1,0 +1,310 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>FetcherPreviewDialog.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.importer</a> &gt; <span class="el_source">FetcherPreviewDialog.java</span></div><h1>FetcherPreviewDialog.java</h1><pre class="source lang-java linenums"><span class="nc" id="L1">package org.jabref.gui.importer;</span>
+
+import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.event.ActionEvent;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import javax.swing.AbstractAction;
+import javax.swing.Action;
+import javax.swing.ActionMap;
+import javax.swing.BorderFactory;
+import javax.swing.InputMap;
+import javax.swing.JButton;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.table.TableCellRenderer;
+import javax.swing.table.TableModel;
+
+import org.jabref.Globals;
+import org.jabref.gui.JabRefDialog;
+import org.jabref.gui.JabRefFrame;
+import org.jabref.gui.keyboard.KeyBinding;
+import org.jabref.logic.importer.OutputPrinter;
+import org.jabref.logic.l10n.Localization;
+
+import ca.odell.glazedlists.BasicEventList;
+import ca.odell.glazedlists.EventList;
+import ca.odell.glazedlists.gui.TableFormat;
+import ca.odell.glazedlists.swing.DefaultEventSelectionModel;
+import ca.odell.glazedlists.swing.DefaultEventTableModel;
+import ca.odell.glazedlists.swing.GlazedListsSwing;
+import com.jgoodies.forms.builder.ButtonBarBuilder;
+import com.jgoodies.forms.builder.ButtonStackBuilder;
+
+/**
+ *
+ */
+public class FetcherPreviewDialog extends JabRefDialog implements OutputPrinter {
+
+<span class="nc" id="L46">    private final EventList&lt;TableEntry&gt; entries = new BasicEventList&lt;&gt;();</span>
+    private final JTable glTable;
+    private boolean okPressed;
+    private final JabRefFrame frame;
+    private final int warningLimit;
+
+
+    public FetcherPreviewDialog(JabRefFrame frame, int warningLimit, int tableRowHeight) {
+<span class="nc" id="L54">        super(frame, Localization.lang(&quot;Title&quot;), true, FetcherPreviewDialog.class);</span>
+<span class="nc" id="L55">        this.frame = frame;</span>
+<span class="nc" id="L56">        this.warningLimit = warningLimit;</span>
+
+<span class="nc" id="L58">        JButton ok = new JButton(Localization.lang(&quot;OK&quot;));</span>
+<span class="nc" id="L59">        ok.addActionListener(e -&gt; {</span>
+<span class="nc bnc" id="L60" title="All 2 branches missed.">            if (verifySelection()) {</span>
+<span class="nc" id="L61">                okPressed = true;</span>
+<span class="nc" id="L62">                dispose();</span>
+            }
+<span class="nc" id="L64">        });</span>
+<span class="nc" id="L65">        JButton cancel = new JButton(Localization.lang(&quot;Cancel&quot;));</span>
+<span class="nc" id="L66">        cancel.addActionListener(e -&gt; {</span>
+<span class="nc" id="L67">            okPressed = false;</span>
+<span class="nc" id="L68">            dispose();</span>
+<span class="nc" id="L69">        });</span>
+<span class="nc" id="L70">        JButton selectAll = new JButton(Localization.lang(&quot;Select all&quot;));</span>
+<span class="nc" id="L71">        selectAll.addActionListener(e -&gt; setSelectionAll(true));</span>
+
+<span class="nc" id="L73">        JButton deselectAll = new JButton(Localization.lang(&quot;Deselect all&quot;));</span>
+<span class="nc" id="L74">        deselectAll.addActionListener(e -&gt; setSelectionAll(false));</span>
+
+<span class="nc" id="L76">        DefaultEventTableModel&lt;TableEntry&gt; tableModelGl = (DefaultEventTableModel&lt;TableEntry&gt;) GlazedListsSwing</span>
+<span class="nc" id="L77">                .eventTableModelWithThreadProxyList(entries, new EntryTableFormat());</span>
+<span class="nc" id="L78">        glTable = new EntryTable(tableModelGl);</span>
+<span class="nc" id="L79">        glTable.setRowHeight(tableRowHeight);</span>
+<span class="nc" id="L80">        glTable.getColumnModel().getColumn(0).setMaxWidth(45);</span>
+<span class="nc" id="L81">        glTable.setPreferredScrollableViewportSize(new Dimension(1100, 600));</span>
+<span class="nc" id="L82">        DefaultEventSelectionModel&lt;TableEntry&gt; selectionModel = (DefaultEventSelectionModel&lt;TableEntry&gt;) GlazedListsSwing</span>
+<span class="nc" id="L83">                .eventSelectionModelWithThreadProxyList(entries);</span>
+<span class="nc" id="L84">        glTable.setSelectionModel(selectionModel);</span>
+<span class="nc" id="L85">        ButtonStackBuilder builder = new ButtonStackBuilder();</span>
+<span class="nc" id="L86">        builder.addButton(selectAll);</span>
+<span class="nc" id="L87">        builder.addButton(deselectAll);</span>
+<span class="nc" id="L88">        builder.getPanel().setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));</span>
+
+<span class="nc" id="L90">        ButtonBarBuilder bb = new ButtonBarBuilder();</span>
+<span class="nc" id="L91">        bb.addGlue();</span>
+<span class="nc" id="L92">        bb.addButton(ok);</span>
+<span class="nc" id="L93">        bb.addButton(cancel);</span>
+<span class="nc" id="L94">        bb.addGlue();</span>
+<span class="nc" id="L95">        bb.getPanel().setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));</span>
+
+<span class="nc" id="L97">        JPanel centerPan = new JPanel();</span>
+<span class="nc" id="L98">        centerPan.setLayout(new BorderLayout());</span>
+<span class="nc" id="L99">        centerPan.add(new JScrollPane(glTable), BorderLayout.CENTER);</span>
+<span class="nc" id="L100">        centerPan.add(builder.getPanel(), BorderLayout.WEST);</span>
+
+<span class="nc" id="L102">        getContentPane().add(centerPan, BorderLayout.CENTER);</span>
+<span class="nc" id="L103">        getContentPane().add(bb.getPanel(), BorderLayout.SOUTH);</span>
+
+        // Key bindings:
+<span class="nc" id="L106">        Action closeAction = new AbstractAction() {</span>
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L110">                dispose();</span>
+<span class="nc" id="L111">            }</span>
+        };
+<span class="nc" id="L113">        ActionMap am = centerPan.getActionMap();</span>
+<span class="nc" id="L114">        InputMap im = centerPan.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);</span>
+<span class="nc" id="L115">        im.put(Globals.getKeyPrefs().getKey(KeyBinding.CLOSE_DIALOG), &quot;close&quot;);</span>
+<span class="nc" id="L116">        am.put(&quot;close&quot;, closeAction);</span>
+
+<span class="nc" id="L118">        pack();</span>
+
+<span class="nc" id="L120">    }</span>
+
+    /**
+     * Check whether a large number of entries are selected, and if so, ask the user whether
+     * to go on.
+     * @return true if we should go on
+     */
+    private boolean verifySelection() {
+<span class="nc" id="L128">        int selected = 0;</span>
+<span class="nc bnc" id="L129" title="All 2 branches missed.">        for (TableEntry entry : entries) {</span>
+<span class="nc bnc" id="L130" title="All 2 branches missed.">            if (entry.isWanted()) {</span>
+<span class="nc" id="L131">                selected++;</span>
+            }
+        }
+<span class="nc bnc" id="L134" title="All 2 branches missed.">        if (selected &gt; warningLimit) {</span>
+<span class="nc" id="L135">            int result = JOptionPane.showConfirmDialog(this,</span>
+<span class="nc" id="L136">                    Localization.lang(&quot;You have selected more than %0 entries for download. Some web sites &quot;</span>
+                                    + &quot;might block you if you make too many rapid downloads. Do you want to continue?&quot;,
+<span class="nc" id="L138">                            String.valueOf(warningLimit)),</span>
+<span class="nc" id="L139">                    Localization.lang(&quot;Confirm selection&quot;), JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);</span>
+<span class="nc bnc" id="L140" title="All 2 branches missed.">            return result == JOptionPane.YES_OPTION;</span>
+        } else {
+<span class="nc" id="L142">            return true;</span>
+        }
+    }
+
+    public Map&lt;String, Boolean&gt; getSelection() {
+<span class="nc" id="L147">        LinkedHashMap&lt;String, Boolean&gt; selection = new LinkedHashMap&lt;&gt;();</span>
+<span class="nc bnc" id="L148" title="All 2 branches missed.">        for (TableEntry e : entries) {</span>
+<span class="nc" id="L149">            selection.put(e.id, e.isWanted());</span>
+        }
+<span class="nc" id="L151">        return selection;</span>
+    }
+
+    public void addEntry(String entryId, JLabel preview) {
+<span class="nc" id="L155">        TableEntry entry = new TableEntry(entryId, preview);</span>
+<span class="nc" id="L156">        this.entries.getReadWriteLock().writeLock().lock();</span>
+<span class="nc" id="L157">        this.entries.add(entry);</span>
+<span class="nc" id="L158">        this.entries.getReadWriteLock().writeLock().unlock();</span>
+<span class="nc" id="L159">        glTable.repaint();</span>
+<span class="nc" id="L160">    }</span>
+
+    private void setSelectionAll(boolean select) {
+<span class="nc bnc" id="L163" title="All 2 branches missed.">        for (int i = 0; i &lt; glTable.getRowCount(); i++) {</span>
+<span class="nc" id="L164">            glTable.setValueAt(select, i, 0);</span>
+        }
+<span class="nc" id="L166">        glTable.repaint();</span>
+<span class="nc" id="L167">    }</span>
+
+    static class TableEntry {
+
+        private final String id;
+        private final JLabel preview;
+        private boolean wanted;
+
+
+<span class="nc" id="L176">        public TableEntry(String id, JLabel preview) {</span>
+<span class="nc" id="L177">            this.id = id;</span>
+<span class="nc" id="L178">            this.preview = preview;</span>
+<span class="nc" id="L179">        }</span>
+
+        public boolean isWanted() {
+<span class="nc" id="L182">            return wanted;</span>
+        }
+
+        public void setWanted(boolean wanted) {
+<span class="nc" id="L186">            this.wanted = wanted;</span>
+<span class="nc" id="L187">        }</span>
+
+        public JLabel getPreview() {
+<span class="nc" id="L190">            return preview;</span>
+        }
+
+    }
+
+<span class="nc" id="L195">    static class PreviewRenderer implements TableCellRenderer {</span>
+
+<span class="nc" id="L197">        private final JLabel label = new JLabel();</span>
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value,
+                boolean isSelected, boolean hasFocus,
+                int row, int column) {
+<span class="nc" id="L203">            JLabel valueLabel = (JLabel) value;</span>
+<span class="nc" id="L204">            label.setText(valueLabel.getText());</span>
+<span class="nc" id="L205">            return label;</span>
+        }
+    }
+
+    class EntryTable extends JTable {
+
+<span class="nc" id="L211">        private final PreviewRenderer renderer = new PreviewRenderer();</span>
+
+
+<span class="nc" id="L214">        public EntryTable(TableModel model) {</span>
+<span class="nc" id="L215">            super(model);</span>
+<span class="nc" id="L216">            getTableHeader().setReorderingAllowed(false);</span>
+<span class="nc" id="L217">        }</span>
+
+        @Override
+        public TableCellRenderer getCellRenderer(int row, int column) {
+<span class="nc bnc" id="L221" title="All 2 branches missed.">            return column == 0 ? getDefaultRenderer(Boolean.class) : renderer;</span>
+        }
+
+        /*
+         * public TableCellEditor getCellEditor() { return
+         * getDefaultEditor(Boolean.class); }
+         */
+
+        @Override
+        public Class&lt;?&gt; getColumnClass(int col) {
+<span class="nc bnc" id="L231" title="All 2 branches missed.">            if (col == 0) {</span>
+<span class="nc" id="L232">                return Boolean.class;</span>
+            } else {
+<span class="nc" id="L234">                return JLabel.class;</span>
+            }
+        }
+
+        @Override
+        public boolean isCellEditable(int row, int column) {
+<span class="nc bnc" id="L240" title="All 2 branches missed.">            return column == 0;</span>
+        }
+
+        @Override
+        public void setValueAt(Object value, int row, int column) {
+            // Only column 0, which is controlled by BibEntry.searchHit, is
+            // editable:
+<span class="nc" id="L247">            entries.getReadWriteLock().writeLock().lock();</span>
+<span class="nc" id="L248">            TableEntry entry = entries.get(row);</span>
+<span class="nc" id="L249">            entry.setWanted((Boolean) value);</span>
+<span class="nc" id="L250">            entries.getReadWriteLock().writeLock().unlock();</span>
+<span class="nc" id="L251">        }</span>
+    }
+
+<span class="nc" id="L254">    private static class EntryTableFormat implements TableFormat&lt;TableEntry&gt; {</span>
+
+        @Override
+        public int getColumnCount() {
+<span class="nc" id="L258">            return 2;</span>
+        }
+
+        @Override
+        public String getColumnName(int i) {
+<span class="nc bnc" id="L263" title="All 2 branches missed.">            if (i == 0) {</span>
+<span class="nc" id="L264">                return Localization.lang(&quot;Keep&quot;);</span>
+            } else {
+<span class="nc" id="L266">                return Localization.lang(&quot;Preview&quot;);</span>
+            }
+        }
+
+        @Override
+        public Object getColumnValue(TableEntry entry, int i) {
+<span class="nc bnc" id="L272" title="All 2 branches missed.">            if (i == 0) {</span>
+<span class="nc bnc" id="L273" title="All 2 branches missed.">                return entry.isWanted() ? Boolean.TRUE : Boolean.FALSE;</span>
+            } else {
+<span class="nc" id="L275">                return entry.getPreview();</span>
+            }
+        }
+
+    }
+
+    public boolean isOkPressed() {
+<span class="nc" id="L282">        return okPressed;</span>
+    }
+
+    @Override
+    public void setStatus(String s) {
+<span class="nc" id="L287">        frame.setStatus(s);</span>
+<span class="nc" id="L288">    }</span>
+
+    @Override
+    public void showMessage(String message, String title, int msgType) {
+<span class="nc" id="L292">        JOptionPane.showMessageDialog(this, message, title, msgType);</span>
+<span class="nc" id="L293">    }</span>
+
+    @Override
+    public void showMessage(String message) {
+<span class="nc" id="L297">        JOptionPane.showMessageDialog(this, message);</span>
+<span class="nc" id="L298">    }</span>
+
+    /**
+     * Displays a dialog which tells the user that an error occurred while fetching entries
+     */
+    public void showErrorMessage(String fetcherTitle, String localizedMessage) {
+<span class="nc" id="L304">        showMessage(Localization.lang(&quot;Error while fetching from %0&quot;, fetcherTitle) + &quot;\n&quot; +</span>
+<span class="nc" id="L305">                        Localization.lang(&quot;Please try again later and/or check your network connection.&quot;) + &quot;\n&quot; +</span>
+<span class="nc" id="L306">                        localizedMessage,</span>
+<span class="nc" id="L307">                Localization.lang(&quot;Search %0&quot;, fetcherTitle), JOptionPane.ERROR_MESSAGE);</span>
+<span class="nc" id="L308">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

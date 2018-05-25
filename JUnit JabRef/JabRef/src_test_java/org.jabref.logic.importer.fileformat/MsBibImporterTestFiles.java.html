@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MsBibImporterTestFiles.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.importer.fileformat</a> &gt; <span class="el_source">MsBibImporterTestFiles.java</span></div><h1>MsBibImporterTestFiles.java</h1><pre class="source lang-java linenums">package org.jabref.logic.importer.fileformat;
+
+import java.io.IOException;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
+
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+<span class="fc" id="L10">public class MsBibImporterTestFiles {</span>
+
+    private static final String FILE_ENDING = &quot;.xml&quot;;
+
+    private static Stream&lt;String&gt; fileNames() throws IOException {
+<span class="fc bfc" id="L15" title="All 2 branches covered.">        Predicate&lt;String&gt; fileName = name -&gt; name.startsWith(&quot;MsBib&quot;)</span>
+<span class="fc bfc" id="L16" title="All 2 branches covered.">                &amp;&amp; name.endsWith(FILE_ENDING);</span>
+<span class="fc" id="L17">        return ImporterTestEngine.getTestFiles(fileName).stream();</span>
+    }
+
+    private static Stream&lt;String&gt; invalidFileNames() throws IOException {
+<span class="fc bfc" id="L21" title="All 2 branches covered.">        Predicate&lt;String&gt; fileName = name -&gt; !name.contains(&quot;MsBib&quot;);</span>
+<span class="fc" id="L22">        return ImporterTestEngine.getTestFiles(fileName).stream();</span>
+    }
+
+    @ParameterizedTest
+    @MethodSource(&quot;fileNames&quot;)
+    public void testIsRecognizedFormat(String fileName) throws IOException {
+<span class="fc" id="L28">        ImporterTestEngine.testIsRecognizedFormat(new MsBibImporter(), fileName);</span>
+<span class="fc" id="L29">    }</span>
+
+    @ParameterizedTest
+    @MethodSource(&quot;invalidFileNames&quot;)
+    public void testIsNotRecognizedFormat(String fileName) throws IOException {
+<span class="fc" id="L34">        ImporterTestEngine.testIsNotRecognizedFormat(new MsBibImporter(), fileName);</span>
+<span class="fc" id="L35">    }</span>
+
+    @ParameterizedTest
+    @MethodSource(&quot;fileNames&quot;)
+    public void testImportEntries(String fileName) throws Exception {
+<span class="fc" id="L40">        ImporterTestEngine.testImportEntries(new MsBibImporter(), fileName, FILE_ENDING);</span>
+<span class="fc" id="L41">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

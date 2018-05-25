@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>BibtexKeyGenerator.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.bibtexkeypattern</a> &gt; <span class="el_source">BibtexKeyGenerator.java</span></div><h1>BibtexKeyGenerator.java</h1><pre class="source lang-java linenums">package org.jabref.logic.bibtexkeypattern;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+
+import org.jabref.model.FieldChange;
+import org.jabref.model.bibtexkeypattern.AbstractBibtexKeyPattern;
+import org.jabref.model.bibtexkeypattern.GlobalBibtexKeyPattern;
+import org.jabref.model.database.BibDatabase;
+import org.jabref.model.database.BibDatabaseContext;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.strings.StringUtil;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+
+/**
+ * This is the utility class of the LabelPattern package.
+ */
+public class BibtexKeyGenerator extends BracketedPattern {
+    /*
+     * All single characters that we can use for extending a key to make it unique.
+     */
+    public static final String APPENDIX_CHARACTERS = &quot;abcdefghijklmnopqrstuvwxyz&quot;;
+<span class="fc" id="L29">    private static final Logger LOGGER = LoggerFactory.getLogger(BibtexKeyGenerator.class);</span>
+    private static final String KEY_ILLEGAL_CHARACTERS = &quot;{}(),\\\&quot;#~^':`&quot;;
+<span class="fc" id="L31">    private static final String KEY_UNWANTED_CHARACTERS = &quot;{}(),\\\&quot;&quot;;</span>
+    private final AbstractBibtexKeyPattern citeKeyPattern;
+    private final BibDatabase database;
+    private final BibtexKeyPatternPreferences bibtexKeyPatternPreferences;
+
+    public BibtexKeyGenerator(BibDatabaseContext bibDatabaseContext, BibtexKeyPatternPreferences bibtexKeyPatternPreferences) {
+<span class="fc" id="L37">        this(bibDatabaseContext.getMetaData().getCiteKeyPattern(bibtexKeyPatternPreferences.getKeyPattern()),</span>
+<span class="fc" id="L38">                bibDatabaseContext.getDatabase(),</span>
+<span class="fc" id="L39">                bibtexKeyPatternPreferences);</span>
+<span class="fc" id="L40">    }</span>
+
+<span class="fc" id="L42">    public BibtexKeyGenerator(AbstractBibtexKeyPattern citeKeyPattern, BibDatabase database, BibtexKeyPatternPreferences bibtexKeyPatternPreferences) {</span>
+<span class="fc" id="L43">        this.citeKeyPattern = Objects.requireNonNull(citeKeyPattern);</span>
+<span class="fc" id="L44">        this.database = Objects.requireNonNull(database);</span>
+<span class="fc" id="L45">        this.bibtexKeyPatternPreferences = Objects.requireNonNull(bibtexKeyPatternPreferences);</span>
+<span class="fc" id="L46">    }</span>
+
+    static String generateKey(BibEntry entry, String pattern) {
+<span class="fc" id="L49">        return generateKey(entry, pattern, new BibDatabase());</span>
+    }
+
+    static String generateKey(BibEntry entry, String pattern, BibDatabase database) {
+<span class="fc" id="L53">        GlobalBibtexKeyPattern keyPattern = new GlobalBibtexKeyPattern(Collections.emptyList());</span>
+<span class="fc" id="L54">        keyPattern.setDefaultValue(&quot;[&quot; + pattern + &quot;]&quot;);</span>
+<span class="fc" id="L55">        return new BibtexKeyGenerator(keyPattern, database, new BibtexKeyPatternPreferences(&quot;&quot;, &quot;&quot;, false, true, true, keyPattern, ','))</span>
+<span class="fc" id="L56">                .generateKey(entry);</span>
+    }
+
+    /**
+     * Computes an appendix to a BibTeX key that could make it unique. We use
+     * a-z for numbers 0-25, and then aa-az, ba-bz, etc.
+     *
+     * @param number
+     *            The appendix number.
+     * @return The String to append.
+     */
+    private static String getAppendix(int number) {
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">        if (number &gt;= APPENDIX_CHARACTERS.length()) {</span>
+<span class="nc" id="L69">            int lastChar = number % APPENDIX_CHARACTERS.length();</span>
+<span class="nc" id="L70">            return getAppendix((number / APPENDIX_CHARACTERS.length()) - 1) + APPENDIX_CHARACTERS.substring(lastChar, lastChar + 1);</span>
+        } else {
+<span class="fc" id="L72">            return APPENDIX_CHARACTERS.substring(number, number + 1);</span>
+        }
+    }
+
+    public static String cleanKey(String key, boolean enforceLegalKey) {
+<span class="fc bfc" id="L77" title="All 2 branches covered.">        if (!enforceLegalKey) {</span>
+            // User doesn't want us to enforce legal characters. We must still look
+            // for whitespace and some characters such as commas, since these would
+            // interfere with parsing:
+<span class="fc" id="L81">            StringBuilder newKey = new StringBuilder();</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">            for (int i = 0; i &lt; key.length(); i++) {</span>
+<span class="fc" id="L83">                char c = key.charAt(i);</span>
+<span class="fc bfc" id="L84" title="All 4 branches covered.">                if (!Character.isWhitespace(c) &amp;&amp; (KEY_UNWANTED_CHARACTERS.indexOf(c) == -1)) {</span>
+<span class="fc" id="L85">                    newKey.append(c);</span>
+                }
+            }
+<span class="fc" id="L88">            return newKey.toString();</span>
+        }
+
+<span class="fc" id="L91">        StringBuilder newKey = new StringBuilder();</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">        for (int i = 0; i &lt; key.length(); i++) {</span>
+<span class="fc" id="L93">            char c = key.charAt(i);</span>
+<span class="fc bfc" id="L94" title="All 4 branches covered.">            if (!Character.isWhitespace(c) &amp;&amp; (KEY_ILLEGAL_CHARACTERS.indexOf(c) == -1)) {</span>
+<span class="fc" id="L95">                newKey.append(c);</span>
+            }
+        }
+
+        // Replace non-English characters like umlauts etc. with a sensible
+        // letter or letter combination that bibtex can accept.
+<span class="fc" id="L101">        return StringUtil.replaceSpecialCharacters(newKey.toString());</span>
+    }
+
+    public String generateKey(BibEntry entry) {
+        String key;
+<span class="fc" id="L106">        StringBuilder stringBuilder = new StringBuilder();</span>
+        try {
+            // get the type of entry
+<span class="fc" id="L109">            String entryType = entry.getType();</span>
+            // Get the arrayList corresponding to the type
+<span class="fc" id="L111">            List&lt;String&gt; typeList = new ArrayList&lt;&gt;(citeKeyPattern.getValue(entryType));</span>
+<span class="pc bpc" id="L112" title="1 of 2 branches missed.">            if (!typeList.isEmpty()) {</span>
+<span class="fc" id="L113">                typeList.remove(0);</span>
+            }
+<span class="fc" id="L115">            boolean field = false;</span>
+<span class="fc bfc" id="L116" title="All 2 branches covered.">            for (String typeListEntry : typeList) {</span>
+<span class="fc bfc" id="L117" title="All 2 branches covered.">                if (&quot;[&quot;.equals(typeListEntry)) {</span>
+<span class="fc" id="L118">                    field = true;</span>
+<span class="fc bfc" id="L119" title="All 2 branches covered.">                } else if (&quot;]&quot;.equals(typeListEntry)) {</span>
+<span class="fc" id="L120">                    field = false;</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">                } else if (field) {</span>
+                    // check whether there is a modifier on the end such as
+                    // &quot;:lower&quot;
+<span class="fc" id="L124">                    List&lt;String&gt; parts = parseFieldMarker(typeListEntry);</span>
+<span class="fc" id="L125">                    Character delimiter = bibtexKeyPatternPreferences.getKeywordDelimiter();</span>
+<span class="fc" id="L126">                    String pattern = &quot;[&quot; + parts.get(0) + &quot;]&quot;;</span>
+<span class="fc" id="L127">                    String label = expandBrackets(pattern, delimiter, entry, database);</span>
+                    // apply modifier if present
+<span class="fc bfc" id="L129" title="All 2 branches covered.">                    if (parts.size() &gt; 1) {</span>
+<span class="fc" id="L130">                        label = applyModifiers(label, parts, 1);</span>
+                    }
+
+<span class="fc" id="L133">                    stringBuilder.append(label);</span>
+
+<span class="fc" id="L135">                } else {</span>
+<span class="fc" id="L136">                    stringBuilder.append(typeListEntry);</span>
+                }
+            }
+<span class="pc" id="L139">        } catch (Exception e) {</span>
+<span class="nc" id="L140">            LOGGER.warn(&quot;Cannot make label&quot;, e);</span>
+        }
+
+        // Remove all illegal characters from the key.
+<span class="fc" id="L144">        key = cleanKey(stringBuilder.toString(), bibtexKeyPatternPreferences.isEnforceLegalKey());</span>
+
+        // Remove Regular Expressions while generating Keys
+<span class="fc" id="L147">        String regex = bibtexKeyPatternPreferences.getKeyPatternRegex();</span>
+<span class="pc bpc" id="L148" title="1 of 4 branches missed.">        if ((regex != null) &amp;&amp; !regex.trim().isEmpty()) {</span>
+<span class="fc" id="L149">            String replacement = bibtexKeyPatternPreferences.getKeyPatternReplacement();</span>
+<span class="fc" id="L150">            key = key.replaceAll(regex, replacement);</span>
+        }
+
+<span class="fc" id="L153">        String oldKey = entry.getCiteKeyOptional().orElse(null);</span>
+<span class="fc" id="L154">        int occurrences = database.getDuplicationChecker().getNumberOfKeyOccurrences(key);</span>
+
+<span class="fc bfc" id="L156" title="All 2 branches covered.">        if (Objects.equals(oldKey, key)) {</span>
+<span class="fc" id="L157">            occurrences--; // No change, so we can accept one dupe.</span>
+        }
+
+<span class="fc" id="L160">        boolean alwaysAddLetter = bibtexKeyPatternPreferences.isAlwaysAddLetter();</span>
+<span class="fc" id="L161">        boolean firstLetterA = bibtexKeyPatternPreferences.isFirstLetterA();</span>
+
+        String newKey;
+<span class="fc bfc" id="L164" title="All 4 branches covered.">        if (!alwaysAddLetter &amp;&amp; (occurrences == 0)) {</span>
+<span class="fc" id="L165">            newKey = key;</span>
+<span class="fc" id="L166">        } else {</span>
+            // The key is already in use, so we must modify it.
+<span class="fc bfc" id="L168" title="All 4 branches covered.">            int number = !alwaysAddLetter &amp;&amp; !firstLetterA ? 1 : 0;</span>
+            String moddedKey;
+
+<span class="fc bfc" id="L171" title="All 2 branches covered.">            do {</span>
+<span class="fc" id="L172">                moddedKey = key + getAppendix(number);</span>
+<span class="fc" id="L173">                number++;</span>
+
+<span class="fc" id="L175">                occurrences = database.getDuplicationChecker().getNumberOfKeyOccurrences(moddedKey);</span>
+                // only happens if #getAddition() is buggy
+<span class="pc bpc" id="L177" title="1 of 2 branches missed.">                if (Objects.equals(oldKey, moddedKey)) {</span>
+<span class="nc" id="L178">                    occurrences--;</span>
+                }
+<span class="fc" id="L180">            } while (occurrences &gt; 0);</span>
+
+<span class="fc" id="L182">            newKey = moddedKey;</span>
+        }
+<span class="fc" id="L184">        return newKey;</span>
+    }
+
+    /**
+     * Generates a BibTeX key for the given entry, and sets the key.
+     *
+     * @param entry the entry to generate the key for
+     * @return the change to the key (or an empty optional if the key was not changed)
+     */
+    public Optional&lt;FieldChange&gt; generateAndSetKey(BibEntry entry) {
+<span class="fc" id="L194">        String newKey = generateKey(entry);</span>
+<span class="fc" id="L195">        return entry.setCiteKey(newKey);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

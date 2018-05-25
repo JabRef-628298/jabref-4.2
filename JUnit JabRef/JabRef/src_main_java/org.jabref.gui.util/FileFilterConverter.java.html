@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>FileFilterConverter.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.util</a> &gt; <span class="el_source">FileFilterConverter.java</span></div><h1>FileFilterConverter.java</h1><pre class="source lang-java linenums">package org.jabref.gui.util;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+import java.util.SortedSet;
+import java.util.stream.Collectors;
+
+import javafx.stage.FileChooser;
+
+import org.jabref.logic.exporter.Exporter;
+import org.jabref.logic.importer.Importer;
+import org.jabref.logic.l10n.Localization;
+import org.jabref.logic.util.FileType;
+
+public class FileFilterConverter {
+
+<span class="nc" id="L18">    private FileFilterConverter() {</span>
+<span class="nc" id="L19">    }</span>
+
+    public static FileChooser.ExtensionFilter toExtensionFilter(FileType fileType) {
+<span class="fc" id="L22">        return new FileChooser.ExtensionFilter(fileType.getDescription(),</span>
+<span class="fc" id="L23">                fileType.getExtensions().stream().map(ending -&gt; &quot;*.&quot; + ending).collect(Collectors.toList()));</span>
+    }
+
+    private static FileChooser.ExtensionFilter convertImporter(String description, Collection&lt;Importer&gt; formats) {
+<span class="nc" id="L27">        List&lt;FileType&gt; fileTypes = formats.stream().map(Importer::getFileType).collect(Collectors.toList());</span>
+<span class="nc" id="L28">        return toExtensionFilter(description, fileTypes);</span>
+    }
+
+    private static FileChooser.ExtensionFilter toExtensionFilter(String description, List&lt;FileType&gt; fileTypes) {
+<span class="nc" id="L32">        List&lt;String&gt; flatExtensions = fileTypes.stream().flatMap(extList -&gt; extList.getExtensionsWithDot().stream())</span>
+<span class="nc" id="L33">                .map(ending -&gt; &quot;*&quot; + ending)</span>
+<span class="nc" id="L34">                .collect(Collectors.toList());</span>
+
+<span class="nc" id="L36">        return new FileChooser.ExtensionFilter(description, flatExtensions.toArray(new String[flatExtensions.size()]));</span>
+    }
+
+    public static Optional&lt;Importer&gt; getImporter(FileChooser.ExtensionFilter extensionFilter, Collection&lt;Importer&gt; importers) {
+<span class="nc" id="L40">        return importers.stream().filter(importer -&gt; importer.getFileType().getDescription().equals(extensionFilter.getDescription())).findFirst();</span>
+    }
+
+    public static Optional&lt;Exporter&gt; getExporter(FileChooser.ExtensionFilter extensionFilter, Collection&lt;Exporter&gt; exporters) {
+<span class="nc" id="L44">        return exporters.stream().filter(exporter -&gt; exporter.getDescription().equals(extensionFilter.getDescription())).findFirst();</span>
+    }
+
+    public static FileChooser.ExtensionFilter forAllImporters(SortedSet&lt;Importer&gt; importers) {
+<span class="nc" id="L48">        return convertImporter(Localization.lang(&quot;Available import formats&quot;), importers);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

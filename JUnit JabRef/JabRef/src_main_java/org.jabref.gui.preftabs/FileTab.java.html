@@ -1,0 +1,285 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>FileTab.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.preftabs</a> &gt; <span class="el_source">FileTab.java</span></div><h1>FileTab.java</h1><pre class="source lang-java linenums">package org.jabref.gui.preftabs;
+
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.event.ItemListener;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+import javax.swing.BorderFactory;
+import javax.swing.ButtonGroup;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JRadioButton;
+import javax.swing.JTextField;
+
+import org.jabref.gui.DialogService;
+import org.jabref.gui.FXDialogService;
+import org.jabref.gui.JabRefFrame;
+import org.jabref.gui.help.HelpAction;
+import org.jabref.gui.util.DefaultTaskExecutor;
+import org.jabref.gui.util.DirectoryDialogConfiguration;
+import org.jabref.logic.help.HelpFile;
+import org.jabref.logic.l10n.Localization;
+import org.jabref.logic.util.OS;
+import org.jabref.model.entry.FieldName;
+import org.jabref.model.metadata.FileDirectoryPreferences;
+import org.jabref.preferences.JabRefPreferences;
+
+import com.jgoodies.forms.builder.DefaultFormBuilder;
+import com.jgoodies.forms.layout.FormLayout;
+
+/**
+ * Preferences tab for file options. These options were moved out from GeneralTab to
+ * resolve the space issue.
+ */
+class FileTab extends JPanel implements PrefsTab {
+
+    private final JabRefPreferences prefs;
+    private final JabRefFrame frame;
+
+    private final JCheckBox backup;
+    private final JCheckBox localAutoSave;
+    private final JCheckBox openLast;
+    private final JComboBox&lt;String&gt; newlineSeparator;
+    private final JCheckBox reformatFileOnSaveAndExport;
+    private final JRadioButton resolveStringsStandard;
+    private final JRadioButton resolveStringsAll;
+    private final JTextField nonWrappableFields;
+    private final JTextField doNotResolveStringsFor;
+
+    private final JTextField fileDir;
+    private final JCheckBox bibLocAsPrimaryDir;
+    private final JCheckBox runAutoFileSearch;
+    private final JCheckBox allowFileAutoOpenBrowse;
+    private final JRadioButton useRegExpComboBox;
+<span class="nc" id="L61">    private final JRadioButton matchExactKeyOnly = new JRadioButton(</span>
+<span class="nc" id="L62">            Localization.lang(&quot;Autolink only files that match the BibTeX key&quot;));</span>
+<span class="nc" id="L63">    private final JRadioButton matchStartsWithKey = new JRadioButton(</span>
+<span class="nc" id="L64">            Localization.lang(&quot;Autolink files with names starting with the BibTeX key&quot;));</span>
+    private final JTextField regExpTextField;
+
+<span class="nc" id="L67">    public FileTab(JabRefFrame frame, JabRefPreferences prefs) {</span>
+<span class="nc" id="L68">        this.prefs = prefs;</span>
+<span class="nc" id="L69">        this.frame = frame;</span>
+
+<span class="nc" id="L71">        fileDir = new JTextField(25);</span>
+<span class="nc" id="L72">        bibLocAsPrimaryDir = new JCheckBox(Localization.lang(&quot;Use the BIB file location as primary file directory&quot;));</span>
+<span class="nc" id="L73">        bibLocAsPrimaryDir.setToolTipText(Localization.lang(&quot;When downloading files, or moving linked files to the &quot;</span>
+                + &quot;file directory, prefer the BIB file location rather than the file directory set above&quot;));
+<span class="nc" id="L75">        runAutoFileSearch = new JCheckBox(</span>
+<span class="nc" id="L76">                Localization.lang(&quot;When opening file link, search for matching file if no link is defined&quot;));</span>
+<span class="nc" id="L77">        allowFileAutoOpenBrowse = new JCheckBox(</span>
+<span class="nc" id="L78">                Localization.lang(&quot;Automatically open browse dialog when creating new file link&quot;));</span>
+<span class="nc" id="L79">        regExpTextField = new JTextField(25);</span>
+<span class="nc" id="L80">        useRegExpComboBox = new JRadioButton(Localization.lang(&quot;Use regular expression search&quot;));</span>
+<span class="nc" id="L81">        ItemListener regExpListener = e -&gt; regExpTextField.setEditable(useRegExpComboBox.isSelected());</span>
+<span class="nc" id="L82">        useRegExpComboBox.addItemListener(regExpListener);</span>
+<span class="nc" id="L83">        ButtonGroup buttonGroup = new ButtonGroup();</span>
+<span class="nc" id="L84">        buttonGroup.add(matchExactKeyOnly);</span>
+<span class="nc" id="L85">        buttonGroup.add(matchStartsWithKey);</span>
+<span class="nc" id="L86">        buttonGroup.add(useRegExpComboBox);</span>
+
+<span class="nc" id="L88">        openLast = new JCheckBox(Localization.lang(&quot;Open last edited libraries at startup&quot;));</span>
+<span class="nc" id="L89">        backup = new JCheckBox(Localization.lang(&quot;Backup old file when saving&quot;));</span>
+<span class="nc" id="L90">        localAutoSave = new JCheckBox(Localization.lang(&quot;Autosave local libraries&quot;));</span>
+<span class="nc" id="L91">        resolveStringsAll = new JRadioButton(Localization.lang(&quot;Resolve strings for all fields except&quot;) + &quot;:&quot;);</span>
+<span class="nc" id="L92">        resolveStringsStandard = new JRadioButton(Localization.lang(&quot;Resolve strings for standard BibTeX fields only&quot;));</span>
+<span class="nc" id="L93">        ButtonGroup bg = new ButtonGroup();</span>
+<span class="nc" id="L94">        bg.add(resolveStringsAll);</span>
+<span class="nc" id="L95">        bg.add(resolveStringsStandard);</span>
+
+        // This is sort of a quick hack
+<span class="nc" id="L98">        newlineSeparator = new JComboBox&lt;&gt;(new String[] {&quot;CR&quot;, &quot;CR/LF&quot;, &quot;LF&quot;});</span>
+
+<span class="nc" id="L100">        reformatFileOnSaveAndExport = new JCheckBox(Localization.lang(&quot;Always reformat BIB file on save and export&quot;));</span>
+
+<span class="nc" id="L102">        nonWrappableFields = new JTextField(25);</span>
+<span class="nc" id="L103">        doNotResolveStringsFor = new JTextField(30);</span>
+
+<span class="nc" id="L105">        FormLayout layout = new FormLayout(&quot;left:pref, 4dlu, fill:150dlu, 4dlu, fill:pref&quot;, &quot;&quot;); // left:pref, 4dlu, fill:pref</span>
+<span class="nc" id="L106">        DefaultFormBuilder builder = new DefaultFormBuilder(layout);</span>
+
+<span class="nc" id="L108">        builder.appendSeparator(Localization.lang(&quot;General&quot;));</span>
+<span class="nc" id="L109">        builder.nextLine();</span>
+<span class="nc" id="L110">        builder.append(openLast, 3);</span>
+<span class="nc" id="L111">        builder.nextLine();</span>
+<span class="nc" id="L112">        builder.append(backup, 3);</span>
+<span class="nc" id="L113">        builder.nextLine();</span>
+
+<span class="nc" id="L115">        JLabel label = new JLabel(Localization.lang(&quot;Do not wrap the following fields when saving&quot;) + &quot;:&quot;);</span>
+<span class="nc" id="L116">        builder.append(label);</span>
+<span class="nc" id="L117">        builder.append(nonWrappableFields);</span>
+<span class="nc" id="L118">        builder.nextLine();</span>
+<span class="nc" id="L119">        builder.append(resolveStringsStandard, 3);</span>
+<span class="nc" id="L120">        builder.nextLine();</span>
+<span class="nc" id="L121">        builder.append(resolveStringsAll);</span>
+<span class="nc" id="L122">        builder.append(doNotResolveStringsFor);</span>
+<span class="nc" id="L123">        builder.nextLine();</span>
+
+<span class="nc" id="L125">        JLabel lab = new JLabel(Localization.lang(&quot;Newline separator&quot;) + &quot;:&quot;);</span>
+<span class="nc" id="L126">        builder.append(lab);</span>
+<span class="nc" id="L127">        builder.append(newlineSeparator);</span>
+<span class="nc" id="L128">        builder.nextLine();</span>
+
+<span class="nc" id="L130">        builder.append(reformatFileOnSaveAndExport, 3);</span>
+<span class="nc" id="L131">        builder.nextLine();</span>
+
+<span class="nc" id="L133">        builder.appendSeparator(Localization.lang(&quot;External file links&quot;));</span>
+<span class="nc" id="L134">        builder.nextLine();</span>
+<span class="nc" id="L135">        lab = new JLabel(Localization.lang(&quot;Main file directory&quot;) + ':');</span>
+<span class="nc" id="L136">        builder.append(lab);</span>
+<span class="nc" id="L137">        builder.append(fileDir);</span>
+
+<span class="nc" id="L139">        JButton browse = new JButton(Localization.lang(&quot;Browse&quot;));</span>
+<span class="nc" id="L140">        browse.addActionListener(e -&gt; {</span>
+
+<span class="nc" id="L142">            DialogService ds = new FXDialogService();</span>
+<span class="nc" id="L143">            DirectoryDialogConfiguration dirDialogConfiguration = new DirectoryDialogConfiguration.Builder()</span>
+<span class="nc" id="L144">                    .withInitialDirectory(Paths.get(fileDir.getText())).build();</span>
+
+<span class="nc" id="L146">            DefaultTaskExecutor.runInJavaFXThread(() -&gt; ds.showDirectorySelectionDialog(dirDialogConfiguration))</span>
+<span class="nc" id="L147">                    .ifPresent(f -&gt; fileDir.setText(f.toString()));</span>
+
+<span class="nc" id="L149">        });</span>
+<span class="nc" id="L150">        builder.append(browse);</span>
+
+<span class="nc" id="L152">        builder.nextLine();</span>
+<span class="nc" id="L153">        builder.append(bibLocAsPrimaryDir, 3);</span>
+<span class="nc" id="L154">        builder.nextLine();</span>
+<span class="nc" id="L155">        builder.append(matchStartsWithKey, 3);</span>
+<span class="nc" id="L156">        builder.nextLine();</span>
+<span class="nc" id="L157">        builder.append(matchExactKeyOnly, 3);</span>
+<span class="nc" id="L158">        builder.nextLine();</span>
+<span class="nc" id="L159">        builder.append(useRegExpComboBox);</span>
+<span class="nc" id="L160">        builder.append(regExpTextField);</span>
+
+<span class="nc" id="L162">        builder.append(new HelpAction(Localization.lang(&quot;Help on regular expression search&quot;),</span>
+<span class="nc" id="L163">                HelpFile.REGEX_SEARCH)</span>
+<span class="nc" id="L164">                        .getHelpButton());</span>
+<span class="nc" id="L165">        builder.nextLine();</span>
+<span class="nc" id="L166">        builder.append(runAutoFileSearch, 3);</span>
+<span class="nc" id="L167">        builder.nextLine();</span>
+<span class="nc" id="L168">        builder.append(allowFileAutoOpenBrowse);</span>
+<span class="nc" id="L169">        builder.nextLine();</span>
+
+<span class="nc" id="L171">        builder.appendSeparator(Localization.lang(&quot;Autosave&quot;));</span>
+<span class="nc" id="L172">        builder.append(localAutoSave, 1);</span>
+<span class="nc" id="L173">        JButton help = new HelpAction(HelpFile.AUTOSAVE).getHelpButton();</span>
+<span class="nc" id="L174">        help.setPreferredSize(new Dimension(24, 24));</span>
+<span class="nc" id="L175">        JPanel hPan = new JPanel();</span>
+<span class="nc" id="L176">        hPan.setLayout(new BorderLayout());</span>
+<span class="nc" id="L177">        hPan.add(help, BorderLayout.EAST);</span>
+<span class="nc" id="L178">        builder.append(hPan);</span>
+<span class="nc" id="L179">        builder.nextLine();</span>
+
+<span class="nc" id="L181">        JPanel pan = builder.getPanel();</span>
+<span class="nc" id="L182">        pan.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));</span>
+<span class="nc" id="L183">        setLayout(new BorderLayout());</span>
+<span class="nc" id="L184">        add(pan, BorderLayout.CENTER);</span>
+<span class="nc" id="L185">    }</span>
+
+    @Override
+    public void setValues() {
+<span class="nc" id="L189">        fileDir.setText(prefs.get(FieldName.FILE + FileDirectoryPreferences.DIR_SUFFIX));</span>
+<span class="nc" id="L190">        bibLocAsPrimaryDir.setSelected(prefs.getBoolean(JabRefPreferences.BIB_LOC_AS_PRIMARY_DIR));</span>
+<span class="nc" id="L191">        runAutoFileSearch.setSelected(prefs.getBoolean(JabRefPreferences.RUN_AUTOMATIC_FILE_SEARCH));</span>
+<span class="nc" id="L192">        allowFileAutoOpenBrowse.setSelected(prefs.getBoolean(JabRefPreferences.ALLOW_FILE_AUTO_OPEN_BROWSE));</span>
+<span class="nc" id="L193">        regExpTextField.setText(prefs.get(JabRefPreferences.AUTOLINK_REG_EXP_SEARCH_EXPRESSION_KEY));</span>
+<span class="nc bnc" id="L194" title="All 2 branches missed.">        if (prefs.getBoolean(JabRefPreferences.AUTOLINK_USE_REG_EXP_SEARCH_KEY)) {</span>
+<span class="nc" id="L195">            useRegExpComboBox.setSelected(true);</span>
+<span class="nc bnc" id="L196" title="All 2 branches missed.">        } else if (prefs.getBoolean(JabRefPreferences.AUTOLINK_EXACT_KEY_ONLY)) {</span>
+<span class="nc" id="L197">            matchExactKeyOnly.setSelected(true);</span>
+<span class="nc" id="L198">        } else {</span>
+<span class="nc" id="L199">            matchStartsWithKey.setSelected(true);</span>
+        }
+
+<span class="nc" id="L202">        openLast.setSelected(prefs.getBoolean(JabRefPreferences.OPEN_LAST_EDITED));</span>
+<span class="nc" id="L203">        backup.setSelected(prefs.getBoolean(JabRefPreferences.BACKUP));</span>
+
+<span class="nc" id="L205">        String newline = prefs.get(JabRefPreferences.NEWLINE);</span>
+<span class="nc bnc" id="L206" title="All 2 branches missed.">        if (&quot;\r&quot;.equals(newline)) {</span>
+<span class="nc" id="L207">            newlineSeparator.setSelectedIndex(0);</span>
+<span class="nc bnc" id="L208" title="All 2 branches missed.">        } else if (&quot;\n&quot;.equals(newline)) {</span>
+<span class="nc" id="L209">            newlineSeparator.setSelectedIndex(2);</span>
+<span class="nc" id="L210">        } else {</span>
+            // fallback: windows standard
+<span class="nc" id="L212">            newlineSeparator.setSelectedIndex(1);</span>
+        }
+<span class="nc" id="L214">        reformatFileOnSaveAndExport.setSelected(prefs.getBoolean(JabRefPreferences.REFORMAT_FILE_ON_SAVE_AND_EXPORT));</span>
+
+<span class="nc" id="L216">        resolveStringsAll.setSelected(prefs.getBoolean(JabRefPreferences.RESOLVE_STRINGS_ALL_FIELDS));</span>
+<span class="nc bnc" id="L217" title="All 2 branches missed.">        resolveStringsStandard.setSelected(!resolveStringsAll.isSelected());</span>
+<span class="nc" id="L218">        doNotResolveStringsFor.setText(prefs.get(JabRefPreferences.DO_NOT_RESOLVE_STRINGS_FOR));</span>
+<span class="nc" id="L219">        nonWrappableFields.setText(prefs.get(JabRefPreferences.NON_WRAPPABLE_FIELDS));</span>
+
+<span class="nc" id="L221">        localAutoSave.setSelected(prefs.getBoolean(JabRefPreferences.LOCAL_AUTO_SAVE));</span>
+<span class="nc" id="L222">    }</span>
+
+    @Override
+    public void storeSettings() {
+<span class="nc" id="L226">        prefs.put(FieldName.FILE + FileDirectoryPreferences.DIR_SUFFIX, fileDir.getText());</span>
+<span class="nc" id="L227">        prefs.putBoolean(JabRefPreferences.BIB_LOC_AS_PRIMARY_DIR, bibLocAsPrimaryDir.isSelected());</span>
+<span class="nc" id="L228">        prefs.putBoolean(JabRefPreferences.RUN_AUTOMATIC_FILE_SEARCH, runAutoFileSearch.isSelected());</span>
+<span class="nc" id="L229">        prefs.putBoolean(JabRefPreferences.ALLOW_FILE_AUTO_OPEN_BROWSE, allowFileAutoOpenBrowse.isSelected());</span>
+<span class="nc" id="L230">        prefs.putBoolean(JabRefPreferences.AUTOLINK_USE_REG_EXP_SEARCH_KEY, useRegExpComboBox.isSelected());</span>
+<span class="nc" id="L231">        prefs.putBoolean(JabRefPreferences.AUTOLINK_EXACT_KEY_ONLY, matchExactKeyOnly.isSelected());</span>
+<span class="nc bnc" id="L232" title="All 2 branches missed.">        if (useRegExpComboBox.isSelected()) {</span>
+<span class="nc" id="L233">            prefs.put(JabRefPreferences.AUTOLINK_REG_EXP_SEARCH_EXPRESSION_KEY, regExpTextField.getText());</span>
+        }
+
+        String newline;
+<span class="nc bnc" id="L237" title="All 3 branches missed.">        switch (newlineSeparator.getSelectedIndex()) {</span>
+        case 0:
+<span class="nc" id="L239">            newline = &quot;\r&quot;;</span>
+<span class="nc" id="L240">            break;</span>
+        case 2:
+<span class="nc" id="L242">            newline = &quot;\n&quot;;</span>
+<span class="nc" id="L243">            break;</span>
+        default:
+<span class="nc" id="L245">            newline = &quot;\r\n&quot;;</span>
+            break;
+        }
+<span class="nc" id="L248">        prefs.put(JabRefPreferences.NEWLINE, newline);</span>
+        // we also have to change Globals variable as globals is not a getter, but a constant
+<span class="nc" id="L250">        OS.NEWLINE = newline;</span>
+
+<span class="nc" id="L252">        prefs.putBoolean(JabRefPreferences.BACKUP, backup.isSelected());</span>
+
+<span class="nc" id="L254">        prefs.putBoolean(JabRefPreferences.REFORMAT_FILE_ON_SAVE_AND_EXPORT, reformatFileOnSaveAndExport.isSelected());</span>
+<span class="nc" id="L255">        prefs.putBoolean(JabRefPreferences.OPEN_LAST_EDITED, openLast.isSelected());</span>
+<span class="nc" id="L256">        prefs.putBoolean(JabRefPreferences.RESOLVE_STRINGS_ALL_FIELDS, resolveStringsAll.isSelected());</span>
+<span class="nc" id="L257">        prefs.put(JabRefPreferences.DO_NOT_RESOLVE_STRINGS_FOR, doNotResolveStringsFor.getText().trim());</span>
+<span class="nc" id="L258">        doNotResolveStringsFor.setText(prefs.get(JabRefPreferences.DO_NOT_RESOLVE_STRINGS_FOR));</span>
+
+<span class="nc bnc" id="L260" title="All 2 branches missed.">        if (!nonWrappableFields.getText().trim().equals(prefs.get(JabRefPreferences.NON_WRAPPABLE_FIELDS))) {</span>
+<span class="nc" id="L261">            prefs.put(JabRefPreferences.NON_WRAPPABLE_FIELDS, nonWrappableFields.getText());</span>
+        }
+
+<span class="nc" id="L264">        prefs.putBoolean(JabRefPreferences.LOCAL_AUTO_SAVE, localAutoSave.isSelected());</span>
+<span class="nc" id="L265">    }</span>
+
+    @Override
+    public boolean validateSettings() {
+<span class="nc" id="L269">        Path path = Paths.get(fileDir.getText());</span>
+<span class="nc bnc" id="L270" title="All 4 branches missed.">        boolean valid = Files.exists(path) &amp;&amp; Files.isDirectory(path);</span>
+<span class="nc bnc" id="L271" title="All 2 branches missed.">        if (!valid) {</span>
+<span class="nc" id="L272">            String content = String.format(&quot;%s -&gt; %s %n %n %s: %n %s&quot;, Localization.lang(&quot;File&quot;),</span>
+<span class="nc" id="L273">                    Localization.lang(&quot;Main file directory&quot;), Localization.lang(&quot;Directory not found&quot;), path);</span>
+<span class="nc" id="L274">            JOptionPane.showMessageDialog(this.frame, content, Localization.lang(&quot;Error&quot;), JOptionPane.ERROR_MESSAGE);</span>
+        }
+<span class="nc" id="L276">        return valid;</span>
+    }
+
+    @Override
+    public String getTabName() {
+<span class="nc" id="L281">        return Localization.lang(&quot;File&quot;);</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

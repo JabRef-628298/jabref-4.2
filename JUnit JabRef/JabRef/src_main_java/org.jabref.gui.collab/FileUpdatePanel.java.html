@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>FileUpdatePanel.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.collab</a> &gt; <span class="el_source">FileUpdatePanel.java</span></div><h1>FileUpdatePanel.java</h1><pre class="source lang-java linenums">package org.jabref.gui.collab;
+
+import java.awt.BorderLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.File;
+
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.SwingConstants;
+
+import org.jabref.gui.BasePanel;
+import org.jabref.gui.IconTheme;
+import org.jabref.gui.SidePaneComponent;
+import org.jabref.gui.SidePaneManager;
+import org.jabref.logic.l10n.Localization;
+
+public class FileUpdatePanel extends SidePaneComponent implements ActionListener, ChangeScanner.DisplayResultCallback {
+
+    private final SidePaneManager manager;
+
+    private final ChangeScanner scanner;
+
+
+    public FileUpdatePanel(BasePanel panel, SidePaneManager manager, File file, ChangeScanner scanner) {
+<span class="nc" id="L28">        super(manager, IconTheme.JabRefIcon.SAVE.getIcon(), Localization.lang(&quot;File changed&quot;));</span>
+<span class="nc" id="L29">        close.setEnabled(false);</span>
+<span class="nc" id="L30">        this.panel = panel;</span>
+<span class="nc" id="L31">        this.manager = manager;</span>
+<span class="nc" id="L32">        this.scanner = scanner;</span>
+
+<span class="nc" id="L34">        JPanel main = new JPanel();</span>
+<span class="nc" id="L35">        main.setLayout(new BorderLayout());</span>
+
+<span class="nc" id="L37">        JLabel message = new JLabel(&quot;&lt;html&gt;&lt;center&gt;&quot;</span>
+<span class="nc" id="L38">                + Localization.lang(&quot;The file&lt;BR&gt;'%0'&lt;BR&gt;has been modified&lt;BR&gt;externally!&quot;, file.getName())</span>
+<span class="nc" id="L39">                + &quot;&lt;/center&gt;&lt;/html&gt;&quot;, SwingConstants.CENTER);</span>
+
+<span class="nc" id="L41">        main.add(message, BorderLayout.CENTER);</span>
+<span class="nc" id="L42">        JButton test = new JButton(Localization.lang(&quot;Review changes&quot;));</span>
+<span class="nc" id="L43">        main.add(test, BorderLayout.SOUTH);</span>
+<span class="nc" id="L44">        main.setBorder(BorderFactory.createEmptyBorder(1, 1, 1, 1));</span>
+
+<span class="nc" id="L46">        add(main, BorderLayout.CENTER);</span>
+<span class="nc" id="L47">        test.addActionListener(this);</span>
+<span class="nc" id="L48">    }</span>
+
+    /**
+     * We include a getter for the BasePanel this component refers to, because this
+     * component needs to be closed if the BasePanel is closed.
+     * @return the base panel this component refers to.
+     */
+    public BasePanel getPanel() {
+<span class="nc" id="L56">        return panel;</span>
+    }
+
+    /**
+     * Unregister when this component closes. We need that to avoid showing
+     * two such external change warnings at the same time, only the latest one.
+     */
+    @Override
+    public void componentClosing() {
+<span class="nc" id="L65">        manager.unregisterComponent(FileUpdatePanel.class);</span>
+<span class="nc" id="L66">    }</span>
+
+    @Override
+    public int getRescalingWeight() {
+<span class="nc" id="L70">        return 0;</span>
+    }
+
+    @Override
+    public ToggleAction getToggleAction() {
+<span class="nc" id="L75">        throw new UnsupportedOperationException();</span>
+    }
+
+    /**
+     * actionPerformed
+     *
+     * @param e
+     *            ActionEvent
+     */
+    @Override
+    public void actionPerformed(ActionEvent e) {
+
+        // ChangeScanner scanner = new ChangeScanner(frame, panel); //,
+        // panel.database(), panel.metaData());
+        // try {
+<span class="nc" id="L90">        scanner.displayResult(this);</span>
+        // scanner.changeScan(panel.file());
+
+        // } catch (IOException ex) {
+        // ex.printStackTrace();
+        // }
+<span class="nc" id="L96">    }</span>
+
+    /**
+     * Callback method for signalling that the change scanner has displayed the
+     * scan results to the user.
+     * @param resolved true if there were no changes, or if the user has resolved them.
+     */
+    @Override
+    public void scanResultsResolved(boolean resolved) {
+<span class="nc bnc" id="L105" title="All 2 branches missed.">        if (resolved) {</span>
+<span class="nc" id="L106">            manager.hideComponent(this);</span>
+<span class="nc" id="L107">            panel.markExternalChangesAsResolved();</span>
+        }
+<span class="nc" id="L109">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

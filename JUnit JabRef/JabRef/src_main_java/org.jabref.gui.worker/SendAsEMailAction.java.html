@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>SendAsEMailAction.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.worker</a> &gt; <span class="el_source">SendAsEMailAction.java</span></div><h1>SendAsEMailAction.java</h1><pre class="source lang-java linenums">package org.jabref.gui.worker;
+
+import java.awt.Desktop;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.jabref.Globals;
+import org.jabref.gui.BasePanel;
+import org.jabref.gui.JabRefFrame;
+import org.jabref.gui.desktop.JabRefDesktop;
+import org.jabref.logic.bibtex.BibEntryWriter;
+import org.jabref.logic.bibtex.LatexFieldFormatter;
+import org.jabref.logic.l10n.Localization;
+import org.jabref.logic.util.io.FileUtil;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.preferences.JabRefPreferences;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * Sends the selected entry as email - by Oliver Kopp
+ *
+ * It uses the mailto:-mechanism
+ *
+ * Microsoft Outlook does not support attachments via mailto
+ * Therefore, the folder(s), where the file(s) belonging to the entry are stored,
+ * are opened. This feature is disabled by default and can be switched on at
+ * preferences/external programs
+ */
+public class SendAsEMailAction extends AbstractWorker {
+
+<span class="nc" id="L38">    private static final Logger LOGGER = LoggerFactory.getLogger(SendAsEMailAction.class);</span>
+    private final JabRefFrame frame;
+    private String message;
+
+
+<span class="nc" id="L43">    public SendAsEMailAction(JabRefFrame frame) {</span>
+<span class="nc" id="L44">        this.frame = frame;</span>
+<span class="nc" id="L45">    }</span>
+
+    @Override
+    public void run() {
+<span class="nc bnc" id="L49" title="All 2 branches missed.">        if (!Desktop.isDesktopSupported()) {</span>
+<span class="nc" id="L50">            message = Localization.lang(&quot;Error creating email&quot;);</span>
+<span class="nc" id="L51">            return;</span>
+        }
+
+<span class="nc" id="L54">        BasePanel panel = frame.getCurrentBasePanel();</span>
+<span class="nc bnc" id="L55" title="All 2 branches missed.">        if (panel == null) {</span>
+<span class="nc" id="L56">            return;</span>
+        }
+<span class="nc bnc" id="L58" title="All 2 branches missed.">        if (panel.getSelectedEntries().isEmpty()) {</span>
+<span class="nc" id="L59">            message = Localization.lang(&quot;This operation requires one or more entries to be selected.&quot;);</span>
+<span class="nc" id="L60">            return;</span>
+        }
+
+<span class="nc" id="L63">        StringWriter sw = new StringWriter();</span>
+<span class="nc" id="L64">        List&lt;BibEntry&gt; bes = panel.getSelectedEntries();</span>
+
+        // write the entries using sw, which is used later to form the email content
+<span class="nc" id="L67">        BibEntryWriter bibtexEntryWriter = new BibEntryWriter(</span>
+<span class="nc" id="L68">                new LatexFieldFormatter(Globals.prefs.getLatexFieldFormatterPreferences()), true);</span>
+
+<span class="nc bnc" id="L70" title="All 2 branches missed.">        for (BibEntry entry : bes) {</span>
+            try {
+<span class="nc" id="L72">                bibtexEntryWriter.write(entry, sw, panel.getBibDatabaseContext().getMode());</span>
+<span class="nc" id="L73">            } catch (IOException e) {</span>
+<span class="nc" id="L74">                LOGGER.warn(&quot;Problem creating BibTeX file for mailing.&quot;, e);</span>
+            }
+        }
+
+<span class="nc" id="L78">        List&lt;String&gt; attachments = new ArrayList&lt;&gt;();</span>
+
+        // open folders is needed to indirectly support email programs, which cannot handle
+        //   the unofficial &quot;mailto:attachment&quot; property
+<span class="nc" id="L82">        boolean openFolders = JabRefPreferences.getInstance().getBoolean(JabRefPreferences.OPEN_FOLDERS_OF_ATTACHED_FILES);</span>
+
+<span class="nc" id="L84">        List&lt;Path&gt; fileList = FileUtil.getListOfLinkedFiles(bes, frame.getCurrentBasePanel().getBibDatabaseContext()</span>
+<span class="nc" id="L85">                .getFileDirectoriesAsPaths(Globals.prefs.getFileDirectoryPreferences()));</span>
+<span class="nc bnc" id="L86" title="All 2 branches missed.">        for (Path f : fileList) {</span>
+<span class="nc" id="L87">            attachments.add(f.toAbsolutePath().toString());</span>
+<span class="nc bnc" id="L88" title="All 2 branches missed.">            if (openFolders) {</span>
+                try {
+<span class="nc" id="L90">                    JabRefDesktop.openFolderAndSelectFile(f.toAbsolutePath());</span>
+<span class="nc" id="L91">                } catch (IOException e) {</span>
+<span class="nc" id="L92">                    LOGGER.debug(&quot;Cannot open file&quot;, e);</span>
+                }
+            }
+        }
+
+<span class="nc" id="L97">        String mailTo = &quot;?Body=&quot;.concat(sw.getBuffer().toString());</span>
+<span class="nc" id="L98">        mailTo = mailTo.concat(&quot;&amp;Subject=&quot;);</span>
+<span class="nc" id="L99">        mailTo = mailTo.concat(JabRefPreferences.getInstance().get(JabRefPreferences.EMAIL_SUBJECT));</span>
+<span class="nc bnc" id="L100" title="All 2 branches missed.">        for (String path : attachments) {</span>
+<span class="nc" id="L101">            mailTo = mailTo.concat(&quot;&amp;Attachment=\&quot;&quot;).concat(path);</span>
+<span class="nc" id="L102">            mailTo = mailTo.concat(&quot;\&quot;&quot;);</span>
+        }
+
+        URI uriMailTo;
+        try {
+<span class="nc" id="L107">            uriMailTo = new URI(&quot;mailto&quot;, mailTo, null);</span>
+<span class="nc" id="L108">        } catch (URISyntaxException e1) {</span>
+<span class="nc" id="L109">            message = Localization.lang(&quot;Error creating email&quot;);</span>
+<span class="nc" id="L110">            LOGGER.warn(message, e1);</span>
+<span class="nc" id="L111">            return;</span>
+        }
+
+<span class="nc" id="L114">        Desktop desktop = Desktop.getDesktop();</span>
+        try {
+<span class="nc" id="L116">            desktop.mail(uriMailTo);</span>
+<span class="nc" id="L117">        } catch (IOException e) {</span>
+<span class="nc" id="L118">            message = Localization.lang(&quot;Error creating email&quot;);</span>
+<span class="nc" id="L119">            LOGGER.warn(message, e);</span>
+<span class="nc" id="L120">            return;</span>
+        }
+
+<span class="nc" id="L123">        message = String.format(&quot;%s: %d&quot;, Localization.lang(&quot;Entries added to an email&quot;), bes.size());</span>
+<span class="nc" id="L124">    }</span>
+
+    @Override
+    public void update() {
+<span class="nc" id="L128">        frame.output(message);</span>
+<span class="nc" id="L129">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

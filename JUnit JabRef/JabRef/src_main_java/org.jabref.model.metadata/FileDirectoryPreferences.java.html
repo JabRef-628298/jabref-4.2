@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>FileDirectoryPreferences.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.model.metadata</a> &gt; <span class="el_source">FileDirectoryPreferences.java</span></div><h1>FileDirectoryPreferences.java</h1><pre class="source lang-java linenums">package org.jabref.model.metadata;
+
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Map;
+import java.util.Optional;
+
+import org.jabref.model.entry.FieldName;
+
+public class FileDirectoryPreferences {
+    public static final String DIR_SUFFIX = &quot;Directory&quot;;
+
+    private final String user;
+    private final Map&lt;String, String&gt; fieldFileDirectories;
+    private final boolean bibLocationAsPrimary;
+
+
+<span class="nc" id="L19">    public FileDirectoryPreferences(String user, Map&lt;String, String&gt; fieldFileDirectories, boolean bibLocationAsPrimary) {</span>
+<span class="nc" id="L20">        this.user = user;</span>
+<span class="nc" id="L21">        this.fieldFileDirectories = fieldFileDirectories;</span>
+<span class="nc" id="L22">        this.bibLocationAsPrimary = bibLocationAsPrimary;</span>
+<span class="nc" id="L23">    }</span>
+
+    public String getUser() {
+<span class="nc" id="L26">        return user;</span>
+    }
+
+    public Optional&lt;Path&gt; getFileDirectory(String field) {
+        try {
+<span class="nc" id="L31">            String value = fieldFileDirectories.get(field);</span>
+            // filter empty paths
+<span class="nc bnc" id="L33" title="All 4 branches missed.">            if ((value != null) &amp;&amp; !value.isEmpty()) {</span>
+<span class="nc" id="L34">                Path path = Paths.get(value);</span>
+<span class="nc" id="L35">                return Optional.of(path);</span>
+            }
+<span class="nc" id="L37">            return Optional.empty();</span>
+<span class="nc" id="L38">        } catch (InvalidPathException ex) {</span>
+<span class="nc" id="L39">            return Optional.empty();</span>
+        }
+    }
+
+    public Optional&lt;Path&gt; getFileDirectory() {
+<span class="nc" id="L44">        return getFileDirectory(FieldName.FILE);</span>
+    }
+
+    public boolean isBibLocationAsPrimary() {
+<span class="nc" id="L48">        return bibLocationAsPrimary;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

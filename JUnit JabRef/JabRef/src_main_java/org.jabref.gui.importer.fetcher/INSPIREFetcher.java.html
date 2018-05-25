@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>INSPIREFetcher.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.importer.fetcher</a> &gt; <span class="el_source">INSPIREFetcher.java</span></div><h1>INSPIREFetcher.java</h1><pre class="source lang-java linenums">package org.jabref.gui.importer.fetcher;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
+import javax.swing.JPanel;
+
+import org.jabref.Globals;
+import org.jabref.gui.importer.ImportInspectionDialog;
+import org.jabref.logic.help.HelpFile;
+import org.jabref.logic.importer.ImportInspector;
+import org.jabref.logic.importer.OutputPrinter;
+import org.jabref.logic.importer.ParserResult;
+import org.jabref.logic.importer.fileformat.BibtexParser;
+import org.jabref.logic.importer.util.INSPIREBibtexFilterReader;
+import org.jabref.logic.l10n.Localization;
+import org.jabref.model.database.BibDatabase;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ *
+ * This class allows to access the Slac INSPIRE database. It is just a port of the original SPIRES Fetcher.
+ *
+ * It can either be a GeneralFetcher to pose requests to the database or fetch individual entries.
+ *
+ * @author Fedor Bezrukov
+ * @author Sheer El-Showk
+ *
+ * @version $Id$
+ *
+ */
+<span class="fc" id="L40">public class INSPIREFetcher implements EntryFetcher {</span>
+
+    private static final String INSPIRE_HOST = &quot;inspirehep.net&quot;;
+
+<span class="fc" id="L44">    private static final Logger LOGGER = LoggerFactory.getLogger(INSPIREFetcher.class);</span>
+    /**
+     * Construct the query URL
+     *
+     * NOTE: we truncate at 1000 returned entries but its likely INSPIRE returns fewer anyway. This shouldn't be a
+     * problem since users should probably do more specific searches.
+     *
+     * @param key The key of the OAI2 entry that the url should point to.
+     *
+     * @return a String denoting the query URL
+     */
+    private String constructUrl(String key) {
+        String identifier;
+        try {
+<span class="nc" id="L58">            identifier = URLEncoder.encode(key, StandardCharsets.UTF_8.name());</span>
+<span class="nc" id="L59">        } catch (UnsupportedEncodingException e) {</span>
+<span class="nc" id="L60">            return &quot;&quot;;</span>
+        }
+        // At least 87 characters
+<span class="nc" id="L63">        StringBuilder sb = new StringBuilder(87).append(&quot;http://&quot;).append(INSPIREFetcher.INSPIRE_HOST)</span>
+<span class="nc" id="L64">                .append(&quot;/search?ln=en&amp;ln=en&amp;p=find+&quot;).append(identifier)</span>
+<span class="nc" id="L65">                .append(&quot;&amp;action_search=Search&amp;sf=&amp;so=d&amp;rm=&amp;rg=1000&amp;sc=0&amp;of=hx&quot;);</span>
+<span class="nc" id="L66">        LOGGER.debug(&quot;Inspire URL: &quot; + sb + &quot;\n&quot;);</span>
+<span class="nc" id="L67">        return sb.toString();</span>
+    }
+
+    /**
+     * Constructs a INSPIRE query url from slaccitation field
+     *
+     * @param slaccitation
+     * @return query string
+     *
+     *         public static String constructUrlFromSlaccitation(String slaccitation) { String cmd = &quot;j&quot;; String key =
+     *         slaccitation.replaceAll(&quot;^%%CITATION = &quot;, &quot;&quot;).replaceAll( &quot;;%%$&quot;, &quot;&quot;); if (key.matches(&quot;^\\w*-\\w*[ /].*&quot;
+     *         )) cmd = &quot;eprint&quot;; try { key = URLEncoder.encode(key, &quot;UTF-8&quot;); } catch (UnsupportedEncodingException e)
+     *         { } StringBuffer sb = new StringBuffer(&quot;http://&quot;).append(INSPIRE_HOST) .append(&quot;/&quot;);
+     *         sb.append(&quot;spires/find/hep/www&quot;).append(&quot;?&quot;); sb.append(&quot;rawcmd=find+&quot;).append(cmd).append(&quot;+&quot;);
+     *         sb.append(key); return sb.toString(); }
+     *
+     *         /** Construct an INSPIRE query url from eprint field
+     *
+     * @param eprint
+     * @return query string
+     *
+     *         public static String constructUrlFromEprint(String eprint) { String key = eprint.replaceAll(&quot; [.*]$&quot;,
+     *         &quot;&quot;); try { key = URLEncoder.encode(key, &quot;UTF-8&quot;); } catch (UnsupportedEncodingException e) { return &quot;&quot;; }
+     *         StringBuffer sb = new StringBuffer(&quot;http://&quot;).append(INSPIRE_HOST) .append(&quot;/&quot;);
+     *         sb.append(&quot;spires/find/hep/www&quot;).append(&quot;?&quot;); sb.append(&quot;rawcmd=find+eprint+&quot;); sb.append(key); return
+     *         sb.toString(); }
+     */
+
+    /**
+     * Import an entry from an OAI2 archive. The BibEntry provided has to have the field OAI2_IDENTIFIER_FIELD set to
+     * the search string.
+     *
+     * @param key The OAI2 key to fetch from ArXiv.
+     * @return The imported BibEntry or null if none.
+     */
+    private BibDatabase importInspireEntries(String key) throws IOException {
+<span class="nc" id="L103">        String url = constructUrl(key);</span>
+<span class="nc" id="L104">        HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();</span>
+<span class="nc" id="L105">        conn.setRequestProperty(&quot;User-Agent&quot;, &quot;JabRef&quot;);</span>
+<span class="nc" id="L106">        InputStream inputStream = conn.getInputStream();</span>
+
+<span class="nc" id="L108">        try (INSPIREBibtexFilterReader reader = new INSPIREBibtexFilterReader(</span>
+<span class="nc" id="L109">                new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {</span>
+<span class="nc" id="L110">            ParserResult pr = new BibtexParser(Globals.prefs.getImportFormatPreferences(), Globals.getFileUpdateMonitor()).parse(reader);</span>
+<span class="nc" id="L111">            return pr.getDatabase();</span>
+<span class="nc bnc" id="L112" title="All 8 branches missed.">        }</span>
+    }
+
+    @Override
+    public HelpFile getHelpPage() {
+<span class="nc" id="L117">        return HelpFile.FETCHER_INSPIRE;</span>
+    }
+
+    @Override
+    public JPanel getOptionsPanel() {
+        // we have no additional options
+<span class="nc" id="L123">        return null;</span>
+    }
+
+    @Override
+    public String getTitle() {
+<span class="fc" id="L128">        return &quot;INSPIRE&quot;;</span>
+    }
+
+    @Override
+    public void stopFetching() {
+        // Do nothing
+<span class="nc" id="L134">    }</span>
+
+    /*
+     * @see java.lang.Runnable
+     */
+    @Override
+    public boolean processQuery(String query, ImportInspector dialog, OutputPrinter status) {
+        try {
+<span class="nc" id="L142">            status.setStatus(Localization.lang(&quot;Fetching entries from Inspire&quot;));</span>
+            /* query the archive and load the results into the BibEntry */
+<span class="nc" id="L144">            BibDatabase bd = importInspireEntries(query);</span>
+
+<span class="nc" id="L146">            status.setStatus(Localization.lang(&quot;Adding fetched entries&quot;));</span>
+            /* add the entry to the inspection dialog */
+<span class="nc" id="L148">            bd.getEntries().forEach(dialog::addEntry);</span>
+<span class="nc" id="L149">            return true;</span>
+<span class="nc" id="L150">        } catch (Exception e) {</span>
+<span class="nc" id="L151">            LOGGER.error(&quot;Error while fetching from &quot; + getTitle(), e);</span>
+<span class="nc" id="L152">            ((ImportInspectionDialog)dialog).showErrorMessage(this.getTitle(), e.getLocalizedMessage());</span>
+        }
+<span class="nc" id="L154">        return false;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

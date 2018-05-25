@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>DuplicationCheckerTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.model.database</a> &gt; <span class="el_source">DuplicationCheckerTest.java</span></div><h1>DuplicationCheckerTest.java</h1><pre class="source lang-java linenums">package org.jabref.model.database;
+
+import org.jabref.model.entry.BibEntry;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+<span class="fc" id="L10">public class DuplicationCheckerTest {</span>
+
+    private BibDatabase database;
+
+
+    @BeforeEach
+    public void setUp() {
+<span class="fc" id="L17">        database = new BibDatabase();</span>
+<span class="fc" id="L18">    }</span>
+
+    @Test
+    public void addEntry() {
+<span class="fc" id="L22">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L23">        entry.setCiteKey(&quot;AAA&quot;);</span>
+<span class="fc" id="L24">        database.insertEntry(entry);</span>
+<span class="fc" id="L25">        assertEquals(1, database.getDuplicationChecker().getNumberOfKeyOccurrences(&quot;AAA&quot;));</span>
+<span class="fc" id="L26">    }</span>
+
+    @Test
+    public void addAndRemoveEntry() {
+<span class="fc" id="L30">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L31">        entry.setCiteKey(&quot;AAA&quot;);</span>
+<span class="fc" id="L32">        database.insertEntry(entry);</span>
+<span class="fc" id="L33">        assertEquals(1, database.getDuplicationChecker().getNumberOfKeyOccurrences(&quot;AAA&quot;));</span>
+<span class="fc" id="L34">        database.removeEntry(entry);</span>
+<span class="fc" id="L35">        assertEquals(0, database.getDuplicationChecker().getNumberOfKeyOccurrences(&quot;AAA&quot;));</span>
+<span class="fc" id="L36">    }</span>
+
+    @Test
+    public void changeCiteKey() {
+<span class="fc" id="L40">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L41">        entry.setCiteKey(&quot;AAA&quot;);</span>
+<span class="fc" id="L42">        database.insertEntry(entry);</span>
+<span class="fc" id="L43">        assertEquals(1, database.getDuplicationChecker().getNumberOfKeyOccurrences(&quot;AAA&quot;));</span>
+<span class="fc" id="L44">        entry.setCiteKey(&quot;BBB&quot;);</span>
+<span class="fc" id="L45">        assertEquals(0, database.getDuplicationChecker().getNumberOfKeyOccurrences(&quot;AAA&quot;));</span>
+<span class="fc" id="L46">        assertEquals(1, database.getDuplicationChecker().getNumberOfKeyOccurrences(&quot;BBB&quot;));</span>
+<span class="fc" id="L47">    }</span>
+
+
+    @Test
+    public void setCiteKeySameKeyDifferentEntries() {
+<span class="fc" id="L52">        BibEntry entry0 = new BibEntry();</span>
+<span class="fc" id="L53">        entry0.setCiteKey(&quot;AAA&quot;);</span>
+<span class="fc" id="L54">        database.insertEntry(entry0);</span>
+<span class="fc" id="L55">        BibEntry entry1 = new BibEntry();</span>
+<span class="fc" id="L56">        entry1.setCiteKey(&quot;BBB&quot;);</span>
+<span class="fc" id="L57">        database.insertEntry(entry1);</span>
+<span class="fc" id="L58">        assertEquals(1, database.getDuplicationChecker().getNumberOfKeyOccurrences(&quot;AAA&quot;));</span>
+<span class="fc" id="L59">        assertEquals(1, database.getDuplicationChecker().getNumberOfKeyOccurrences(&quot;BBB&quot;));</span>
+
+<span class="fc" id="L61">        entry1.setCiteKey(&quot;AAA&quot;);</span>
+<span class="fc" id="L62">        assertEquals(2, database.getDuplicationChecker().getNumberOfKeyOccurrences(&quot;AAA&quot;));</span>
+<span class="fc" id="L63">        assertEquals(0, database.getDuplicationChecker().getNumberOfKeyOccurrences(&quot;BBB&quot;));</span>
+<span class="fc" id="L64">    }</span>
+
+    @Test
+    public void removeMultipleCiteKeys(){
+<span class="fc" id="L68">        BibEntry entry0 = new BibEntry();</span>
+<span class="fc" id="L69">        entry0.setCiteKey(&quot;AAA&quot;);</span>
+<span class="fc" id="L70">        database.insertEntry(entry0);</span>
+<span class="fc" id="L71">        BibEntry entry1 = new BibEntry();</span>
+<span class="fc" id="L72">        entry1.setCiteKey(&quot;AAA&quot;);</span>
+<span class="fc" id="L73">        database.insertEntry(entry1);</span>
+<span class="fc" id="L74">        BibEntry entry2 = new BibEntry();</span>
+<span class="fc" id="L75">        entry2.setCiteKey(&quot;AAA&quot;);</span>
+<span class="fc" id="L76">        database.insertEntry(entry2);</span>
+<span class="fc" id="L77">        assertEquals(3, database.getDuplicationChecker().getNumberOfKeyOccurrences(&quot;AAA&quot;));</span>
+
+<span class="fc" id="L79">        database.removeEntry(entry2);</span>
+<span class="fc" id="L80">        assertEquals(2, database.getDuplicationChecker().getNumberOfKeyOccurrences(&quot;AAA&quot;));</span>
+
+<span class="fc" id="L82">        database.removeEntry(entry1);</span>
+<span class="fc" id="L83">        assertEquals(1, database.getDuplicationChecker().getNumberOfKeyOccurrences(&quot;AAA&quot;));</span>
+
+<span class="fc" id="L85">        database.removeEntry(entry0);</span>
+<span class="fc" id="L86">        assertEquals(0, database.getDuplicationChecker().getNumberOfKeyOccurrences(&quot;AAA&quot;));</span>
+<span class="fc" id="L87">    }</span>
+
+    @Test
+    public void addEmptyCiteKey(){
+<span class="fc" id="L91">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L92">        entry.setCiteKey(&quot;&quot;);</span>
+<span class="fc" id="L93">        database.insertEntry(entry);</span>
+
+<span class="fc" id="L95">        assertEquals(0, database.getDuplicationChecker().getNumberOfKeyOccurrences(&quot;&quot;));</span>
+<span class="fc" id="L96">    }</span>
+
+    @Test
+    public void removeEmptyCiteKey(){
+<span class="fc" id="L100">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L101">        entry.setCiteKey(&quot;AAA&quot;);</span>
+<span class="fc" id="L102">        database.insertEntry(entry);</span>
+<span class="fc" id="L103">        assertEquals(1, database.getDuplicationChecker().getNumberOfKeyOccurrences(&quot;AAA&quot;));</span>
+
+<span class="fc" id="L105">        entry.setCiteKey(&quot;&quot;);</span>
+<span class="fc" id="L106">        database.removeEntry(entry);</span>
+<span class="fc" id="L107">        assertEquals(0, database.getDuplicationChecker().getNumberOfKeyOccurrences(&quot;AAA&quot;));</span>
+<span class="fc" id="L108">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

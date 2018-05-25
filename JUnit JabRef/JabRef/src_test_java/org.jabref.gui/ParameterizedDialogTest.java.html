@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>ParameterizedDialogTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui</a> &gt; <span class="el_source">ParameterizedDialogTest.java</span></div><h1>ParameterizedDialogTest.java</h1><pre class="source lang-java linenums"><span class="nc" id="L1">package org.jabref.gui;</span>
+
+import java.util.Arrays;
+import java.util.Collection;
+
+import javax.swing.JButton;
+import javax.swing.JDialog;
+
+import org.jabref.testutils.category.GUITest;
+
+import org.assertj.swing.core.GenericTypeMatcher;
+import org.assertj.swing.dependency.jsr305.Nonnull;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
+import static org.assertj.swing.finder.WindowFinder.findDialog;
+
+@RunWith(Parameterized.class)
+@Category(GUITest.class)
+public class ParameterizedDialogTest extends AbstractUITest {
+
+    private final boolean createDatabase;
+    private final String[] menuPath;
+    private final String dialogTitle;
+    private final String buttonName;
+    private final boolean closeButton;
+
+
+<span class="fc" id="L31">    public ParameterizedDialogTest(boolean createDatabase, String[] menuPath, String dialogTitle, String buttonName,</span>
+            boolean closeButton) {
+<span class="fc" id="L33">        this.createDatabase = createDatabase;</span>
+<span class="fc" id="L34">        this.menuPath = menuPath;</span>
+<span class="fc" id="L35">        this.dialogTitle = dialogTitle;</span>
+<span class="fc" id="L36">        this.buttonName = buttonName;</span>
+<span class="fc" id="L37">        this.closeButton = closeButton;</span>
+<span class="fc" id="L38">    }</span>
+
+    @Test
+    public void openAndExitDialog() {
+<span class="nc bnc" id="L42" title="All 2 branches missed.">        if (createDatabase) {</span>
+<span class="nc" id="L43">            newDatabase();</span>
+        }
+<span class="nc" id="L45">        mainFrame.menuItemWithPath(menuPath).click();</span>
+<span class="nc" id="L46">        GenericTypeMatcher&lt;JDialog&gt; matcher = new GenericTypeMatcher&lt;JDialog&gt;(JDialog.class) {</span>
+
+            @Override
+            protected boolean isMatching(JDialog dialog) {
+<span class="nc" id="L50">                return dialogTitle.equals(dialog.getTitle());</span>
+            }
+        };
+
+<span class="nc bnc" id="L54" title="All 2 branches missed.">        if (closeButton) {</span>
+<span class="nc" id="L55">            findDialog(matcher).withTimeout(10_000).using(robot()).close();</span>
+<span class="nc" id="L56">        } else {</span>
+<span class="nc" id="L57">            findDialog(matcher).withTimeout(10_000).using(robot())</span>
+<span class="nc" id="L58">                    .button(new GenericTypeMatcher&lt;JButton&gt;(JButton.class) {</span>
+
+                        @Override
+                        protected boolean isMatching(@Nonnull JButton jButton) {
+<span class="nc" id="L62">                            return buttonName.equals(jButton.getText());</span>
+                        }
+<span class="nc" id="L64">                    }).click();</span>
+        }
+<span class="nc bnc" id="L66" title="All 2 branches missed.">        if (createDatabase) {</span>
+<span class="nc" id="L67">            closeDatabase();</span>
+        }
+<span class="nc" id="L69">        exitJabRef();</span>
+<span class="nc" id="L70">    }</span>
+
+    @Parameterized.Parameters(name = &quot;{index}: {1} -&gt; {2} : {3}&quot;)
+    public static Collection&lt;Object[]&gt; instancesToTest() {
+        // Opening and closing (in different ways) the dialogs accessible from the menus without doing anything else
+        // Structure:
+        // {create new database, {&quot;Menu&quot;, &quot;Submenu&quot;, &quot;Sub-sub-menu&quot;}, &quot;Dialog title&quot;, &quot;Button name&quot;, use close button}
+        // @formatter:off
+<span class="fc" id="L78">        return Arrays.asList(</span>
+<span class="fc" id="L79">                new Object[]{false, new String[]{&quot;File&quot;, &quot;Open library&quot;}, &quot;Open&quot;, &quot;Cancel&quot;, false},</span>
+<span class="fc" id="L80">                new Object[]{false, new String[]{&quot;File&quot;, &quot;Open library&quot;}, &quot;Open&quot;, &quot;Close button&quot;, true},</span>
+<span class="fc" id="L81">                new Object[]{true, new String[]{&quot;File&quot;, &quot;Append library&quot;}, &quot;Append library&quot;, &quot;Cancel&quot;, false},</span>
+<span class="fc" id="L82">                new Object[]{true, new String[]{&quot;File&quot;, &quot;Append library&quot;}, &quot;Append library&quot;, &quot;Close button&quot;, true},</span>
+<span class="fc" id="L83">                new Object[]{true, new String[]{&quot;File&quot;, &quot;Save library&quot;}, &quot;Save&quot;, &quot;Cancel&quot;, false},</span>
+<span class="fc" id="L84">                new Object[]{true, new String[]{&quot;File&quot;, &quot;Save library&quot;}, &quot;Save&quot;, &quot;Close button&quot;, true},</span>
+<span class="fc" id="L85">                new Object[]{true, new String[]{&quot;File&quot;, &quot;Save library as...&quot;}, &quot;Save&quot;, &quot;Cancel&quot;, false},</span>
+<span class="fc" id="L86">                new Object[]{true, new String[]{&quot;File&quot;, &quot;Save library as...&quot;}, &quot;Save&quot;, &quot;Close button&quot;, true},</span>
+<span class="fc" id="L87">                new Object[]{true, new String[]{&quot;File&quot;, &quot;Save all&quot;}, &quot;Save&quot;, &quot;Cancel&quot;, false},</span>
+<span class="fc" id="L88">                new Object[]{true, new String[]{&quot;File&quot;, &quot;Save all&quot;}, &quot;Save&quot;, &quot;Close button&quot;, true},</span>
+<span class="fc" id="L89">                new Object[]{false, new String[]{&quot;File&quot;, &quot;Import into new library&quot;}, &quot;Open&quot;, &quot;Cancel&quot;, false},</span>
+<span class="fc" id="L90">                new Object[]{false, new String[]{&quot;File&quot;, &quot;Import into new library&quot;}, &quot;Open&quot;, &quot;Close button&quot;, true},</span>
+<span class="fc" id="L91">                new Object[]{true, new String[]{&quot;File&quot;, &quot;Import into current library&quot;}, &quot;Open&quot;, &quot;Cancel&quot;, false},</span>
+<span class="fc" id="L92">                new Object[]{true, new String[]{&quot;File&quot;, &quot;Import into current library&quot;}, &quot;Open&quot;, &quot;Close button&quot;, true},</span>
+<span class="fc" id="L93">                new Object[]{true, new String[]{&quot;File&quot;, &quot;Export&quot;}, &quot;Save&quot;, &quot;Cancel&quot;, false},</span>
+<span class="fc" id="L94">                new Object[]{true, new String[]{&quot;File&quot;, &quot;Export&quot;}, &quot;Save&quot;, &quot;Close button&quot;, true},</span>
+<span class="fc" id="L95">                new Object[]{true, new String[]{&quot;File&quot;, &quot;Open shared database&quot;}, &quot;Open shared database&quot;, &quot;Cancel&quot;, false},</span>
+<span class="fc" id="L96">                new Object[]{true, new String[]{&quot;File&quot;, &quot;Library properties&quot;}, &quot;Library properties&quot;, &quot;Cancel&quot;, false},</span>
+<span class="fc" id="L97">                new Object[]{true, new String[]{&quot;File&quot;, &quot;Library properties&quot;}, &quot;Library properties&quot;, &quot;OK&quot;, false},</span>
+<span class="fc" id="L98">                new Object[]{true, new String[]{&quot;File&quot;, &quot;Library properties&quot;}, &quot;Library properties&quot;, &quot;Close button&quot;, true},</span>
+<span class="fc" id="L99">                new Object[]{true, new String[]{&quot;Edit&quot;, &quot;Set/clear/rename fields...&quot;}, &quot;Set/clear/rename fields&quot;, &quot;Cancel&quot;, false},</span>
+                //new Object[]{true, new String[]{&quot;Edit&quot;, &quot;Set/clear/rename fields...&quot;}, &quot;Set/clear/rename fields&quot;, &quot;OK&quot;, false},
+<span class="fc" id="L101">                new Object[]{true, new String[]{&quot;Edit&quot;, &quot;Set/clear/rename fields...&quot;}, &quot;Set/clear/rename fields&quot;, &quot;Close button&quot;, true},</span>
+<span class="fc" id="L102">                new Object[]{true, new String[]{&quot;Search&quot;, &quot;Replace string...&quot;}, &quot;Replace string&quot;, &quot;Cancel&quot;, false},</span>
+<span class="fc" id="L103">                new Object[]{true, new String[]{&quot;Search&quot;, &quot;Replace string...&quot;}, &quot;Replace string&quot;, &quot;Close button&quot;, true},</span>
+<span class="fc" id="L104">                new Object[]{true, new String[]{&quot;Groups&quot;, &quot;Add to group...&quot;}, &quot;Add to group&quot;, &quot;Cancel&quot;, false},</span>
+<span class="fc" id="L105">                new Object[]{true, new String[]{&quot;Groups&quot;, &quot;Add to group...&quot;}, &quot;Add to group&quot;, &quot;Close button&quot;, true},</span>
+<span class="fc" id="L106">                new Object[]{true, new String[]{&quot;Groups&quot;, &quot;Remove from group...&quot;}, &quot;Remove from group&quot;, &quot;Cancel&quot;, false},</span>
+<span class="fc" id="L107">                new Object[]{true, new String[]{&quot;Groups&quot;, &quot;Remove from group...&quot;}, &quot;Remove from group&quot;, &quot;Close button&quot;, true},</span>
+<span class="fc" id="L108">                new Object[]{true, new String[]{&quot;Groups&quot;, &quot;Move to group...&quot;}, &quot;Move to group&quot;, &quot;Cancel&quot;, false},</span>
+<span class="fc" id="L109">                new Object[]{true, new String[]{&quot;Groups&quot;, &quot;Move to group...&quot;}, &quot;Move to group&quot;, &quot;Close button&quot;, true},</span>
+<span class="fc" id="L110">                new Object[]{true, new String[]{&quot;BibTeX&quot;, &quot;New entry...&quot;}, &quot;Select entry type&quot;, &quot;Cancel&quot;, false},</span>
+<span class="fc" id="L111">                new Object[]{true, new String[]{&quot;BibTeX&quot;, &quot;New entry...&quot;}, &quot;Select entry type&quot;, &quot;Close button&quot;, true},</span>
+<span class="fc" id="L112">                new Object[]{true, new String[]{&quot;BibTeX&quot;, &quot;Edit preamble&quot;}, &quot;Edit preamble&quot;, &quot;Close button&quot;, true},</span>
+<span class="fc" id="L113">                new Object[]{true, new String[]{&quot;BibTeX&quot;, &quot;Edit strings&quot;}, &quot;Strings for library: untitled&quot;, &quot;Close button&quot;, true},</span>
+<span class="fc" id="L114">                new Object[]{true, new String[]{&quot;BibTeX&quot;, &quot;Customize entry types&quot;}, &quot;Customize entry types&quot;, &quot;Cancel&quot;, false},</span>
+<span class="fc" id="L115">                new Object[]{true, new String[]{&quot;BibTeX&quot;, &quot;Customize entry types&quot;}, &quot;Customize entry types&quot;, &quot;OK&quot;, false},</span>
+<span class="fc" id="L116">                new Object[]{true, new String[]{&quot;BibTeX&quot;, &quot;Customize entry types&quot;}, &quot;Customize entry types&quot;, &quot;Close button&quot;, true},</span>
+<span class="fc" id="L117">                new Object[]{true, new String[]{&quot;Quality&quot;, &quot;Synchronize file links...&quot;}, &quot;Synchronize file links&quot;, &quot;Cancel&quot;, false},</span>
+<span class="fc" id="L118">                new Object[]{true, new String[]{&quot;Quality&quot;, &quot;Synchronize file links...&quot;}, &quot;Synchronize file links&quot;, &quot;Close button&quot;, true},</span>
+<span class="fc" id="L119">                new Object[]{true, new String[]{&quot;Quality&quot;, &quot;Find unlinked files...&quot;}, &quot;Find unlinked files&quot;, &quot;Close&quot;, false},</span>
+<span class="fc" id="L120">                new Object[]{true, new String[]{&quot;Quality&quot;, &quot;Find unlinked files...&quot;}, &quot;Find unlinked files&quot;, &quot;Close button&quot;, true},</span>
+<span class="fc" id="L121">                new Object[]{true, new String[]{&quot;Tools&quot;, &quot;New sublibrary based on AUX file...&quot;}, &quot;AUX file import&quot;, &quot;Cancel&quot;, false},</span>
+<span class="fc" id="L122">                new Object[]{true, new String[]{&quot;Tools&quot;, &quot;New sublibrary based on AUX file...&quot;}, &quot;AUX file import&quot;, &quot;Close button&quot;, true},</span>
+<span class="fc" id="L123">                new Object[]{false, new String[]{&quot;Options&quot;, &quot;Preferences&quot;}, &quot;JabRef preferences&quot;, &quot;Cancel&quot;, false},</span>
+<span class="fc" id="L124">                new Object[]{false, new String[]{&quot;Options&quot;, &quot;Preferences&quot;}, &quot;JabRef preferences&quot;, &quot;OK&quot;, false},</span>
+<span class="fc" id="L125">                new Object[]{false, new String[]{&quot;Options&quot;, &quot;Preferences&quot;}, &quot;JabRef preferences&quot;, &quot;Close button&quot;, true},</span>
+<span class="fc" id="L126">                new Object[]{false, new String[]{&quot;Options&quot;, &quot;Set up general fields&quot;}, &quot;Set general fields&quot;, &quot;Cancel&quot;, false},</span>
+<span class="fc" id="L127">                new Object[]{false, new String[]{&quot;Options&quot;, &quot;Set up general fields&quot;}, &quot;Set general fields&quot;, &quot;OK&quot;, false},</span>
+<span class="fc" id="L128">                new Object[]{false, new String[]{&quot;Options&quot;, &quot;Set up general fields&quot;}, &quot;Set general fields&quot;, &quot;Close button&quot;, true},</span>
+<span class="fc" id="L129">                new Object[]{false, new String[]{&quot;Options&quot;, &quot;Manage custom exports&quot;}, &quot;Manage custom exports&quot;, &quot;Close&quot;, false},</span>
+<span class="fc" id="L130">                new Object[]{false, new String[]{&quot;Options&quot;, &quot;Manage custom exports&quot;}, &quot;Manage custom exports&quot;, &quot;Close button&quot;, true},</span>
+<span class="fc" id="L131">                new Object[]{false, new String[]{&quot;Options&quot;, &quot;Manage custom imports&quot;}, &quot;Manage custom imports&quot;, &quot;Close&quot;, false},</span>
+<span class="fc" id="L132">                new Object[]{false, new String[]{&quot;Options&quot;, &quot;Manage custom imports&quot;}, &quot;Manage custom imports&quot;, &quot;Close button&quot;, true},</span>
+<span class="fc" id="L133">                new Object[]{false, new String[]{&quot;Options&quot;, &quot;Manage external file types&quot;}, &quot;Manage external file types&quot;, &quot;Cancel&quot;, false},</span>
+<span class="fc" id="L134">                new Object[]{false, new String[]{&quot;Options&quot;, &quot;Manage external file types&quot;}, &quot;Manage external file types&quot;, &quot;OK&quot;, false},</span>
+<span class="fc" id="L135">                new Object[]{false, new String[]{&quot;Options&quot;, &quot;Manage external file types&quot;}, &quot;Manage external file types&quot;, &quot;Close button&quot;, true},</span>
+<span class="fc" id="L136">                new Object[]{false, new String[]{&quot;Options&quot;, &quot;Manage journal abbreviations&quot;}, &quot;Journal abbreviations&quot;, &quot;Cancel&quot;, false},</span>
+<span class="fc" id="L137">                new Object[]{false, new String[]{&quot;Options&quot;, &quot;Manage journal abbreviations&quot;}, &quot;Journal abbreviations&quot;, &quot;OK&quot;, false},</span>
+<span class="fc" id="L138">                new Object[]{false, new String[]{&quot;Options&quot;, &quot;Manage journal abbreviations&quot;}, &quot;Journal abbreviations&quot;, &quot;Close button&quot;, true},</span>
+<span class="fc" id="L139">                new Object[]{true, new String[]{&quot;Options&quot;, &quot;Manage content selectors&quot;}, &quot;Manage content selectors&quot;, &quot;Cancel&quot;, false},</span>
+                // new Object[]{true, new String[]{&quot;Options&quot;, &quot;Manage content selectors&quot;}, &quot;Manage content selectors&quot;, &quot;OK&quot;, false},
+<span class="fc" id="L141">                new Object[]{true, new String[]{&quot;Options&quot;, &quot;Manage content selectors&quot;}, &quot;Manage content selectors&quot;, &quot;Close button&quot;, true},</span>
+<span class="fc" id="L142">                new Object[]{false, new String[]{&quot;Options&quot;, &quot;Manage protected terms&quot;}, &quot;Manage protected terms files&quot;, &quot;Cancel&quot;, false},</span>
+<span class="fc" id="L143">                new Object[]{false, new String[]{&quot;Options&quot;, &quot;Manage protected terms&quot;}, &quot;Manage protected terms files&quot;, &quot;OK&quot;, false},</span>
+<span class="fc" id="L144">                new Object[]{false, new String[]{&quot;Options&quot;, &quot;Manage protected terms&quot;}, &quot;Manage protected terms files&quot;, &quot;Close button&quot;, true},</span>
+<span class="fc" id="L145">                new Object[]{false, new String[]{&quot;Options&quot;, &quot;Customize key bindings&quot;}, &quot;Key bindings&quot;, &quot;Cancel&quot;, false},</span>
+<span class="fc" id="L146">                new Object[]{false, new String[]{&quot;Options&quot;, &quot;Customize key bindings&quot;}, &quot;Key bindings&quot;, &quot;Close button&quot;, true},</span>
+<span class="fc" id="L147">                new Object[]{false, new String[]{&quot;Help&quot;, &quot;Show error console&quot;}, &quot;Program output&quot;, &quot;OK&quot;, false},</span>
+<span class="fc" id="L148">                new Object[]{false, new String[]{&quot;Help&quot;, &quot;Show error console&quot;}, &quot;Program output&quot;, &quot;Close button&quot;, true},</span>
+<span class="fc" id="L149">                new Object[]{false, new String[]{&quot;Help&quot;, &quot;About JabRef&quot;}, &quot;About JabRef&quot;, &quot;Close button&quot;, true}</span>
+        );
+        // @formatter:on
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

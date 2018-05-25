@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>TransferableEntrySelection.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.groups</a> &gt; <span class="el_source">TransferableEntrySelection.java</span></div><h1>TransferableEntrySelection.java</h1><pre class="source lang-java linenums">package org.jabref.gui.groups;
+
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.Transferable;
+import java.awt.datatransfer.UnsupportedFlavorException;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import org.jabref.model.entry.BibEntry;
+
+public class TransferableEntrySelection implements Transferable {
+
+    public static final DataFlavor FLAVOR_INTERNAL;
+    private static final DataFlavor FLAVOR_EXTERNAL;
+    private static final DataFlavor[] FLAVORS;
+
+    static {
+<span class="nc" id="L22">        DataFlavor df1 = null;</span>
+<span class="nc" id="L23">        DataFlavor df2 = null;</span>
+        try {
+<span class="nc" id="L25">            df1 = new DataFlavor(DataFlavor.javaJVMLocalObjectMimeType</span>
+                    + &quot;;class=org.jabref.gui.groups.TransferableEntrySelection&quot;);
+<span class="nc" id="L27">            df2 = DataFlavor.getTextPlainUnicodeFlavor();</span>
+<span class="nc" id="L28">        } catch (ClassNotFoundException e) {</span>
+            // never happens
+        }
+<span class="nc" id="L31">        FLAVOR_INTERNAL = df1;</span>
+<span class="nc" id="L32">        FLAVOR_EXTERNAL = df2;</span>
+<span class="nc" id="L33">        FLAVORS = new DataFlavor[] {TransferableEntrySelection.FLAVOR_INTERNAL,</span>
+<span class="nc" id="L34">                TransferableEntrySelection.FLAVOR_EXTERNAL};</span>
+<span class="nc" id="L35">    }</span>
+
+    private final List&lt;BibEntry&gt; selectedEntries;
+    private final String selectedEntriesCiteKeys;
+    private boolean includeCiteKeyword;
+
+<span class="nc" id="L41">    public TransferableEntrySelection(List&lt;BibEntry&gt; list) {</span>
+<span class="nc" id="L42">        this.selectedEntries = list;</span>
+<span class="nc" id="L43">        selectedEntriesCiteKeys = String.join(&quot;,&quot;,</span>
+<span class="nc" id="L44">                this.selectedEntries.stream().map(BibEntry::getCiteKeyOptional).filter(Optional::isPresent)</span>
+<span class="nc" id="L45">                        .map(Optional::get).collect(Collectors.toList()));</span>
+<span class="nc" id="L46">    }</span>
+
+    @Override
+    public DataFlavor[] getTransferDataFlavors() {
+<span class="nc" id="L50">        return TransferableEntrySelection.FLAVORS;</span>
+    }
+
+    @Override
+    public boolean isDataFlavorSupported(DataFlavor someFlavor) {
+<span class="nc bnc" id="L55" title="All 2 branches missed.">        return someFlavor.equals(TransferableEntrySelection.FLAVOR_INTERNAL)</span>
+<span class="nc bnc" id="L56" title="All 2 branches missed.">                || someFlavor.equals(TransferableEntrySelection.FLAVOR_EXTERNAL);</span>
+    }
+
+    @Override
+    public Object getTransferData(DataFlavor someFlavor)
+            throws UnsupportedFlavorException, IOException {
+
+<span class="nc bnc" id="L63" title="All 2 branches missed.">        String s = includeCiteKeyword ? &quot;\\cite{&quot; + selectedEntriesCiteKeys + &quot;}&quot; : selectedEntriesCiteKeys;</span>
+
+<span class="nc bnc" id="L65" title="All 2 branches missed.">        if (someFlavor.equals(TransferableEntrySelection.FLAVOR_INTERNAL)) {</span>
+<span class="nc" id="L66">            return this;</span>
+        }
+
+<span class="nc bnc" id="L69" title="All 2 branches missed.">        else if (someFlavor.equals(DataFlavor.getTextPlainUnicodeFlavor())) {</span>
+
+<span class="nc" id="L71">            String charsetName = TransferableEntrySelection.FLAVOR_EXTERNAL.getParameter(&quot;charset&quot;);</span>
+<span class="nc bnc" id="L72" title="All 2 branches missed.">            if (charsetName == null) {</span>
+<span class="nc" id="L73">                charsetName = &quot;&quot;;</span>
+            }
+<span class="nc" id="L75">            Charset charset = Charset.forName(charsetName.trim());</span>
+<span class="nc" id="L76">            return new ByteArrayInputStream(s.getBytes(charset));</span>
+        }
+
+        //The text/plain DataFormat of javafx uses the String.class directly as representative class and no longer an InputStream
+<span class="nc" id="L80">        return s;</span>
+    }
+
+    public List&lt;BibEntry&gt; getSelection() {
+<span class="nc" id="L84">        return selectedEntries;</span>
+    }
+
+    public void setIncludeCiteKeyword(boolean includeCiteKeyword) {
+<span class="nc" id="L88">        this.includeCiteKeyword = includeCiteKeyword;</span>
+<span class="nc" id="L89">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

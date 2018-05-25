@@ -1,0 +1,682 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>AuthorListTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.model.entry</a> &gt; <span class="el_source">AuthorListTest.java</span></div><h1>AuthorListTest.java</h1><pre class="source lang-java linenums">package org.jabref.model.entry;
+
+import java.util.Arrays;
+import java.util.Optional;
+
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+<span class="fc" id="L13">public class AuthorListTest {</span>
+
+    public static int size(String bibtex) {
+<span class="fc" id="L16">        return AuthorList.parse(bibtex).getNumberOfAuthors();</span>
+    }
+
+    @Test
+    public void testFixAuthorNatbib() {
+<span class="fc" id="L21">        assertEquals(&quot;&quot;, AuthorList.fixAuthorNatbib(&quot;&quot;));</span>
+<span class="fc" id="L22">        assertEquals(&quot;Smith&quot;, AuthorList.fixAuthorNatbib(&quot;John Smith&quot;));</span>
+<span class="fc" id="L23">        assertEquals(&quot;Smith and Black Brown&quot;, AuthorList</span>
+<span class="fc" id="L24">                .fixAuthorNatbib(&quot;John Smith and Black Brown, Peter&quot;));</span>
+<span class="fc" id="L25">        assertEquals(&quot;von Neumann et al.&quot;, AuthorList</span>
+<span class="fc" id="L26">                .fixAuthorNatbib(&quot;John von Neumann and John Smith and Black Brown, Peter&quot;));</span>
+
+        // Is not cached!
+<span class="fc" id="L29">        assertTrue(AuthorList</span>
+<span class="fc" id="L30">                .fixAuthorNatbib(&quot;John von Neumann and John Smith and Black Brown, Peter&quot;).equals(AuthorList</span>
+<span class="fc" id="L31">                        .fixAuthorNatbib(&quot;John von Neumann and John Smith and Black Brown, Peter&quot;)));</span>
+
+<span class="fc" id="L33">    }</span>
+
+    @Test
+    public void testGetAuthorList() {
+        // Test caching in authorCache.
+<span class="fc" id="L38">        AuthorList al = AuthorList.parse(&quot;John Smith&quot;);</span>
+<span class="fc" id="L39">        assertEquals(al, AuthorList.parse(&quot;John Smith&quot;));</span>
+<span class="fc" id="L40">        assertFalse(al.equals(AuthorList.parse(&quot;Smith&quot;)));</span>
+<span class="fc" id="L41">    }</span>
+
+    @Test
+    public void testFixAuthorFirstNameFirstCommas() {
+
+        // No Commas
+<span class="fc" id="L47">        assertEquals(&quot;&quot;, AuthorList.fixAuthorFirstNameFirstCommas(&quot;&quot;, true, false));</span>
+<span class="fc" id="L48">        assertEquals(&quot;&quot;, AuthorList.fixAuthorFirstNameFirstCommas(&quot;&quot;, false, false));</span>
+
+<span class="fc" id="L50">        assertEquals(&quot;John Smith&quot;, AuthorList.fixAuthorFirstNameFirstCommas(&quot;John Smith&quot;,</span>
+<span class="fc" id="L51">                false, false));</span>
+<span class="fc" id="L52">        assertEquals(&quot;J. Smith&quot;, AuthorList.fixAuthorFirstNameFirstCommas(&quot;John Smith&quot;, true,</span>
+<span class="fc" id="L53">                false));</span>
+
+        // Check caching
+<span class="fc" id="L56">        assertTrue(AuthorList.fixAuthorFirstNameFirstCommas(</span>
+<span class="fc" id="L57">                &quot;John von Neumann and John Smith and Black Brown, Peter&quot;, true, false).equals(</span>
+                        AuthorList
+<span class="fc" id="L59">                                .fixAuthorFirstNameFirstCommas(&quot;John von Neumann and John Smith and Black Brown, Peter&quot;, true, false)));</span>
+
+<span class="fc" id="L61">        assertEquals(&quot;John Smith and Peter Black Brown&quot;, AuthorList</span>
+<span class="fc" id="L62">                .fixAuthorFirstNameFirstCommas(&quot;John Smith and Black Brown, Peter&quot;, false, false));</span>
+<span class="fc" id="L63">        assertEquals(&quot;J. Smith and P. Black Brown&quot;, AuthorList.fixAuthorFirstNameFirstCommas(</span>
+<span class="fc" id="L64">                &quot;John Smith and Black Brown, Peter&quot;, true, false));</span>
+
+        // Method description is different than code -&gt; additional comma
+        // there
+<span class="fc" id="L68">        assertEquals(&quot;John von Neumann, John Smith and Peter Black Brown&quot;, AuthorList</span>
+<span class="fc" id="L69">                .fixAuthorFirstNameFirstCommas(</span>
+<span class="fc" id="L70">                        &quot;John von Neumann and John Smith and Black Brown, Peter&quot;, false, false));</span>
+<span class="fc" id="L71">        assertEquals(&quot;J. von Neumann, J. Smith and P. Black Brown&quot;, AuthorList</span>
+<span class="fc" id="L72">                .fixAuthorFirstNameFirstCommas(</span>
+<span class="fc" id="L73">                        &quot;John von Neumann and John Smith and Black Brown, Peter&quot;, true, false));</span>
+
+<span class="fc" id="L75">        assertEquals(&quot;J. P. von Neumann&quot;, AuthorList.fixAuthorFirstNameFirstCommas(</span>
+<span class="fc" id="L76">                &quot;John Peter von Neumann&quot;, true, false));</span>
+        // Oxford Commas
+<span class="fc" id="L78">        assertEquals(&quot;&quot;, AuthorList.fixAuthorFirstNameFirstCommas(&quot;&quot;, true, true));</span>
+<span class="fc" id="L79">        assertEquals(&quot;&quot;, AuthorList.fixAuthorFirstNameFirstCommas(&quot;&quot;, false, true));</span>
+
+<span class="fc" id="L81">        assertEquals(&quot;John Smith&quot;, AuthorList.fixAuthorFirstNameFirstCommas(&quot;John Smith&quot;,</span>
+<span class="fc" id="L82">                false, true));</span>
+<span class="fc" id="L83">        assertEquals(&quot;J. Smith&quot;, AuthorList.fixAuthorFirstNameFirstCommas(&quot;John Smith&quot;, true,</span>
+<span class="fc" id="L84">                true));</span>
+
+        // Check caching
+<span class="fc" id="L87">        assertTrue(AuthorList.fixAuthorFirstNameFirstCommas(</span>
+<span class="fc" id="L88">                &quot;John von Neumann and John Smith and Black Brown, Peter&quot;, true, true).equals(</span>
+                        AuthorList
+<span class="fc" id="L90">                                .fixAuthorFirstNameFirstCommas(&quot;John von Neumann and John Smith and Black Brown, Peter&quot;, true, true)));</span>
+
+<span class="fc" id="L92">        assertEquals(&quot;John Smith and Peter Black Brown&quot;, AuthorList</span>
+<span class="fc" id="L93">                .fixAuthorFirstNameFirstCommas(&quot;John Smith and Black Brown, Peter&quot;, false, true));</span>
+<span class="fc" id="L94">        assertEquals(&quot;J. Smith and P. Black Brown&quot;, AuthorList.fixAuthorFirstNameFirstCommas(</span>
+<span class="fc" id="L95">                &quot;John Smith and Black Brown, Peter&quot;, true, true));</span>
+
+        // Method description is different than code -&gt; additional comma
+        // there
+<span class="fc" id="L99">        assertEquals(&quot;John von Neumann, John Smith, and Peter Black Brown&quot;, AuthorList</span>
+<span class="fc" id="L100">                .fixAuthorFirstNameFirstCommas(</span>
+<span class="fc" id="L101">                        &quot;John von Neumann and John Smith and Black Brown, Peter&quot;, false, true));</span>
+<span class="fc" id="L102">        assertEquals(&quot;J. von Neumann, J. Smith, and P. Black Brown&quot;, AuthorList</span>
+<span class="fc" id="L103">                .fixAuthorFirstNameFirstCommas(</span>
+<span class="fc" id="L104">                        &quot;John von Neumann and John Smith and Black Brown, Peter&quot;, true, true));</span>
+
+<span class="fc" id="L106">        assertEquals(&quot;J. P. von Neumann&quot;, AuthorList.fixAuthorFirstNameFirstCommas(</span>
+<span class="fc" id="L107">                &quot;John Peter von Neumann&quot;, true, true));</span>
+
+<span class="fc" id="L109">    }</span>
+
+    @Test
+    public void testFixAuthorFirstNameFirst() {
+<span class="fc" id="L113">        assertEquals(&quot;John Smith&quot;, AuthorList.fixAuthorFirstNameFirst(&quot;John Smith&quot;));</span>
+
+<span class="fc" id="L115">        assertEquals(&quot;John Smith and Peter Black Brown&quot;, AuthorList</span>
+<span class="fc" id="L116">                .fixAuthorFirstNameFirst(&quot;John Smith and Black Brown, Peter&quot;));</span>
+
+<span class="fc" id="L118">        assertEquals(&quot;John von Neumann and John Smith and Peter Black Brown&quot;, AuthorList</span>
+<span class="fc" id="L119">                .fixAuthorFirstNameFirst(&quot;John von Neumann and John Smith and Black Brown, Peter&quot;));</span>
+
+<span class="fc" id="L121">        assertEquals(&quot;First von Last, Jr. III&quot;, AuthorList</span>
+<span class="fc" id="L122">                .fixAuthorFirstNameFirst(&quot;von Last, Jr. III, First&quot;));</span>
+
+        // Check caching
+<span class="fc" id="L125">        assertTrue(AuthorList</span>
+<span class="fc" id="L126">                .fixAuthorFirstNameFirst(&quot;John von Neumann and John Smith and Black Brown, Peter&quot;).equals(AuthorList</span>
+<span class="fc" id="L127">                        .fixAuthorFirstNameFirst(&quot;John von Neumann and John Smith and Black Brown, Peter&quot;)));</span>
+
+<span class="fc" id="L129">    }</span>
+
+    @Test
+    public void testFixAuthorLastNameFirstCommasNoComma() {
+        // No commas before and
+<span class="fc" id="L134">        assertEquals(&quot;&quot;, AuthorList.fixAuthorLastNameFirstCommas(&quot;&quot;, true, false));</span>
+<span class="fc" id="L135">        assertEquals(&quot;&quot;, AuthorList.fixAuthorLastNameFirstCommas(&quot;&quot;, false, false));</span>
+
+<span class="fc" id="L137">        assertEquals(&quot;Smith, John&quot;, AuthorList.fixAuthorLastNameFirstCommas(&quot;John Smith&quot;, false, false));</span>
+<span class="fc" id="L138">        assertEquals(&quot;Smith, J.&quot;, AuthorList.fixAuthorLastNameFirstCommas(&quot;John Smith&quot;, true, false));</span>
+
+<span class="fc" id="L140">        String a = AuthorList.fixAuthorLastNameFirstCommas(&quot;John von Neumann and John Smith and Black Brown, Peter&quot;,</span>
+<span class="fc" id="L141">                true, false);</span>
+<span class="fc" id="L142">        String b = AuthorList.fixAuthorLastNameFirstCommas(</span>
+<span class="fc" id="L143">                &quot;John von Neumann and John Smith and Black Brown, Peter&quot;, true, false);</span>
+
+        // Check caching
+<span class="fc" id="L146">        assertEquals(a, b);</span>
+<span class="fc" id="L147">        assertTrue(a.equals(b));</span>
+
+<span class="fc" id="L149">        assertEquals(&quot;Smith, John and Black Brown, Peter&quot;,</span>
+<span class="fc" id="L150">                AuthorList.fixAuthorLastNameFirstCommas(&quot;John Smith and Black Brown, Peter&quot;, false, false));</span>
+<span class="fc" id="L151">        assertEquals(&quot;Smith, J. and Black Brown, P.&quot;,</span>
+<span class="fc" id="L152">                AuthorList.fixAuthorLastNameFirstCommas(&quot;John Smith and Black Brown, Peter&quot;, true, false));</span>
+
+<span class="fc" id="L154">        assertEquals(&quot;von Neumann, John, Smith, John and Black Brown, Peter&quot;, AuthorList</span>
+<span class="fc" id="L155">                .fixAuthorLastNameFirstCommas(&quot;John von Neumann and John Smith and Black Brown, Peter&quot;, false, false));</span>
+<span class="fc" id="L156">        assertEquals(&quot;von Neumann, J., Smith, J. and Black Brown, P.&quot;, AuthorList</span>
+<span class="fc" id="L157">                .fixAuthorLastNameFirstCommas(&quot;John von Neumann and John Smith and Black Brown, Peter&quot;, true, false));</span>
+
+<span class="fc" id="L159">        assertEquals(&quot;von Neumann, J. P.&quot;,</span>
+<span class="fc" id="L160">                AuthorList.fixAuthorLastNameFirstCommas(&quot;John Peter von Neumann&quot;, true, false));</span>
+<span class="fc" id="L161">    }</span>
+
+    @Test
+    public void testFixAuthorLastNameFirstCommasOxfordComma() {
+        // Oxford Commas
+<span class="fc" id="L166">        assertEquals(&quot;&quot;, AuthorList.fixAuthorLastNameFirstCommas(&quot;&quot;, true, true));</span>
+<span class="fc" id="L167">        assertEquals(&quot;&quot;, AuthorList.fixAuthorLastNameFirstCommas(&quot;&quot;, false, true));</span>
+
+<span class="fc" id="L169">        assertEquals(&quot;Smith, John&quot;, AuthorList.fixAuthorLastNameFirstCommas(&quot;John Smith&quot;,</span>
+<span class="fc" id="L170">                false, true));</span>
+<span class="fc" id="L171">        assertEquals(&quot;Smith, J.&quot;, AuthorList.fixAuthorLastNameFirstCommas(&quot;John Smith&quot;, true,</span>
+<span class="fc" id="L172">                true));</span>
+
+<span class="fc" id="L174">        String a = AuthorList.fixAuthorLastNameFirstCommas(</span>
+<span class="fc" id="L175">                &quot;John von Neumann and John Smith and Black Brown, Peter&quot;, true, true);</span>
+<span class="fc" id="L176">        String b = AuthorList.fixAuthorLastNameFirstCommas(&quot;John von Neumann and John Smith and Black Brown, Peter&quot;, true, true);</span>
+
+        // Check caching
+<span class="fc" id="L179">        assertEquals(a, b);</span>
+<span class="fc" id="L180">        assertTrue(a.equals(b));</span>
+
+<span class="fc" id="L182">        assertEquals(&quot;Smith, John and Black Brown, Peter&quot;, AuthorList</span>
+<span class="fc" id="L183">                .fixAuthorLastNameFirstCommas(&quot;John Smith and Black Brown, Peter&quot;, false, true));</span>
+<span class="fc" id="L184">        assertEquals(&quot;Smith, J. and Black Brown, P.&quot;, AuthorList.fixAuthorLastNameFirstCommas(</span>
+<span class="fc" id="L185">                &quot;John Smith and Black Brown, Peter&quot;, true, true));</span>
+
+<span class="fc" id="L187">        assertEquals(&quot;von Neumann, John, Smith, John, and Black Brown, Peter&quot;, AuthorList</span>
+<span class="fc" id="L188">                .fixAuthorLastNameFirstCommas(</span>
+<span class="fc" id="L189">                        &quot;John von Neumann and John Smith and Black Brown, Peter&quot;, false, true));</span>
+<span class="fc" id="L190">        assertEquals(&quot;von Neumann, J., Smith, J., and Black Brown, P.&quot;, AuthorList</span>
+<span class="fc" id="L191">                .fixAuthorLastNameFirstCommas(</span>
+<span class="fc" id="L192">                        &quot;John von Neumann and John Smith and Black Brown, Peter&quot;, true, true));</span>
+
+<span class="fc" id="L194">        assertEquals(&quot;von Neumann, J. P.&quot;, AuthorList.fixAuthorLastNameFirstCommas(</span>
+<span class="fc" id="L195">                &quot;John Peter von Neumann&quot;, true, true));</span>
+<span class="fc" id="L196">    }</span>
+
+    @Test
+    public void testFixAuthorLastNameFirst() {
+
+        // Test helper method
+
+<span class="fc" id="L203">        assertEquals(&quot;Smith, John&quot;, AuthorList.fixAuthorLastNameFirst(&quot;John Smith&quot;));</span>
+
+<span class="fc" id="L205">        assertEquals(&quot;Smith, John and Black Brown, Peter&quot;, AuthorList</span>
+<span class="fc" id="L206">                .fixAuthorLastNameFirst(&quot;John Smith and Black Brown, Peter&quot;));</span>
+
+<span class="fc" id="L208">        assertEquals(&quot;von Neumann, John and Smith, John and Black Brown, Peter&quot;, AuthorList</span>
+<span class="fc" id="L209">                .fixAuthorLastNameFirst(&quot;John von Neumann and John Smith and Black Brown, Peter&quot;));</span>
+
+<span class="fc" id="L211">        assertEquals(&quot;von Last, Jr, First&quot;, AuthorList</span>
+<span class="fc" id="L212">                .fixAuthorLastNameFirst(&quot;von Last, Jr ,First&quot;));</span>
+
+<span class="fc" id="L214">        assertTrue(AuthorList</span>
+<span class="fc" id="L215">                .fixAuthorLastNameFirst(&quot;John von Neumann and John Smith and Black Brown, Peter&quot;).equals(AuthorList</span>
+<span class="fc" id="L216">                        .fixAuthorLastNameFirst(&quot;John von Neumann and John Smith and Black Brown, Peter&quot;)));</span>
+
+        // Test Abbreviation == false
+<span class="fc" id="L219">        assertEquals(&quot;Smith, John&quot;, AuthorList.fixAuthorLastNameFirst(&quot;John Smith&quot;, false));</span>
+
+<span class="fc" id="L221">        assertEquals(&quot;Smith, John and Black Brown, Peter&quot;, AuthorList.fixAuthorLastNameFirst(</span>
+<span class="fc" id="L222">                &quot;John Smith and Black Brown, Peter&quot;, false));</span>
+
+<span class="fc" id="L224">        assertEquals(&quot;von Neumann, John and Smith, John and Black Brown, Peter&quot;, AuthorList</span>
+<span class="fc" id="L225">                .fixAuthorLastNameFirst(&quot;John von Neumann and John Smith and Black Brown, Peter&quot;,</span>
+<span class="fc" id="L226">                        false));</span>
+
+<span class="fc" id="L228">        assertEquals(&quot;von Last, Jr, First&quot;, AuthorList.fixAuthorLastNameFirst(</span>
+<span class="fc" id="L229">                &quot;von Last, Jr ,First&quot;, false));</span>
+
+<span class="fc" id="L231">        assertTrue(AuthorList.fixAuthorLastNameFirst(</span>
+<span class="fc" id="L232">                &quot;John von Neumann and John Smith and Black Brown, Peter&quot;, false).equals(</span>
+                        AuthorList
+<span class="fc" id="L234">                                .fixAuthorLastNameFirst(&quot;John von Neumann and John Smith and Black Brown, Peter&quot;, false)));</span>
+
+        // Test Abbreviate == true
+<span class="fc" id="L237">        assertEquals(&quot;Smith, J.&quot;, AuthorList.fixAuthorLastNameFirst(&quot;John Smith&quot;, true));</span>
+
+<span class="fc" id="L239">        assertEquals(&quot;Smith, J. and Black Brown, P.&quot;, AuthorList.fixAuthorLastNameFirst(</span>
+<span class="fc" id="L240">                &quot;John Smith and Black Brown, Peter&quot;, true));</span>
+
+<span class="fc" id="L242">        assertEquals(&quot;von Neumann, J. and Smith, J. and Black Brown, P.&quot;,</span>
+<span class="fc" id="L243">                AuthorList.fixAuthorLastNameFirst(</span>
+<span class="fc" id="L244">                        &quot;John von Neumann and John Smith and Black Brown, Peter&quot;, true));</span>
+
+<span class="fc" id="L246">        assertEquals(&quot;von Last, Jr, F.&quot;, AuthorList.fixAuthorLastNameFirst(&quot;von Last, Jr ,First&quot;,</span>
+<span class="fc" id="L247">                true));</span>
+
+<span class="fc" id="L249">        assertTrue(AuthorList.fixAuthorLastNameFirst(</span>
+<span class="fc" id="L250">                &quot;John von Neumann and John Smith and Black Brown, Peter&quot;, true).equals(</span>
+                        AuthorList
+<span class="fc" id="L252">                                .fixAuthorLastNameFirst(&quot;John von Neumann and John Smith and Black Brown, Peter&quot;, true)));</span>
+
+<span class="fc" id="L254">    }</span>
+
+    @Test
+    public void testFixAuthorLastNameOnlyCommas() {
+
+        // No comma before and
+<span class="fc" id="L260">        assertEquals(&quot;&quot;, AuthorList.fixAuthorLastNameOnlyCommas(&quot;&quot;, false));</span>
+<span class="fc" id="L261">        assertEquals(&quot;Smith&quot;, AuthorList.fixAuthorLastNameOnlyCommas(&quot;John Smith&quot;, false));</span>
+<span class="fc" id="L262">        assertEquals(&quot;Smith&quot;, AuthorList.fixAuthorLastNameOnlyCommas(&quot;Smith, Jr, John&quot;, false));</span>
+
+<span class="fc" id="L264">        assertTrue(AuthorList.fixAuthorLastNameOnlyCommas(</span>
+<span class="fc" id="L265">                &quot;John von Neumann and John Smith and Black Brown, Peter&quot;, false).equals(</span>
+                        AuthorList
+<span class="fc" id="L267">                                .fixAuthorLastNameOnlyCommas(&quot;John von Neumann and John Smith and Black Brown, Peter&quot;, false)));</span>
+
+<span class="fc" id="L269">        assertEquals(&quot;von Neumann, Smith and Black Brown&quot;, AuthorList</span>
+<span class="fc" id="L270">                .fixAuthorLastNameOnlyCommas(</span>
+<span class="fc" id="L271">                        &quot;John von Neumann and John Smith and Black Brown, Peter&quot;, false));</span>
+        // Oxford Comma
+<span class="fc" id="L273">        assertEquals(&quot;&quot;, AuthorList.fixAuthorLastNameOnlyCommas(&quot;&quot;, true));</span>
+<span class="fc" id="L274">        assertEquals(&quot;Smith&quot;, AuthorList.fixAuthorLastNameOnlyCommas(&quot;John Smith&quot;, true));</span>
+<span class="fc" id="L275">        assertEquals(&quot;Smith&quot;, AuthorList.fixAuthorLastNameOnlyCommas(&quot;Smith, Jr, John&quot;, true));</span>
+
+<span class="fc" id="L277">        assertTrue(AuthorList.fixAuthorLastNameOnlyCommas(</span>
+<span class="fc" id="L278">                &quot;John von Neumann and John Smith and Black Brown, Peter&quot;, true).equals(</span>
+                        AuthorList
+<span class="fc" id="L280">                                .fixAuthorLastNameOnlyCommas(&quot;John von Neumann and John Smith and Black Brown, Peter&quot;, true)));</span>
+
+<span class="fc" id="L282">        assertEquals(&quot;von Neumann, Smith, and Black Brown&quot;, AuthorList</span>
+<span class="fc" id="L283">                .fixAuthorLastNameOnlyCommas(</span>
+<span class="fc" id="L284">                        &quot;John von Neumann and John Smith and Black Brown, Peter&quot;, true));</span>
+<span class="fc" id="L285">    }</span>
+
+    @Test
+    public void testFixAuthorForAlphabetization() {
+<span class="fc" id="L289">        assertEquals(&quot;Smith, J.&quot;, AuthorList.fixAuthorForAlphabetization(&quot;John Smith&quot;));</span>
+<span class="fc" id="L290">        assertEquals(&quot;Neumann, J.&quot;, AuthorList.fixAuthorForAlphabetization(&quot;John von Neumann&quot;));</span>
+<span class="fc" id="L291">        assertEquals(&quot;Neumann, J.&quot;, AuthorList.fixAuthorForAlphabetization(&quot;J. von Neumann&quot;));</span>
+<span class="fc" id="L292">        assertEquals(</span>
+<span class="fc" id="L293">                &quot;Neumann, J. and Smith, J. and Black Brown, Jr., P.&quot;,</span>
+                AuthorList
+<span class="fc" id="L295">                        .fixAuthorForAlphabetization(&quot;John von Neumann and John Smith and de Black Brown, Jr., Peter&quot;));</span>
+<span class="fc" id="L296">    }</span>
+
+    @Test
+    public void testSize() {
+
+<span class="fc" id="L301">        assertEquals(0, AuthorListTest.size(&quot;&quot;));</span>
+<span class="fc" id="L302">        assertEquals(1, AuthorListTest.size(&quot;Bar&quot;));</span>
+<span class="fc" id="L303">        assertEquals(1, AuthorListTest.size(&quot;Foo Bar&quot;));</span>
+<span class="fc" id="L304">        assertEquals(1, AuthorListTest.size(&quot;Foo von Bar&quot;));</span>
+<span class="fc" id="L305">        assertEquals(1, AuthorListTest.size(&quot;von Bar, Foo&quot;));</span>
+<span class="fc" id="L306">        assertEquals(1, AuthorListTest.size(&quot;Bar, Foo&quot;));</span>
+<span class="fc" id="L307">        assertEquals(1, AuthorListTest.size(&quot;Bar, Jr., Foo&quot;));</span>
+<span class="fc" id="L308">        assertEquals(1, AuthorListTest.size(&quot;Bar, Foo&quot;));</span>
+<span class="fc" id="L309">        assertEquals(2, AuthorListTest.size(&quot;John Neumann and Foo Bar&quot;));</span>
+<span class="fc" id="L310">        assertEquals(2, AuthorListTest.size(&quot;John von Neumann and Bar, Jr, Foo&quot;));</span>
+
+<span class="fc" id="L312">        assertEquals(3, AuthorListTest.size(&quot;John von Neumann and John Smith and Black Brown, Peter&quot;));</span>
+
+<span class="fc" id="L314">        StringBuilder s = new StringBuilder(&quot;John von Neumann&quot;);</span>
+<span class="fc bfc" id="L315" title="All 2 branches covered.">        for (int i = 0; i &lt; 25; i++) {</span>
+<span class="fc" id="L316">            assertEquals(i + 1, AuthorListTest.size(s.toString()));</span>
+<span class="fc" id="L317">            s.append(&quot; and Albert Einstein&quot;);</span>
+        }
+<span class="fc" id="L319">    }</span>
+
+    @Test
+    public void testIsEmpty() {
+<span class="fc" id="L323">        assertTrue(AuthorList.parse(&quot;&quot;).isEmpty());</span>
+<span class="fc" id="L324">        assertFalse(AuthorList.parse(&quot;Bar&quot;).isEmpty());</span>
+<span class="fc" id="L325">    }</span>
+
+    @Test
+    public void testGetEmptyAuthor() {
+<span class="pc" id="L329">        assertThrows(Exception.class, () -&gt; AuthorList.parse(&quot;&quot;).getAuthor(0));</span>
+<span class="fc" id="L330">    }</span>
+
+    @Test
+    public void testGetAuthor() {
+
+<span class="fc" id="L335">        Author author = AuthorList.parse(&quot;John Smith and von Neumann, Jr, John&quot;).getAuthor(0);</span>
+<span class="fc" id="L336">        assertEquals(Optional.of(&quot;John&quot;), author.getFirst());</span>
+<span class="fc" id="L337">        assertEquals(Optional.of(&quot;J.&quot;), author.getFirstAbbr());</span>
+<span class="fc" id="L338">        assertEquals(&quot;John Smith&quot;, author.getFirstLast(false));</span>
+<span class="fc" id="L339">        assertEquals(&quot;J. Smith&quot;, author.getFirstLast(true));</span>
+<span class="fc" id="L340">        assertEquals(Optional.empty(), author.getJr());</span>
+<span class="fc" id="L341">        assertEquals(Optional.of(&quot;Smith&quot;), author.getLast());</span>
+<span class="fc" id="L342">        assertEquals(&quot;Smith, John&quot;, author.getLastFirst(false));</span>
+<span class="fc" id="L343">        assertEquals(&quot;Smith, J.&quot;, author.getLastFirst(true));</span>
+<span class="fc" id="L344">        assertEquals(&quot;Smith&quot;, author.getLastOnly());</span>
+<span class="fc" id="L345">        assertEquals(&quot;Smith, J.&quot;, author.getNameForAlphabetization());</span>
+<span class="fc" id="L346">        assertEquals(Optional.empty(), author.getVon());</span>
+
+<span class="fc" id="L348">        author = AuthorList.parse(&quot;Peter Black Brown&quot;).getAuthor(0);</span>
+<span class="fc" id="L349">        assertEquals(Optional.of(&quot;Peter Black&quot;), author.getFirst());</span>
+<span class="fc" id="L350">        assertEquals(Optional.of(&quot;P. B.&quot;), author.getFirstAbbr());</span>
+<span class="fc" id="L351">        assertEquals(&quot;Peter Black Brown&quot;, author.getFirstLast(false));</span>
+<span class="fc" id="L352">        assertEquals(&quot;P. B. Brown&quot;, author.getFirstLast(true));</span>
+<span class="fc" id="L353">        assertEquals(Optional.empty(), author.getJr());</span>
+<span class="fc" id="L354">        assertEquals(Optional.empty(), author.getVon());</span>
+
+<span class="fc" id="L356">        author = AuthorList.parse(&quot;John Smith and von Neumann, Jr, John&quot;).getAuthor(1);</span>
+<span class="fc" id="L357">        assertEquals(Optional.of(&quot;John&quot;), author.getFirst());</span>
+<span class="fc" id="L358">        assertEquals(Optional.of(&quot;J.&quot;), author.getFirstAbbr());</span>
+<span class="fc" id="L359">        assertEquals(&quot;John von Neumann, Jr&quot;, author.getFirstLast(false));</span>
+<span class="fc" id="L360">        assertEquals(&quot;J. von Neumann, Jr&quot;, author.getFirstLast(true));</span>
+<span class="fc" id="L361">        assertEquals(Optional.of(&quot;Jr&quot;), author.getJr());</span>
+<span class="fc" id="L362">        assertEquals(Optional.of(&quot;Neumann&quot;), author.getLast());</span>
+<span class="fc" id="L363">        assertEquals(&quot;von Neumann, Jr, John&quot;, author.getLastFirst(false));</span>
+<span class="fc" id="L364">        assertEquals(&quot;von Neumann, Jr, J.&quot;, author.getLastFirst(true));</span>
+<span class="fc" id="L365">        assertEquals(&quot;von Neumann&quot;, author.getLastOnly());</span>
+<span class="fc" id="L366">        assertEquals(&quot;Neumann, Jr, J.&quot;, author.getNameForAlphabetization());</span>
+<span class="fc" id="L367">        assertEquals(Optional.of(&quot;von&quot;), author.getVon());</span>
+
+<span class="fc" id="L369">    }</span>
+
+    @Test
+    public void testCompanyAuthor() {
+<span class="fc" id="L373">        Author author = AuthorList.parse(&quot;{JabRef Developers}&quot;).getAuthor(0);</span>
+<span class="fc" id="L374">        Author expected = new Author(null, null, null, &quot;JabRef Developers&quot;, null);</span>
+<span class="fc" id="L375">        assertEquals(expected, author);</span>
+<span class="fc" id="L376">    }</span>
+
+    @Test
+    public void testCompanyAuthorAndPerson() {
+<span class="fc" id="L380">        Author company = new Author(null, null, null, &quot;JabRef Developers&quot;, null);</span>
+<span class="fc" id="L381">        Author person = new Author(&quot;Stefan&quot;, &quot;S.&quot;, null, &quot;Kolb&quot;, null);</span>
+<span class="fc" id="L382">        assertEquals(Arrays.asList(company, person), AuthorList.parse(&quot;{JabRef Developers} and Stefan Kolb&quot;).getAuthors());</span>
+<span class="fc" id="L383">    }</span>
+
+    @Test
+    public void testCompanyAuthorWithLowerCaseWord() {
+<span class="fc" id="L387">        Author author = AuthorList.parse(&quot;{JabRef Developers on Fire}&quot;).getAuthor(0);</span>
+<span class="fc" id="L388">        Author expected = new Author(null, null, null, &quot;JabRef Developers on Fire&quot;, null);</span>
+<span class="fc" id="L389">        assertEquals(expected, author);</span>
+<span class="fc" id="L390">    }</span>
+
+    @Test
+    public void testAbbreviationWithRelax() {
+<span class="fc" id="L394">        Author author = AuthorList.parse(&quot;{\\relax Ch}ristoph Cholera&quot;).getAuthor(0);</span>
+<span class="fc" id="L395">        Author expected = new Author(&quot;{\\relax Ch}ristoph&quot;, &quot;{\\relax Ch}.&quot;, null, &quot;Cholera&quot;, null);</span>
+<span class="fc" id="L396">        assertEquals(expected, author);</span>
+<span class="fc" id="L397">    }</span>
+
+    @Test
+    public void testGetAuthorsNatbib() {
+<span class="fc" id="L401">        assertEquals(&quot;&quot;, AuthorList.parse(&quot;&quot;).getAsNatbib());</span>
+<span class="fc" id="L402">        assertEquals(&quot;Smith&quot;, AuthorList.parse(&quot;John Smith&quot;).getAsNatbib());</span>
+<span class="fc" id="L403">        assertEquals(&quot;Smith and Black Brown&quot;, AuthorList.parse(</span>
+<span class="fc" id="L404">                &quot;John Smith and Black Brown, Peter&quot;).getAsNatbib());</span>
+<span class="fc" id="L405">        assertEquals(&quot;von Neumann et al.&quot;, AuthorList.parse(</span>
+<span class="fc" id="L406">                &quot;John von Neumann and John Smith and Black Brown, Peter&quot;).getAsNatbib());</span>
+
+        /*
+         * [ 1465610 ] (Double-)Names containing hyphen (-) not handled correctly
+         */
+<span class="fc" id="L411">        assertEquals(&quot;Last-Name et al.&quot;, AuthorList.parse(</span>
+<span class="fc" id="L412">                &quot;First Second Last-Name&quot; + &quot; and John Smith and Black Brown, Peter&quot;).getAsNatbib());</span>
+
+        // Test caching
+<span class="fc" id="L415">        AuthorList al = AuthorList</span>
+<span class="fc" id="L416">                .parse(&quot;John von Neumann and John Smith and Black Brown, Peter&quot;);</span>
+<span class="fc" id="L417">        assertTrue(al.getAsNatbib().equals(al.getAsNatbib()));</span>
+<span class="fc" id="L418">    }</span>
+
+    @Test
+    public void testGetAuthorsLastOnly() {
+
+        // No comma before and
+<span class="fc" id="L424">        assertEquals(&quot;&quot;, AuthorList.parse(&quot;&quot;).getAsLastNames(false));</span>
+<span class="fc" id="L425">        assertEquals(&quot;Smith&quot;, AuthorList.parse(&quot;John Smith&quot;).getAsLastNames(false));</span>
+<span class="fc" id="L426">        assertEquals(&quot;Smith&quot;, AuthorList.parse(&quot;Smith, Jr, John&quot;).getAsLastNames(</span>
+<span class="fc" id="L427">                false));</span>
+
+<span class="fc" id="L429">        assertEquals(&quot;von Neumann, Smith and Black Brown&quot;, AuthorList.parse(</span>
+<span class="fc" id="L430">                &quot;John von Neumann and John Smith and Black Brown, Peter&quot;).getAsLastNames(false));</span>
+        // Oxford comma
+<span class="fc" id="L432">        assertEquals(&quot;&quot;, AuthorList.parse(&quot;&quot;).getAsLastNames(true));</span>
+<span class="fc" id="L433">        assertEquals(&quot;Smith&quot;, AuthorList.parse(&quot;John Smith&quot;).getAsLastNames(true));</span>
+<span class="fc" id="L434">        assertEquals(&quot;Smith&quot;, AuthorList.parse(&quot;Smith, Jr, John&quot;).getAsLastNames(</span>
+<span class="fc" id="L435">                true));</span>
+
+<span class="fc" id="L437">        assertEquals(&quot;von Neumann, Smith, and Black Brown&quot;, AuthorList.parse(</span>
+<span class="fc" id="L438">                &quot;John von Neumann and John Smith and Black Brown, Peter&quot;).getAsLastNames(true));</span>
+
+<span class="fc" id="L440">        assertEquals(&quot;von Neumann and Smith&quot;,</span>
+<span class="fc" id="L441">                AuthorList.parse(&quot;John von Neumann and John Smith&quot;).getAsLastNames(false));</span>
+<span class="fc" id="L442">    }</span>
+
+    @Test
+    public void testGetAuthorsLastFirstNoComma() {
+        // No commas before and
+        AuthorList al;
+
+<span class="fc" id="L449">        al = AuthorList.parse(&quot;&quot;);</span>
+<span class="fc" id="L450">        assertEquals(&quot;&quot;, al.getAsLastFirstNames(true, false));</span>
+<span class="fc" id="L451">        assertEquals(&quot;&quot;, al.getAsLastFirstNames(false, false));</span>
+
+<span class="fc" id="L453">        al = AuthorList.parse(&quot;John Smith&quot;);</span>
+<span class="fc" id="L454">        assertEquals(&quot;Smith, John&quot;, al.getAsLastFirstNames(false, false));</span>
+<span class="fc" id="L455">        assertEquals(&quot;Smith, J.&quot;, al.getAsLastFirstNames(true, false));</span>
+
+<span class="fc" id="L457">        al = AuthorList.parse(&quot;John Smith and Black Brown, Peter&quot;);</span>
+<span class="fc" id="L458">        assertEquals(&quot;Smith, John and Black Brown, Peter&quot;, al.getAsLastFirstNames(false, false));</span>
+<span class="fc" id="L459">        assertEquals(&quot;Smith, J. and Black Brown, P.&quot;, al.getAsLastFirstNames(true, false));</span>
+
+<span class="fc" id="L461">        al = AuthorList.parse(&quot;John von Neumann and John Smith and Black Brown, Peter&quot;);</span>
+        // Method description is different than code -&gt; additional comma
+        // there
+<span class="fc" id="L464">        assertEquals(&quot;von Neumann, John, Smith, John and Black Brown, Peter&quot;,</span>
+<span class="fc" id="L465">                al.getAsLastFirstNames(false, false));</span>
+<span class="fc" id="L466">        assertEquals(&quot;von Neumann, J., Smith, J. and Black Brown, P.&quot;, al.getAsLastFirstNames(true, false));</span>
+
+<span class="fc" id="L468">        al = AuthorList.parse(&quot;John Peter von Neumann&quot;);</span>
+<span class="fc" id="L469">        assertEquals(&quot;von Neumann, J. P.&quot;, al.getAsLastFirstNames(true, false));</span>
+<span class="fc" id="L470">    }</span>
+
+    @Test
+    public void testGetAuthorsLastFirstOxfordComma() {
+        // Oxford comma
+        AuthorList al;
+
+<span class="fc" id="L477">        al = AuthorList.parse(&quot;&quot;);</span>
+<span class="fc" id="L478">        assertEquals(&quot;&quot;, al.getAsLastFirstNames(true, true));</span>
+<span class="fc" id="L479">        assertEquals(&quot;&quot;, al.getAsLastFirstNames(false, true));</span>
+
+<span class="fc" id="L481">        al = AuthorList.parse(&quot;John Smith&quot;);</span>
+<span class="fc" id="L482">        assertEquals(&quot;Smith, John&quot;, al.getAsLastFirstNames(false, true));</span>
+<span class="fc" id="L483">        assertEquals(&quot;Smith, J.&quot;, al.getAsLastFirstNames(true, true));</span>
+
+<span class="fc" id="L485">        al = AuthorList.parse(&quot;John Smith and Black Brown, Peter&quot;);</span>
+<span class="fc" id="L486">        assertEquals(&quot;Smith, John and Black Brown, Peter&quot;, al.getAsLastFirstNames(false, true));</span>
+<span class="fc" id="L487">        assertEquals(&quot;Smith, J. and Black Brown, P.&quot;, al.getAsLastFirstNames(true, true));</span>
+
+<span class="fc" id="L489">        al = AuthorList.parse(&quot;John von Neumann and John Smith and Black Brown, Peter&quot;);</span>
+<span class="fc" id="L490">        assertEquals(&quot;von Neumann, John, Smith, John, and Black Brown, Peter&quot;, al</span>
+<span class="fc" id="L491">                .getAsLastFirstNames(false, true));</span>
+<span class="fc" id="L492">        assertEquals(&quot;von Neumann, J., Smith, J., and Black Brown, P.&quot;, al.getAsLastFirstNames(</span>
+<span class="fc" id="L493">                true, true));</span>
+
+<span class="fc" id="L495">        al = AuthorList.parse(&quot;John Peter von Neumann&quot;);</span>
+<span class="fc" id="L496">        assertEquals(&quot;von Neumann, J. P.&quot;, al.getAsLastFirstNames(true, true));</span>
+<span class="fc" id="L497">    }</span>
+
+    @Test
+    public void testGetAuthorsLastFirstAnds() {
+<span class="fc" id="L501">        assertEquals(&quot;Smith, John&quot;, AuthorList.parse(&quot;John Smith&quot;).getAsLastFirstNamesWithAnd(</span>
+<span class="fc" id="L502">                false));</span>
+<span class="fc" id="L503">        assertEquals(&quot;Smith, John and Black Brown, Peter&quot;, AuthorList.parse(</span>
+<span class="fc" id="L504">                &quot;John Smith and Black Brown, Peter&quot;).getAsLastFirstNamesWithAnd(false));</span>
+<span class="fc" id="L505">        assertEquals(&quot;von Neumann, John and Smith, John and Black Brown, Peter&quot;, AuthorList</span>
+<span class="fc" id="L506">                .parse(&quot;John von Neumann and John Smith and Black Brown, Peter&quot;)</span>
+<span class="fc" id="L507">                .getAsLastFirstNamesWithAnd(false));</span>
+<span class="fc" id="L508">        assertEquals(&quot;von Last, Jr, First&quot;, AuthorList.parse(&quot;von Last, Jr ,First&quot;)</span>
+<span class="fc" id="L509">                .getAsLastFirstNamesWithAnd(false));</span>
+
+<span class="fc" id="L511">        assertEquals(&quot;Smith, J.&quot;, AuthorList.parse(&quot;John Smith&quot;).getAsLastFirstNamesWithAnd(</span>
+<span class="fc" id="L512">                true));</span>
+<span class="fc" id="L513">        assertEquals(&quot;Smith, J. and Black Brown, P.&quot;, AuthorList.parse(</span>
+<span class="fc" id="L514">                &quot;John Smith and Black Brown, Peter&quot;).getAsLastFirstNamesWithAnd(true));</span>
+<span class="fc" id="L515">        assertEquals(&quot;von Neumann, J. and Smith, J. and Black Brown, P.&quot;, AuthorList.parse(</span>
+<span class="fc" id="L516">                &quot;John von Neumann and John Smith and Black Brown, Peter&quot;).getAsLastFirstNamesWithAnd(true));</span>
+<span class="fc" id="L517">        assertEquals(&quot;von Last, Jr, F.&quot;, AuthorList.parse(&quot;von Last, Jr ,First&quot;)</span>
+<span class="fc" id="L518">                .getAsLastFirstNamesWithAnd(true));</span>
+
+<span class="fc" id="L520">    }</span>
+
+    @Test
+    public void testGetAuthorsLastFirstAndsCaching() {
+        // getAsLastFirstNamesWithAnd caches its results, therefore we call the method twice using the same arguments
+<span class="fc" id="L525">        assertEquals(&quot;Smith, John&quot;, AuthorList.parse(&quot;John Smith&quot;).getAsLastFirstNamesWithAnd(false));</span>
+<span class="fc" id="L526">        assertEquals(&quot;Smith, John&quot;, AuthorList.parse(&quot;John Smith&quot;).getAsLastFirstNamesWithAnd(false));</span>
+<span class="fc" id="L527">        assertEquals(&quot;Smith, J.&quot;, AuthorList.parse(&quot;John Smith&quot;).getAsLastFirstNamesWithAnd(true));</span>
+<span class="fc" id="L528">        assertEquals(&quot;Smith, J.&quot;, AuthorList.parse(&quot;John Smith&quot;).getAsLastFirstNamesWithAnd(true));</span>
+<span class="fc" id="L529">    }</span>
+
+    @Test
+    public void testGetAuthorsFirstFirst() {
+
+        AuthorList al;
+
+<span class="fc" id="L536">        al = AuthorList.parse(&quot;&quot;);</span>
+<span class="fc" id="L537">        assertEquals(&quot;&quot;, al.getAsFirstLastNames(true, false));</span>
+<span class="fc" id="L538">        assertEquals(&quot;&quot;, al.getAsFirstLastNames(false, false));</span>
+<span class="fc" id="L539">        assertEquals(&quot;&quot;, al.getAsFirstLastNames(true, true));</span>
+<span class="fc" id="L540">        assertEquals(&quot;&quot;, al.getAsFirstLastNames(false, true));</span>
+
+<span class="fc" id="L542">        al = AuthorList.parse(&quot;John Smith&quot;);</span>
+<span class="fc" id="L543">        assertEquals(&quot;John Smith&quot;, al.getAsFirstLastNames(false, false));</span>
+<span class="fc" id="L544">        assertEquals(&quot;J. Smith&quot;, al.getAsFirstLastNames(true, false));</span>
+<span class="fc" id="L545">        assertEquals(&quot;John Smith&quot;, al.getAsFirstLastNames(false, true));</span>
+<span class="fc" id="L546">        assertEquals(&quot;J. Smith&quot;, al.getAsFirstLastNames(true, true));</span>
+
+<span class="fc" id="L548">        al = AuthorList.parse(&quot;John Smith and Black Brown, Peter&quot;);</span>
+<span class="fc" id="L549">        assertEquals(&quot;John Smith and Peter Black Brown&quot;, al.getAsFirstLastNames(false, false));</span>
+<span class="fc" id="L550">        assertEquals(&quot;J. Smith and P. Black Brown&quot;, al.getAsFirstLastNames(true, false));</span>
+<span class="fc" id="L551">        assertEquals(&quot;John Smith and Peter Black Brown&quot;, al.getAsFirstLastNames(false, true));</span>
+<span class="fc" id="L552">        assertEquals(&quot;J. Smith and P. Black Brown&quot;, al.getAsFirstLastNames(true, true));</span>
+
+<span class="fc" id="L554">        al = AuthorList.parse(&quot;John von Neumann and John Smith and Black Brown, Peter&quot;);</span>
+<span class="fc" id="L555">        assertEquals(&quot;John von Neumann, John Smith and Peter Black Brown&quot;, al.getAsFirstLastNames(</span>
+<span class="fc" id="L556">                false, false));</span>
+<span class="fc" id="L557">        assertEquals(&quot;J. von Neumann, J. Smith and P. Black Brown&quot;, al.getAsFirstLastNames(true,</span>
+<span class="fc" id="L558">                false));</span>
+<span class="fc" id="L559">        assertEquals(&quot;John von Neumann, John Smith, and Peter Black Brown&quot;, al</span>
+<span class="fc" id="L560">                .getAsFirstLastNames(false, true));</span>
+<span class="fc" id="L561">        assertEquals(&quot;J. von Neumann, J. Smith, and P. Black Brown&quot;, al.getAsFirstLastNames(true,</span>
+<span class="fc" id="L562">                true));</span>
+
+<span class="fc" id="L564">        al = AuthorList.parse(&quot;John Peter von Neumann&quot;);</span>
+<span class="fc" id="L565">        assertEquals(&quot;John Peter von Neumann&quot;, al.getAsFirstLastNames(false, false));</span>
+<span class="fc" id="L566">        assertEquals(&quot;John Peter von Neumann&quot;, al.getAsFirstLastNames(false, true));</span>
+<span class="fc" id="L567">        assertEquals(&quot;J. P. von Neumann&quot;, al.getAsFirstLastNames(true, false));</span>
+<span class="fc" id="L568">        assertEquals(&quot;J. P. von Neumann&quot;, al.getAsFirstLastNames(true, true));</span>
+<span class="fc" id="L569">    }</span>
+
+    @Test
+    public void testGetAuthorsFirstFirstAnds() {
+<span class="fc" id="L573">        assertEquals(&quot;John Smith&quot;, AuthorList.parse(&quot;John Smith&quot;)</span>
+<span class="fc" id="L574">                .getAsFirstLastNamesWithAnd());</span>
+<span class="fc" id="L575">        assertEquals(&quot;John Smith and Peter Black Brown&quot;, AuthorList.parse(</span>
+<span class="fc" id="L576">                &quot;John Smith and Black Brown, Peter&quot;).getAsFirstLastNamesWithAnd());</span>
+<span class="fc" id="L577">        assertEquals(&quot;John von Neumann and John Smith and Peter Black Brown&quot;, AuthorList</span>
+<span class="fc" id="L578">                .parse(&quot;John von Neumann and John Smith and Black Brown, Peter&quot;)</span>
+<span class="fc" id="L579">                .getAsFirstLastNamesWithAnd());</span>
+<span class="fc" id="L580">        assertEquals(&quot;First von Last, Jr. III&quot;, AuthorList</span>
+<span class="fc" id="L581">                .parse(&quot;von Last, Jr. III, First&quot;).getAsFirstLastNamesWithAnd());</span>
+<span class="fc" id="L582">    }</span>
+
+    @Test
+    public void testGetAuthorsForAlphabetization() {
+<span class="fc" id="L586">        assertEquals(&quot;Smith, J.&quot;, AuthorList.parse(&quot;John Smith&quot;)</span>
+<span class="fc" id="L587">                .getForAlphabetization());</span>
+<span class="fc" id="L588">        assertEquals(&quot;Neumann, J.&quot;, AuthorList.parse(&quot;John von Neumann&quot;)</span>
+<span class="fc" id="L589">                .getForAlphabetization());</span>
+<span class="fc" id="L590">        assertEquals(&quot;Neumann, J.&quot;, AuthorList.parse(&quot;J. von Neumann&quot;)</span>
+<span class="fc" id="L591">                .getForAlphabetization());</span>
+<span class="fc" id="L592">        assertEquals(&quot;Neumann, J. and Smith, J. and Black Brown, Jr., P.&quot;, AuthorList</span>
+<span class="fc" id="L593">                .parse(&quot;John von Neumann and John Smith and de Black Brown, Jr., Peter&quot;)</span>
+<span class="fc" id="L594">                .getForAlphabetization());</span>
+<span class="fc" id="L595">    }</span>
+
+    @Test
+    public void testRemoveStartAndEndBraces() {
+<span class="fc" id="L599">        assertEquals(&quot;{A}bbb{c}&quot;, AuthorList.parse(&quot;{A}bbb{c}&quot;).getAsLastNames(false));</span>
+<span class="fc" id="L600">        assertEquals(&quot;Vall{\\'e}e Poussin&quot;, AuthorList.parse(&quot;{Vall{\\'e}e Poussin}&quot;).getAsLastNames(false));</span>
+<span class="fc" id="L601">        assertEquals(&quot;Poussin&quot;, AuthorList.parse(&quot;{Vall{\\'e}e} {Poussin}&quot;).getAsLastNames(false));</span>
+<span class="fc" id="L602">        assertEquals(&quot;Poussin&quot;, AuthorList.parse(&quot;Vall{\\'e}e Poussin&quot;).getAsLastNames(false));</span>
+<span class="fc" id="L603">        assertEquals(&quot;Lastname&quot;, AuthorList.parse(&quot;Firstname {Lastname}&quot;).getAsLastNames(false));</span>
+<span class="fc" id="L604">        assertEquals(&quot;Firstname Lastname&quot;, AuthorList.parse(&quot;{Firstname Lastname}&quot;).getAsLastNames(false));</span>
+<span class="fc" id="L605">    }</span>
+
+    @Test
+    public void createCorrectInitials() {
+<span class="fc" id="L609">        assertEquals(Optional.of(&quot;J. G.&quot;),</span>
+<span class="fc" id="L610">                AuthorList.parse(&quot;Hornberg, Johann Gottfried&quot;).getAuthor(0).getFirstAbbr());</span>
+<span class="fc" id="L611">    }</span>
+
+    @Test
+    public void parseNameWithBracesAroundFirstName() throws Exception {
+        //TODO: Be more intelligent and abbreviate the first name correctly
+<span class="fc" id="L616">        Author expected = new Author(&quot;Tse-tung&quot;, &quot;{Tse-tung}.&quot;, null, &quot;Mao&quot;, null);</span>
+<span class="fc" id="L617">        assertEquals(new AuthorList(expected), AuthorList.parse(&quot;{Tse-tung} Mao&quot;));</span>
+<span class="fc" id="L618">    }</span>
+
+    @Test
+    public void parseNameWithBracesAroundLastName() throws Exception {
+<span class="fc" id="L622">        Author expected = new Author(&quot;Hans&quot;, &quot;H.&quot;, null, &quot;van den Bergen&quot;, null);</span>
+<span class="fc" id="L623">        assertEquals(new AuthorList(expected), AuthorList.parse(&quot;{van den Bergen}, Hans&quot;));</span>
+<span class="fc" id="L624">    }</span>
+
+    @Test
+    public void parseNameWithHyphenInFirstName() throws Exception {
+<span class="fc" id="L628">        Author expected = new Author(&quot;Tse-tung&quot;, &quot;T.-t.&quot;, null, &quot;Mao&quot;, null);</span>
+<span class="fc" id="L629">        assertEquals(new AuthorList(expected), AuthorList.parse(&quot;Tse-tung Mao&quot;));</span>
+<span class="fc" id="L630">    }</span>
+
+    @Test
+    public void parseNameWithHyphenInLastName() throws Exception {
+<span class="fc" id="L634">        Author expected = new Author(&quot;Firstname&quot;, &quot;F.&quot;, null, &quot;Bailey-Jones&quot;, null);</span>
+<span class="fc" id="L635">        assertEquals(new AuthorList(expected), AuthorList.parse(&quot;Firstname Bailey-Jones&quot;));</span>
+<span class="fc" id="L636">    }</span>
+
+    @Test
+    public void parseNameWithHyphenInLastNameWithInitials() throws Exception {
+<span class="fc" id="L640">        Author expected = new Author(&quot;E. S.&quot;, &quot;E. S.&quot;, null, &quot;El-{M}allah&quot;, null);</span>
+<span class="fc" id="L641">        assertEquals(new AuthorList(expected), AuthorList.parse(&quot;E. S. El-{M}allah&quot;));</span>
+<span class="fc" id="L642">    }</span>
+
+    @Test
+    public void parseNameWithHyphenInLastNameWithEscaped() throws Exception {
+<span class="fc" id="L646">        Author expected = new Author(&quot;E. S.&quot;, &quot;E. S.&quot;, null, &quot;{K}ent-{B}oswell&quot;, null);</span>
+<span class="fc" id="L647">        assertEquals(new AuthorList(expected), AuthorList.parse(&quot;E. S. {K}ent-{B}oswell&quot;));</span>
+<span class="fc" id="L648">    }</span>
+
+    @Test
+    public void parseNameWithHyphenInLastNameWhenLastNameGivenFirst() throws Exception {
+        // TODO: Fix abbreviation to be &quot;A.&quot;
+<span class="fc" id="L653">        Author expected = new Author(&quot;ʿAbdallāh&quot;, &quot;ʿ.&quot;, null, &quot;al-Ṣāliḥ&quot;, null);</span>
+<span class="fc" id="L654">        assertEquals(new AuthorList(expected), AuthorList.parse(&quot;al-Ṣāliḥ, ʿAbdallāh&quot;));</span>
+<span class="fc" id="L655">    }</span>
+
+    @Test
+    public void parseNameWithBraces() throws Exception {
+<span class="fc" id="L659">        Author expected = new Author(&quot;H{e}lene&quot;, &quot;H.&quot;, null, &quot;Fiaux&quot;, null);</span>
+<span class="fc" id="L660">        assertEquals(new AuthorList(expected), AuthorList.parse(&quot;H{e}lene Fiaux&quot;));</span>
+<span class="fc" id="L661">    }</span>
+
+    /**
+     * This tests the issue described at https://github.com/JabRef/jabref/pull/2669#issuecomment-288519458
+     */
+    @Test
+    public void correctNamesWithOneComma() throws Exception {
+<span class="fc" id="L668">        Author expected = new Author(&quot;Alexander der Große&quot;, &quot;A. d. G.&quot;, null, &quot;Canon der Barbar&quot;, null);</span>
+<span class="fc" id="L669">        assertEquals(new AuthorList(expected), AuthorList.parse(&quot;Canon der Barbar, Alexander der Große&quot;));</span>
+
+<span class="fc" id="L671">        expected = new Author(&quot;Alexander H. G.&quot;, &quot;A. H. G.&quot;, null, &quot;Rinnooy Kan&quot;, null);</span>
+<span class="fc" id="L672">        assertEquals(new AuthorList(expected), AuthorList.parse(&quot;Rinnooy Kan, Alexander H. G.&quot;));</span>
+
+<span class="fc" id="L674">        expected = new Author(&quot;Alexander Hendrik George&quot;, &quot;A. H. G.&quot;, null, &quot;Rinnooy Kan&quot;, null);</span>
+<span class="fc" id="L675">        assertEquals(new AuthorList(expected), AuthorList.parse(&quot;Rinnooy Kan, Alexander Hendrik George&quot;));</span>
+
+<span class="fc" id="L677">        expected = new Author(&quot;José María&quot;, &quot;J. M.&quot;, null, &quot;Rodriguez Fernandez&quot;, null);</span>
+<span class="fc" id="L678">        assertEquals(new AuthorList(expected), AuthorList.parse(&quot;Rodriguez Fernandez, José María&quot;));</span>
+<span class="fc" id="L679">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

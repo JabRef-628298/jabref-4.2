@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>FieldEditors.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.fieldeditors</a> &gt; <span class="el_source">FieldEditors.java</span></div><h1>FieldEditors.java</h1><pre class="source lang-java linenums">package org.jabref.gui.fieldeditors;
+
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Set;
+
+import javax.swing.undo.UndoManager;
+
+import org.jabref.Globals;
+import org.jabref.gui.DialogService;
+import org.jabref.gui.autocompleter.AutoCompleteSuggestionProvider;
+import org.jabref.gui.autocompleter.ContentSelectorSuggestionProvider;
+import org.jabref.gui.autocompleter.SuggestionProviders;
+import org.jabref.gui.util.TaskExecutor;
+import org.jabref.logic.integrity.FieldCheckers;
+import org.jabref.logic.journals.JournalAbbreviationLoader;
+import org.jabref.logic.journals.JournalAbbreviationPreferences;
+import org.jabref.model.database.BibDatabaseContext;
+import org.jabref.model.entry.FieldName;
+import org.jabref.model.entry.FieldProperty;
+import org.jabref.model.entry.InternalBibtexFields;
+import org.jabref.model.metadata.MetaData;
+import org.jabref.preferences.JabRefPreferences;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+<span class="nc" id="L28">public class FieldEditors {</span>
+
+<span class="nc" id="L30">    private static final Logger LOGGER = LoggerFactory.getLogger(FieldEditors.class);</span>
+
+    public static FieldEditorFX getForField(String fieldName, TaskExecutor taskExecutor, DialogService dialogService, JournalAbbreviationLoader journalAbbreviationLoader, JournalAbbreviationPreferences journalAbbreviationPreferences, JabRefPreferences preferences, BibDatabaseContext databaseContext, String entryType, SuggestionProviders suggestionProviders, UndoManager undoManager) {
+<span class="nc" id="L33">        final Set&lt;FieldProperty&gt; fieldExtras = InternalBibtexFields.getFieldProperties(fieldName);</span>
+
+<span class="nc" id="L35">        AutoCompleteSuggestionProvider&lt;?&gt; suggestionProvider = getSuggestionProvider(fieldName, suggestionProviders, databaseContext.getMetaData());</span>
+
+<span class="nc" id="L37">        FieldCheckers fieldCheckers = new FieldCheckers(databaseContext, preferences.getFileDirectoryPreferences(), journalAbbreviationLoader.getRepository(journalAbbreviationPreferences), preferences.getBoolean(JabRefPreferences.ENFORCE_LEGAL_BIBTEX_KEY));</span>
+
+<span class="nc bnc" id="L39" title="All 4 branches missed.">        if (preferences.getTimestampPreferences().getTimestampField().equals(fieldName) || fieldExtras.contains(FieldProperty.DATE)) {</span>
+<span class="nc bnc" id="L40" title="All 2 branches missed.">            if (fieldExtras.contains(FieldProperty.ISO_DATE)) {</span>
+<span class="nc" id="L41">                return new DateEditor(fieldName, DateTimeFormatter.ofPattern(&quot;[uuuu][-MM][-dd]&quot;), suggestionProvider, fieldCheckers);</span>
+            } else {
+<span class="nc" id="L43">                return new DateEditor(fieldName, DateTimeFormatter.ofPattern(Globals.prefs.getTimestampPreferences().getTimestampFormat()), suggestionProvider, fieldCheckers);</span>
+            }
+<span class="nc bnc" id="L45" title="All 2 branches missed.">        } else if (fieldExtras.contains(FieldProperty.EXTERNAL)) {</span>
+<span class="nc" id="L46">            return new UrlEditor(fieldName, dialogService, suggestionProvider, fieldCheckers, preferences);</span>
+<span class="nc bnc" id="L47" title="All 2 branches missed.">        } else if (fieldExtras.contains(FieldProperty.JOURNAL_NAME)) {</span>
+<span class="nc" id="L48">            return new JournalEditor(fieldName, journalAbbreviationLoader, preferences, suggestionProvider, fieldCheckers);</span>
+<span class="nc bnc" id="L49" title="All 6 branches missed.">        } else if (fieldExtras.contains(FieldProperty.DOI) || fieldExtras.contains(FieldProperty.EPRINT) || fieldExtras.contains(FieldProperty.ISBN)) {</span>
+<span class="nc" id="L50">            return new IdentifierEditor(fieldName, taskExecutor, dialogService, suggestionProvider, fieldCheckers, preferences);</span>
+<span class="nc bnc" id="L51" title="All 2 branches missed.">        } else if (fieldExtras.contains(FieldProperty.OWNER)) {</span>
+<span class="nc" id="L52">            return new OwnerEditor(fieldName, preferences, suggestionProvider, fieldCheckers);</span>
+<span class="nc bnc" id="L53" title="All 2 branches missed.">        } else if (fieldExtras.contains(FieldProperty.FILE_EDITOR)) {</span>
+<span class="nc" id="L54">            return new LinkedFilesEditor(fieldName, dialogService, databaseContext, taskExecutor, suggestionProvider, fieldCheckers, preferences);</span>
+<span class="nc bnc" id="L55" title="All 2 branches missed.">        } else if (fieldExtras.contains(FieldProperty.YES_NO)) {</span>
+<span class="nc" id="L56">            return new OptionEditor&lt;&gt;(new YesNoEditorViewModel(fieldName, suggestionProvider, fieldCheckers));</span>
+<span class="nc bnc" id="L57" title="All 2 branches missed.">        } else if (fieldExtras.contains(FieldProperty.MONTH)) {</span>
+<span class="nc" id="L58">            return new OptionEditor&lt;&gt;(new MonthEditorViewModel(fieldName, suggestionProvider, databaseContext.getMode(), fieldCheckers));</span>
+<span class="nc bnc" id="L59" title="All 2 branches missed.">        } else if (fieldExtras.contains(FieldProperty.GENDER)) {</span>
+<span class="nc" id="L60">            return new OptionEditor&lt;&gt;(new GenderEditorViewModel(fieldName, suggestionProvider, fieldCheckers));</span>
+<span class="nc bnc" id="L61" title="All 2 branches missed.">        } else if (fieldExtras.contains(FieldProperty.EDITOR_TYPE)) {</span>
+<span class="nc" id="L62">            return new OptionEditor&lt;&gt;(new EditorTypeEditorViewModel(fieldName, suggestionProvider, fieldCheckers));</span>
+<span class="nc bnc" id="L63" title="All 2 branches missed.">        } else if (fieldExtras.contains(FieldProperty.PAGINATION)) {</span>
+<span class="nc" id="L64">            return new OptionEditor&lt;&gt;(new PaginationEditorViewModel(fieldName, suggestionProvider, fieldCheckers));</span>
+<span class="nc bnc" id="L65" title="All 2 branches missed.">        } else if (fieldExtras.contains(FieldProperty.TYPE)) {</span>
+<span class="nc bnc" id="L66" title="All 2 branches missed.">            if (&quot;patent&quot;.equalsIgnoreCase(entryType)) {</span>
+<span class="nc" id="L67">                return new OptionEditor&lt;&gt;(new PatentTypeEditorViewModel(fieldName, suggestionProvider, fieldCheckers));</span>
+            } else {
+<span class="nc" id="L69">                return new OptionEditor&lt;&gt;(new TypeEditorViewModel(fieldName, suggestionProvider, fieldCheckers));</span>
+            }
+<span class="nc bnc" id="L71" title="All 4 branches missed.">        } else if (fieldExtras.contains(FieldProperty.SINGLE_ENTRY_LINK) || fieldExtras.contains(FieldProperty.MULTIPLE_ENTRY_LINK)) {</span>
+<span class="nc" id="L72">            return new LinkedEntriesEditor(fieldName, databaseContext, suggestionProvider, fieldCheckers);</span>
+<span class="nc bnc" id="L73" title="All 2 branches missed.">        } else if (fieldExtras.contains(FieldProperty.PERSON_NAMES)) {</span>
+<span class="nc" id="L74">            return new PersonsEditor(fieldName, suggestionProvider, preferences, fieldCheckers);</span>
+<span class="nc bnc" id="L75" title="All 2 branches missed.">        } else if (FieldName.KEYWORDS.equals(fieldName)) {</span>
+<span class="nc" id="L76">            return new KeywordsEditor(fieldName, suggestionProvider, fieldCheckers, preferences);</span>
+<span class="nc bnc" id="L77" title="All 2 branches missed.">        } else if (fieldExtras.contains(FieldProperty.MULTILINE_TEXT)) {</span>
+<span class="nc" id="L78">            return new MultilineEditor(fieldName, suggestionProvider, fieldCheckers, preferences);</span>
+<span class="nc bnc" id="L79" title="All 2 branches missed.">        } else if (fieldExtras.contains(FieldProperty.KEY)) {</span>
+<span class="nc" id="L80">            return new BibtexKeyEditor(fieldName, preferences, suggestionProvider, fieldCheckers, preferences.getBibtexKeyPatternPreferences(), databaseContext, undoManager);</span>
+        }
+
+        // default
+<span class="nc" id="L84">        return new SimpleEditor(fieldName, suggestionProvider, fieldCheckers, preferences);</span>
+    }
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    private static AutoCompleteSuggestionProvider&lt;?&gt; getSuggestionProvider(String fieldName, SuggestionProviders suggestionProviders, MetaData metaData) {
+<span class="nc" id="L89">        AutoCompleteSuggestionProvider&lt;?&gt; suggestionProvider = suggestionProviders.getForField(fieldName);</span>
+
+<span class="nc" id="L91">        List&lt;String&gt; contentSelectorValues = metaData.getContentSelectorValuesForField(fieldName);</span>
+<span class="nc bnc" id="L92" title="All 2 branches missed.">        if (!contentSelectorValues.isEmpty()) {</span>
+            // Enrich auto completion by content selector values
+            try {
+<span class="nc" id="L95">                return new ContentSelectorSuggestionProvider((AutoCompleteSuggestionProvider&lt;String&gt;) suggestionProvider, contentSelectorValues);</span>
+<span class="nc" id="L96">            } catch (ClassCastException exception) {</span>
+<span class="nc" id="L97">                LOGGER.error(&quot;Content selectors are only supported for normal fields with string-based auto completion.&quot;);</span>
+<span class="nc" id="L98">                return suggestionProvider;</span>
+            }
+        } else {
+<span class="nc" id="L101">            return suggestionProvider;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

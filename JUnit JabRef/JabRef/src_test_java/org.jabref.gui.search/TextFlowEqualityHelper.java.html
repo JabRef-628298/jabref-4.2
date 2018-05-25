@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>TextFlowEqualityHelper.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.search</a> &gt; <span class="el_source">TextFlowEqualityHelper.java</span></div><h1>TextFlowEqualityHelper.java</h1><pre class="source lang-java linenums">package org.jabref.gui.search;
+
+import java.util.List;
+
+import javafx.scene.text.Text;
+import javafx.scene.text.TextFlow;
+
+/**
+ * @author jpf
+ * @created 11/26/17
+ */
+<span class="nc" id="L12">public class TextFlowEqualityHelper {</span>
+
+    public static boolean checkIfDescriptionEqualsExpectedTexts(TextFlow description, List&lt;Text&gt; expectedTexts) {
+<span class="pc bpc" id="L15" title="1 of 2 branches missed.">        if (expectedTexts.size() != description.getChildren().size())</span>
+<span class="nc" id="L16">            return false;</span>
+        Text expectedText;
+<span class="fc bfc" id="L18" title="All 2 branches covered.">        for (int i = 0; i &lt; expectedTexts.size(); i++) {</span>
+<span class="fc" id="L19">            expectedText = expectedTexts.get(i);</span>
+            // the strings contain not only the text but also the font and other properties
+            // so comparing them compares the Text object as a whole
+            // the equals method is not implemented...
+<span class="pc bpc" id="L23" title="1 of 2 branches missed.">            if (!expectedText.toString().equals(description.getChildren().get(i).toString()))</span>
+<span class="nc" id="L24">                return false;</span>
+        }
+<span class="fc" id="L26">        return true;</span>
+    }
+
+    public static boolean checkIfTextsEqualsExpectedTexts(List&lt;Text&gt; texts, List&lt;Text&gt; expectedTexts) {
+<span class="pc bpc" id="L30" title="1 of 2 branches missed.">        if (expectedTexts.size() != texts.size())</span>
+<span class="nc" id="L31">            return false;</span>
+        Text expectedText;
+<span class="fc bfc" id="L33" title="All 2 branches covered.">        for (int i = 0; i &lt; expectedTexts.size(); i++) {</span>
+<span class="fc" id="L34">            expectedText = expectedTexts.get(i);</span>
+            // the strings contain not only the text but also the font and other properties
+            // so comparing them compares the Text object as a whole
+            // the equals method is not implemented...
+<span class="pc bpc" id="L38" title="1 of 2 branches missed.">            if (!expectedText.toString().equals(texts.get(i).toString()))</span>
+<span class="nc" id="L39">                return false;</span>
+        }
+<span class="fc" id="L41">        return true;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

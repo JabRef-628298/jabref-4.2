@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>OAI2HandlerFetcherTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.importer.fetcher</a> &gt; <span class="el_source">OAI2HandlerFetcherTest.java</span></div><h1>OAI2HandlerFetcherTest.java</h1><pre class="source lang-java linenums">package org.jabref.gui.importer.fetcher;
+
+import java.io.IOException;
+import java.util.Optional;
+
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
+
+import org.jabref.logic.importer.util.OAI2Handler;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.testutils.category.FetcherTest;
+
+import org.junit.Ignore;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.xml.sax.SAXException;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+/**
+ * Test for OAI2-Handler and Fetcher.
+ *
+ * @author Ulrich St&amp;auml;rk
+ * @author Christian Kopf
+ * @author Christopher Oezbek
+ */
+
+@FetcherTest
+<span class="fc" id="L32">public class OAI2HandlerFetcherTest {</span>
+
+    protected OAI2Handler handler;
+
+    protected BibEntry be;
+
+    protected SAXParserFactory parserFactory;
+
+    protected SAXParser saxParser;
+
+
+    @BeforeEach
+    public void setUp() throws ParserConfigurationException, SAXException {
+<span class="fc" id="L45">        parserFactory = SAXParserFactory.newInstance();</span>
+<span class="fc" id="L46">        saxParser = parserFactory.newSAXParser();</span>
+<span class="fc" id="L47">        be = new BibEntry(&quot;article&quot;);</span>
+<span class="fc" id="L48">        handler = new OAI2Handler(be);</span>
+<span class="fc" id="L49">    }</span>
+
+    @Test
+    public void testCorrectLineBreaks() {
+<span class="fc" id="L53">        assertEquals(&quot;Test this&quot;, OAI2Handler.correctLineBreaks(&quot;Test\nthis&quot;));</span>
+<span class="fc" id="L54">        assertEquals(&quot;Test this&quot;, OAI2Handler.correctLineBreaks(&quot;Test \n this&quot;));</span>
+<span class="fc" id="L55">        assertEquals(&quot;Test\nthis&quot;, OAI2Handler.correctLineBreaks(&quot;Test\n\nthis&quot;));</span>
+<span class="fc" id="L56">        assertEquals(&quot;Test\nthis&quot;, OAI2Handler.correctLineBreaks(&quot;Test\n    \nthis&quot;));</span>
+<span class="fc" id="L57">        assertEquals(&quot;Test\nthis&quot;, OAI2Handler.correctLineBreaks(&quot;  Test   \n   \n   this  &quot;));</span>
+<span class="fc" id="L58">    }</span>
+
+    @Test
+    public void testParse() throws Throwable {
+        try {
+<span class="fc" id="L63">            saxParser.parse(this.getClass().getResourceAsStream(&quot;oai2.xml&quot;), handler);</span>
+<span class="fc" id="L64">            assertEquals(Optional.of(&quot;hep-ph/0408155&quot;), be.getField(&quot;eprint&quot;));</span>
+<span class="fc" id="L65">            assertEquals(Optional.of(&quot;G. F. Giudice and A. Riotto and A. Zaffaroni and J. López-Peña&quot;),</span>
+<span class="fc" id="L66">                    be.getField(&quot;author&quot;));</span>
+<span class="fc" id="L67">            assertEquals(Optional.of(&quot;Nucl.Phys. B&quot;), be.getField(&quot;journal&quot;));</span>
+<span class="fc" id="L68">            assertEquals(Optional.of(&quot;710&quot;), be.getField(&quot;volume&quot;));</span>
+<span class="fc" id="L69">            assertEquals(Optional.of(&quot;2005&quot;), be.getField(&quot;year&quot;));</span>
+<span class="fc" id="L70">            assertEquals(Optional.of(&quot;511-525&quot;), be.getField(&quot;pages&quot;));</span>
+
+            // Citekey is only generated if the user says so in the import
+            // inspection dialog.
+<span class="fc" id="L74">            assertEquals(Optional.empty(), be.getCiteKeyOptional());</span>
+
+<span class="fc" id="L76">            assertEquals(Optional.of(&quot;Heavy Particles from Inflation&quot;), be.getField(&quot;title&quot;));</span>
+<span class="fc" id="L77">            assertTrue(be.getField(&quot;abstract&quot;).isPresent());</span>
+<span class="fc" id="L78">            assertEquals(Optional.of(&quot;23 pages&quot;), be.getField(&quot;comment&quot;));</span>
+<span class="fc" id="L79">            assertEquals(Optional.of(&quot;CERN-PH-TH/2004-151&quot;), be.getField(&quot;reportno&quot;));</span>
+<span class="pc" id="L80">        } catch (SAXException e) {</span>
+<span class="nc" id="L81">            throw e.getException();</span>
+        }
+<span class="fc" id="L83">    }</span>
+
+    @Test
+    public void testOai22xml() throws SAXException, IOException {
+
+<span class="fc" id="L88">        saxParser.parse(this.getClass().getResourceAsStream(&quot;oai22.xml&quot;), handler);</span>
+<span class="fc" id="L89">        assertEquals(Optional.of(&quot;2005&quot;), be.getField(&quot;year&quot;));</span>
+
+<span class="fc" id="L91">    }</span>
+
+    @Test
+    public void testOai23xml() throws SAXException, IOException {
+
+<span class="fc" id="L96">        saxParser.parse(this.getClass().getResourceAsStream(&quot;oai23.xml&quot;), handler);</span>
+<span class="fc" id="L97">        assertEquals(Optional.of(&quot;Javier López Peña and Gabriel Navarro&quot;), be.getField(&quot;author&quot;));</span>
+
+<span class="fc" id="L99">    }</span>
+
+    @Test
+    public void testUrlConstructor() {
+<span class="fc" id="L103">        OAI2Fetcher fetcher = new OAI2Fetcher();</span>
+<span class="fc" id="L104">        assertEquals(</span>
+<span class="fc" id="L105">                &quot;http://export.arxiv.org/oai2?verb=GetRecord&amp;identifier=oai%3AarXiv.org%3Ahep-ph%2F0408155&amp;metadataPrefix=arXiv&quot;,</span>
+<span class="fc" id="L106">                fetcher.constructUrl(&quot;hep-ph/0408155&quot;));</span>
+
+<span class="fc" id="L108">        assertEquals(</span>
+<span class="fc" id="L109">                &quot;http://export.arxiv.org/oai2?verb=GetRecord&amp;identifier=oai%3AarXiv.org%3Amath%2F0612188&amp;metadataPrefix=arXiv&quot;,</span>
+<span class="fc" id="L110">                fetcher.constructUrl(&quot;math/0612188&quot;));</span>
+
+<span class="fc" id="L112">    }</span>
+
+    @Test
+    public void testFixKey() {
+<span class="fc" id="L116">        assertEquals(&quot;&quot;, OAI2Fetcher.fixKey(&quot;&quot;));</span>
+<span class="fc" id="L117">        assertEquals(&quot;test&quot;, OAI2Fetcher.fixKey(&quot;test&quot;));</span>
+<span class="fc" id="L118">        assertEquals(&quot;math/0601001&quot;, OAI2Fetcher.fixKey(&quot;math.RA/0601001&quot;));</span>
+<span class="fc" id="L119">        assertEquals(&quot;math/0601001&quot;, OAI2Fetcher.fixKey(&quot;math.QA/0601001&quot;));</span>
+<span class="fc" id="L120">        assertEquals(&quot;hep-ph/0408155&quot;, OAI2Fetcher.fixKey(&quot;hep-ph/0408155&quot;));</span>
+<span class="fc" id="L121">        assertEquals(&quot;0709.3040v1&quot;, OAI2Fetcher.fixKey(&quot;arXiv:0709.3040v1&quot;));</span>
+<span class="fc" id="L122">        assertEquals(&quot;&quot;, OAI2Fetcher.fixKey(&quot;arXiv:&quot;));</span>
+<span class="fc" id="L123">    }</span>
+
+    @Test
+    @Ignore
+    public void testOnline() throws InterruptedException, IOException, SAXException {
+
+        {
+<span class="fc" id="L130">            OAI2Fetcher fetcher = new OAI2Fetcher();</span>
+<span class="fc" id="L131">            be = fetcher.importOai2Entry(&quot;math.RA/0612188&quot;);</span>
+<span class="fc" id="L132">            assertNotNull(be);</span>
+
+<span class="fc" id="L134">            assertEquals(Optional.of(&quot;math/0612188&quot;), be.getField(&quot;eprint&quot;));</span>
+<span class="fc" id="L135">            assertEquals(Optional.of(&quot;On the classification and properties of noncommutative duplicates&quot;),</span>
+<span class="fc" id="L136">                    be.getField(&quot;title&quot;));</span>
+<span class="fc" id="L137">            assertEquals(Optional.of(&quot;Javier López Peña and Gabriel Navarro&quot;), be.getField(&quot;author&quot;));</span>
+<span class="nc" id="L138">            assertEquals(Optional.of(&quot;2007&quot;), be.getField(&quot;year&quot;));</span>
+
+<span class="nc" id="L140">            Thread.sleep(20000);</span>
+        }
+
+        {
+<span class="nc" id="L144">            OAI2Fetcher fetcher = new OAI2Fetcher();</span>
+<span class="nc" id="L145">            be = fetcher.importOai2Entry(&quot;astro-ph/0702080&quot;);</span>
+<span class="nc" id="L146">            assertNotNull(be);</span>
+
+<span class="nc" id="L148">            assertEquals(Optional.of(&quot;astro-ph/0702080&quot;), be.getField(&quot;eprint&quot;));</span>
+<span class="nc" id="L149">            assertEquals(</span>
+<span class="nc" id="L150">                    Optional.of(</span>
+<span class="nc" id="L151">                            &quot;Magnetized Hypermassive Neutron Star Collapse: a candidate central engine for short-hard GRBs&quot;),</span>
+<span class="nc" id="L152">                    be.getField(&quot;title&quot;));</span>
+
+<span class="nc" id="L154">            Thread.sleep(20000);</span>
+        }
+
+        {
+<span class="nc" id="L158">            OAI2Fetcher fetcher = new OAI2Fetcher();</span>
+<span class="nc" id="L159">            be = fetcher.importOai2Entry(&quot;math.QA/0601001&quot;);</span>
+<span class="nc" id="L160">            assertNotNull(be);</span>
+
+<span class="nc" id="L162">            assertEquals(Optional.of(&quot;math/0601001&quot;), be.getField(&quot;eprint&quot;));</span>
+<span class="nc" id="L163">            Thread.sleep(20000);</span>
+        }
+
+        {
+<span class="nc" id="L167">            OAI2Fetcher fetcher = new OAI2Fetcher();</span>
+<span class="nc" id="L168">            be = fetcher.importOai2Entry(&quot;hep-ph/0408155&quot;);</span>
+<span class="nc" id="L169">            assertNotNull(be);</span>
+
+<span class="nc" id="L171">            assertEquals(Optional.of(&quot;hep-ph/0408155&quot;), be.getField(&quot;eprint&quot;));</span>
+<span class="nc" id="L172">            Thread.sleep(20000);</span>
+        }
+
+<span class="nc" id="L175">        OAI2Fetcher fetcher = new OAI2Fetcher();</span>
+<span class="nc" id="L176">        be = fetcher.importOai2Entry(&quot;0709.3040&quot;);</span>
+<span class="nc" id="L177">        assertNotNull(be);</span>
+
+<span class="nc" id="L179">        assertEquals(Optional.of(&quot;2007&quot;), be.getField(&quot;year&quot;));</span>
+<span class="nc" id="L180">        assertEquals(Optional.of(&quot;#sep#&quot;), be.getField(&quot;month&quot;));</span>
+
+<span class="nc" id="L182">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

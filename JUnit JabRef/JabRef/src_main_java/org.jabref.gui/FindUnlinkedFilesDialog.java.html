@@ -1,0 +1,1155 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>FindUnlinkedFilesDialog.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui</a> &gt; <span class="el_source">FindUnlinkedFilesDialog.java</span></div><h1>FindUnlinkedFilesDialog.java</h1><pre class="source lang-java linenums"><span class="nc" id="L1">package org.jabref.gui;</span>
+
+import java.awt.Component;
+import java.awt.Container;
+import java.awt.Dimension;
+import java.awt.Frame;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.io.File;
+import java.io.FileFilter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import javax.swing.AbstractAction;
+import javax.swing.Action;
+import javax.swing.BorderFactory;
+import javax.swing.DefaultListCellRenderer;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JProgressBar;
+import javax.swing.JRootPane;
+import javax.swing.JScrollPane;
+import javax.swing.JTextField;
+import javax.swing.JTree;
+import javax.swing.KeyStroke;
+import javax.swing.SwingConstants;
+import javax.swing.WindowConstants;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import javax.swing.filechooser.FileSystemView;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeCellRenderer;
+import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.TreeModel;
+import javax.swing.tree.TreeNode;
+import javax.swing.tree.TreePath;
+
+import org.jabref.Globals;
+import org.jabref.JabRefExecutorService;
+import org.jabref.JabRefGUI;
+import org.jabref.gui.desktop.JabRefDesktop;
+import org.jabref.gui.externalfiletype.ExternalFileTypes;
+import org.jabref.gui.importer.EntryFromFileCreator;
+import org.jabref.gui.importer.EntryFromFileCreatorManager;
+import org.jabref.gui.importer.UnlinkedFilesCrawler;
+import org.jabref.gui.importer.UnlinkedPDFFileFilter;
+import org.jabref.gui.util.DefaultTaskExecutor;
+import org.jabref.gui.util.DirectoryDialogConfiguration;
+import org.jabref.logic.l10n.Localization;
+import org.jabref.model.EntryTypes;
+import org.jabref.model.database.BibDatabaseContext;
+import org.jabref.model.entry.BibtexEntryType;
+import org.jabref.model.entry.EntryType;
+import org.jabref.model.entry.FieldName;
+import org.jabref.preferences.JabRefPreferences;
+
+import com.jgoodies.forms.builder.ButtonBarBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * GUI Dialog for the feature &quot;Find unlinked files&quot;.
+ */
+public class FindUnlinkedFilesDialog extends JabRefDialog {
+
+    /**
+     * Keys to be used for referencing this Action.
+     */
+    public static final String ACTION_COMMAND = &quot;findUnlinkedFiles&quot;;
+<span class="fc" id="L98">    public static final String ACTION_MENU_TITLE = Localization.menuTitle(&quot;Find unlinked files...&quot;);</span>
+
+<span class="fc" id="L100">    public static final String ACTION_SHORT_DESCRIPTION = Localization</span>
+<span class="fc" id="L101">            .lang(&quot;Searches for unlinked PDF files on the file system&quot;);</span>
+
+<span class="fc" id="L103">    private static final Logger LOGGER = LoggerFactory.getLogger(FindUnlinkedFilesDialog.class);</span>
+    private static final String GLOBAL_PREFS_WORKING_DIRECTORY_KEY = &quot;findUnlinkedFilesWD&quot;;
+
+<span class="fc" id="L106">    private static final String GLOBAL_PREFS_DIALOG_SIZE_KEY = &quot;findUnlinkedFilesDialogSize&quot;;</span>
+    private final JabRefFrame frame;
+    private final BibDatabaseContext databaseContext;
+    private final EntryFromFileCreatorManager creatorManager;
+
+    private final UnlinkedFilesCrawler crawler;
+    private Path lastSelectedDirectory;
+
+    private TreeModel treeModel;
+    /* PANELS */
+    private JPanel panelDirectory;
+    private JPanel panelSearchArea;
+    private JPanel panelFiles;
+    private JPanel panelOptions;
+    private JPanel panelButtons;
+    private JPanel panelEntryTypesSelection;
+
+    private JPanel panelImportArea;
+    private JButton buttonBrowse;
+    private JButton buttonScan;
+    private JButton buttonApply;
+
+    private JButton buttonClose;
+    /* Options for the TreeView */
+    private JButton buttonOptionSelectAll;
+    private JButton buttonOptionDeselectAll;
+    private JButton buttonOptionExpandAll;
+    private JButton buttonOptionCollapseAll;
+
+    private JCheckBox checkboxCreateKeywords;
+    private JTextField textfieldDirectoryPath;
+    private JLabel labelDirectoryDescription;
+    private JLabel labelFileTypesDescription;
+    private JLabel labelFilesDescription;
+    private JLabel labelEntryTypeDescription;
+    private JLabel labelSearchingDirectoryInfo;
+
+    private JLabel labelImportingInfo;
+    private JTree tree;
+    private JScrollPane scrollpaneTree;
+    private JComboBox&lt;FileFilter&gt; comboBoxFileTypeSelection;
+
+    private JComboBox&lt;BibtexEntryTypeWrapper&gt; comboBoxEntryTypeSelection;
+    private JProgressBar progressBarSearching;
+    private JProgressBar progressBarImporting;
+
+    private MouseListener treeMouseListener;
+    private Action actionSelectAll;
+    private Action actionUnselectAll;
+    private Action actionExpandTree;
+
+    private Action actionCollapseTree;
+
+    private ComponentListener dialogPositionListener;
+<span class="nc" id="L160">    private final AtomicBoolean threadState = new AtomicBoolean();</span>
+
+    private boolean checkBoxWhyIsThereNoGetSelectedStupidSwing;
+
+    public FindUnlinkedFilesDialog(Frame owner, JabRefFrame frame, BasePanel panel) {
+<span class="nc" id="L165">        super(owner, Localization.lang(&quot;Find unlinked files&quot;), true, FindUnlinkedFilesDialog.class);</span>
+<span class="nc" id="L166">        this.frame = frame;</span>
+
+<span class="nc" id="L168">        restoreSizeOfDialog();</span>
+
+<span class="nc" id="L170">        databaseContext = panel.getBibDatabaseContext();</span>
+<span class="nc" id="L171">        creatorManager = new EntryFromFileCreatorManager(ExternalFileTypes.getInstance());</span>
+<span class="nc" id="L172">        crawler = new UnlinkedFilesCrawler(databaseContext);</span>
+
+<span class="nc" id="L174">        lastSelectedDirectory = loadLastSelectedDirectory();</span>
+
+<span class="nc" id="L176">        initialize();</span>
+<span class="nc" id="L177">        buttonApply.setEnabled(false);</span>
+<span class="nc" id="L178">    }</span>
+
+    /**
+     * Close dialog when pressing escape
+     */
+    @Override
+    protected JRootPane createRootPane() {
+<span class="nc" id="L185">        ActionListener actionListener = actionEvent -&gt; setVisible(false);</span>
+<span class="nc" id="L186">        JRootPane rPane = new JRootPane();</span>
+<span class="nc" id="L187">        KeyStroke stroke = KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0);</span>
+<span class="nc" id="L188">        rPane.registerKeyboardAction(actionListener, stroke, JComponent.WHEN_IN_FOCUSED_WINDOW);</span>
+
+<span class="nc" id="L190">        return rPane;</span>
+    }
+
+    /**
+     * Stores the current size of this dialog persistently.
+     */
+    private void storeSizeOfDialog() {
+<span class="nc" id="L197">        Dimension dim = getSize();</span>
+<span class="nc" id="L198">        String store = dim.width + &quot;;&quot; + dim.height;</span>
+<span class="nc" id="L199">        Globals.prefs.put(FindUnlinkedFilesDialog.GLOBAL_PREFS_DIALOG_SIZE_KEY, store);</span>
+<span class="nc" id="L200">    }</span>
+
+    /**
+     * Restores the location and size of this dialog from the persistent storage.
+     */
+    private void restoreSizeOfDialog() {
+
+<span class="nc" id="L207">        String store = Globals.prefs.get(FindUnlinkedFilesDialog.GLOBAL_PREFS_DIALOG_SIZE_KEY);</span>
+
+<span class="nc" id="L209">        Dimension dimension = null;</span>
+
+<span class="nc bnc" id="L211" title="All 2 branches missed.">        if (store != null) {</span>
+            try {
+<span class="nc" id="L213">                String[] dim = store.split(&quot;;&quot;);</span>
+<span class="nc" id="L214">                dimension = new Dimension(Integer.valueOf(dim[0]), Integer.valueOf(dim[1]));</span>
+<span class="nc" id="L215">            } catch (NumberFormatException ignoredEx) {</span>
+<span class="nc" id="L216">                LOGGER.debug(&quot;RestoreSizeDialog Exception &quot;, ignoredEx);</span>
+            }
+        }
+<span class="nc bnc" id="L219" title="All 2 branches missed.">        if (dimension != null) {</span>
+<span class="nc" id="L220">            setPreferredSize(dimension);</span>
+        }
+<span class="nc" id="L222">    }</span>
+
+    /**
+     * Initializes the components, the layout, the data structure and the
+     * actions in this dialog.
+     */
+    private void initialize() {
+
+<span class="nc" id="L230">        initializeActions();</span>
+<span class="nc" id="L231">        initComponents();</span>
+<span class="nc" id="L232">        createTree();</span>
+<span class="nc" id="L233">        createFileTypesCombobox();</span>
+<span class="nc" id="L234">        createEntryTypesCombobox();</span>
+<span class="nc" id="L235">        initLayout();</span>
+<span class="nc" id="L236">        setupActions();</span>
+<span class="nc" id="L237">        pack();</span>
+<span class="nc" id="L238">    }</span>
+
+    /**
+     * Initializes action objects. &lt;br&gt;
+     * Does not assign actions to components yet!
+     */
+    private void initializeActions() {
+
+<span class="nc" id="L246">        actionSelectAll = new AbstractAction(Localization.lang(&quot;Select all&quot;)) {</span>
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L250">                CheckableTreeNode rootNode = (CheckableTreeNode) tree.getModel().getRoot();</span>
+<span class="nc" id="L251">                rootNode.setSelected(true);</span>
+<span class="nc" id="L252">                tree.invalidate();</span>
+<span class="nc" id="L253">                tree.repaint();</span>
+<span class="nc" id="L254">            }</span>
+        };
+
+<span class="nc" id="L257">        actionUnselectAll = new AbstractAction(Localization.lang(&quot;Unselect all&quot;)) {</span>
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L261">                CheckableTreeNode rootNode = (CheckableTreeNode) tree.getModel().getRoot();</span>
+<span class="nc" id="L262">                rootNode.setSelected(false);</span>
+<span class="nc" id="L263">                tree.invalidate();</span>
+<span class="nc" id="L264">                tree.repaint();</span>
+<span class="nc" id="L265">            }</span>
+        };
+
+<span class="nc" id="L268">        actionExpandTree = new AbstractAction(Localization.lang(&quot;Expand all&quot;)) {</span>
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L272">                CheckableTreeNode rootNode = (CheckableTreeNode) tree.getModel().getRoot();</span>
+<span class="nc" id="L273">                expandTree(tree, new TreePath(rootNode), true);</span>
+<span class="nc" id="L274">            }</span>
+        };
+
+<span class="nc" id="L277">        actionCollapseTree = new AbstractAction(Localization.lang(&quot;Collapse all&quot;)) {</span>
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L281">                CheckableTreeNode rootNode = (CheckableTreeNode) tree.getModel().getRoot();</span>
+<span class="nc" id="L282">                expandTree(tree, new TreePath(rootNode), false);</span>
+<span class="nc" id="L283">            }</span>
+        };
+
+<span class="nc" id="L286">        dialogPositionListener = new ComponentAdapter() {</span>
+
+            /* (non-Javadoc)
+             * @see java.awt.event.ComponentAdapter#componentResized(java.awt.event.ComponentEvent)
+             */
+            @Override
+            public void componentResized(ComponentEvent e) {
+<span class="nc" id="L293">                storeSizeOfDialog();</span>
+<span class="nc" id="L294">            }</span>
+
+            /* (non-Javadoc)
+             * @see java.awt.event.ComponentAdapter#componentMoved(java.awt.event.ComponentEvent)
+             */
+            @Override
+            public void componentMoved(ComponentEvent e) {
+<span class="nc" id="L301">                storeSizeOfDialog();</span>
+<span class="nc" id="L302">            }</span>
+        };
+
+<span class="nc" id="L305">    }</span>
+
+    /**
+     * Stores the working directory path for this view in the global
+     * preferences.
+     *
+     * @param lastSelectedDir
+     *            directory that is used as the working directory in this view.
+     */
+    private void storeLastSelectedDirectory(Path lastSelectedDir) {
+<span class="nc" id="L315">        lastSelectedDirectory = lastSelectedDir;</span>
+<span class="nc bnc" id="L316" title="All 2 branches missed.">        if (lastSelectedDirectory != null) {</span>
+<span class="nc" id="L317">            Globals.prefs.put(FindUnlinkedFilesDialog.GLOBAL_PREFS_WORKING_DIRECTORY_KEY,</span>
+<span class="nc" id="L318">                    lastSelectedDirectory.toAbsolutePath().toString());</span>
+        }
+<span class="nc" id="L320">    }</span>
+
+    /**
+     * Loads the working directory path which is persistantly stored for this
+     * view and returns it as a {@link File}-Object. &lt;br&gt;
+     * &lt;br&gt;
+     * If there is no working directory path stored, the general working
+     * directory will be consulted.
+     *
+     * @return The persistently stored working directory path for this view.
+     */
+    private Path loadLastSelectedDirectory() {
+<span class="nc" id="L332">        String workingDirectory = Globals.prefs.get(FindUnlinkedFilesDialog.GLOBAL_PREFS_WORKING_DIRECTORY_KEY);</span>
+<span class="nc bnc" id="L333" title="All 2 branches missed.">        if (workingDirectory == null) {</span>
+<span class="nc" id="L334">            workingDirectory = Globals.prefs.get(JabRefPreferences.WORKING_DIRECTORY);</span>
+        }
+<span class="nc" id="L336">        lastSelectedDirectory = Paths.get(workingDirectory);</span>
+
+<span class="nc" id="L338">        return lastSelectedDirectory;</span>
+    }
+
+    /**
+     * Disables or enables all visible Elements in this Dialog. &lt;br&gt;
+     * &lt;br&gt;
+     * This also removes the {@link MouseListener} from the Tree-View to prevent
+     * it from receiving mouse events when in disabled-state.
+     *
+     * @param enable
+     *            &lt;code&gt;true&lt;/code&gt; when the elements shall get enabled,
+     *            &lt;code&gt;false&lt;/code&gt; when they shall get disabled.
+     */
+    private void disOrEnableDialog(boolean enable) {
+
+<span class="nc bnc" id="L353" title="All 2 branches missed.">        if (enable) {</span>
+<span class="nc" id="L354">            tree.addMouseListener(treeMouseListener);</span>
+<span class="nc" id="L355">        } else {</span>
+<span class="nc" id="L356">            tree.removeMouseListener(treeMouseListener);</span>
+        }
+<span class="nc" id="L358">        disOrEnableAllElements(FindUnlinkedFilesDialog.this, enable);</span>
+<span class="nc" id="L359">    }</span>
+
+    /**
+     * Recursively disables or enables all swing and awt components in this
+     * dialog, starting with but not including the container
+     * &lt;code&gt;startContainer&lt;/code&gt;.
+     *
+     * @param startContainer
+     *            The GUI Element to start with.
+     * @param enable
+     *            &lt;code&gt;true&lt;/code&gt;, if all elements will get enabled,
+     *            &lt;code&gt;false&lt;/code&gt; if all elements will get disabled.
+     */
+    private void disOrEnableAllElements(Container startContainer, boolean enable) {
+<span class="nc" id="L373">        Component[] children = startContainer.getComponents();</span>
+<span class="nc bnc" id="L374" title="All 2 branches missed.">        for (Component child : children) {</span>
+<span class="nc bnc" id="L375" title="All 2 branches missed.">            if (child instanceof Container) {</span>
+<span class="nc" id="L376">                disOrEnableAllElements((Container) child, enable);</span>
+            }
+<span class="nc" id="L378">            child.setEnabled(enable);</span>
+        }
+<span class="nc" id="L380">    }</span>
+
+    /**
+     * Expands or collapses the specified tree according to the
+     * &lt;code&gt;expand&lt;/code&gt;-parameter.
+     */
+    private void expandTree(JTree currentTree, TreePath parent, boolean expand) {
+<span class="nc" id="L387">        TreeNode node = (TreeNode) parent.getLastPathComponent();</span>
+<span class="nc bnc" id="L388" title="All 2 branches missed.">        if (node.getChildCount() &gt;= 0) {</span>
+<span class="nc bnc" id="L389" title="All 2 branches missed.">            for (Enumeration&lt;TreeNode&gt; e = node.children(); e.hasMoreElements();) {</span>
+<span class="nc" id="L390">                TreePath path = parent.pathByAddingChild(e.nextElement());</span>
+<span class="nc" id="L391">                expandTree(currentTree, path, expand);</span>
+            }
+        }
+<span class="nc bnc" id="L394" title="All 2 branches missed.">        if (expand) {</span>
+<span class="nc" id="L395">            currentTree.expandPath(parent);</span>
+<span class="nc" id="L396">        } else {</span>
+<span class="nc" id="L397">            currentTree.collapsePath(parent);</span>
+        }
+<span class="nc" id="L399">    }</span>
+
+    /**
+     * Starts the search of unlinked files according to the current dialog
+     * state. &lt;br&gt;
+     * &lt;br&gt;
+     * This state is made of: &lt;br&gt;
+     * &lt;li&gt;The value of the &quot;directory&quot;-input-textfield and &lt;li&gt;The file type
+     * selection. &lt;br&gt;
+     * The search will process in a seperate thread and the progress bar behind
+     * the &quot;search&quot; button will be displayed. &lt;br&gt;
+     * &lt;br&gt;
+     * When the search has completed, the
+     * {@link #searchFinishedHandler(CheckableTreeNode)} handler method is
+     * invoked.
+     */
+    private void startSearch() {
+
+<span class="nc" id="L417">        Path directory = Paths.get(textfieldDirectoryPath.getText());</span>
+<span class="nc bnc" id="L418" title="All 2 branches missed.">        if (Files.notExists(directory)) {</span>
+<span class="nc" id="L419">            directory = Paths.get(System.getProperty(&quot;user.dir&quot;));</span>
+        }
+<span class="nc bnc" id="L421" title="All 2 branches missed.">        if (!Files.isDirectory(directory)) {</span>
+<span class="nc" id="L422">            directory = directory.getParent();</span>
+        }
+
+        //this addtional statement is needed because for the lamdba the variable must be effetively final
+<span class="nc" id="L426">        Path dir = directory;</span>
+
+<span class="nc" id="L428">        storeLastSelectedDirectory(directory);</span>
+
+<span class="nc" id="L430">        progressBarSearching.setMinimumSize(</span>
+<span class="nc" id="L431">                new Dimension(buttonScan.getSize().width, progressBarSearching.getMinimumSize().height));</span>
+<span class="nc" id="L432">        progressBarSearching.setVisible(true);</span>
+<span class="nc" id="L433">        progressBarSearching.setString(&quot;&quot;);</span>
+
+<span class="nc" id="L435">        labelSearchingDirectoryInfo.setVisible(true);</span>
+<span class="nc" id="L436">        buttonScan.setVisible(false);</span>
+
+<span class="nc" id="L438">        disOrEnableDialog(false);</span>
+<span class="nc" id="L439">        labelSearchingDirectoryInfo.setEnabled(true);</span>
+
+<span class="nc" id="L441">        final FileFilter selectedFileFilter = (FileFilter) comboBoxFileTypeSelection.getSelectedItem();</span>
+
+<span class="nc" id="L443">        threadState.set(true);</span>
+<span class="nc" id="L444">        JabRefExecutorService.INSTANCE.execute(() -&gt; {</span>
+<span class="nc" id="L445">            UnlinkedPDFFileFilter unlinkedPDFFileFilter = new UnlinkedPDFFileFilter(selectedFileFilter,</span>
+<span class="nc" id="L446">                    databaseContext);</span>
+<span class="nc" id="L447">            CheckableTreeNode rootNode = crawler.searchDirectory(dir.toFile(), unlinkedPDFFileFilter, threadState,</span>
+<span class="nc" id="L448">                    new ChangeListener() {</span>
+
+                        int counter;
+
+                        @Override
+                        public void stateChanged(ChangeEvent e) {
+<span class="nc" id="L454">                            counter++;</span>
+                            String message;
+<span class="nc bnc" id="L456" title="All 2 branches missed.">                            if (counter == 1) {</span>
+<span class="nc" id="L457">                                message = Localization.lang(&quot;One file found&quot;);</span>
+<span class="nc" id="L458">                            } else {</span>
+<span class="nc" id="L459">                                message = Localization.lang(&quot;%0 files found&quot;, Integer.toString(counter));</span>
+                            }
+<span class="nc" id="L461">                            progressBarSearching.setString(message);</span>
+<span class="nc" id="L462">                        }</span>
+                    });
+<span class="nc" id="L464">            searchFinishedHandler(rootNode);</span>
+<span class="nc" id="L465">        });</span>
+
+<span class="nc" id="L467">    }</span>
+
+    /**
+     * This will start the import of all file of all selected nodes in this
+     * dialogs tree view. &lt;br&gt;
+     * &lt;br&gt;
+     * The import itself will run in a seperate thread, whilst this dialog will
+     * be showing a progress bar, until the thread has finished its work. &lt;br&gt;
+     * &lt;br&gt;
+     * When the import has finished, the {@link #importFinishedHandler(java.util.List)} is
+     * invoked.
+     */
+    private void startImport() {
+
+<span class="nc bnc" id="L481" title="All 2 branches missed.">        if (treeModel == null) {</span>
+<span class="nc" id="L482">            return;</span>
+        }
+<span class="nc" id="L484">        setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);</span>
+
+<span class="nc" id="L486">        CheckableTreeNode root = (CheckableTreeNode) treeModel.getRoot();</span>
+
+<span class="nc" id="L488">        final List&lt;File&gt; fileList = getFileListFromNode(root);</span>
+
+<span class="nc bnc" id="L490" title="All 4 branches missed.">        if ((fileList == null) || fileList.isEmpty()) {</span>
+<span class="nc" id="L491">            return;</span>
+        }
+
+<span class="nc" id="L494">        progressBarImporting.setVisible(true);</span>
+<span class="nc" id="L495">        labelImportingInfo.setVisible(true);</span>
+<span class="nc" id="L496">        buttonApply.setVisible(false);</span>
+<span class="nc" id="L497">        buttonClose.setVisible(false);</span>
+<span class="nc" id="L498">        disOrEnableDialog(false);</span>
+
+<span class="nc" id="L500">        labelImportingInfo.setEnabled(true);</span>
+
+<span class="nc" id="L502">        progressBarImporting.setMinimum(0);</span>
+<span class="nc" id="L503">        progressBarImporting.setMaximum(fileList.size());</span>
+<span class="nc" id="L504">        progressBarImporting.setValue(0);</span>
+<span class="nc" id="L505">        progressBarImporting.setString(&quot;&quot;);</span>
+
+<span class="nc" id="L507">        final EntryType entryType = ((BibtexEntryTypeWrapper) comboBoxEntryTypeSelection.getSelectedItem())</span>
+<span class="nc" id="L508">                .getEntryType();</span>
+
+<span class="nc" id="L510">        threadState.set(true);</span>
+<span class="nc" id="L511">        JabRefExecutorService.INSTANCE.execute(() -&gt; {</span>
+<span class="nc" id="L512">            List&lt;String&gt; errors = new LinkedList&lt;&gt;();</span>
+<span class="nc" id="L513">            creatorManager.addEntriesFromFiles(fileList, databaseContext.getDatabase(), frame.getCurrentBasePanel(),</span>
+<span class="nc" id="L514">                    entryType, checkBoxWhyIsThereNoGetSelectedStupidSwing, new ChangeListener() {</span>
+
+                        int counter;
+
+                        @Override
+                        public void stateChanged(ChangeEvent e) {
+<span class="nc" id="L520">                            counter++;</span>
+<span class="nc" id="L521">                            progressBarImporting.setValue(counter);</span>
+<span class="nc" id="L522">                            progressBarImporting.setString(Localization.lang(&quot;%0 of %1&quot;, Integer.toString(counter),</span>
+<span class="nc" id="L523">                                    Integer.toString(progressBarImporting.getMaximum())));</span>
+<span class="nc" id="L524">                        }</span>
+<span class="nc" id="L525">                    }, errors);</span>
+<span class="nc" id="L526">            importFinishedHandler(errors);</span>
+<span class="nc" id="L527">        });</span>
+<span class="nc" id="L528">    }</span>
+
+    /**
+     *
+     * @param errors
+     */
+    private void importFinishedHandler(List&lt;String&gt; errors) {
+
+<span class="nc bnc" id="L536" title="All 4 branches missed.">        if ((errors != null) &amp;&amp; !errors.isEmpty()) {</span>
+            String message;
+<span class="nc bnc" id="L538" title="All 2 branches missed.">            if (errors.size() == 1) {</span>
+<span class="nc" id="L539">                message = Localization.lang(&quot;There was one file that could not be imported.&quot;);</span>
+<span class="nc" id="L540">            } else {</span>
+<span class="nc" id="L541">                message = Localization.lang(&quot;There were %0 files which could not be imported.&quot;,</span>
+<span class="nc" id="L542">                        Integer.toString(errors.size()));</span>
+            }
+<span class="nc" id="L544">            JOptionPane.showMessageDialog(this,</span>
+<span class="nc" id="L545">                    Localization.lang(&quot;The import finished with warnings:&quot;) + &quot;\n&quot; + message,</span>
+<span class="nc" id="L546">                    Localization.lang(&quot;Warning&quot;), JOptionPane.WARNING_MESSAGE);</span>
+        }
+
+<span class="nc" id="L549">        progressBarImporting.setVisible(false);</span>
+<span class="nc" id="L550">        labelImportingInfo.setVisible(false);</span>
+<span class="nc" id="L551">        buttonApply.setVisible(true);</span>
+<span class="nc" id="L552">        buttonClose.setVisible(true);</span>
+<span class="nc" id="L553">        disOrEnableDialog(true);</span>
+<span class="nc" id="L554">        setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);</span>
+<span class="nc" id="L555">        frame.getCurrentBasePanel().markBaseChanged();</span>
+<span class="nc" id="L556">    }</span>
+
+    /**
+     * Will be called from the Thread in which the &quot;unlinked files search&quot; is
+     * processed. As the result of the search, the root node of the determined
+     * file structure is passed.
+     *
+     * @param rootNode
+     *            The root of the file structure as the result of the search.
+     */
+    private void searchFinishedHandler(CheckableTreeNode rootNode) {
+<span class="nc" id="L567">        treeModel = new DefaultTreeModel(rootNode);</span>
+<span class="nc" id="L568">        tree.setModel(treeModel);</span>
+<span class="nc bnc" id="L569" title="All 2 branches missed.">        tree.setRootVisible(rootNode.getChildCount() &gt; 0);</span>
+
+<span class="nc" id="L571">        tree.invalidate();</span>
+<span class="nc" id="L572">        tree.repaint();</span>
+
+<span class="nc" id="L574">        progressBarSearching.setVisible(false);</span>
+<span class="nc" id="L575">        labelSearchingDirectoryInfo.setVisible(false);</span>
+<span class="nc" id="L576">        buttonScan.setVisible(true);</span>
+<span class="nc" id="L577">        actionSelectAll.actionPerformed(null);</span>
+
+<span class="nc" id="L579">        disOrEnableDialog(true);</span>
+<span class="nc" id="L580">        buttonApply.setEnabled(true);</span>
+<span class="nc" id="L581">    }</span>
+
+    /**
+     * Sets up the actions for the components.
+     */
+    private void setupActions() {
+
+<span class="nc" id="L588">        DirectoryDialogConfiguration directoryDialogConfiguration = new DirectoryDialogConfiguration.Builder()</span>
+<span class="nc" id="L589">                .withInitialDirectory(Globals.prefs.get(JabRefPreferences.WORKING_DIRECTORY)).build();</span>
+<span class="nc" id="L590">        DialogService ds = new FXDialogService();</span>
+        /**
+         * Stores the selected directory.
+         */
+<span class="nc" id="L594">        buttonBrowse.addActionListener(e -&gt; {</span>
+<span class="nc" id="L595">            Optional&lt;Path&gt; selectedDirectory = DefaultTaskExecutor</span>
+<span class="nc" id="L596">                    .runInJavaFXThread(() -&gt; ds.showDirectorySelectionDialog(directoryDialogConfiguration));</span>
+<span class="nc" id="L597">            selectedDirectory.ifPresent(d -&gt; {</span>
+<span class="nc" id="L598">                textfieldDirectoryPath.setText(d.toAbsolutePath().toString());</span>
+<span class="nc" id="L599">                storeLastSelectedDirectory(d);</span>
+<span class="nc" id="L600">            });</span>
+<span class="nc" id="L601">        });</span>
+
+<span class="nc" id="L603">        buttonScan.addActionListener(e -&gt; startSearch());</span>
+
+        /**
+         * Action for the button &quot;Import...&quot;. &lt;br&gt;
+         * &lt;br&gt;
+         * Actions on this button will start the import of all file of all
+         * selected nodes in this dialogs tree view. &lt;br&gt;
+         */
+<span class="nc" id="L611">        ActionListener actionListenerImportEntrys = e -&gt; startImport();</span>
+<span class="nc" id="L612">        buttonApply.addActionListener(actionListenerImportEntrys);</span>
+<span class="nc" id="L613">        buttonClose.addActionListener(e -&gt; dispose());</span>
+<span class="nc" id="L614">    }</span>
+
+    /**
+     * Creates a list of {@link File}s for all leaf nodes in the tree structure
+     * &lt;code&gt;node&lt;/code&gt;, which have been marked as &lt;i&gt;selected&lt;/i&gt;. &lt;br&gt;
+     * &lt;br&gt;
+     * &lt;code&gt;Selected&lt;/code&gt; nodes correspond to those entries in the tree,
+     * whose checkbox is &lt;code&gt;checked&lt;/code&gt;.
+     *
+     * SIDE EFFECT: The checked nodes are removed from the tree.
+     *
+     * @param node
+     *            The root node representing a tree structure.
+     * @return A list of files of all checked leaf nodes.
+     */
+    private List&lt;File&gt; getFileListFromNode(CheckableTreeNode node) {
+<span class="nc" id="L630">        List&lt;File&gt; filesList = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L631">        Enumeration&lt;CheckableTreeNode&gt; children = node.depthFirstEnumeration();</span>
+<span class="nc" id="L632">        List&lt;CheckableTreeNode&gt; nodesToRemove = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L633" title="All 2 branches missed.">        for (CheckableTreeNode child : Collections.list(children)) {</span>
+<span class="nc bnc" id="L634" title="All 4 branches missed.">            if (child.isLeaf() &amp;&amp; child.isSelected()) {</span>
+<span class="nc" id="L635">                File nodeFile = ((FileNodeWrapper) child.getUserObject()).file;</span>
+<span class="nc bnc" id="L636" title="All 4 branches missed.">                if ((nodeFile != null) &amp;&amp; nodeFile.isFile()) {</span>
+<span class="nc" id="L637">                    filesList.add(nodeFile);</span>
+<span class="nc" id="L638">                    nodesToRemove.add(child);</span>
+                }
+            }
+        }
+
+        // remove imported files from tree
+<span class="nc" id="L644">        DefaultTreeModel model = (DefaultTreeModel) tree.getModel();</span>
+<span class="nc bnc" id="L645" title="All 2 branches missed.">        for (CheckableTreeNode nodeToRemove : nodesToRemove) {</span>
+<span class="nc" id="L646">            DefaultMutableTreeNode parent = (DefaultMutableTreeNode) nodeToRemove.getParent();</span>
+<span class="nc" id="L647">            model.removeNodeFromParent(nodeToRemove);</span>
+
+            // remove empty parent node
+<span class="nc bnc" id="L650" title="All 4 branches missed.">            while ((parent != null) &amp;&amp; parent.isLeaf()) {</span>
+<span class="nc" id="L651">                DefaultMutableTreeNode pp = (DefaultMutableTreeNode) parent.getParent();</span>
+<span class="nc bnc" id="L652" title="All 2 branches missed.">                if (pp != null) {</span>
+<span class="nc" id="L653">                    model.removeNodeFromParent(parent);</span>
+                }
+<span class="nc" id="L655">                parent = pp;</span>
+            }
+            // TODO: update counter / see: getTreeCellRendererComponent for label generation
+        }
+<span class="nc" id="L659">        tree.invalidate();</span>
+<span class="nc" id="L660">        tree.repaint();</span>
+
+<span class="nc" id="L662">        return filesList;</span>
+    }
+
+    /**
+     * Initializes the visible components in this dialog.
+     */
+    private void initComponents() {
+
+<span class="nc" id="L670">        this.addComponentListener(dialogPositionListener);</span>
+        /* Interrupts the searchThread by setting the State-Array to 0 */
+<span class="nc" id="L672">        this.addWindowListener(new WindowAdapter() {</span>
+
+            @Override
+            public void windowClosing(WindowEvent e) {
+<span class="nc" id="L676">                threadState.set(false);</span>
+<span class="nc" id="L677">            }</span>
+        });
+
+<span class="nc" id="L680">        panelDirectory = new JPanel();</span>
+<span class="nc" id="L681">        panelSearchArea = new JPanel();</span>
+<span class="nc" id="L682">        panelFiles = new JPanel();</span>
+<span class="nc" id="L683">        panelOptions = new JPanel();</span>
+<span class="nc" id="L684">        panelEntryTypesSelection = new JPanel();</span>
+<span class="nc" id="L685">        panelButtons = new JPanel();</span>
+<span class="nc" id="L686">        panelImportArea = new JPanel();</span>
+
+<span class="nc" id="L688">        buttonBrowse = new JButton(Localization.lang(&quot;Browse&quot;));</span>
+<span class="nc" id="L689">        buttonBrowse.setMnemonic('B');</span>
+<span class="nc" id="L690">        buttonBrowse.setToolTipText(Localization.lang(&quot;Opens the file browser.&quot;));</span>
+<span class="nc" id="L691">        buttonScan = new JButton(Localization.lang(&quot;Scan directory&quot;));</span>
+<span class="nc" id="L692">        buttonScan.setMnemonic('S');</span>
+<span class="nc" id="L693">        buttonScan.setToolTipText(Localization.lang(&quot;Searches the selected directory for unlinked files.&quot;));</span>
+<span class="nc" id="L694">        buttonApply = new JButton(Localization.lang(&quot;Apply&quot;));</span>
+<span class="nc" id="L695">        buttonApply.setMnemonic('I');</span>
+<span class="nc" id="L696">        buttonApply.setToolTipText(Localization.lang(&quot;Starts the import of BibTeX entries.&quot;));</span>
+<span class="nc" id="L697">        buttonClose = new JButton(Localization.lang(&quot;Close&quot;));</span>
+<span class="nc" id="L698">        buttonClose.setToolTipText(Localization.lang(&quot;Leave this dialog.&quot;));</span>
+<span class="nc" id="L699">        buttonClose.setMnemonic('C');</span>
+
+        /* Options for the TreeView */
+<span class="nc" id="L702">        buttonOptionSelectAll = new JButton();</span>
+<span class="nc" id="L703">        buttonOptionSelectAll.setMnemonic('A');</span>
+<span class="nc" id="L704">        buttonOptionSelectAll.setAction(actionSelectAll);</span>
+<span class="nc" id="L705">        buttonOptionDeselectAll = new JButton();</span>
+<span class="nc" id="L706">        buttonOptionDeselectAll.setMnemonic('U');</span>
+<span class="nc" id="L707">        buttonOptionDeselectAll.setAction(actionUnselectAll);</span>
+<span class="nc" id="L708">        buttonOptionExpandAll = new JButton();</span>
+<span class="nc" id="L709">        buttonOptionExpandAll.setMnemonic('E');</span>
+<span class="nc" id="L710">        buttonOptionExpandAll.setAction(actionExpandTree);</span>
+<span class="nc" id="L711">        buttonOptionCollapseAll = new JButton();</span>
+<span class="nc" id="L712">        buttonOptionCollapseAll.setMnemonic('L');</span>
+<span class="nc" id="L713">        buttonOptionCollapseAll.setAction(actionCollapseTree);</span>
+
+<span class="nc" id="L715">        checkboxCreateKeywords = new JCheckBox(Localization.lang(&quot;Create directory based keywords&quot;));</span>
+<span class="nc" id="L716">        checkboxCreateKeywords</span>
+<span class="nc" id="L717">                .setToolTipText(Localization.lang(&quot;Creates keywords in created entrys with directory pathnames&quot;));</span>
+<span class="nc" id="L718">        checkboxCreateKeywords.setSelected(checkBoxWhyIsThereNoGetSelectedStupidSwing);</span>
+<span class="nc" id="L719">        checkboxCreateKeywords.addItemListener(</span>
+<span class="nc bnc" id="L720" title="All 2 branches missed.">                e -&gt; checkBoxWhyIsThereNoGetSelectedStupidSwing = !checkBoxWhyIsThereNoGetSelectedStupidSwing);</span>
+
+<span class="nc" id="L722">        textfieldDirectoryPath = new JTextField();</span>
+<span class="nc" id="L723">        textfieldDirectoryPath</span>
+<span class="nc bnc" id="L724" title="All 2 branches missed.">                .setText(lastSelectedDirectory == null ? &quot;&quot; : lastSelectedDirectory.toAbsolutePath().toString());</span>
+
+<span class="nc" id="L726">        labelDirectoryDescription = new JLabel(Localization.lang(&quot;Select a directory where the search shall start.&quot;));</span>
+<span class="nc" id="L727">        labelFileTypesDescription = new JLabel(Localization.lang(&quot;Select file type:&quot;));</span>
+<span class="nc" id="L728">        labelFilesDescription = new JLabel(Localization.lang(&quot;These files are not linked in the active library.&quot;));</span>
+<span class="nc" id="L729">        labelEntryTypeDescription = new JLabel(Localization.lang(&quot;Entry type to be created:&quot;));</span>
+<span class="nc" id="L730">        labelSearchingDirectoryInfo = new JLabel(Localization.lang(&quot;Searching file system...&quot;));</span>
+<span class="nc" id="L731">        labelSearchingDirectoryInfo.setHorizontalAlignment(SwingConstants.CENTER);</span>
+<span class="nc" id="L732">        labelSearchingDirectoryInfo.setVisible(false);</span>
+<span class="nc" id="L733">        labelImportingInfo = new JLabel(Localization.lang(&quot;Importing into Library...&quot;));</span>
+<span class="nc" id="L734">        labelImportingInfo.setHorizontalAlignment(SwingConstants.CENTER);</span>
+<span class="nc" id="L735">        labelImportingInfo.setVisible(false);</span>
+
+<span class="nc" id="L737">        tree = new JTree();</span>
+
+<span class="nc" id="L739">        scrollpaneTree = new JScrollPane(tree);</span>
+<span class="nc" id="L740">        scrollpaneTree.setWheelScrollingEnabled(true);</span>
+
+<span class="nc" id="L742">        progressBarSearching = new JProgressBar();</span>
+<span class="nc" id="L743">        progressBarSearching.setIndeterminate(true);</span>
+<span class="nc" id="L744">        progressBarSearching.setVisible(false);</span>
+<span class="nc" id="L745">        progressBarSearching.setStringPainted(true);</span>
+
+<span class="nc" id="L747">        progressBarImporting = new JProgressBar();</span>
+<span class="nc" id="L748">        progressBarImporting.setIndeterminate(false);</span>
+<span class="nc" id="L749">        progressBarImporting.setVisible(false);</span>
+<span class="nc" id="L750">        progressBarImporting.setStringPainted(true);</span>
+
+<span class="nc" id="L752">    }</span>
+
+    /**
+     * Initializes the layout for the visible components in this menu. A
+     * {@link GridBagLayout} is used.
+     */
+    private void initLayout() {
+
+<span class="nc" id="L760">        GridBagLayout gbl = new GridBagLayout();</span>
+
+<span class="nc" id="L762">        panelDirectory.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(),</span>
+<span class="nc" id="L763">                Localization.lang(&quot;Select directory&quot;)));</span>
+<span class="nc" id="L764">        panelFiles.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(),</span>
+<span class="nc" id="L765">                Localization.lang(&quot;Select files&quot;)));</span>
+<span class="nc" id="L766">        panelEntryTypesSelection.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(),</span>
+<span class="nc" id="L767">                Localization.lang(&quot;BibTeX entry creation&quot;)));</span>
+
+<span class="nc" id="L769">        Insets basicInsets = new Insets(6, 6, 6, 6);</span>
+<span class="nc" id="L770">        Insets smallInsets = new Insets(3, 2, 3, 1);</span>
+<span class="nc" id="L771">        Insets noInsets = new Insets(0, 0, 0, 0);</span>
+
+        // 		x, y, w, h, wx,wy,ix,iy
+<span class="nc" id="L774">        FindUnlinkedFilesDialog.addComponent(gbl, panelSearchArea, buttonScan, GridBagConstraints.HORIZONTAL,</span>
+<span class="nc" id="L775">                GridBagConstraints.EAST, noInsets, 0, 1, 1, 1, 1, 1, 40, 10);</span>
+<span class="nc" id="L776">        FindUnlinkedFilesDialog.addComponent(gbl, panelSearchArea, labelSearchingDirectoryInfo,</span>
+<span class="nc" id="L777">                GridBagConstraints.HORIZONTAL, GridBagConstraints.EAST, noInsets, 0, 2, 1, 1, 0, 0, 0, 0);</span>
+<span class="nc" id="L778">        FindUnlinkedFilesDialog.addComponent(gbl, panelSearchArea, progressBarSearching, GridBagConstraints.HORIZONTAL,</span>
+<span class="nc" id="L779">                GridBagConstraints.EAST, noInsets, 0, 3, 1, 1, 0, 0, 0, 0);</span>
+
+<span class="nc" id="L781">        FindUnlinkedFilesDialog.addComponent(gbl, panelDirectory, labelDirectoryDescription, null,</span>
+<span class="nc" id="L782">                GridBagConstraints.WEST, new Insets(6, 6, 0, 6), 0, 0, 3, 1, 0, 0, 0, 0);</span>
+<span class="nc" id="L783">        FindUnlinkedFilesDialog.addComponent(gbl, panelDirectory, textfieldDirectoryPath, GridBagConstraints.HORIZONTAL,</span>
+<span class="nc" id="L784">                null, basicInsets, 0, 1, 2, 1, 1, 1, 0, 0);</span>
+<span class="nc" id="L785">        FindUnlinkedFilesDialog.addComponent(gbl, panelDirectory, buttonBrowse, GridBagConstraints.HORIZONTAL,</span>
+<span class="nc" id="L786">                GridBagConstraints.EAST, basicInsets, 2, 1, 1, 1, 0, 0, 0, 0);</span>
+<span class="nc" id="L787">        FindUnlinkedFilesDialog.addComponent(gbl, panelDirectory, labelFileTypesDescription, GridBagConstraints.NONE,</span>
+<span class="nc" id="L788">                GridBagConstraints.WEST, new Insets(18, 6, 18, 3), 0, 3, 1, 1, 0, 0, 0, 0);</span>
+<span class="nc" id="L789">        FindUnlinkedFilesDialog.addComponent(gbl, panelDirectory, comboBoxFileTypeSelection,</span>
+<span class="nc" id="L790">                GridBagConstraints.HORIZONTAL, GridBagConstraints.WEST, new Insets(18, 3, 18, 6), 1, 3, 1, 1, 1, 0, 0,</span>
+<span class="nc" id="L791">                0);</span>
+<span class="nc" id="L792">        FindUnlinkedFilesDialog.addComponent(gbl, panelDirectory, panelSearchArea, GridBagConstraints.HORIZONTAL,</span>
+<span class="nc" id="L793">                GridBagConstraints.EAST, new Insets(18, 6, 18, 6), 2, 3, 1, 1, 0, 0, 0, 0);</span>
+
+<span class="nc" id="L795">        FindUnlinkedFilesDialog.addComponent(gbl, panelFiles, labelFilesDescription, GridBagConstraints.HORIZONTAL,</span>
+<span class="nc" id="L796">                GridBagConstraints.WEST, new Insets(6, 6, 0, 6), 0, 0, 1, 1, 0, 0, 0, 0);</span>
+<span class="nc" id="L797">        FindUnlinkedFilesDialog.addComponent(gbl, panelFiles, scrollpaneTree, GridBagConstraints.BOTH,</span>
+<span class="nc" id="L798">                GridBagConstraints.CENTER, basicInsets, 0, 1, 1, 1, 1, 1, 0, 0);</span>
+<span class="nc" id="L799">        FindUnlinkedFilesDialog.addComponent(gbl, panelFiles, panelOptions, GridBagConstraints.NONE,</span>
+<span class="nc" id="L800">                GridBagConstraints.NORTHEAST, basicInsets, 1, 1, 1, 1, 0, 0, 0, 0);</span>
+<span class="nc" id="L801">        FindUnlinkedFilesDialog.addComponent(gbl, panelOptions, buttonOptionSelectAll, GridBagConstraints.HORIZONTAL,</span>
+<span class="nc" id="L802">                GridBagConstraints.NORTH, noInsets, 0, 0, 1, 1, 1, 0, 0, 0);</span>
+<span class="nc" id="L803">        FindUnlinkedFilesDialog.addComponent(gbl, panelOptions, buttonOptionDeselectAll, GridBagConstraints.HORIZONTAL,</span>
+<span class="nc" id="L804">                GridBagConstraints.NORTH, noInsets, 0, 1, 1, 1, 0, 0, 0, 0);</span>
+<span class="nc" id="L805">        FindUnlinkedFilesDialog.addComponent(gbl, panelOptions, buttonOptionExpandAll, GridBagConstraints.HORIZONTAL,</span>
+<span class="nc" id="L806">                GridBagConstraints.NORTH, new Insets(6, 0, 0, 0), 0, 2, 1, 1, 0, 0, 0, 0);</span>
+<span class="nc" id="L807">        FindUnlinkedFilesDialog.addComponent(gbl, panelOptions, buttonOptionCollapseAll, GridBagConstraints.HORIZONTAL,</span>
+<span class="nc" id="L808">                GridBagConstraints.NORTH, noInsets, 0, 3, 1, 1, 0, 0, 0, 0);</span>
+
+<span class="nc" id="L810">        FindUnlinkedFilesDialog.addComponent(gbl, panelEntryTypesSelection, labelEntryTypeDescription,</span>
+<span class="nc" id="L811">                GridBagConstraints.NONE, GridBagConstraints.WEST, basicInsets, 0, 0, 1, 1, 0, 0, 0, 0);</span>
+<span class="nc" id="L812">        FindUnlinkedFilesDialog.addComponent(gbl, panelEntryTypesSelection, comboBoxEntryTypeSelection,</span>
+<span class="nc" id="L813">                GridBagConstraints.NONE, GridBagConstraints.WEST, basicInsets, 1, 0, 1, 1, 1, 0, 0, 0);</span>
+<span class="nc" id="L814">        FindUnlinkedFilesDialog.addComponent(gbl, panelEntryTypesSelection, checkboxCreateKeywords,</span>
+<span class="nc" id="L815">                GridBagConstraints.HORIZONTAL, GridBagConstraints.WEST, basicInsets, 0, 1, 2, 1, 0, 0, 0, 0);</span>
+<span class="nc" id="L816">        FindUnlinkedFilesDialog.addComponent(gbl, panelImportArea, labelImportingInfo, GridBagConstraints.HORIZONTAL,</span>
+<span class="nc" id="L817">                GridBagConstraints.CENTER, new Insets(6, 6, 0, 6), 0, 1, 1, 1, 1, 0, 0, 0);</span>
+<span class="nc" id="L818">        FindUnlinkedFilesDialog.addComponent(gbl, panelImportArea, progressBarImporting, GridBagConstraints.HORIZONTAL,</span>
+<span class="nc" id="L819">                GridBagConstraints.CENTER, new Insets(0, 6, 6, 6), 0, 2, 1, 1, 1, 0, 0, 0);</span>
+<span class="nc" id="L820">        FindUnlinkedFilesDialog.addComponent(gbl, panelButtons, panelImportArea, GridBagConstraints.NONE,</span>
+<span class="nc" id="L821">                GridBagConstraints.EAST, smallInsets, 1, 0, 1, 1, 0, 0, 0, 0);</span>
+
+<span class="nc" id="L823">        FindUnlinkedFilesDialog.addComponent(gbl, getContentPane(), panelDirectory, GridBagConstraints.HORIZONTAL,</span>
+<span class="nc" id="L824">                GridBagConstraints.CENTER, basicInsets, 0, 0, 1, 1, 0, 0, 0, 0);</span>
+<span class="nc" id="L825">        FindUnlinkedFilesDialog.addComponent(gbl, getContentPane(), panelFiles, GridBagConstraints.BOTH,</span>
+<span class="nc" id="L826">                GridBagConstraints.NORTHWEST, new Insets(12, 6, 2, 2), 0, 1, 1, 1, 1, 1, 0, 0);</span>
+<span class="nc" id="L827">        FindUnlinkedFilesDialog.addComponent(gbl, getContentPane(), panelEntryTypesSelection,</span>
+<span class="nc" id="L828">                GridBagConstraints.HORIZONTAL, GridBagConstraints.SOUTHWEST, new Insets(12, 6, 2, 2), 0, 2, 1, 1, 0, 0,</span>
+<span class="nc" id="L829">                0, 0);</span>
+<span class="nc" id="L830">        FindUnlinkedFilesDialog.addComponent(gbl, getContentPane(), panelButtons, GridBagConstraints.HORIZONTAL,</span>
+<span class="nc" id="L831">                GridBagConstraints.CENTER, new Insets(10, 6, 10, 6), 0, 3, 1, 1, 0, 0, 0, 0);</span>
+
+<span class="nc" id="L833">        ButtonBarBuilder bb = new ButtonBarBuilder();</span>
+<span class="nc" id="L834">        bb.addGlue();</span>
+<span class="nc" id="L835">        bb.addButton(buttonApply);</span>
+<span class="nc" id="L836">        bb.addButton(buttonClose);</span>
+<span class="nc" id="L837">        bb.addGlue();</span>
+
+<span class="nc" id="L839">        bb.getPanel().setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));</span>
+<span class="nc" id="L840">        panelImportArea.add(bb.getPanel(), GridBagConstraints.NONE);</span>
+<span class="nc" id="L841">        pack();</span>
+
+<span class="nc" id="L843">    }</span>
+
+    /**
+     * Adds a component to a container, using the specified gridbag-layout and
+     * the supplied parameters. &lt;br&gt;
+     * &lt;br&gt;
+     * This method is simply used to ged rid of thousands of lines of code,
+     * which inevitably rise when layouts such as the gridbag-layout is being
+     * used.
+     *
+     * @param layout
+     *            The layout to be used.
+     * @param container
+     *            The {@link Container}, to which the component will be added.
+     * @param component
+     *            An AWT {@link Component}, that will be added to the container.
+     * @param fill
+     *            A constant describing the fill behaviour (see
+     *            {@link GridBagConstraints}). Can be &lt;code&gt;null&lt;/code&gt;, if no
+     *            filling wants to be specified.
+     * @param anchor
+     *            A constant describing the anchor of the element in its parent
+     *            container (see {@link GridBagConstraints}). Can be
+     *            &lt;code&gt;null&lt;/code&gt;, if no specification is needed.
+     * @param gridX
+     *            The relative grid-X coordinate.
+     * @param gridY
+     *            The relative grid-Y coordinate.
+     * @param width
+     *            The relative width of the component.
+     * @param height
+     *            The relative height of the component.
+     * @param weightX
+     *            A value for the horizontal weight.
+     * @param weightY
+     *            A value for the vertical weight.
+     * @param insets
+     *            Insets of the component. Can be &lt;code&gt;null&lt;/code&gt;.
+     */
+    private static void addComponent(GridBagLayout layout, Container container, Component component, Integer fill,
+            Integer anchor, Insets insets, int gridX, int gridY, int width, int height, double weightX, double weightY,
+            int ipadX, int ipadY) {
+<span class="nc" id="L885">        container.setLayout(layout);</span>
+<span class="nc" id="L886">        GridBagConstraints constraints = new GridBagConstraints();</span>
+<span class="nc" id="L887">        constraints.gridx = gridX;</span>
+<span class="nc" id="L888">        constraints.gridy = gridY;</span>
+<span class="nc" id="L889">        constraints.gridwidth = width;</span>
+<span class="nc" id="L890">        constraints.gridheight = height;</span>
+<span class="nc" id="L891">        constraints.weightx = weightX;</span>
+<span class="nc" id="L892">        constraints.weighty = weightY;</span>
+<span class="nc" id="L893">        constraints.ipadx = ipadX;</span>
+<span class="nc" id="L894">        constraints.ipady = ipadY;</span>
+<span class="nc bnc" id="L895" title="All 2 branches missed.">        if (fill != null) {</span>
+<span class="nc" id="L896">            constraints.fill = fill;</span>
+        }
+<span class="nc bnc" id="L898" title="All 2 branches missed.">        if (insets != null) {</span>
+<span class="nc" id="L899">            constraints.insets = insets;</span>
+        }
+<span class="nc bnc" id="L901" title="All 2 branches missed.">        if (anchor != null) {</span>
+<span class="nc" id="L902">            constraints.anchor = anchor;</span>
+        }
+<span class="nc" id="L904">        layout.setConstraints(component, constraints);</span>
+<span class="nc" id="L905">        container.add(component);</span>
+<span class="nc" id="L906">    }</span>
+
+    /**
+     * Creates the tree view, that holds the data structure. &lt;br&gt;
+     * &lt;br&gt;
+     * Initially, the root node is &lt;b&gt;not&lt;/b&gt; visible, so that the tree appears empty at the beginning.
+     */
+    private void createTree() {
+
+        /**
+         * Mouse listener to listen for mouse events on the tree. &lt;br&gt;
+         * This will mark the selected tree entry as &quot;selected&quot; or &quot;unselected&quot;,
+         * which will cause this nodes checkbox to appear as either &quot;checked&quot; or
+         * &quot;unchecked&quot;.
+         */
+<span class="nc" id="L921">        treeMouseListener = new MouseAdapter() {</span>
+
+            @Override
+            public void mousePressed(MouseEvent e) {
+<span class="nc" id="L925">                int x = e.getX();</span>
+<span class="nc" id="L926">                int y = e.getY();</span>
+
+<span class="nc" id="L928">                int row = tree.getRowForLocation(x, y);</span>
+
+<span class="nc" id="L930">                TreePath path = tree.getPathForRow(row);</span>
+<span class="nc bnc" id="L931" title="All 2 branches missed.">                if (path != null) {</span>
+<span class="nc" id="L932">                    CheckableTreeNode node = (CheckableTreeNode) path.getLastPathComponent();</span>
+<span class="nc bnc" id="L933" title="All 2 branches missed.">                    if (e.getClickCount() == 2) {</span>
+<span class="nc" id="L934">                        Object userObject = node.getUserObject();</span>
+<span class="nc bnc" id="L935" title="All 4 branches missed.">                        if ((userObject instanceof FileNodeWrapper) &amp;&amp; node.isLeaf()) {</span>
+<span class="nc" id="L936">                            FileNodeWrapper fnw = (FileNodeWrapper) userObject;</span>
+                            try {
+<span class="nc" id="L938">                                JabRefDesktop.openExternalViewer(</span>
+<span class="nc" id="L939">                                        JabRefGUI.getMainFrame().getCurrentBasePanel().getBibDatabaseContext(),</span>
+<span class="nc" id="L940">                                        fnw.file.getAbsolutePath(), FieldName.PDF);</span>
+<span class="nc" id="L941">                            } catch (IOException e1) {</span>
+<span class="nc" id="L942">                                LOGGER.info(&quot;Error opening file&quot;, e1);</span>
+                            }
+                        }
+<span class="nc" id="L945">                    } else {</span>
+<span class="nc" id="L946">                        node.check();</span>
+<span class="nc" id="L947">                        tree.invalidate();</span>
+<span class="nc" id="L948">                        tree.repaint();</span>
+                    }
+                }
+<span class="nc" id="L951">            }</span>
+
+        };
+
+<span class="nc" id="L955">        CheckableTreeNode startNode = new CheckableTreeNode(&quot;ROOT&quot;);</span>
+<span class="nc" id="L956">        DefaultTreeModel model = new DefaultTreeModel(startNode);</span>
+
+<span class="nc" id="L958">        tree.setModel(model);</span>
+<span class="nc" id="L959">        tree.setRootVisible(false);</span>
+
+<span class="nc" id="L961">        DefaultTreeCellRenderer renderer = new CheckboxTreeCellRenderer();</span>
+<span class="nc" id="L962">        tree.setCellRenderer(renderer);</span>
+
+<span class="nc" id="L964">        tree.addMouseListener(treeMouseListener);</span>
+
+<span class="nc" id="L966">    }</span>
+
+    /**
+     * Initialises the combobox that contains the available file types which
+     * bibtex entries can be created of.
+     */
+    private void createFileTypesCombobox() {
+
+<span class="nc" id="L974">        List&lt;FileFilter&gt; fileFilterList = creatorManager.getFileFilterList();</span>
+
+<span class="nc" id="L976">        comboBoxFileTypeSelection = new JComboBox&lt;&gt;(fileFilterList.toArray(new FileFilter[fileFilterList.size()]));</span>
+
+<span class="nc" id="L978">        comboBoxFileTypeSelection.setRenderer(new DefaultListCellRenderer() {</span>
+
+            /* (non-Javadoc)
+             * @see javax.swing.DefaultListCellRenderer#getListCellRendererComponent(javax.swing.JList, java.lang.Object, int, boolean, boolean)
+             */
+            @Override
+            public Component getListCellRendererComponent(JList&lt;?&gt; list, Object value, int index, boolean isSelected,
+                    boolean cellHasFocus) {
+<span class="nc" id="L986">                JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected,</span>
+<span class="nc" id="L987">                        cellHasFocus);</span>
+<span class="nc bnc" id="L988" title="All 2 branches missed.">                if (value instanceof EntryFromFileCreator) {</span>
+<span class="nc" id="L989">                    EntryFromFileCreator creator = (EntryFromFileCreator) value;</span>
+<span class="nc bnc" id="L990" title="All 2 branches missed.">                    if (creator.getExternalFileType() != null) {</span>
+<span class="nc" id="L991">                        label.setIcon(creator.getExternalFileType().getIcon());</span>
+                    }
+                }
+<span class="nc" id="L994">                return label;</span>
+            }
+        });
+
+<span class="nc" id="L998">    }</span>
+
+    /**
+     * Creates the ComboBox-View for the Listbox that holds the Bibtex entry
+     * types.
+     */
+    private void createEntryTypesCombobox() {
+
+<span class="nc" id="L1006">        Iterator&lt;EntryType&gt; iterator = EntryTypes</span>
+<span class="nc" id="L1007">                .getAllValues(frame.getCurrentBasePanel().getBibDatabaseContext().getMode()).iterator();</span>
+<span class="nc" id="L1008">        List&lt;BibtexEntryTypeWrapper&gt; list = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L1009">        list.add(</span>
+<span class="nc" id="L1010">                new BibtexEntryTypeWrapper(null));</span>
+<span class="nc bnc" id="L1011" title="All 2 branches missed.">        while (iterator.hasNext()) {</span>
+<span class="nc" id="L1012">            list.add(new BibtexEntryTypeWrapper(iterator.next()));</span>
+        }
+<span class="nc" id="L1014">        comboBoxEntryTypeSelection = new JComboBox&lt;&gt;(list.toArray(new BibtexEntryTypeWrapper[list.size()]));</span>
+<span class="nc" id="L1015">    }</span>
+
+    /**
+     * Wrapper for displaying the Type {@link BibtexEntryType} in a Combobox.
+     *
+     * @author Nosh&amp;Dan
+     * @version 12.11.2008 | 01:02:30
+     *
+     */
+    private static class BibtexEntryTypeWrapper {
+
+        private final EntryType entryType;
+
+<span class="nc" id="L1028">        BibtexEntryTypeWrapper(EntryType bibtexType) {</span>
+<span class="nc" id="L1029">            this.entryType = bibtexType;</span>
+<span class="nc" id="L1030">        }</span>
+
+        @Override
+        public String toString() {
+<span class="nc bnc" id="L1034" title="All 2 branches missed.">            if (entryType == null) {</span>
+<span class="nc" id="L1035">                return Localization.lang(&quot;&lt;No selection&gt;&quot;);</span>
+            }
+<span class="nc" id="L1037">            return entryType.getName();</span>
+        }
+
+        public EntryType getEntryType() {
+<span class="nc" id="L1041">            return entryType;</span>
+        }
+    }
+
+    public static class CheckableTreeNode extends DefaultMutableTreeNode {
+
+        private boolean isSelected;
+        private final JCheckBox checkbox;
+
+        public CheckableTreeNode(Object userObject) {
+<span class="nc" id="L1051">            super(userObject);</span>
+<span class="nc" id="L1052">            checkbox = new JCheckBox();</span>
+<span class="nc" id="L1053">        }</span>
+
+        /**
+         * @return the checkbox
+         */
+        public JCheckBox getCheckbox() {
+<span class="nc" id="L1059">            return checkbox;</span>
+        }
+
+        public void check() {
+<span class="nc bnc" id="L1063" title="All 2 branches missed.">            setSelected(!isSelected);</span>
+<span class="nc" id="L1064">        }</span>
+
+        public void setSelected(boolean bSelected) {
+<span class="nc" id="L1067">            isSelected = bSelected;</span>
+<span class="nc" id="L1068">            Enumeration&lt;CheckableTreeNode&gt; tmpChildren = this.children();</span>
+<span class="nc bnc" id="L1069" title="All 2 branches missed.">            for (CheckableTreeNode child : Collections.list(tmpChildren)) {</span>
+<span class="nc" id="L1070">                child.setSelected(bSelected);</span>
+            }
+
+<span class="nc" id="L1073">        }</span>
+
+        public boolean isSelected() {
+<span class="nc" id="L1076">            return isSelected;</span>
+        }
+
+    }
+
+<span class="nc" id="L1081">    private static class CheckboxTreeCellRenderer extends DefaultTreeCellRenderer {</span>
+
+<span class="nc" id="L1083">        private final FileSystemView fsv = FileSystemView.getFileSystemView();</span>
+
+        @Override
+        public Component getTreeCellRendererComponent(final JTree tree, Object value, boolean sel, boolean expanded,
+                boolean leaf, int row, boolean hasFocus) {
+
+<span class="nc" id="L1089">            Component nodeComponent = super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row,</span>
+<span class="nc" id="L1090">                    hasFocus);</span>
+<span class="nc" id="L1091">            CheckableTreeNode node = (CheckableTreeNode) value;</span>
+
+<span class="nc" id="L1093">            FileNodeWrapper userObject = (FileNodeWrapper) node.getUserObject();</span>
+
+<span class="nc" id="L1095">            JPanel newPanel = new JPanel();</span>
+
+<span class="nc" id="L1097">            JCheckBox checkbox = node.getCheckbox();</span>
+<span class="nc" id="L1098">            checkbox.setSelected(node.isSelected());</span>
+
+            try {
+<span class="nc" id="L1101">                setIcon(fsv.getSystemIcon(userObject.file));</span>
+<span class="nc" id="L1102">            } catch (Exception ignored) {</span>
+                // Ignored
+            }
+
+<span class="nc" id="L1106">            newPanel.setBackground(nodeComponent.getBackground());</span>
+<span class="nc" id="L1107">            checkbox.setBackground(nodeComponent.getBackground());</span>
+
+<span class="nc" id="L1109">            GridBagLayout gbl = new GridBagLayout();</span>
+<span class="nc" id="L1110">            FindUnlinkedFilesDialog.addComponent(gbl, newPanel, checkbox, null, null, null, 0, 0, 1, 1, 0, 0, 0, 0);</span>
+<span class="nc" id="L1111">            FindUnlinkedFilesDialog.addComponent(gbl, newPanel, nodeComponent, GridBagConstraints.HORIZONTAL, null,</span>
+<span class="nc" id="L1112">                    new Insets(1, 2, 0, 0), 1, 0, 1, 1, 1, 0, 0, 0);</span>
+
+<span class="nc bnc" id="L1114" title="All 2 branches missed.">            if (userObject.fileCount &gt; 0) {</span>
+<span class="nc" id="L1115">                JLabel label = new JLabel(</span>
+<span class="nc bnc" id="L1116" title="All 2 branches missed.">                        &quot;(&quot; + userObject.fileCount + &quot; file&quot; + (userObject.fileCount &gt; 1 ? &quot;s&quot; : &quot;&quot;) + &quot;)&quot;);</span>
+<span class="nc" id="L1117">                FindUnlinkedFilesDialog.addComponent(gbl, newPanel, label, null, null, new Insets(1, 2, 0, 0), 2, 0, 1,</span>
+<span class="nc" id="L1118">                        1, 0, 0, 0, 0);</span>
+            }
+<span class="nc" id="L1120">            return newPanel;</span>
+        }
+
+    }
+
+    public static class FileNodeWrapper {
+
+        public final File file;
+        public final int fileCount;
+
+        public FileNodeWrapper(File aFile) {
+<span class="nc" id="L1131">            this(aFile, 0);</span>
+<span class="nc" id="L1132">        }</span>
+
+        /**
+         * @param aDirectory
+         * @param fileCount
+         */
+<span class="nc" id="L1138">        public FileNodeWrapper(File aDirectory, int fileCount) {</span>
+<span class="nc" id="L1139">            this.file = aDirectory;</span>
+<span class="nc" id="L1140">            this.fileCount = fileCount;</span>
+<span class="nc" id="L1141">        }</span>
+
+        /*
+         * (non-Javadoc)
+         *
+         * @see java.lang.Object#toString()
+         */
+        @Override
+        public String toString() {
+<span class="nc" id="L1150">            return file.getName();</span>
+        }
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

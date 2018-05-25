@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>OvidImporterTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.importer.fileformat</a> &gt; <span class="el_source">OvidImporterTest.java</span></div><h1>OvidImporterTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.importer.fileformat;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
+
+import org.jabref.logic.bibtex.BibEntryAssert;
+import org.jabref.logic.util.FileType;
+import org.jabref.model.entry.BibEntry;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+<span class="fc" id="L27">public class OvidImporterTest {</span>
+
+    private OvidImporter importer;
+
+    private static final String FILE_ENDING = &quot;.txt&quot;;
+
+    private static Stream&lt;String&gt; fileNames() throws IOException {
+<span class="fc bfc" id="L34" title="All 2 branches covered.">        Predicate&lt;String&gt; fileName = name -&gt; name.startsWith(&quot;OvidImporterTest&quot;)</span>
+<span class="fc bfc" id="L35" title="All 2 branches covered.">                &amp;&amp; !name.contains(&quot;Invalid&quot;)</span>
+<span class="fc bfc" id="L36" title="All 2 branches covered.">                &amp;&amp; name.endsWith(FILE_ENDING);</span>
+<span class="fc" id="L37">        return ImporterTestEngine.getTestFiles(fileName).stream();</span>
+    }
+
+    private static Stream&lt;String&gt; invalidFileNames() throws IOException {
+<span class="fc bfc" id="L41" title="All 2 branches covered.">        Predicate&lt;String&gt; fileName = name -&gt; !name.contains(&quot;OvidImporterTest&quot;);</span>
+<span class="fc" id="L42">        return ImporterTestEngine.getTestFiles(fileName).stream();</span>
+    }
+
+    @BeforeEach
+    public void setUp() {
+<span class="fc" id="L47">        importer = new OvidImporter();</span>
+<span class="fc" id="L48">    }</span>
+
+    @Test
+    public void testGetFormatName() {
+<span class="fc" id="L52">        assertEquals(&quot;Ovid&quot;, importer.getName());</span>
+<span class="fc" id="L53">    }</span>
+
+    @Test
+    public void testGetCLIId() {
+<span class="fc" id="L57">        assertEquals(&quot;ovid&quot;, importer.getId());</span>
+<span class="fc" id="L58">    }</span>
+
+    @Test
+    public void testsGetExtensions() {
+<span class="fc" id="L62">        assertEquals(FileType.OVID, importer.getFileType());</span>
+<span class="fc" id="L63">    }</span>
+
+    @Test
+    public void testGetDescription() {
+<span class="fc" id="L67">        assertEquals(&quot;Imports an Ovid file.&quot;, importer.getDescription());</span>
+<span class="fc" id="L68">    }</span>
+
+    @ParameterizedTest
+    @MethodSource(&quot;fileNames&quot;)
+    public void testIsRecognizedFormatAccept(String fileName) throws IOException, URISyntaxException {
+<span class="fc" id="L73">        ImporterTestEngine.testIsRecognizedFormat(importer, fileName);</span>
+<span class="fc" id="L74">    }</span>
+
+    @ParameterizedTest
+    @MethodSource(&quot;invalidFileNames&quot;)
+    public void testIsRecognizedFormatRejected(String fileName) throws IOException, URISyntaxException {
+<span class="fc" id="L79">        ImporterTestEngine.testIsNotRecognizedFormat(importer, fileName);</span>
+<span class="fc" id="L80">    }</span>
+
+    @Test
+    public void testImportEmpty() throws IOException, URISyntaxException {
+<span class="fc" id="L84">        Path file = Paths.get(OvidImporter.class.getResource(&quot;Empty.txt&quot;).toURI());</span>
+<span class="fc" id="L85">        List&lt;BibEntry&gt; entries = importer.importDatabase(file, StandardCharsets.UTF_8).getDatabase().getEntries();</span>
+<span class="fc" id="L86">        assertEquals(Collections.emptyList(), entries);</span>
+<span class="fc" id="L87">    }</span>
+
+    @Test
+    public void testImportEntries1() throws IOException, URISyntaxException {
+<span class="fc" id="L91">        Path file = Paths.get(OvidImporter.class.getResource(&quot;OvidImporterTest1.txt&quot;).toURI());</span>
+<span class="fc" id="L92">        List&lt;BibEntry&gt; entries = importer.importDatabase(file, StandardCharsets.UTF_8).getDatabase().getEntries();</span>
+<span class="fc" id="L93">        assertEquals(5, entries.size());</span>
+
+<span class="fc" id="L95">        BibEntry entry = entries.get(0);</span>
+<span class="fc" id="L96">        assertEquals(&quot;misc&quot;, entry.getType());</span>
+<span class="fc" id="L97">        assertEquals(Optional.of(&quot;Mustermann and Musterfrau&quot;), entry.getField(&quot;author&quot;));</span>
+<span class="fc" id="L98">        assertEquals(Optional.of(&quot;Short abstract&quot;), entry.getField(&quot;abstract&quot;));</span>
+<span class="fc" id="L99">        assertEquals(Optional.of(&quot;Musterbuch&quot;), entry.getField(&quot;title&quot;));</span>
+<span class="fc" id="L100">        assertEquals(Optional.of(&quot;Einleitung&quot;), entry.getField(&quot;chaptertitle&quot;));</span>
+
+<span class="fc" id="L102">        entry = entries.get(1);</span>
+<span class="fc" id="L103">        assertEquals(&quot;inproceedings&quot;, entry.getType());</span>
+<span class="fc" id="L104">        assertEquals(Optional.of(&quot;Max&quot;), entry.getField(&quot;editor&quot;));</span>
+<span class="fc" id="L105">        assertEquals(Optional.of(&quot;Max the Editor&quot;), entry.getField(&quot;title&quot;));</span>
+<span class="fc" id="L106">        assertEquals(Optional.of(&quot;Very Long Title&quot;), entry.getField(&quot;journal&quot;));</span>
+<span class="fc" id="L107">        assertEquals(Optional.of(&quot;28&quot;), entry.getField(&quot;volume&quot;));</span>
+<span class="fc" id="L108">        assertEquals(Optional.of(&quot;2&quot;), entry.getField(&quot;issue&quot;));</span>
+<span class="fc" id="L109">        assertEquals(Optional.of(&quot;2015&quot;), entry.getField(&quot;year&quot;));</span>
+<span class="fc" id="L110">        assertEquals(Optional.of(&quot;103--106&quot;), entry.getField(&quot;pages&quot;));</span>
+
+<span class="fc" id="L112">        entry = entries.get(2);</span>
+<span class="fc" id="L113">        assertEquals(&quot;incollection&quot;, entry.getType());</span>
+<span class="fc" id="L114">        assertEquals(Optional.of(&quot;Max&quot;), entry.getField(&quot;author&quot;));</span>
+<span class="fc" id="L115">        assertEquals(Optional.of(&quot;Test&quot;), entry.getField(&quot;title&quot;));</span>
+<span class="fc" id="L116">        assertEquals(Optional.of(&quot;Very Long Title&quot;), entry.getField(&quot;journal&quot;));</span>
+<span class="fc" id="L117">        assertEquals(Optional.of(&quot;28&quot;), entry.getField(&quot;volume&quot;));</span>
+<span class="fc" id="L118">        assertEquals(Optional.of(&quot;2&quot;), entry.getField(&quot;issue&quot;));</span>
+<span class="fc" id="L119">        assertEquals(Optional.of(&quot;April&quot;), entry.getField(&quot;month&quot;));</span>
+<span class="fc" id="L120">        assertEquals(Optional.of(&quot;2015&quot;), entry.getField(&quot;year&quot;));</span>
+<span class="fc" id="L121">        assertEquals(Optional.of(&quot;103--106&quot;), entry.getField(&quot;pages&quot;));</span>
+
+<span class="fc" id="L123">        entry = entries.get(3);</span>
+<span class="fc" id="L124">        assertEquals(&quot;book&quot;, entry.getType());</span>
+<span class="fc" id="L125">        assertEquals(Optional.of(&quot;Max&quot;), entry.getField(&quot;author&quot;));</span>
+<span class="fc" id="L126">        assertEquals(Optional.of(&quot;2015&quot;), entry.getField(&quot;year&quot;));</span>
+<span class="fc" id="L127">        assertEquals(Optional.of(&quot;Editor&quot;), entry.getField(&quot;editor&quot;));</span>
+<span class="fc" id="L128">        assertEquals(Optional.of(&quot;Very Long Title&quot;), entry.getField(&quot;booktitle&quot;));</span>
+<span class="fc" id="L129">        assertEquals(Optional.of(&quot;103--106&quot;), entry.getField(&quot;pages&quot;));</span>
+<span class="fc" id="L130">        assertEquals(Optional.of(&quot;Address&quot;), entry.getField(&quot;address&quot;));</span>
+<span class="fc" id="L131">        assertEquals(Optional.of(&quot;Publisher&quot;), entry.getField(&quot;publisher&quot;));</span>
+
+<span class="fc" id="L133">        entry = entries.get(4);</span>
+<span class="fc" id="L134">        assertEquals(&quot;article&quot;, entry.getType());</span>
+<span class="fc" id="L135">        assertEquals(Optional.of(&quot;2014&quot;), entry.getField(&quot;year&quot;));</span>
+<span class="fc" id="L136">        assertEquals(Optional.of(&quot;58&quot;), entry.getField(&quot;pages&quot;));</span>
+<span class="fc" id="L137">        assertEquals(Optional.of(&quot;Test&quot;), entry.getField(&quot;address&quot;));</span>
+<span class="fc" id="L138">        assertEquals(Optional.empty(), entry.getField(&quot;title&quot;));</span>
+<span class="fc" id="L139">        assertEquals(Optional.of(&quot;TestPublisher&quot;), entry.getField(&quot;publisher&quot;));</span>
+<span class="fc" id="L140">    }</span>
+
+    @Test
+    public void testImportEntries2() throws IOException, URISyntaxException {
+<span class="fc" id="L144">        Path file = Paths.get(OvidImporter.class.getResource(&quot;OvidImporterTest2Invalid.txt&quot;).toURI());</span>
+<span class="fc" id="L145">        List&lt;BibEntry&gt; entries = importer.importDatabase(file, StandardCharsets.UTF_8).getDatabase().getEntries();</span>
+<span class="fc" id="L146">        assertEquals(Collections.emptyList(), entries);</span>
+<span class="fc" id="L147">    }</span>
+
+    @Test
+    public void testImportSingleEntries() throws IOException, URISyntaxException {
+
+<span class="fc bfc" id="L152" title="All 2 branches covered.">        for (int n = 3; n &lt;= 7; n++) {</span>
+<span class="fc" id="L153">            Path file = Paths.get(OvidImporter.class.getResource(&quot;OvidImporterTest&quot; + n + &quot;.txt&quot;).toURI());</span>
+<span class="fc" id="L154">            try (InputStream nis = OvidImporter.class.getResourceAsStream(&quot;OvidImporterTestBib&quot; + n + &quot;.bib&quot;)) {</span>
+<span class="fc" id="L155">                List&lt;BibEntry&gt; entries = importer.importDatabase(file, StandardCharsets.UTF_8).getDatabase()</span>
+<span class="fc" id="L156">                        .getEntries();</span>
+<span class="fc" id="L157">                assertNotNull(entries);</span>
+<span class="fc" id="L158">                assertEquals(1, entries.size());</span>
+<span class="fc" id="L159">                BibEntryAssert.assertEquals(nis, entries.get(0));</span>
+<span class="pc bpc" id="L160" title="7 of 8 branches missed.">            }</span>
+        }
+<span class="fc" id="L162">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

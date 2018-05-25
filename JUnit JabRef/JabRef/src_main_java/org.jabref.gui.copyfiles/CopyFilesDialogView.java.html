@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>CopyFilesDialogView.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.copyfiles</a> &gt; <span class="el_source">CopyFilesDialogView.java</span></div><h1>CopyFilesDialogView.java</h1><pre class="source lang-java linenums">package org.jabref.gui.copyfiles;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Function;
+
+import javafx.scene.control.Alert.AlertType;
+import javafx.scene.control.DialogPane;
+
+import org.jabref.gui.AbstractDialogView;
+import org.jabref.gui.FXDialog;
+import org.jabref.logic.l10n.Localization;
+import org.jabref.model.database.BibDatabaseContext;
+
+public class CopyFilesDialogView extends AbstractDialogView {
+
+    public CopyFilesDialogView(BibDatabaseContext bibDatabaseContext, CopyFilesResultListDependency results) {
+<span class="nc" id="L18">        super(createContext(bibDatabaseContext, results));</span>
+<span class="nc" id="L19">    }</span>
+
+    @Override
+    public void show() {
+<span class="nc" id="L23">        FXDialog copyFilesResultDlg = new FXDialog(AlertType.INFORMATION, Localization.lang(&quot;Result&quot;));</span>
+<span class="nc" id="L24">        copyFilesResultDlg.setResizable(true);</span>
+<span class="nc" id="L25">        copyFilesResultDlg.setDialogPane((DialogPane) this.getView());</span>
+<span class="nc" id="L26">        copyFilesResultDlg.show();</span>
+<span class="nc" id="L27">    }</span>
+
+    private static Function&lt;String, Object&gt; createContext(BibDatabaseContext bibDatabaseContext, CopyFilesResultListDependency copyfilesresultlistDependency) {
+<span class="nc" id="L30">        Map&lt;String, Object&gt; context = new HashMap&lt;&gt;();</span>
+        //The &quot;keys&quot; of the HashMap must have the same name as the with @inject annotated field in the controller
+<span class="nc" id="L32">        context.put(&quot;bibdatabasecontext&quot;, bibDatabaseContext);</span>
+<span class="nc" id="L33">        context.put(&quot;copyfilesresultlistDependency&quot;, copyfilesresultlistDependency);</span>
+<span class="nc" id="L34">        return context::get;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

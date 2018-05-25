@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>FieldFormatterCleanupsTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.exporter</a> &gt; <span class="el_source">FieldFormatterCleanupsTest.java</span></div><h1>FieldFormatterCleanupsTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.exporter;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+
+import org.jabref.logic.cleanup.Cleanups;
+import org.jabref.logic.formatter.IdentityFormatter;
+import org.jabref.logic.formatter.bibtexfields.NormalizeDateFormatter;
+import org.jabref.logic.formatter.bibtexfields.NormalizePagesFormatter;
+import org.jabref.logic.formatter.casechanger.LowerCaseFormatter;
+import org.jabref.model.cleanup.FieldFormatterCleanup;
+import org.jabref.model.cleanup.FieldFormatterCleanups;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.BibtexEntryTypes;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+<span class="fc" id="L23">public class FieldFormatterCleanupsTest {</span>
+
+    private BibEntry entry;
+
+
+    @BeforeEach
+    public void setUp() {
+<span class="fc" id="L30">        entry = new BibEntry();</span>
+<span class="fc" id="L31">        entry.setType(BibtexEntryTypes.INPROCEEDINGS);</span>
+<span class="fc" id="L32">        entry.setCiteKey(&quot;6055279&quot;);</span>
+<span class="fc" id="L33">        entry.setField(&quot;title&quot;, &quot;Educational session 1&quot;);</span>
+<span class="fc" id="L34">        entry.setField(&quot;booktitle&quot;, &quot;Custom Integrated Circuits Conference (CICC), 2011 IEEE&quot;);</span>
+<span class="fc" id="L35">        entry.setField(&quot;year&quot;, &quot;2011&quot;);</span>
+<span class="fc" id="L36">        entry.setField(&quot;mont&quot;, &quot;Sept.&quot;);</span>
+<span class="fc" id="L37">        entry.setField(&quot;pages&quot;, &quot;1-7&quot;);</span>
+<span class="fc" id="L38">        entry.setField(&quot;abstract&quot;, &quot;Start of the above-titled section of the conference proceedings record.&quot;);</span>
+<span class="fc" id="L39">        entry.setField(&quot;doi&quot;, &quot;10.1109/CICC.2011.6055279&quot;);</span>
+<span class="fc" id="L40">        entry.setField(&quot;issn&quot;, &quot;0886-5930&quot;);</span>
+<span class="fc" id="L41">    }</span>
+
+    @Test
+    public void checkSimpleUseCase() {
+
+<span class="fc" id="L46">        FieldFormatterCleanups actions = new FieldFormatterCleanups(true, Cleanups.parse(&quot;title[identity]&quot;));</span>
+
+<span class="fc" id="L48">        FieldFormatterCleanup identityInTitle = new FieldFormatterCleanup(&quot;title&quot;, new IdentityFormatter());</span>
+<span class="fc" id="L49">        assertEquals(Collections.singletonList(identityInTitle), actions.getConfiguredActions());</span>
+
+<span class="fc" id="L51">        actions.applySaveActions(entry);</span>
+
+<span class="fc" id="L53">        assertEquals(Optional.of(&quot;Educational session 1&quot;), entry.getField(&quot;title&quot;));</span>
+<span class="fc" id="L54">    }</span>
+
+    @Test
+    public void invalidSaveActionSting() {
+
+<span class="fc" id="L59">        FieldFormatterCleanups actions = new FieldFormatterCleanups(true, Cleanups.parse(&quot;title&quot;));</span>
+
+<span class="fc" id="L61">        assertEquals(Collections.emptyList(), actions.getConfiguredActions());</span>
+
+<span class="fc" id="L63">        actions.applySaveActions(entry);</span>
+
+<span class="fc" id="L65">        assertEquals(Optional.of(&quot;Educational session 1&quot;), entry.getField(&quot;title&quot;));</span>
+<span class="fc" id="L66">    }</span>
+
+    @Test
+    public void checkLowerCaseSaveAction() {
+
+<span class="fc" id="L71">        FieldFormatterCleanups actions = new FieldFormatterCleanups(true, Cleanups.parse(&quot;title[lower_case]&quot;));</span>
+
+<span class="fc" id="L73">        FieldFormatterCleanup lowerCaseTitle = new FieldFormatterCleanup(&quot;title&quot;, new LowerCaseFormatter());</span>
+<span class="fc" id="L74">        assertEquals(Collections.singletonList(lowerCaseTitle), actions.getConfiguredActions());</span>
+
+<span class="fc" id="L76">        actions.applySaveActions(entry);</span>
+
+<span class="fc" id="L78">        assertEquals(Optional.of(&quot;educational session 1&quot;), entry.getField(&quot;title&quot;));</span>
+<span class="fc" id="L79">    }</span>
+
+    @Test
+    public void checkTwoSaveActionsForOneField() {
+<span class="fc" id="L83">        FieldFormatterCleanups actions = new FieldFormatterCleanups(true, Cleanups.parse(&quot;title[lower_case,identity]&quot;));</span>
+
+<span class="fc" id="L85">        FieldFormatterCleanup lowerCaseTitle = new FieldFormatterCleanup(&quot;title&quot;, new LowerCaseFormatter());</span>
+<span class="fc" id="L86">        FieldFormatterCleanup identityInTitle = new FieldFormatterCleanup(&quot;title&quot;, new IdentityFormatter());</span>
+<span class="fc" id="L87">        assertEquals(Arrays.asList(lowerCaseTitle, identityInTitle), actions.getConfiguredActions());</span>
+
+<span class="fc" id="L89">        actions.applySaveActions(entry);</span>
+
+<span class="fc" id="L91">        assertEquals(Optional.of(&quot;educational session 1&quot;), entry.getField(&quot;title&quot;));</span>
+<span class="fc" id="L92">    }</span>
+
+    @Test
+    public void checkThreeSaveActionsForOneField() {
+
+<span class="fc" id="L97">        FieldFormatterCleanups actions = new FieldFormatterCleanups(true, Cleanups.parse(&quot;title[lower_case,identity,normalize_date]&quot;));</span>
+
+<span class="fc" id="L99">        FieldFormatterCleanup lowerCaseTitle = new FieldFormatterCleanup(&quot;title&quot;, new LowerCaseFormatter());</span>
+<span class="fc" id="L100">        FieldFormatterCleanup identityInTitle = new FieldFormatterCleanup(&quot;title&quot;, new IdentityFormatter());</span>
+<span class="fc" id="L101">        FieldFormatterCleanup normalizeDatesInTitle = new FieldFormatterCleanup(&quot;title&quot;, new NormalizeDateFormatter());</span>
+<span class="fc" id="L102">        assertEquals(Arrays.asList(lowerCaseTitle, identityInTitle, normalizeDatesInTitle), actions.getConfiguredActions());</span>
+
+<span class="fc" id="L104">        actions.applySaveActions(entry);</span>
+
+<span class="fc" id="L106">        assertEquals(Optional.of(&quot;educational session 1&quot;), entry.getField(&quot;title&quot;));</span>
+<span class="fc" id="L107">    }</span>
+
+    @Test
+    public void checkMultipleSaveActions() {
+
+<span class="fc" id="L112">        FieldFormatterCleanups actions = new FieldFormatterCleanups(true, Cleanups.parse(&quot;pages[normalize_page_numbers]title[lower_case]&quot;));</span>
+<span class="fc" id="L113">        List&lt;FieldFormatterCleanup&gt; formatterCleanups = actions.getConfiguredActions();</span>
+
+<span class="fc" id="L115">        FieldFormatterCleanup normalizePages = new FieldFormatterCleanup(&quot;pages&quot;, new NormalizePagesFormatter());</span>
+<span class="fc" id="L116">        FieldFormatterCleanup lowerCaseTitle = new FieldFormatterCleanup(&quot;title&quot;, new LowerCaseFormatter());</span>
+<span class="fc" id="L117">        assertEquals(Arrays.asList(normalizePages, lowerCaseTitle), formatterCleanups);</span>
+
+<span class="fc" id="L119">        actions.applySaveActions(entry);</span>
+
+<span class="fc" id="L121">        assertEquals(Optional.of(&quot;educational session 1&quot;), entry.getField(&quot;title&quot;));</span>
+<span class="fc" id="L122">        assertEquals(Optional.of(&quot;1--7&quot;), entry.getField(&quot;pages&quot;));</span>
+<span class="fc" id="L123">    }</span>
+
+    @Test
+    public void checkMultipleSaveActionsWithMultipleFormatters() {
+
+<span class="fc" id="L128">        FieldFormatterCleanups actions = new FieldFormatterCleanups(true,</span>
+<span class="fc" id="L129">                Cleanups.parse(&quot;pages[normalize_page_numbers,normalize_date]title[lower_case]&quot;));</span>
+<span class="fc" id="L130">        List&lt;FieldFormatterCleanup&gt; formatterCleanups = actions.getConfiguredActions();</span>
+
+<span class="fc" id="L132">        FieldFormatterCleanup normalizePages = new FieldFormatterCleanup(&quot;pages&quot;, new NormalizePagesFormatter());</span>
+<span class="fc" id="L133">        FieldFormatterCleanup normalizeDatesInPages = new FieldFormatterCleanup(&quot;pages&quot;, new NormalizeDateFormatter());</span>
+<span class="fc" id="L134">        FieldFormatterCleanup lowerCaseTitle = new FieldFormatterCleanup(&quot;title&quot;, new LowerCaseFormatter());</span>
+<span class="fc" id="L135">        assertEquals(Arrays.asList(normalizePages, normalizeDatesInPages, lowerCaseTitle), formatterCleanups);</span>
+
+<span class="fc" id="L137">        actions.applySaveActions(entry);</span>
+
+<span class="fc" id="L139">        assertEquals(Optional.of(&quot;educational session 1&quot;), entry.getField(&quot;title&quot;));</span>
+<span class="fc" id="L140">        assertEquals(Optional.of(&quot;1--7&quot;), entry.getField(&quot;pages&quot;));</span>
+<span class="fc" id="L141">    }</span>
+
+    @Test
+    public void clearFormatterRemovesField() {
+<span class="fc" id="L145">        FieldFormatterCleanups actions = new FieldFormatterCleanups(true, Cleanups.parse(&quot;mont[clear]&quot;));</span>
+<span class="fc" id="L146">        actions.applySaveActions(entry);</span>
+
+<span class="fc" id="L148">        assertEquals(Optional.empty(), entry.getField(&quot;mont&quot;));</span>
+<span class="fc" id="L149">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

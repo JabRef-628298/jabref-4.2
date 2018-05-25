@@ -1,0 +1,487 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>ConnectToSharedDatabaseDialog.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.shared</a> &gt; <span class="el_source">ConnectToSharedDatabaseDialog.java</span></div><h1>ConnectToSharedDatabaseDialog.java</h1><pre class="source lang-java linenums"><span class="nc" id="L1">package org.jabref.gui.shared;</span>
+
+import java.awt.FlowLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
+import java.io.UnsupportedEncodingException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.security.GeneralSecurityException;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+
+import javax.swing.AbstractAction;
+import javax.swing.Action;
+import javax.swing.BorderFactory;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JPasswordField;
+import javax.swing.JTextField;
+import javax.swing.KeyStroke;
+
+import org.jabref.Globals;
+import org.jabref.JabRefException;
+import org.jabref.JabRefGUI;
+import org.jabref.gui.BasePanel;
+import org.jabref.gui.DialogService;
+import org.jabref.gui.FXDialogService;
+import org.jabref.gui.JabRefDialog;
+import org.jabref.gui.JabRefFrame;
+import org.jabref.gui.exporter.SaveDatabaseAction;
+import org.jabref.gui.help.HelpAction;
+import org.jabref.gui.util.DefaultTaskExecutor;
+import org.jabref.gui.util.FileDialogConfiguration;
+import org.jabref.logic.help.HelpFile;
+import org.jabref.logic.l10n.Localization;
+import org.jabref.logic.shared.DBMSConnection;
+import org.jabref.logic.shared.DBMSConnectionProperties;
+import org.jabref.logic.shared.exception.InvalidDBMSConnectionPropertiesException;
+import org.jabref.logic.shared.prefs.SharedDatabasePreferences;
+import org.jabref.logic.shared.security.Password;
+import org.jabref.logic.util.FileType;
+import org.jabref.model.database.BibDatabaseContext;
+import org.jabref.model.database.shared.DBMSType;
+import org.jabref.model.database.shared.DatabaseLocation;
+import org.jabref.model.database.shared.DatabaseNotSupportedException;
+import org.jabref.preferences.JabRefPreferences;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class ConnectToSharedDatabaseDialog extends JabRefDialog {
+
+<span class="nc" id="L65">    private static final Logger LOGGER = LoggerFactory.getLogger(ConnectToSharedDatabaseDialog.class);</span>
+
+    private final JabRefFrame frame;
+
+<span class="nc" id="L69">    private final GridBagLayout gridBagLayout = new GridBagLayout();</span>
+<span class="nc" id="L70">    private final GridBagConstraints gridBagConstraints = new GridBagConstraints();</span>
+<span class="nc" id="L71">    private final JPanel connectionPanel = new JPanel();</span>
+<span class="nc" id="L72">    private final JPanel filePanel = new JPanel();</span>
+<span class="nc" id="L73">    private final JPanel buttonPanel = new JPanel();</span>
+
+<span class="nc" id="L75">    private final JLabel databaseTypeLabel = new JLabel(Localization.lang(&quot;Database type&quot;) + &quot;:&quot;);</span>
+<span class="nc" id="L76">    private final JLabel hostPortLabel = new JLabel(Localization.lang(&quot;Host&quot;) + &quot;/&quot; + Localization.lang(&quot;Port&quot;) + &quot;:&quot;);</span>
+<span class="nc" id="L77">    private final JLabel databaseLabel = new JLabel(Localization.lang(&quot;Database&quot;) + &quot;:&quot;);</span>
+<span class="nc" id="L78">    private final JLabel userLabel = new JLabel(Localization.lang(&quot;User&quot;) + &quot;:&quot;);</span>
+<span class="nc" id="L79">    private final JLabel passwordLabel = new JLabel(Localization.lang(&quot;Password&quot;) + &quot;:&quot;);</span>
+
+<span class="nc" id="L81">    private final JTextField hostField = new JTextField(12);</span>
+<span class="nc" id="L82">    private final JTextField portField = new JTextField(4);</span>
+<span class="nc" id="L83">    private final JTextField userField = new JTextField(14);</span>
+<span class="nc" id="L84">    private final JTextField databaseField = new JTextField(14);</span>
+<span class="nc" id="L85">    private final JTextField fileLocationField = new JTextField(20);</span>
+
+<span class="nc" id="L87">    private final JPasswordField passwordField = new JPasswordField(14);</span>
+<span class="nc" id="L88">    private final JComboBox&lt;DBMSType&gt; dbmsTypeDropDown = new JComboBox&lt;&gt;();</span>
+
+<span class="nc" id="L90">    private final JButton connectButton = new JButton(Localization.lang(&quot;Connect&quot;));</span>
+<span class="nc" id="L91">    private final JButton cancelButton = new JButton(Localization.lang(&quot;Cancel&quot;));</span>
+<span class="nc" id="L92">    private final JButton browseButton = new JButton(Localization.lang(&quot;Browse&quot;));</span>
+<span class="nc" id="L93">    private final JButton helpButton = new HelpAction(HelpFile.SQL_DATABASE).getHelpButton();</span>
+
+<span class="nc" id="L95">    private final JCheckBox rememberPassword = new JCheckBox(Localization.lang(&quot;Remember password?&quot;));</span>
+<span class="nc" id="L96">    private final JCheckBox autosaveFile = new JCheckBox(Localization.lang(&quot;Automatically save the library to&quot;));</span>
+
+<span class="nc" id="L98">    private final SharedDatabasePreferences prefs = new SharedDatabasePreferences();</span>
+
+    private DBMSConnectionProperties connectionProperties;
+
+    /**
+     * @param frame the JabRef Frame
+     */
+    public ConnectToSharedDatabaseDialog(JabRefFrame frame) {
+<span class="nc" id="L106">        super(frame, Localization.lang(&quot;Connect to shared database&quot;), ConnectToSharedDatabaseDialog.class);</span>
+<span class="nc" id="L107">        this.frame = frame;</span>
+<span class="nc" id="L108">        initLayout();</span>
+<span class="nc" id="L109">        updateEnableState();</span>
+<span class="nc" id="L110">        applyPreferences();</span>
+<span class="nc" id="L111">        setupActions();</span>
+<span class="nc" id="L112">        pack();</span>
+<span class="nc" id="L113">        setLocationRelativeTo(frame);</span>
+<span class="nc" id="L114">    }</span>
+
+    public void openSharedDatabase() {
+
+<span class="nc bnc" id="L118" title="All 2 branches missed.">        if (isSharedDatabaseAlreadyPresent()) {</span>
+<span class="nc" id="L119">            JOptionPane.showMessageDialog(ConnectToSharedDatabaseDialog.this,</span>
+<span class="nc" id="L120">                    Localization.lang(&quot;You are already connected to a database using entered connection details.&quot;),</span>
+<span class="nc" id="L121">                    Localization.lang(&quot;Warning&quot;), JOptionPane.WARNING_MESSAGE);</span>
+<span class="nc" id="L122">            return;</span>
+        }
+
+<span class="nc bnc" id="L125" title="All 2 branches missed.">        if (autosaveFile.isSelected()) {</span>
+
+<span class="nc" id="L127">            Path localFilePath = Paths.get(fileLocationField.getText());</span>
+
+<span class="nc bnc" id="L129" title="All 4 branches missed.">            if (Files.exists(localFilePath) &amp;&amp; !Files.isDirectory(localFilePath)) {</span>
+<span class="nc" id="L130">                int answer = JOptionPane.showConfirmDialog(this,</span>
+<span class="nc" id="L131">                        Localization.lang(&quot;'%0' exists. Overwrite file?&quot;, localFilePath.getFileName().toString()),</span>
+<span class="nc" id="L132">                        Localization.lang(&quot;Existing file&quot;), JOptionPane.YES_NO_OPTION);</span>
+<span class="nc bnc" id="L133" title="All 2 branches missed.">                if (answer == JOptionPane.NO_OPTION) {</span>
+<span class="nc" id="L134">                    fileLocationField.requestFocus();</span>
+<span class="nc" id="L135">                    return;</span>
+                }
+            }
+        }
+
+<span class="nc" id="L140">        setLoadingConnectButtonText(true);</span>
+
+        try {
+<span class="nc" id="L143">            BasePanel panel = new SharedDatabaseUIManager(frame).openNewSharedDatabaseTab(connectionProperties);</span>
+<span class="nc" id="L144">            setPreferences();</span>
+<span class="nc" id="L145">            dispose();</span>
+<span class="nc bnc" id="L146" title="All 2 branches missed.">            if (!fileLocationField.getText().isEmpty()) {</span>
+                try {
+<span class="nc" id="L148">                    new SaveDatabaseAction(panel, Paths.get(fileLocationField.getText())).runCommand();</span>
+<span class="nc" id="L149">                } catch (Throwable e) {</span>
+<span class="nc" id="L150">                    LOGGER.error(&quot;Error while saving the database&quot;, e);</span>
+                }
+            }
+
+<span class="nc" id="L154">            return; // setLoadingConnectButtonText(false) should not be reached regularly.</span>
+<span class="nc" id="L155">        } catch (SQLException | InvalidDBMSConnectionPropertiesException exception) {</span>
+<span class="nc" id="L156">            JOptionPane.showMessageDialog(ConnectToSharedDatabaseDialog.this, exception.getMessage(),</span>
+<span class="nc" id="L157">                    Localization.lang(&quot;Connection error&quot;), JOptionPane.ERROR_MESSAGE);</span>
+<span class="nc" id="L158">        } catch (DatabaseNotSupportedException exception) {</span>
+<span class="nc" id="L159">            new MigrationHelpDialog(this).setVisible(true);</span>
+        }
+
+<span class="nc" id="L162">        setLoadingConnectButtonText(false);</span>
+<span class="nc" id="L163">    }</span>
+
+    /**
+     * Defines and sets the different actions up.
+     */
+    private void setupActions() {
+
+<span class="nc" id="L170">        Action openAction = new AbstractAction() {</span>
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+<span class="nc" id="L175">                    checkFields();</span>
+
+<span class="nc" id="L177">                    connectionProperties = new DBMSConnectionProperties();</span>
+<span class="nc" id="L178">                    connectionProperties.setType((DBMSType) dbmsTypeDropDown.getSelectedItem());</span>
+<span class="nc" id="L179">                    connectionProperties.setHost(hostField.getText());</span>
+<span class="nc" id="L180">                    connectionProperties.setPort(Integer.parseInt(portField.getText()));</span>
+<span class="nc" id="L181">                    connectionProperties.setDatabase(databaseField.getText());</span>
+<span class="nc" id="L182">                    connectionProperties.setUser(userField.getText());</span>
+<span class="nc" id="L183">                    connectionProperties.setPassword(new String(passwordField.getPassword())); //JPasswordField.getPassword() does not return a String, but a char array.</span>
+
+<span class="nc" id="L185">                    openSharedDatabase();</span>
+<span class="nc" id="L186">                } catch (JabRefException exception) {</span>
+<span class="nc" id="L187">                    JOptionPane.showMessageDialog(ConnectToSharedDatabaseDialog.this, exception.getMessage(),</span>
+<span class="nc" id="L188">                            Localization.lang(&quot;Warning&quot;), JOptionPane.WARNING_MESSAGE);</span>
+                }
+<span class="nc" id="L190">            }</span>
+        };
+<span class="nc" id="L192">        connectButton.addActionListener(openAction);</span>
+<span class="nc" id="L193">        cancelButton.addActionListener(e -&gt; dispose());</span>
+
+        /**
+         * Set up a listener which updates the default port number once the selection in dbmsTypeDropDown has changed.
+         */
+<span class="nc" id="L198">        Action dbmsTypeDropDownAction = new AbstractAction() {</span>
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L202">                portField.setText(Integer.toString(((DBMSType) dbmsTypeDropDown.getSelectedItem()).getDefaultPort()));</span>
+<span class="nc" id="L203">            }</span>
+        };
+<span class="nc" id="L205">        dbmsTypeDropDown.addActionListener(dbmsTypeDropDownAction);</span>
+
+        // Add enter button action listener
+<span class="nc" id="L208">        connectButton.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0),</span>
+<span class="nc" id="L209">                &quot;Enter_pressed&quot;);</span>
+<span class="nc" id="L210">        connectButton.getActionMap().put(&quot;Enter_pressed&quot;, openAction);</span>
+<span class="nc" id="L211">        browseButton.addActionListener(e -&gt; showFileChooser());</span>
+<span class="nc" id="L212">        autosaveFile.addActionListener(e -&gt; updateEnableState());</span>
+<span class="nc" id="L213">    }</span>
+
+    /**
+     * Fetches possibly saved data and configures the control elements respectively.
+     */
+    private void applyPreferences() {
+<span class="nc" id="L219">        Optional&lt;String&gt; sharedDatabaseType = prefs.getType();</span>
+<span class="nc" id="L220">        Optional&lt;String&gt; sharedDatabaseHost = prefs.getHost();</span>
+<span class="nc" id="L221">        Optional&lt;String&gt; sharedDatabasePort = prefs.getPort();</span>
+<span class="nc" id="L222">        Optional&lt;String&gt; sharedDatabaseName = prefs.getName();</span>
+<span class="nc" id="L223">        Optional&lt;String&gt; sharedDatabaseUser = prefs.getUser();</span>
+<span class="nc" id="L224">        Optional&lt;String&gt; sharedDatabasePassword = prefs.getPassword();</span>
+<span class="nc" id="L225">        boolean sharedDatabaseRememberPassword = prefs.getRememberPassword();</span>
+
+<span class="nc bnc" id="L227" title="All 2 branches missed.">        if (sharedDatabaseType.isPresent()) {</span>
+<span class="nc" id="L228">            Optional&lt;DBMSType&gt; dbmsType = DBMSType.fromString(sharedDatabaseType.get());</span>
+<span class="nc bnc" id="L229" title="All 2 branches missed.">            if (dbmsType.isPresent()) {</span>
+<span class="nc" id="L230">                dbmsTypeDropDown.setSelectedItem(dbmsType.get());</span>
+            }
+        }
+
+<span class="nc bnc" id="L234" title="All 2 branches missed.">        if (sharedDatabaseHost.isPresent()) {</span>
+<span class="nc" id="L235">            hostField.setText(sharedDatabaseHost.get());</span>
+        }
+
+<span class="nc bnc" id="L238" title="All 2 branches missed.">        if (sharedDatabasePort.isPresent()) {</span>
+<span class="nc" id="L239">            portField.setText(sharedDatabasePort.get());</span>
+<span class="nc" id="L240">        } else {</span>
+<span class="nc" id="L241">            portField.setText(Integer.toString(((DBMSType) dbmsTypeDropDown.getSelectedItem()).getDefaultPort()));</span>
+        }
+
+<span class="nc bnc" id="L244" title="All 2 branches missed.">        if (sharedDatabaseName.isPresent()) {</span>
+<span class="nc" id="L245">            databaseField.setText(sharedDatabaseName.get());</span>
+        }
+
+<span class="nc bnc" id="L248" title="All 2 branches missed.">        if (sharedDatabaseUser.isPresent()) {</span>
+<span class="nc" id="L249">            userField.setText(sharedDatabaseUser.get());</span>
+        }
+
+<span class="nc bnc" id="L252" title="All 4 branches missed.">        if (sharedDatabasePassword.isPresent() &amp;&amp; sharedDatabaseUser.isPresent()) {</span>
+            try {
+<span class="nc" id="L254">                passwordField.setText(</span>
+<span class="nc" id="L255">                        new Password(sharedDatabasePassword.get().toCharArray(), sharedDatabaseUser.get()).decrypt());</span>
+<span class="nc" id="L256">            } catch (GeneralSecurityException | UnsupportedEncodingException e) {</span>
+<span class="nc" id="L257">                LOGGER.error(&quot;Could not read the password due to decryption problems.&quot;, e);</span>
+            }
+        }
+
+<span class="nc" id="L261">        rememberPassword.setSelected(sharedDatabaseRememberPassword);</span>
+<span class="nc" id="L262">    }</span>
+
+    /**
+     * Set up the layout and position the control units in their right place.
+     */
+    private void initLayout() {
+
+<span class="nc" id="L269">        setResizable(false);</span>
+
+<span class="nc" id="L271">        Insets defautInsets = new Insets(4, 15, 4, 4);</span>
+
+<span class="nc" id="L273">        connectionPanel.setBorder(</span>
+<span class="nc" id="L274">                BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), Localization.lang(&quot;Connection&quot;)));</span>
+<span class="nc" id="L275">        connectionPanel.setLayout(gridBagLayout);</span>
+
+<span class="nc" id="L277">        Set&lt;DBMSType&gt; availableDBMSTypes = DBMSConnection.getAvailableDBMSTypes();</span>
+<span class="nc" id="L278">        DefaultComboBoxModel&lt;DBMSType&gt; comboBoxModel = new DefaultComboBoxModel&lt;&gt;(</span>
+<span class="nc" id="L279">                availableDBMSTypes.toArray(new DBMSType[availableDBMSTypes.size()]));</span>
+
+<span class="nc" id="L281">        dbmsTypeDropDown.setModel(comboBoxModel);</span>
+
+<span class="nc" id="L283">        gridBagConstraints.insets = defautInsets;</span>
+<span class="nc" id="L284">        gridBagConstraints.fill = GridBagConstraints.BOTH;</span>
+<span class="nc" id="L285">        gridBagLayout.setConstraints(connectionPanel, gridBagConstraints);</span>
+
+        //1. column
+<span class="nc" id="L288">        gridBagConstraints.gridx = 0;</span>
+<span class="nc" id="L289">        gridBagConstraints.gridy = 0;</span>
+<span class="nc" id="L290">        connectionPanel.add(databaseTypeLabel, gridBagConstraints);</span>
+
+<span class="nc" id="L292">        gridBagConstraints.gridy = 1;</span>
+<span class="nc" id="L293">        connectionPanel.add(hostPortLabel, gridBagConstraints);</span>
+
+<span class="nc" id="L295">        gridBagConstraints.gridy = 2;</span>
+<span class="nc" id="L296">        connectionPanel.add(databaseLabel, gridBagConstraints);</span>
+
+<span class="nc" id="L298">        gridBagConstraints.gridy = 3;</span>
+<span class="nc" id="L299">        connectionPanel.add(userLabel, gridBagConstraints);</span>
+
+<span class="nc" id="L301">        gridBagConstraints.gridy = 4;</span>
+<span class="nc" id="L302">        connectionPanel.add(passwordLabel, gridBagConstraints);</span>
+
+        // 2. column
+<span class="nc" id="L305">        gridBagConstraints.gridwidth = 2;</span>
+
+<span class="nc" id="L307">        gridBagConstraints.gridx = 1;</span>
+<span class="nc" id="L308">        gridBagConstraints.gridy = 0;</span>
+<span class="nc" id="L309">        connectionPanel.add(dbmsTypeDropDown, gridBagConstraints);</span>
+
+<span class="nc" id="L311">        gridBagConstraints.gridy = 1;</span>
+<span class="nc" id="L312">        gridBagConstraints.gridwidth = 1; // the hostField is smaller than the others.</span>
+<span class="nc" id="L313">        gridBagConstraints.insets = new Insets(4, 15, 4, 0);</span>
+<span class="nc" id="L314">        connectionPanel.add(hostField, gridBagConstraints);</span>
+
+<span class="nc" id="L316">        gridBagConstraints.gridy = 2;</span>
+<span class="nc" id="L317">        gridBagConstraints.gridwidth = 2;</span>
+<span class="nc" id="L318">        gridBagConstraints.insets = defautInsets;</span>
+<span class="nc" id="L319">        connectionPanel.add(databaseField, gridBagConstraints);</span>
+
+<span class="nc" id="L321">        gridBagConstraints.gridy = 3;</span>
+<span class="nc" id="L322">        connectionPanel.add(userField, gridBagConstraints);</span>
+
+<span class="nc" id="L324">        gridBagConstraints.gridy = 4;</span>
+<span class="nc" id="L325">        connectionPanel.add(passwordField, gridBagConstraints);</span>
+
+<span class="nc" id="L327">        gridBagConstraints.gridy = 5;</span>
+<span class="nc" id="L328">        connectionPanel.add(rememberPassword, gridBagConstraints);</span>
+
+        // 3. column
+<span class="nc" id="L331">        gridBagConstraints.gridx = 2;</span>
+<span class="nc" id="L332">        gridBagConstraints.gridy = 1;</span>
+<span class="nc" id="L333">        gridBagConstraints.gridwidth = 1;</span>
+<span class="nc" id="L334">        gridBagConstraints.insets = new Insets(4, 0, 4, 4);</span>
+<span class="nc" id="L335">        connectionPanel.add(portField, gridBagConstraints);</span>
+
+        // help button
+<span class="nc" id="L338">        gridBagConstraints.gridx = 0;</span>
+<span class="nc" id="L339">        gridBagConstraints.gridy = 6;</span>
+<span class="nc" id="L340">        gridBagConstraints.insets = new Insets(10, 10, 0, 0);</span>
+<span class="nc" id="L341">        JPanel helpPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));</span>
+<span class="nc" id="L342">        helpPanel.add(helpButton);</span>
+
+        // add panel
+<span class="nc" id="L345">        getContentPane().setLayout(gridBagLayout);</span>
+<span class="nc" id="L346">        gridBagConstraints.gridx = 0;</span>
+<span class="nc" id="L347">        gridBagConstraints.gridy = 0;</span>
+<span class="nc" id="L348">        gridBagConstraints.gridwidth = 1;</span>
+<span class="nc" id="L349">        gridBagConstraints.insets = new Insets(5, 5, 5, 5);</span>
+<span class="nc" id="L350">        gridBagLayout.setConstraints(connectionPanel, gridBagConstraints);</span>
+<span class="nc" id="L351">        getContentPane().add(connectionPanel);</span>
+
+        // filePanel
+<span class="nc" id="L354">        filePanel.setBorder(</span>
+<span class="nc" id="L355">                BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), Localization.lang(&quot;File&quot;)));</span>
+<span class="nc" id="L356">        filePanel.setLayout(gridBagLayout);</span>
+
+<span class="nc" id="L358">        gridBagConstraints.gridx = 0;</span>
+<span class="nc" id="L359">        gridBagConstraints.gridy = 0;</span>
+<span class="nc" id="L360">        gridBagConstraints.gridwidth = 2;</span>
+
+<span class="nc" id="L362">        filePanel.add(autosaveFile, gridBagConstraints);</span>
+<span class="nc" id="L363">        gridBagConstraints.gridx = 1;</span>
+<span class="nc" id="L364">        gridBagConstraints.gridy = 1;</span>
+<span class="nc" id="L365">        gridBagConstraints.gridwidth = 1;</span>
+<span class="nc" id="L366">        filePanel.add(fileLocationField, gridBagConstraints);</span>
+<span class="nc" id="L367">        gridBagConstraints.gridx = 2;</span>
+<span class="nc" id="L368">        filePanel.add(browseButton, gridBagConstraints);</span>
+
+<span class="nc" id="L370">        gridBagConstraints.gridx = 0;</span>
+<span class="nc" id="L371">        gridBagConstraints.gridy = 1;</span>
+<span class="nc" id="L372">        gridBagConstraints.insets = new Insets(5, 5, 5, 5);</span>
+<span class="nc" id="L373">        gridBagLayout.setConstraints(filePanel, gridBagConstraints);</span>
+<span class="nc" id="L374">        getContentPane().add(filePanel);</span>
+
+        // buttonPanel
+<span class="nc" id="L377">        buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER));</span>
+
+<span class="nc" id="L379">        buttonPanel.add(connectButton);</span>
+<span class="nc" id="L380">        buttonPanel.add(cancelButton);</span>
+<span class="nc" id="L381">        buttonPanel.add(helpPanel);</span>
+
+<span class="nc" id="L383">        gridBagConstraints.gridy = 2;</span>
+<span class="nc" id="L384">        gridBagConstraints.insets = new Insets(5, 5, 5, 5);</span>
+<span class="nc" id="L385">        gridBagLayout.setConstraints(buttonPanel, gridBagConstraints);</span>
+<span class="nc" id="L386">        getContentPane().add(buttonPanel);</span>
+
+<span class="nc" id="L388">        setModal(true); // Owner window should be disabled while this dialog is opened.</span>
+<span class="nc" id="L389">    }</span>
+
+    /**
+     * Saves the data from this dialog persistently to facilitate the usage.
+     */
+    private void setPreferences() {
+<span class="nc" id="L395">        prefs.setType(dbmsTypeDropDown.getSelectedItem().toString());</span>
+<span class="nc" id="L396">        prefs.setHost(hostField.getText());</span>
+<span class="nc" id="L397">        prefs.setPort(portField.getText());</span>
+<span class="nc" id="L398">        prefs.setName(databaseField.getText());</span>
+<span class="nc" id="L399">        prefs.setUser(userField.getText());</span>
+
+<span class="nc bnc" id="L401" title="All 2 branches missed.">        if (rememberPassword.isSelected()) {</span>
+            try {
+<span class="nc" id="L403">                prefs.setPassword(new Password(passwordField.getPassword(), userField.getText()).encrypt());</span>
+<span class="nc" id="L404">            } catch (GeneralSecurityException | UnsupportedEncodingException e) {</span>
+<span class="nc" id="L405">                LOGGER.error(&quot;Could not store the password due to encryption problems.&quot;, e);</span>
+            }
+<span class="nc" id="L407">        } else {</span>
+<span class="nc" id="L408">            prefs.clearPassword(); // for the case that the password is already set</span>
+        }
+
+<span class="nc" id="L411">        prefs.setRememberPassword(rememberPassword.isSelected());</span>
+<span class="nc" id="L412">    }</span>
+
+    private boolean isEmptyField(JTextField field) {
+<span class="nc bnc" id="L415" title="All 2 branches missed.">        return field.getText().trim().length() == 0;</span>
+    }
+
+    /**
+     * Checks every required text field for emptiness.
+     */
+    private void checkFields() throws JabRefException {
+<span class="nc bnc" id="L422" title="All 2 branches missed.">        if (isEmptyField(hostField)) {</span>
+<span class="nc" id="L423">            hostField.requestFocus();</span>
+<span class="nc" id="L424">            throw new JabRefException(Localization.lang(&quot;Required field \&quot;%0\&quot; is empty.&quot;, Localization.lang(&quot;Host&quot;)));</span>
+        }
+<span class="nc bnc" id="L426" title="All 2 branches missed.">        if (isEmptyField(portField)) {</span>
+<span class="nc" id="L427">            portField.requestFocus();</span>
+<span class="nc" id="L428">            throw new JabRefException(Localization.lang(&quot;Required field \&quot;%0\&quot; is empty.&quot;, Localization.lang(&quot;Port&quot;)));</span>
+        }
+<span class="nc bnc" id="L430" title="All 2 branches missed.">        if (isEmptyField(databaseField)) {</span>
+<span class="nc" id="L431">            databaseField.requestFocus();</span>
+<span class="nc" id="L432">            throw new JabRefException(</span>
+<span class="nc" id="L433">                    Localization.lang(&quot;Required field \&quot;%0\&quot; is empty.&quot;, Localization.lang(&quot;Library&quot;)));</span>
+        }
+<span class="nc bnc" id="L435" title="All 2 branches missed.">        if (isEmptyField(userField)) {</span>
+<span class="nc" id="L436">            userField.requestFocus();</span>
+<span class="nc" id="L437">            throw new JabRefException(Localization.lang(&quot;Required field \&quot;%0\&quot; is empty.&quot;, Localization.lang(&quot;User&quot;)));</span>
+        }
+<span class="nc bnc" id="L439" title="All 4 branches missed.">        if (autosaveFile.isSelected() &amp;&amp; isEmptyField(fileLocationField)) {</span>
+<span class="nc" id="L440">            fileLocationField.requestFocus();</span>
+<span class="nc" id="L441">            throw new JabRefException(Localization.lang(&quot;Please enter a valid file path.&quot;));</span>
+        }
+<span class="nc" id="L443">    }</span>
+
+    /**
+     * Sets the connectButton according to the current connection state.
+     */
+    private void setLoadingConnectButtonText(boolean isLoading) {
+<span class="nc bnc" id="L449" title="All 2 branches missed.">        connectButton.setEnabled(!isLoading);</span>
+<span class="nc bnc" id="L450" title="All 2 branches missed.">        if (isLoading) {</span>
+<span class="nc" id="L451">            connectButton.setText(Localization.lang(&quot;Connecting...&quot;));</span>
+<span class="nc" id="L452">        } else {</span>
+<span class="nc" id="L453">            connectButton.setText(Localization.lang(&quot;Connect&quot;));</span>
+        }
+<span class="nc" id="L455">    }</span>
+
+    /**
+     * Checks whether a database with the given @link {@link DBMSConnectionProperties} is already opened.
+     */
+    private boolean isSharedDatabaseAlreadyPresent() {
+<span class="nc" id="L461">        List&lt;BasePanel&gt; panels = JabRefGUI.getMainFrame().getBasePanelList();</span>
+<span class="nc" id="L462">        return panels.parallelStream().anyMatch(panel -&gt; {</span>
+<span class="nc" id="L463">            BibDatabaseContext context = panel.getBibDatabaseContext();</span>
+
+<span class="nc bnc" id="L465" title="All 2 branches missed.">            return ((context.getLocation() == DatabaseLocation.SHARED) &amp;&amp;</span>
+<span class="nc bnc" id="L466" title="All 2 branches missed.">                    this.connectionProperties.equals(context.getDBMSSynchronizer().getConnectionProperties()));</span>
+        });
+    }
+
+    private void showFileChooser() {
+<span class="nc" id="L471">        FileDialogConfiguration fileDialogConfiguration = new FileDialogConfiguration.Builder()</span>
+<span class="nc" id="L472">                .addExtensionFilter(FileType.BIBTEX_DB)</span>
+<span class="nc" id="L473">                .withDefaultExtension(FileType.BIBTEX_DB)</span>
+<span class="nc" id="L474">                .withInitialDirectory(Globals.prefs.get(JabRefPreferences.WORKING_DIRECTORY)).build();</span>
+<span class="nc" id="L475">        DialogService ds = new FXDialogService();</span>
+
+<span class="nc" id="L477">        Optional&lt;Path&gt; path = DefaultTaskExecutor</span>
+<span class="nc" id="L478">                .runInJavaFXThread(() -&gt; ds.showFileOpenDialog(fileDialogConfiguration));</span>
+<span class="nc" id="L479">        path.ifPresent(p -&gt; fileLocationField.setText(p.toString()));</span>
+<span class="nc" id="L480">    }</span>
+
+    private void updateEnableState() {
+<span class="nc" id="L483">        fileLocationField.setEnabled(autosaveFile.isSelected());</span>
+<span class="nc" id="L484">        browseButton.setEnabled(autosaveFile.isSelected());</span>
+<span class="nc" id="L485">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>BibDatabaseTestsWithFiles.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.importer</a> &gt; <span class="el_source">BibDatabaseTestsWithFiles.java</span></div><h1>BibDatabaseTestsWithFiles.java</h1><pre class="source lang-java linenums">package org.jabref.logic.importer;
+
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+
+import org.jabref.logic.importer.fileformat.BibtexParser;
+import org.jabref.model.database.BibDatabase;
+import org.jabref.model.util.DummyFileUpdateMonitor;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Answers;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+
+<span class="fc" id="L19">public class BibDatabaseTestsWithFiles {</span>
+
+    private ImportFormatPreferences importFormatPreferences;
+
+    @BeforeEach
+    public void setUp() {
+<span class="fc" id="L25">        importFormatPreferences = mock(ImportFormatPreferences.class, Answers.RETURNS_DEEP_STUBS);</span>
+<span class="fc" id="L26">    }</span>
+
+    @Test
+    public void resolveStrings() throws IOException {
+<span class="fc" id="L30">        try (FileInputStream stream = new FileInputStream(&quot;src/test/resources/org/jabref/util/twente.bib&quot;);</span>
+<span class="fc" id="L31">                InputStreamReader fr = new InputStreamReader(stream, StandardCharsets.UTF_8)) {</span>
+<span class="fc" id="L32">            ParserResult result = new BibtexParser(importFormatPreferences, new DummyFileUpdateMonitor()).parse(fr);</span>
+
+<span class="fc" id="L34">            BibDatabase db = result.getDatabase();</span>
+
+<span class="fc" id="L36">            assertEquals(&quot;Arvind&quot;, db.resolveForStrings(&quot;#Arvind#&quot;));</span>
+<span class="fc" id="L37">            assertEquals(&quot;Patterson, David&quot;, db.resolveForStrings(&quot;#Patterson#&quot;));</span>
+<span class="fc" id="L38">            assertEquals(&quot;Arvind and Patterson, David&quot;, db.resolveForStrings(&quot;#Arvind# and #Patterson#&quot;));</span>
+
+            // Strings that are not found return just the given string.
+<span class="fc" id="L41">            assertEquals(&quot;#unknown#&quot;, db.resolveForStrings(&quot;#unknown#&quot;));</span>
+<span class="pc bpc" id="L42" title="14 of 16 branches missed.">        }</span>
+<span class="fc" id="L43">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

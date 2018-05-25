@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>UnlinkedFilesCrawler.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.importer</a> &gt; <span class="el_source">UnlinkedFilesCrawler.java</span></div><h1>UnlinkedFilesCrawler.java</h1><pre class="source lang-java linenums">package org.jabref.gui.importer;
+
+import java.io.File;
+import java.io.FileFilter;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+
+import org.jabref.gui.FindUnlinkedFilesDialog.CheckableTreeNode;
+import org.jabref.gui.FindUnlinkedFilesDialog.FileNodeWrapper;
+import org.jabref.model.database.BibDatabase;
+import org.jabref.model.database.BibDatabaseContext;
+
+/**
+ * Util class for searching files on the file system which are not linked to a provided {@link BibDatabase}.
+ */
+public class UnlinkedFilesCrawler {
+    /**
+     * File filter, that accepts directories only.
+     */
+<span class="nc bnc" id="L25" title="All 4 branches missed.">    private static final FileFilter DIRECTORY_FILTER = pathname -&gt; (pathname != null) &amp;&amp; pathname.isDirectory();</span>
+
+    private final BibDatabaseContext databaseContext;
+
+
+<span class="nc" id="L30">    public UnlinkedFilesCrawler(BibDatabaseContext databaseContext) {</span>
+<span class="nc" id="L31">        this.databaseContext = databaseContext;</span>
+<span class="nc" id="L32">    }</span>
+
+    public CheckableTreeNode searchDirectory(File directory, FileFilter filter) {
+<span class="nc" id="L35">        UnlinkedPDFFileFilter ff = new UnlinkedPDFFileFilter(filter, databaseContext);</span>
+<span class="nc" id="L36">        return searchDirectory(directory, ff, new AtomicBoolean(true), null);</span>
+    }
+
+    /**
+     * Searches recursively all files in the specified directory. &lt;br&gt;
+     * &lt;br&gt;
+     * All {@link File}s, which match the {@link FileFilter} that comes with the
+     * {@link EntryFromFileCreatorManager}, are taken into the resulting tree. &lt;br&gt;
+     * &lt;br&gt;
+     * The result will be a tree structure of nodes of the type
+     * {@link CheckableTreeNode}. &lt;br&gt;
+     * &lt;br&gt;
+     * The user objects that are attached to the nodes is the
+     * {@link FileNodeWrapper}, which wraps the {@link File}-Object. &lt;br&gt;
+     * &lt;br&gt;
+     * For ensuring the capability to cancel the work of this recursive method,
+     * the first position in the integer array 'state' must be set to 1, to keep
+     * the recursion running. When the states value changes, the method will
+     * resolve its recursion and return what it has saved so far.
+     */
+    public CheckableTreeNode searchDirectory(File directory, UnlinkedPDFFileFilter ff, AtomicBoolean state, ChangeListener changeListener) {
+        /* Cancellation of the search from outside! */
+<span class="nc bnc" id="L58" title="All 4 branches missed.">        if ((state == null) || !state.get()) {</span>
+<span class="nc" id="L59">            return null;</span>
+        }
+        // Return null if the directory is not valid.
+<span class="nc bnc" id="L62" title="All 6 branches missed.">        if ((directory == null) || !directory.exists() || !directory.isDirectory()) {</span>
+<span class="nc" id="L63">            return null;</span>
+        }
+
+<span class="nc" id="L66">        File[] filesArray = directory.listFiles(ff);</span>
+        List&lt;File&gt; files;
+<span class="nc bnc" id="L68" title="All 2 branches missed.">        if (filesArray == null) {</span>
+<span class="nc" id="L69">            files = Collections.emptyList();</span>
+<span class="nc" id="L70">        } else {</span>
+<span class="nc" id="L71">            files = Arrays.asList(filesArray);</span>
+        }
+<span class="nc" id="L73">        CheckableTreeNode root = new CheckableTreeNode(null);</span>
+
+<span class="nc" id="L75">        int filesCount = 0;</span>
+
+<span class="nc" id="L77">        filesArray = directory.listFiles(DIRECTORY_FILTER);</span>
+        List&lt;File&gt; subDirectories;
+<span class="nc bnc" id="L79" title="All 2 branches missed.">        if (filesArray == null) {</span>
+<span class="nc" id="L80">            subDirectories = Collections.emptyList();</span>
+<span class="nc" id="L81">        } else {</span>
+<span class="nc" id="L82">            subDirectories = Arrays.asList(filesArray);</span>
+        }
+<span class="nc bnc" id="L84" title="All 2 branches missed.">        for (File subDirectory : subDirectories) {</span>
+<span class="nc" id="L85">            CheckableTreeNode subRoot = searchDirectory(subDirectory, ff, state, changeListener);</span>
+<span class="nc bnc" id="L86" title="All 4 branches missed.">            if ((subRoot != null) &amp;&amp; (subRoot.getChildCount() &gt; 0)) {</span>
+<span class="nc" id="L87">                filesCount += ((FileNodeWrapper) subRoot.getUserObject()).fileCount;</span>
+<span class="nc" id="L88">                root.add(subRoot);</span>
+            }
+        }
+
+<span class="nc" id="L92">        root.setUserObject(new FileNodeWrapper(directory, files.size() + filesCount));</span>
+
+<span class="nc bnc" id="L94" title="All 2 branches missed.">        for (File file : files) {</span>
+<span class="nc" id="L95">            root.add(new CheckableTreeNode(new FileNodeWrapper(file)));</span>
+<span class="nc bnc" id="L96" title="All 2 branches missed.">            if (changeListener != null) {</span>
+<span class="nc" id="L97">                changeListener.stateChanged(new ChangeEvent(this));</span>
+            }
+        }
+
+<span class="nc" id="L101">        return root;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

@@ -1,0 +1,359 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>JabRefDesktop.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.desktop</a> &gt; <span class="el_source">JabRefDesktop.java</span></div><h1>JabRefDesktop.java</h1><pre class="source lang-java linenums">package org.jabref.gui.desktop;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
+import java.util.regex.Pattern;
+
+import javax.swing.JOptionPane;
+
+import org.jabref.Globals;
+import org.jabref.JabRefGUI;
+import org.jabref.gui.ClipBoardManager;
+import org.jabref.gui.IconTheme;
+import org.jabref.gui.JabRefFrame;
+import org.jabref.gui.desktop.os.DefaultDesktop;
+import org.jabref.gui.desktop.os.Linux;
+import org.jabref.gui.desktop.os.NativeDesktop;
+import org.jabref.gui.desktop.os.OSX;
+import org.jabref.gui.desktop.os.Windows;
+import org.jabref.gui.externalfiletype.ExternalFileType;
+import org.jabref.gui.externalfiletype.ExternalFileTypeEntryEditor;
+import org.jabref.gui.externalfiletype.ExternalFileTypes;
+import org.jabref.gui.externalfiletype.UnknownExternalFileType;
+import org.jabref.gui.filelist.FileListEntry;
+import org.jabref.gui.filelist.FileListEntryEditor;
+import org.jabref.gui.filelist.FileListTableModel;
+import org.jabref.gui.undo.UndoableFieldChange;
+import org.jabref.logic.l10n.Localization;
+import org.jabref.logic.util.OS;
+import org.jabref.model.database.BibDatabaseContext;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.FieldName;
+import org.jabref.model.entry.identifier.DOI;
+import org.jabref.model.entry.identifier.Eprint;
+import org.jabref.model.util.FileHelper;
+import org.jabref.preferences.JabRefPreferences;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * TODO: Replace by http://docs.oracle.com/javase/7/docs/api/java/awt/Desktop.html
+ * http://stackoverflow.com/questions/18004150/desktop-api-is-not-supported-on-the-current-platform
+ */
+public class JabRefDesktop {
+
+<span class="fc" id="L54">    private static final Logger LOGGER = LoggerFactory.getLogger(JabRefDesktop.class);</span>
+
+<span class="fc" id="L56">    private static final NativeDesktop NATIVE_DESKTOP = getNativeDesktop();</span>
+<span class="fc" id="L57">    private static final Pattern REMOTE_LINK_PATTERN = Pattern.compile(&quot;[a-z]+://.*&quot;);</span>
+
+<span class="nc" id="L59">    private JabRefDesktop() {</span>
+<span class="nc" id="L60">    }</span>
+
+    /**
+     * Open a http/pdf/ps viewer for the given link string.
+     */
+    public static void openExternalViewer(BibDatabaseContext databaseContext, String initialLink,
+            String initialFieldName) throws IOException {
+<span class="nc" id="L67">        String link = initialLink;</span>
+<span class="nc" id="L68">        String fieldName = initialFieldName;</span>
+<span class="nc bnc" id="L69" title="All 4 branches missed.">        if (FieldName.PS.equals(fieldName) || FieldName.PDF.equals(fieldName)) {</span>
+            // Find the default directory for this field type:
+<span class="nc" id="L71">            List&lt;String&gt; dir = databaseContext.getFileDirectories(fieldName, Globals.prefs.getFileDirectoryPreferences());</span>
+
+<span class="nc" id="L73">            Optional&lt;Path&gt; file = FileHelper.expandFilename(link, dir);</span>
+
+            // Check that the file exists:
+<span class="nc bnc" id="L76" title="All 4 branches missed.">            if (!file.isPresent() || !Files.exists(file.get())) {</span>
+<span class="nc" id="L77">                throw new IOException(&quot;File not found (&quot; + fieldName + &quot;): '&quot; + link + &quot;'.&quot;);</span>
+            }
+<span class="nc" id="L79">            link = file.get().toAbsolutePath().toString();</span>
+
+            // Use the correct viewer even if pdf and ps are mixed up:
+<span class="nc" id="L82">            String[] split = file.get().getFileName().toString().split(&quot;\\.&quot;);</span>
+<span class="nc bnc" id="L83" title="All 2 branches missed.">            if (split.length &gt;= 2) {</span>
+<span class="nc bnc" id="L84" title="All 2 branches missed.">                if (&quot;pdf&quot;.equalsIgnoreCase(split[split.length - 1])) {</span>
+<span class="nc" id="L85">                    fieldName = FieldName.PDF;</span>
+<span class="nc bnc" id="L86" title="All 2 branches missed.">                } else if (&quot;ps&quot;.equalsIgnoreCase(split[split.length - 1])</span>
+<span class="nc bnc" id="L87" title="All 4 branches missed.">                        || ((split.length &gt;= 3) &amp;&amp; &quot;ps&quot;.equalsIgnoreCase(split[split.length - 2]))) {</span>
+<span class="nc" id="L88">                    fieldName = FieldName.PS;</span>
+                }
+            }
+<span class="nc bnc" id="L91" title="All 2 branches missed.">        } else if (FieldName.DOI.equals(fieldName)) {</span>
+<span class="nc" id="L92">            openDoi(link);</span>
+<span class="nc" id="L93">            return;</span>
+<span class="nc bnc" id="L94" title="All 2 branches missed.">        } else if (FieldName.EPRINT.equals(fieldName)) {</span>
+<span class="nc" id="L95">            link = Eprint.build(link).map(Eprint::getURIAsASCIIString).orElse(link);</span>
+            // should be opened in browser
+<span class="nc" id="L97">            fieldName = FieldName.URL;</span>
+        }
+
+<span class="nc bnc" id="L100" title="All 2 branches missed.">        if (FieldName.URL.equals(fieldName)) {</span>
+<span class="nc" id="L101">            openBrowser(link);</span>
+<span class="nc bnc" id="L102" title="All 2 branches missed.">        } else if (FieldName.PS.equals(fieldName)) {</span>
+            try {
+<span class="nc" id="L104">                NATIVE_DESKTOP.openFile(link, FieldName.PS);</span>
+<span class="nc" id="L105">            } catch (IOException e) {</span>
+<span class="nc" id="L106">                LOGGER.error(&quot;An error occurred on the command: &quot; + link, e);</span>
+            }
+<span class="nc bnc" id="L108" title="All 2 branches missed.">        } else if (FieldName.PDF.equals(fieldName)) {</span>
+            try {
+<span class="nc" id="L110">                NATIVE_DESKTOP.openFile(link, FieldName.PDF);</span>
+<span class="nc" id="L111">            } catch (IOException e) {</span>
+<span class="nc" id="L112">                LOGGER.error(&quot;An error occurred on the command: &quot; + link, e);</span>
+            }
+<span class="nc" id="L114">        } else {</span>
+<span class="nc" id="L115">            LOGGER.info(&quot;Message: currently only PDF, PS and HTML files can be opened by double clicking&quot;);</span>
+        }
+<span class="nc" id="L117">    }</span>
+
+    private static void openDoi(String doi) throws IOException {
+<span class="nc" id="L120">        String link = DOI.parse(doi).map(DOI::getURIAsASCIIString).orElse(doi);</span>
+<span class="nc" id="L121">        openBrowser(link);</span>
+<span class="nc" id="L122">    }</span>
+
+    /**
+     * Open an external file, attempting to use the correct viewer for it.
+     *
+     * @param databaseContext
+     *            The database this file belongs to.
+     * @param link
+     *            The filename.
+     * @return false if the link couldn't be resolved, true otherwise.
+     */
+    public static boolean openExternalFileAnyFormat(final BibDatabaseContext databaseContext, String link,
+            final Optional&lt;ExternalFileType&gt; type) throws IOException {
+<span class="nc" id="L135">        boolean httpLink = false;</span>
+
+<span class="nc bnc" id="L137" title="All 2 branches missed.">        if (REMOTE_LINK_PATTERN.matcher(link.toLowerCase(Locale.ROOT)).matches()) {</span>
+<span class="nc" id="L138">            httpLink = true;</span>
+        }
+
+        // For other platforms we'll try to find the file type:
+<span class="nc" id="L142">        Path file = null;</span>
+<span class="nc bnc" id="L143" title="All 2 branches missed.">        if (!httpLink) {</span>
+<span class="nc" id="L144">            Optional&lt;Path&gt; tmp = FileHelper.expandFilename(databaseContext, link,</span>
+<span class="nc" id="L145">                    Globals.prefs.getFileDirectoryPreferences());</span>
+<span class="nc bnc" id="L146" title="All 2 branches missed.">            if (tmp.isPresent()) {</span>
+<span class="nc" id="L147">                file = tmp.get();</span>
+            }
+        }
+
+        // Check if we have arrived at a file type, and either an http link or an existing file:
+<span class="nc bnc" id="L152" title="All 8 branches missed.">        if (httpLink || ((file != null) &amp;&amp; Files.exists(file) &amp;&amp; (type.isPresent()))) {</span>
+            // Open the file:
+<span class="nc bnc" id="L154" title="All 2 branches missed.">            String filePath = httpLink ? link : file.toString();</span>
+<span class="nc" id="L155">            openExternalFilePlatformIndependent(type, filePath);</span>
+<span class="nc" id="L156">            return true;</span>
+        } else {
+            // No file matched the name, or we did not know the file type.
+<span class="nc" id="L159">            return false;</span>
+        }
+    }
+
+    public static boolean openExternalFileAnyFormat(Path file, final BibDatabaseContext databaseContext, final Optional&lt;ExternalFileType&gt; type) throws IOException {
+<span class="nc" id="L164">        return openExternalFileAnyFormat(databaseContext, file.toString(), type);</span>
+    }
+
+    private static void openExternalFilePlatformIndependent(Optional&lt;ExternalFileType&gt; fileType, String filePath)
+            throws IOException {
+<span class="nc bnc" id="L169" title="All 2 branches missed.">        if (fileType.isPresent()) {</span>
+<span class="nc" id="L170">            String application = fileType.get().getOpenWithApplication();</span>
+
+<span class="nc bnc" id="L172" title="All 2 branches missed.">            if (application.isEmpty()) {</span>
+<span class="nc" id="L173">                NATIVE_DESKTOP.openFile(filePath, fileType.get().getExtension());</span>
+<span class="nc" id="L174">            } else {</span>
+<span class="nc" id="L175">                NATIVE_DESKTOP.openFileWithApplication(filePath, application);</span>
+            }
+        }
+<span class="nc" id="L178">    }</span>
+
+    public static boolean openExternalFileUnknown(JabRefFrame frame, BibEntry entry, BibDatabaseContext databaseContext,
+            String link, UnknownExternalFileType fileType) throws IOException {
+
+<span class="nc" id="L183">        String cancelMessage = Localization.lang(&quot;Unable to open file.&quot;);</span>
+<span class="nc" id="L184">        String[] options = new String[] {Localization.lang(&quot;Define '%0'&quot;, fileType.getName()),</span>
+<span class="nc" id="L185">                Localization.lang(&quot;Change file type&quot;), Localization.lang(&quot;Cancel&quot;)};</span>
+<span class="nc" id="L186">        String defOption = options[0];</span>
+<span class="nc" id="L187">        int answer = JOptionPane.showOptionDialog(frame,</span>
+<span class="nc" id="L188">                Localization.lang(&quot;This external link is of the type '%0', which is undefined. What do you want to do?&quot;,</span>
+<span class="nc" id="L189">                        fileType.getName()),</span>
+<span class="nc" id="L190">                Localization.lang(&quot;Undefined file type&quot;), JOptionPane.YES_NO_CANCEL_OPTION,</span>
+<span class="nc" id="L191">                JOptionPane.QUESTION_MESSAGE, null, options, defOption);</span>
+<span class="nc bnc" id="L192" title="All 2 branches missed.">        if (answer == JOptionPane.CANCEL_OPTION) {</span>
+<span class="nc" id="L193">            frame.output(cancelMessage);</span>
+<span class="nc" id="L194">            return false;</span>
+<span class="nc bnc" id="L195" title="All 2 branches missed.">        } else if (answer == JOptionPane.YES_OPTION) {</span>
+            // User wants to define the new file type. Show the dialog:
+<span class="nc" id="L197">            ExternalFileType newType = new ExternalFileType(fileType.getName(), fileType.getExtension(), &quot;&quot;, &quot;&quot;, &quot;new&quot;,</span>
+<span class="nc" id="L198">                    IconTheme.JabRefIcon.FILE.getSmallIcon());</span>
+<span class="nc" id="L199">            ExternalFileTypeEntryEditor editor = new ExternalFileTypeEntryEditor(frame, newType);</span>
+<span class="nc" id="L200">            editor.setVisible(true);</span>
+<span class="nc bnc" id="L201" title="All 2 branches missed.">            if (editor.okPressed()) {</span>
+                // Get the old list of types, add this one, and update the list in prefs:
+<span class="nc" id="L203">                List&lt;ExternalFileType&gt; fileTypes = new ArrayList&lt;&gt;(</span>
+<span class="nc" id="L204">                        ExternalFileTypes.getInstance().getExternalFileTypeSelection());</span>
+<span class="nc" id="L205">                fileTypes.add(newType);</span>
+<span class="nc" id="L206">                Collections.sort(fileTypes);</span>
+<span class="nc" id="L207">                ExternalFileTypes.getInstance().setExternalFileTypes(fileTypes);</span>
+                // Finally, open the file:
+<span class="nc" id="L209">                return openExternalFileAnyFormat(databaseContext, link, Optional.of(newType));</span>
+            } else {
+                // Canceled:
+<span class="nc" id="L212">                frame.output(cancelMessage);</span>
+<span class="nc" id="L213">                return false;</span>
+            }
+        } else {
+            // User wants to change the type of this link.
+            // First get a model of all file links for this entry:
+<span class="nc" id="L218">            FileListTableModel tModel = new FileListTableModel();</span>
+<span class="nc" id="L219">            Optional&lt;String&gt; oldValue = entry.getField(FieldName.FILE);</span>
+<span class="nc" id="L220">            oldValue.ifPresent(tModel::setContent);</span>
+<span class="nc" id="L221">            FileListEntry flEntry = null;</span>
+            // Then find which one we are looking at:
+<span class="nc bnc" id="L223" title="All 2 branches missed.">            for (int i = 0; i &lt; tModel.getRowCount(); i++) {</span>
+<span class="nc" id="L224">                FileListEntry iEntry = tModel.getEntry(i);</span>
+<span class="nc bnc" id="L225" title="All 2 branches missed.">                if (iEntry.getLink().equals(link)) {</span>
+<span class="nc" id="L226">                    flEntry = iEntry;</span>
+<span class="nc" id="L227">                    break;</span>
+                }
+            }
+<span class="nc bnc" id="L230" title="All 2 branches missed.">            if (flEntry == null) {</span>
+                // This shouldn't happen, so I'm not sure what to put in here:
+<span class="nc" id="L232">                throw new RuntimeException(&quot;Could not find the file list entry &quot; + link + &quot; in &quot; + entry);</span>
+            }
+
+<span class="nc" id="L235">            FileListEntryEditor editor = new FileListEntryEditor(flEntry.toParsedFileField(), false, true, databaseContext);</span>
+<span class="nc" id="L236">            editor.setVisible(true, false);</span>
+<span class="nc bnc" id="L237" title="All 2 branches missed.">            if (editor.okPressed()) {</span>
+                // Store the changes and add an undo edit:
+<span class="nc" id="L239">                String newValue = tModel.getStringRepresentation();</span>
+<span class="nc" id="L240">                UndoableFieldChange ce = new UndoableFieldChange(entry, FieldName.FILE, oldValue.orElse(null),</span>
+<span class="nc" id="L241">                        newValue);</span>
+<span class="nc" id="L242">                entry.setField(FieldName.FILE, newValue);</span>
+<span class="nc" id="L243">                frame.getCurrentBasePanel().getUndoManager().addEdit(ce);</span>
+<span class="nc" id="L244">                frame.getCurrentBasePanel().markBaseChanged();</span>
+                // Finally, open the link:
+<span class="nc" id="L246">                return openExternalFileAnyFormat(databaseContext, flEntry.getLink(), flEntry.getType());</span>
+            } else {
+                // Canceled:
+<span class="nc" id="L249">                frame.output(cancelMessage);</span>
+<span class="nc" id="L250">                return false;</span>
+            }
+        }
+    }
+
+    /**
+     * Opens a file browser of the folder of the given file. If possible, the file is selected
+     * @param fileLink the location of the file
+     * @throws IOException
+     */
+    public static void openFolderAndSelectFile(Path fileLink) throws IOException {
+<span class="nc" id="L261">        NATIVE_DESKTOP.openFolderAndSelectFile(fileLink);</span>
+<span class="nc" id="L262">    }</span>
+
+    /**
+     * Opens the given URL using the system browser
+     *
+     * @param url the URL to open
+     * @throws IOException
+     */
+    public static void openBrowser(String url) throws IOException {
+<span class="nc" id="L271">        Optional&lt;ExternalFileType&gt; fileType = ExternalFileTypes.getInstance().getExternalFileTypeByExt(&quot;html&quot;);</span>
+<span class="nc" id="L272">        openExternalFilePlatformIndependent(fileType, url);</span>
+<span class="nc" id="L273">    }</span>
+
+    public static void openBrowser(URI url) throws IOException {
+<span class="nc" id="L276">        openBrowser(url.toASCIIString());</span>
+<span class="nc" id="L277">    }</span>
+
+    /**
+     * Opens the url with the users standard Browser.
+     * If that fails a popup will be shown to instruct the user to open the link manually
+     * and the link gets copied to the clipboard
+     * @param url
+     */
+    public static void openBrowserShowPopup(String url) {
+        try {
+<span class="nc" id="L287">            openBrowser(url);</span>
+<span class="nc" id="L288">        } catch (IOException exception) {</span>
+<span class="nc" id="L289">            new ClipBoardManager().setClipboardContents(url);</span>
+<span class="nc" id="L290">            LOGGER.error(&quot;Could not open browser&quot;, exception);</span>
+<span class="nc" id="L291">            String couldNotOpenBrowser = Localization.lang(&quot;Could not open browser.&quot;);</span>
+<span class="nc" id="L292">            String openManually = Localization.lang(&quot;Please open %0 manually.&quot;, url);</span>
+<span class="nc" id="L293">            String copiedToClipboard = Localization.lang(&quot;The link has been copied to the clipboard.&quot;);</span>
+<span class="nc" id="L294">            JabRefGUI.getMainFrame().output(couldNotOpenBrowser);</span>
+<span class="nc" id="L295">            JOptionPane.showMessageDialog(JabRefGUI.getMainFrame(), couldNotOpenBrowser + &quot;\n&quot; + openManually + &quot;\n&quot; +</span>
+<span class="nc" id="L296">                    copiedToClipboard, couldNotOpenBrowser, JOptionPane.ERROR_MESSAGE);</span>
+        }
+<span class="nc" id="L298">    }</span>
+
+    /**
+     * Opens a new console starting on the given file location
+     *
+     * If no command is specified in {@link Globals},
+     * the default system console will be executed.
+     *
+     * @param file Location the console should be opened at.
+     */
+    public static void openConsole(File file) throws IOException {
+<span class="nc bnc" id="L309" title="All 2 branches missed.">        if (file == null) {</span>
+<span class="nc" id="L310">            return;</span>
+        }
+
+<span class="nc" id="L313">        String absolutePath = file.toPath().toAbsolutePath().getParent().toString();</span>
+<span class="nc" id="L314">        boolean usingDefault = Globals.prefs.getBoolean(JabRefPreferences.USE_DEFAULT_CONSOLE_APPLICATION);</span>
+
+<span class="nc bnc" id="L316" title="All 2 branches missed.">        if (usingDefault) {</span>
+<span class="nc" id="L317">            NATIVE_DESKTOP.openConsole(absolutePath);</span>
+<span class="nc" id="L318">        } else {</span>
+<span class="nc" id="L319">            String command = Globals.prefs.get(JabRefPreferences.CONSOLE_COMMAND);</span>
+<span class="nc" id="L320">            command = command.trim();</span>
+
+<span class="nc bnc" id="L322" title="All 2 branches missed.">            if (!command.isEmpty()) {</span>
+<span class="nc" id="L323">                command = command.replaceAll(&quot;\\s+&quot;, &quot; &quot;); // normalize white spaces</span>
+<span class="nc" id="L324">                String[] subcommands = command.split(&quot; &quot;);</span>
+
+                // replace the placeholder if used
+<span class="nc" id="L327">                String commandLoggingText = command.replace(&quot;%DIR&quot;, absolutePath);</span>
+
+<span class="nc" id="L329">                JabRefGUI.getMainFrame().output(Localization.lang(&quot;Executing command \&quot;%0\&quot;...&quot;, commandLoggingText));</span>
+<span class="nc" id="L330">                LOGGER.info(&quot;Executing command \&quot;&quot; + commandLoggingText + &quot;\&quot;...&quot;);</span>
+
+                try {
+<span class="nc" id="L333">                    new ProcessBuilder(subcommands).start();</span>
+<span class="nc" id="L334">                } catch (IOException exception) {</span>
+<span class="nc" id="L335">                    LOGGER.error(&quot;Open console&quot;, exception);</span>
+
+<span class="nc" id="L337">                    JOptionPane.showMessageDialog(JabRefGUI.getMainFrame(),</span>
+<span class="nc" id="L338">                            Localization.lang(&quot;Error occured while executing the command \&quot;%0\&quot;.&quot;, commandLoggingText),</span>
+<span class="nc" id="L339">                            Localization.lang(&quot;Open console&quot;) + &quot; - &quot; + Localization.lang(&quot;Error&quot;),</span>
+<span class="nc" id="L340">                            JOptionPane.ERROR_MESSAGE);</span>
+<span class="nc" id="L341">                    JabRefGUI.getMainFrame().output(null);</span>
+                }
+            }
+        }
+<span class="nc" id="L345">    }</span>
+
+    // TODO: Move to OS.java
+    public static NativeDesktop getNativeDesktop() {
+<span class="pc bpc" id="L349" title="1 of 2 branches missed.">        if (OS.WINDOWS) {</span>
+<span class="nc" id="L350">            return new Windows();</span>
+<span class="pc bpc" id="L351" title="1 of 2 branches missed.">        } else if (OS.OS_X) {</span>
+<span class="nc" id="L352">            return new OSX();</span>
+<span class="pc bpc" id="L353" title="1 of 2 branches missed.">        } else if (OS.LINUX) {</span>
+<span class="fc" id="L354">            return new Linux();</span>
+        }
+<span class="nc" id="L356">        return new DefaultDesktop();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

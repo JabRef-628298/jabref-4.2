@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>CiteKeyBasedFileFinderTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.util.io</a> &gt; <span class="el_source">CiteKeyBasedFileFinderTest.java</span></div><h1>CiteKeyBasedFileFinderTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.util.io;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.BibtexEntryTypes;
+
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
+import org.mockito.junit.MockitoJUnitRunner;
+
+import static org.junit.Assert.assertEquals;
+
+@RunWith(MockitoJUnitRunner.class)
+<span class="fc" id="L23">public class CiteKeyBasedFileFinderTest {</span>
+
+    @Rule
+<span class="fc" id="L26">    public TemporaryFolder temporaryFolder = new TemporaryFolder();</span>
+    private BibEntry entry;
+    private Path rootDir;
+    private Path graphicsDir;
+    private Path pdfsDir;
+    private Path jpgFile;
+    private Path pdfFile;
+
+    @Before
+    public void setUp() throws IOException {
+<span class="fc" id="L36">        entry = new BibEntry(BibtexEntryTypes.ARTICLE.getName());</span>
+<span class="fc" id="L37">        entry.setCiteKey(&quot;HipKro03&quot;);</span>
+
+<span class="fc" id="L39">        rootDir = temporaryFolder.getRoot().toPath();</span>
+
+<span class="fc" id="L41">        Path subDir = Files.createDirectory(rootDir.resolve(&quot;Organization Science&quot;));</span>
+<span class="fc" id="L42">        pdfsDir = Files.createDirectory(rootDir.resolve(&quot;pdfs&quot;));</span>
+
+<span class="fc" id="L44">        Files.createFile(subDir.resolve(&quot;HipKro03 - Hello.pdf&quot;));</span>
+<span class="fc" id="L45">        Files.createFile(rootDir.resolve(&quot;HipKro03 - Hello.pdf&quot;));</span>
+
+<span class="fc" id="L47">        Path pdfSubSubDir = Files.createDirectory(pdfsDir.resolve(&quot;sub&quot;));</span>
+<span class="fc" id="L48">        pdfFile = Files.createFile(pdfSubSubDir.resolve(&quot;HipKro03-sub.pdf&quot;));</span>
+
+<span class="fc" id="L50">        Files.createDirectory(rootDir.resolve(&quot;2002&quot;));</span>
+<span class="fc" id="L51">        Path dir2003 = Files.createDirectory(rootDir.resolve(&quot;2003&quot;));</span>
+<span class="fc" id="L52">        Files.createFile(dir2003.resolve(&quot;Paper by HipKro03.pdf&quot;));</span>
+
+<span class="fc" id="L54">        Path dirTest = Files.createDirectory(rootDir.resolve(&quot;test&quot;));</span>
+<span class="fc" id="L55">        Files.createFile(dirTest.resolve(&quot;.TEST&quot;));</span>
+<span class="fc" id="L56">        Files.createFile(dirTest.resolve(&quot;TEST[&quot;));</span>
+<span class="fc" id="L57">        Files.createFile(dirTest.resolve(&quot;TE.ST&quot;));</span>
+<span class="fc" id="L58">        Files.createFile(dirTest.resolve(&quot;foo.dat&quot;));</span>
+
+<span class="fc" id="L60">        graphicsDir = Files.createDirectory(rootDir.resolve(&quot;graphicsDir&quot;));</span>
+<span class="fc" id="L61">        Path graphicsSubDir = Files.createDirectories(graphicsDir.resolve(&quot;subDir&quot;));</span>
+
+<span class="fc" id="L63">        jpgFile = Files.createFile(graphicsSubDir.resolve(&quot;HipKro03 test.jpg&quot;));</span>
+<span class="fc" id="L64">        Files.createFile(graphicsSubDir.resolve(&quot;HipKro03 test.png&quot;));</span>
+<span class="fc" id="L65">    }</span>
+
+    @Test
+    public void findAssociatedFilesInSubDirectories() throws Exception {
+<span class="fc" id="L69">        List&lt;String&gt; extensions = Arrays.asList(&quot;jpg&quot;, &quot;pdf&quot;);</span>
+<span class="fc" id="L70">        List&lt;Path&gt; dirs = Arrays.asList(graphicsDir, pdfsDir);</span>
+<span class="fc" id="L71">        FileFinder fileFinder = new CiteKeyBasedFileFinder(false);</span>
+
+<span class="fc" id="L73">        List&lt;Path&gt; results = fileFinder.findAssociatedFiles(entry, dirs, extensions);</span>
+
+<span class="fc" id="L75">        assertEquals(Arrays.asList(jpgFile, pdfFile), results);</span>
+<span class="fc" id="L76">    }</span>
+
+    @Test
+    public void findAssociatedFilesIgnoresFilesStartingWithKeyButContinueWithText() throws Exception {
+<span class="fc" id="L80">        Files.createFile(pdfsDir.resolve(&quot;HipKro03a - Hello second paper.pdf&quot;));</span>
+<span class="fc" id="L81">        FileFinder fileFinder = new CiteKeyBasedFileFinder(false);</span>
+
+<span class="fc" id="L83">        List&lt;Path&gt; results = fileFinder.findAssociatedFiles(entry, Collections.singletonList(pdfsDir), Collections.singletonList(&quot;pdf&quot;));</span>
+
+<span class="fc" id="L85">        assertEquals(Collections.singletonList(pdfFile), results);</span>
+<span class="fc" id="L86">    }</span>
+
+    @Test
+    public void findAssociatedFilesFindsFilesStartingWithKey() throws Exception {
+<span class="fc" id="L90">        Path secondPdfFile = Files.createFile(pdfsDir.resolve(&quot;HipKro03_Hello second paper.pdf&quot;));</span>
+<span class="fc" id="L91">        FileFinder fileFinder = new CiteKeyBasedFileFinder(false);</span>
+
+<span class="fc" id="L93">        List&lt;Path&gt; results = fileFinder.findAssociatedFiles(entry, Collections.singletonList(pdfsDir), Collections.singletonList(&quot;pdf&quot;));</span>
+
+<span class="fc" id="L95">        assertEquals(Arrays.asList(secondPdfFile, pdfFile), results);</span>
+<span class="fc" id="L96">    }</span>
+
+    @Test
+    public void findAssociatedFilesInNonExistingDirectoryFindsNothing() throws Exception {
+<span class="fc" id="L100">        List&lt;String&gt; extensions = Arrays.asList(&quot;jpg&quot;, &quot;pdf&quot;);</span>
+<span class="fc" id="L101">        List&lt;Path&gt; dirs = Collections.singletonList(rootDir.resolve(&quot;asdfasdf/asdfasdf&quot;));</span>
+<span class="fc" id="L102">        CiteKeyBasedFileFinder fileFinder = new CiteKeyBasedFileFinder(false);</span>
+
+<span class="fc" id="L104">        List&lt;Path&gt; results = fileFinder.findAssociatedFiles(entry, dirs, extensions);</span>
+
+<span class="fc" id="L106">        assertEquals(Collections.emptyList(), results);</span>
+<span class="fc" id="L107">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

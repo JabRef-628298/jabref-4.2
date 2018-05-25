@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>VersionWorker.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.worker</a> &gt; <span class="el_source">VersionWorker.java</span></div><h1>VersionWorker.java</h1><pre class="source lang-java linenums">package org.jabref.gui.worker;
+
+import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.ExecutionException;
+
+import javax.swing.JOptionPane;
+import javax.swing.SwingWorker;
+
+import org.jabref.gui.JabRefFrame;
+import org.jabref.gui.help.NewVersionDialog;
+import org.jabref.logic.l10n.Localization;
+import org.jabref.logic.util.Version;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+
+/**
+ * This worker checks if there is a new version of JabRef available.
+ * If there is it will display a Dialog to the User offering him multiple Options to proceed
+ * (see changelog, go to the download page, ignore this version, and remind later).
+ *
+ * If the versions check is executed manually and this is the latest version it will also display a dialog to inform the user.
+ */
+public class VersionWorker extends SwingWorker&lt;List&lt;Version&gt;, Void&gt; {
+
+<span class="fc" id="L31">    private static final Logger LOGGER = LoggerFactory.getLogger(VersionWorker.class);</span>
+
+    private final JabRefFrame mainFrame;
+
+    /** If this versions check is executed automatically (eg. on startup) or manually by the user */
+    private final boolean manualExecution;
+
+    /** The current version of the installed JabRef */
+    private final Version installedVersion;
+
+    /** The version which was previously ignored by the user */
+    private final Version toBeIgnored;
+
+
+<span class="fc" id="L45">    public VersionWorker(JabRefFrame mainFrame, boolean manualExecution, Version installedVersion, Version toBeIgnored) {</span>
+<span class="fc" id="L46">        this.mainFrame = Objects.requireNonNull(mainFrame);</span>
+<span class="fc" id="L47">        this.manualExecution = manualExecution;</span>
+<span class="fc" id="L48">        this.installedVersion = Objects.requireNonNull(installedVersion);</span>
+<span class="fc" id="L49">        this.toBeIgnored = Objects.requireNonNull(toBeIgnored);</span>
+<span class="fc" id="L50">    }</span>
+
+    @Override
+    protected List&lt;Version&gt; doInBackground() throws Exception {
+        try {
+<span class="fc" id="L55">            return Version.getAllAvailableVersions();</span>
+<span class="nc" id="L56">        } catch (IOException ioException) {</span>
+<span class="nc" id="L57">            LOGGER.warn(&quot;Could not connect to the updateserver.&quot;, ioException);</span>
+<span class="nc" id="L58">            return Collections.emptyList();</span>
+        }
+    }
+
+    @Override
+    public void done() {
+<span class="pc bpc" id="L64" title="1 of 2 branches missed.">        if (this.isCancelled()) {</span>
+<span class="nc" id="L65">            return;</span>
+        }
+
+        try {
+<span class="fc" id="L69">            List&lt;Version&gt; availableVersions = this.get();</span>
+
+            // couldn't find any version, connection problems?
+<span class="pc bpc" id="L72" title="1 of 2 branches missed.">            if (availableVersions.isEmpty()) {</span>
+<span class="nc" id="L73">                showConnectionError();</span>
+<span class="nc" id="L74">            } else {</span>
+<span class="fc" id="L75">                showUpdateInfo(availableVersions);</span>
+            }
+
+<span class="pc" id="L78">        } catch (InterruptedException | ExecutionException e) {</span>
+<span class="nc" id="L79">            LOGGER.error(&quot;Error while checking for updates&quot;, e);</span>
+        }
+<span class="fc" id="L81">    }</span>
+
+    /**
+     * prints the connection problem to the status bar and shows a dialog if it was executed manually
+     */
+    private void showConnectionError() {
+<span class="nc" id="L87">        String couldNotConnect = Localization.lang(&quot;Could not connect to the update server.&quot;);</span>
+<span class="nc" id="L88">        String tryLater = Localization.lang(&quot;Please try again later and/or check your network connection.&quot;);</span>
+<span class="nc bnc" id="L89" title="All 2 branches missed.">        if (manualExecution) {</span>
+<span class="nc" id="L90">            JOptionPane.showMessageDialog(this.mainFrame, couldNotConnect + &quot;\n&quot; + tryLater,</span>
+<span class="nc" id="L91">                    couldNotConnect, JOptionPane.ERROR_MESSAGE);</span>
+        }
+<span class="nc" id="L93">        this.mainFrame.output(couldNotConnect + &quot; &quot; + tryLater);</span>
+<span class="nc" id="L94">    }</span>
+
+    /**
+     * Prints up-to-date to the status bar (and shows a dialog it was executed manually) if there is now new version.
+     * Shows a &quot;New Version&quot; Dialog to the user if there is.
+     */
+    private void showUpdateInfo(List&lt;Version&gt; availableVersions) {
+        // the newer version, excluding any non-stable versions, except if the installed one is unstable too
+<span class="fc" id="L102">        Optional&lt;Version&gt; newerVersion = installedVersion.shouldBeUpdatedTo(availableVersions);</span>
+
+        // no new version could be found, only respect the ignored version on automated version checks
+<span class="pc bpc" id="L105" title="5 of 6 branches missed.">        if (!newerVersion.isPresent() || (newerVersion.get().equals(toBeIgnored) &amp;&amp; !manualExecution)) {</span>
+<span class="fc" id="L106">            String upToDate = Localization.lang(&quot;JabRef is up-to-date.&quot;);</span>
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">            if (manualExecution) {</span>
+<span class="nc" id="L108">                JOptionPane.showMessageDialog(this.mainFrame, upToDate, upToDate, JOptionPane.INFORMATION_MESSAGE);</span>
+            }
+<span class="fc" id="L110">            this.mainFrame.output(upToDate);</span>
+
+<span class="fc" id="L112">        } else {</span>
+            // notify the user about a newer version
+<span class="nc" id="L114">            new NewVersionDialog(this.mainFrame, installedVersion, newerVersion.get());</span>
+        }
+<span class="fc" id="L116">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

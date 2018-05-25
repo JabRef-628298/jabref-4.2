@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>FileSaveSession.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.exporter</a> &gt; <span class="el_source">FileSaveSession.java</span></div><h1>FileSaveSession.java</h1><pre class="source lang-java linenums">package org.jabref.logic.exporter;
+
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermission;
+import java.util.EnumSet;
+import java.util.Set;
+
+import org.jabref.logic.util.io.FileBasedLock;
+import org.jabref.logic.util.io.FileUtil;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * Class used to handle safe storage to disk.
+ * &lt;p&gt;
+ * Usage: create a SaveSession giving the file to save to, the encoding, and whether to make a backup. The SaveSession
+ * will provide a Writer to store to, which actually goes to a temporary file. The Writer keeps track of whether all
+ * characters could be saved, and if not, which characters were not encodable.
+ * &lt;p&gt;
+ * After saving is finished, the client should close the Writer. If the save should be put into effect, call commit(),
+ * otherwise call cancel(). When canceling, the temporary file is simply deleted and the target file remains unchanged.
+ * When committing, the temporary file is copied to the target file after making a backup if requested and if the target
+ * file already existed, and finally the temporary file is deleted.
+ * &lt;p&gt;
+ * If committing fails, the temporary file will not be deleted.
+ */
+public class FileSaveSession extends SaveSession {
+
+<span class="fc" id="L33">    private static final Logger LOGGER = LoggerFactory.getLogger(FileSaveSession.class);</span>
+
+    // Filenames.
+    private static final String BACKUP_EXTENSION = &quot;.bak&quot;;
+    private static final String TEMP_PREFIX = &quot;jabref&quot;;
+<span class="fc" id="L38">    private static final String TEMP_SUFFIX = &quot;save.bib&quot;;</span>
+    private final Path temporaryFile;
+
+    public FileSaveSession(Charset encoding, boolean backup) throws SaveException {
+<span class="fc" id="L42">        this(encoding, backup, createTemporaryFile());</span>
+<span class="fc" id="L43">    }</span>
+
+    public FileSaveSession(Charset encoding, boolean backup, Path temporaryFile) throws SaveException {
+<span class="fc" id="L46">        super(encoding, backup, getWriterForFile(encoding, temporaryFile));</span>
+<span class="fc" id="L47">        this.temporaryFile = temporaryFile;</span>
+<span class="fc" id="L48">    }</span>
+
+    private static VerifyingWriter getWriterForFile(Charset encoding, Path file) throws SaveException {
+        try {
+<span class="fc" id="L52">            return new VerifyingWriter(Files.newOutputStream(file), encoding);</span>
+<span class="nc" id="L53">        } catch (IOException e) {</span>
+<span class="nc" id="L54">            throw new SaveException(e);</span>
+        }
+    }
+
+    private static Path createTemporaryFile() throws SaveException {
+        try {
+<span class="fc" id="L60">            return Files.createTempFile(FileSaveSession.TEMP_PREFIX, FileSaveSession.TEMP_SUFFIX);</span>
+<span class="nc" id="L61">        } catch (IOException e) {</span>
+<span class="nc" id="L62">            throw new SaveException(e);</span>
+        }
+    }
+
+    @Override
+    public void commit(Path file) throws SaveException {
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">        if (file == null) {</span>
+<span class="nc" id="L69">            return;</span>
+        }
+<span class="pc bpc" id="L71" title="3 of 4 branches missed.">        if (backup &amp;&amp; Files.exists(file)) {</span>
+<span class="nc" id="L72">            Path backupFile = FileUtil.addExtension(file, BACKUP_EXTENSION);</span>
+<span class="nc" id="L73">            FileUtil.copyFile(file, backupFile, true);</span>
+        }
+        try {
+            // Always use a lock file
+            try {
+<span class="pc bpc" id="L78" title="1 of 2 branches missed.">                if (FileBasedLock.createLockFile(file)) {</span>
+                    // Oops, the lock file already existed. Try to wait it out:
+<span class="nc bnc" id="L80" title="All 2 branches missed.">                    if (!FileBasedLock.waitForFileLock(file)) {</span>
+<span class="nc" id="L81">                        throw SaveException.FILE_LOCKED;</span>
+                    }
+                }
+<span class="nc" id="L84">            } catch (IOException ex) {</span>
+<span class="nc" id="L85">                LOGGER.error(&quot;Error when creating lock file.&quot;, ex);</span>
+            }
+
+            // Try to save file permissions to restore them later (by default: 664)
+<span class="fc" id="L89">            Set&lt;PosixFilePermission&gt; oldFilePermissions = EnumSet.of(PosixFilePermission.OWNER_READ,</span>
+<span class="fc" id="L90">                    PosixFilePermission.OWNER_WRITE,</span>
+<span class="fc" id="L91">                    PosixFilePermission.GROUP_READ,</span>
+<span class="fc" id="L92">                    PosixFilePermission.GROUP_WRITE,</span>
+<span class="fc" id="L93">                    PosixFilePermission.OTHERS_READ);</span>
+<span class="pc bpc" id="L94" title="2 of 4 branches missed.">            if (FileUtil.IS_POSIX_COMPILANT &amp;&amp; Files.exists(file)) {</span>
+                try {
+<span class="fc" id="L96">                    oldFilePermissions = Files.getPosixFilePermissions(file);</span>
+<span class="pc" id="L97">                } catch (IOException exception) {</span>
+<span class="nc" id="L98">                    LOGGER.warn(&quot;Error getting file permissions.&quot;, exception);</span>
+                }
+            }
+
+<span class="fc" id="L102">            FileUtil.copyFile(temporaryFile, file, true);</span>
+
+            // Restore file permissions
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">            if (FileUtil.IS_POSIX_COMPILANT) {</span>
+                try {
+<span class="fc" id="L107">                    Files.setPosixFilePermissions(file, oldFilePermissions);</span>
+<span class="pc" id="L108">                } catch (IOException exception) {</span>
+<span class="nc" id="L109">                    throw new SaveException(exception);</span>
+                }
+            }
+<span class="nc" id="L112">        } finally {</span>
+<span class="pc" id="L113">            FileBasedLock.deleteLockFile(file);</span>
+<span class="nc" id="L114">        }</span>
+        try {
+<span class="fc" id="L116">            Files.deleteIfExists(temporaryFile);</span>
+<span class="pc" id="L117">        } catch (IOException e) {</span>
+<span class="nc" id="L118">            LOGGER.warn(&quot;Cannot delete temporary file&quot;, e);</span>
+        }
+<span class="fc" id="L120">    }</span>
+
+    @Override
+    public void cancel() {
+        try {
+<span class="nc" id="L125">            Files.deleteIfExists(temporaryFile);</span>
+<span class="nc" id="L126">        } catch (IOException e) {</span>
+<span class="nc" id="L127">            LOGGER.warn(&quot;Cannot delete temporary file&quot;, e);</span>
+        }
+<span class="nc" id="L129">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

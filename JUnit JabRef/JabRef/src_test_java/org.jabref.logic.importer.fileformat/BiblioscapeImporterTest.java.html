@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>BiblioscapeImporterTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.importer.fileformat</a> &gt; <span class="el_source">BiblioscapeImporterTest.java</span></div><h1>BiblioscapeImporterTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.importer.fileformat;
+
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Collections;
+
+import org.jabref.logic.util.FileType;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+<span class="fc" id="L15">public class BiblioscapeImporterTest {</span>
+
+    private BiblioscapeImporter importer;
+
+
+    @BeforeEach
+    public void setUp() throws Exception {
+<span class="fc" id="L22">        importer = new BiblioscapeImporter();</span>
+<span class="fc" id="L23">    }</span>
+
+    @Test
+    public void testGetFormatName() {
+<span class="fc" id="L27">        assertEquals(&quot;Biblioscape&quot;, importer.getName());</span>
+<span class="fc" id="L28">    }</span>
+
+    @Test
+    public void testsGetExtensions() {
+<span class="fc" id="L32">        assertEquals(FileType.BIBLIOSCAPE, importer.getFileType());</span>
+<span class="fc" id="L33">    }</span>
+
+    @Test
+    public void testGetDescription() {
+<span class="fc" id="L37">        assertEquals(&quot;Imports a Biblioscape Tag File.\n&quot; +</span>
+<span class="fc" id="L38">                &quot;Several Biblioscape field types are ignored. Others are only included in the BibTeX field \&quot;comment\&quot;.&quot;, importer.getDescription());</span>
+<span class="fc" id="L39">    }</span>
+
+    @Test
+    public void testGetCLIID() {
+<span class="fc" id="L43">        assertEquals(&quot;biblioscape&quot;, importer.getId());</span>
+<span class="fc" id="L44">    }</span>
+
+    @Test
+    public void testImportEntriesAbortion() throws Throwable {
+<span class="fc" id="L48">        Path file = Paths.get(BiblioscapeImporter.class.getResource(&quot;BiblioscapeImporterTestCorrupt.txt&quot;).toURI());</span>
+<span class="fc" id="L49">        assertEquals(Collections.emptyList(),</span>
+<span class="fc" id="L50">                importer.importDatabase(file, StandardCharsets.UTF_8).getDatabase().getEntries());</span>
+<span class="fc" id="L51">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

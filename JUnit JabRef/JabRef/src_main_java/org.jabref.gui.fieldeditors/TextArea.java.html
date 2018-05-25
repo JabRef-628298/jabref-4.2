@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>TextArea.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.fieldeditors</a> &gt; <span class="el_source">TextArea.java</span></div><h1>TextArea.java</h1><pre class="source lang-java linenums">package org.jabref.gui.fieldeditors;
+
+import java.awt.Color;
+import java.lang.reflect.InvocationTargetException;
+
+import javax.swing.JComponent;
+import javax.swing.SwingUtilities;
+
+import javafx.embed.swing.JFXPanel;
+import javafx.scene.Scene;
+
+import org.jabref.gui.GUIGlobals;
+import org.jabref.gui.customjfx.CustomJFXPanel;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * An implementation of the FieldEditor backed by a {@link EditorTextArea}.
+ * Used for multi-line input, currently all BibTexFields except Bibtex key!
+ */
+public class TextArea implements FieldEditor {
+
+<span class="nc" id="L24">    private static final Logger LOGGER = LoggerFactory.getLogger(TextArea.class);</span>
+
+    private final JFXPanel swingPanel;
+
+    private final EditorTextArea textArea;
+    private String fieldName;
+
+    public TextArea(String fieldName, String content) {
+<span class="nc" id="L32">        this(fieldName, content, &quot;&quot;);</span>
+<span class="nc" id="L33">    }</span>
+
+<span class="nc" id="L35">    public TextArea(String fieldName, String content, String title) {</span>
+<span class="nc" id="L36">        textArea = new EditorTextArea(content);</span>
+<span class="nc" id="L37">        textArea.setPromptText(title);</span>
+
+<span class="nc" id="L39">        swingPanel = CustomJFXPanel.wrap(new Scene(textArea));</span>
+<span class="nc" id="L40">        swingPanel.setBackground(GUIGlobals.activeBackgroundColor);</span>
+
+
+        /*
+        // Add the global focus listener, so a menu item can see if this field
+        // was focused when an action was called.
+        addFocusListener(Globals.getFocusListener());
+        addFocusListener(new FieldEditorFocusListener());
+        */
+
+<span class="nc" id="L50">        this.fieldName = fieldName;</span>
+
+        /*
+        FieldTextMenu popMenu = new FieldTextMenu(this);
+        this.addMouseListener(popMenu);
+        label.addMouseListener(popMenu);
+        */
+<span class="nc" id="L57">    }</span>
+
+    @Override
+    public String getFieldName() {
+<span class="nc" id="L61">        return fieldName;</span>
+    }
+
+    public void setFieldName(String newName) {
+<span class="nc" id="L65">        fieldName = newName;</span>
+<span class="nc" id="L66">    }</span>
+
+    @Override
+    public void setBackground(Color color) {
+        //not needed
+<span class="nc" id="L71">    }</span>
+
+    @Override
+    public JComponent getPane() {
+<span class="nc" id="L75">        return swingPanel;</span>
+    }
+
+    @Override
+    public JComponent getTextComponent() {
+<span class="nc" id="L80">        return null;</span>
+    }
+
+    @Override
+    public boolean hasFocus() {
+<span class="nc" id="L85">        return false;</span>
+    }
+
+    @Override
+    public void setActiveBackgroundColor() {
+<span class="nc" id="L90">        setBackgroundColor(GUIGlobals.activeBackgroundColor);</span>
+<span class="nc" id="L91">    }</span>
+
+    @Override
+    public void setValidBackgroundColor() {
+<span class="nc" id="L95">        setBackgroundColor(GUIGlobals.validFieldBackgroundColor);</span>
+<span class="nc" id="L96">    }</span>
+
+    @Override
+    public void setInvalidBackgroundColor() {
+<span class="nc" id="L100">        setBackgroundColor(GUIGlobals.invalidFieldBackgroundColor);</span>
+<span class="nc" id="L101">    }</span>
+
+    private void setBackgroundColor(Color color) {
+<span class="nc bnc" id="L104" title="All 2 branches missed.">        if (SwingUtilities.isEventDispatchThread()) {</span>
+<span class="nc" id="L105">            setBackground(color);</span>
+<span class="nc" id="L106">        } else {</span>
+            try {
+<span class="nc" id="L108">                SwingUtilities.invokeAndWait(() -&gt; setBackground(color));</span>
+<span class="nc" id="L109">            } catch (InvocationTargetException | InterruptedException e) {</span>
+<span class="nc" id="L110">                LOGGER.info(&quot;Problem setting background color&quot;, e);</span>
+            }
+        }
+<span class="nc" id="L113">    }</span>
+
+    @Override
+    public String getText() {
+<span class="nc" id="L117">        return textArea.getText();</span>
+    }
+
+    @Override
+    public void setText(String newText) {
+<span class="nc" id="L122">        textArea.setText(newText);</span>
+<span class="nc" id="L123">    }</span>
+
+    @Override
+    public void append(String text) {
+        // not needed
+<span class="nc" id="L128">    }</span>
+
+    @Override
+    public void setEnabled(boolean enabled) {
+        // not needed
+<span class="nc" id="L133">    }</span>
+
+    @Override
+    public void paste(String textToInsert) {
+        /*
+        replaceSelection(textToInsert);
+        */
+<span class="nc" id="L140">    }</span>
+
+    @Override
+    public String getSelectedText() {
+<span class="nc" id="L144">        return null;</span>
+    }
+
+    @Override
+    public void undo() {
+        // Nothing
+<span class="nc" id="L150">    }</span>
+
+    @Override
+    public void redo() {
+        // Nothing
+<span class="nc" id="L155">    }</span>
+
+    @Override
+    public void requestFocus() {
+        // not needed
+<span class="nc" id="L160">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

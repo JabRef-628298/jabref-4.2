@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MainTableFormat.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.maintable</a> &gt; <span class="el_source">MainTableFormat.java</span></div><h1>MainTableFormat.java</h1><pre class="source lang-java linenums">package org.jabref.gui.maintable;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+import javax.swing.JLabel;
+
+import org.jabref.Globals;
+import org.jabref.gui.IconTheme;
+import org.jabref.model.database.BibDatabase;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.FieldName;
+import org.jabref.preferences.JabRefPreferences;
+
+import ca.odell.glazedlists.gui.TableFormat;
+
+/**
+ * Class defining the contents and column headers of the main table.
+ */
+public class MainTableFormat implements TableFormat&lt;BibEntry&gt; {
+
+    // Values to gather iconImages for those columns
+    // These values are also used to put a heading into the table; see getColumnName(int)
+<span class="nc" id="L26">    private static final List&lt;String&gt; URL_FIRST = Arrays.asList(FieldName.URL, FieldName.DOI);</span>
+<span class="nc" id="L27">    private static final List&lt;String&gt; DOI_FIRST = Arrays.asList(FieldName.DOI, FieldName.URL);</span>
+<span class="nc" id="L28">    private static final List&lt;String&gt; ARXIV = Collections.singletonList(FieldName.EPRINT);</span>
+
+    private final BibDatabase database;
+
+<span class="nc" id="L32">    private final List&lt;MainTableColumn&gt; tableColumns = new ArrayList&lt;&gt;();</span>
+
+<span class="nc" id="L34">    public MainTableFormat(BibDatabase database) {</span>
+<span class="nc" id="L35">        this.database = database;</span>
+<span class="nc" id="L36">    }</span>
+
+    @Override
+    public int getColumnCount() {
+<span class="nc" id="L40">        return tableColumns.size();</span>
+    }
+
+    /**
+     * @return the string that should be put in the column header. null if field is empty.
+     */
+    @Override
+    public String getColumnName(int col) {
+<span class="nc" id="L48">        return tableColumns.get(col).getDisplayName();</span>
+
+    }
+
+    public MainTableColumn getTableColumn(int index) {
+<span class="nc" id="L53">        return tableColumns.get(index);</span>
+    }
+
+    /**
+     * Finds the column index for the given column name.
+     *
+     * @param colName The column name
+     * @return The column index if any, or -1 if no column has that name.
+     */
+    public int getColumnIndex(String colName) {
+
+<span class="nc bnc" id="L64" title="All 2 branches missed.">        for (MainTableColumn tableColumn : tableColumns) {</span>
+<span class="nc bnc" id="L65" title="All 2 branches missed.">            if (tableColumn.getColumnName().equalsIgnoreCase(colName)) {</span>
+<span class="nc" id="L66">                return tableColumns.lastIndexOf(tableColumn);</span>
+            }
+        }
+
+<span class="nc" id="L70">        return -1;</span>
+    }
+
+    @Override
+    public Object getColumnValue(BibEntry be, int col) {
+<span class="nc" id="L75">        return tableColumns.get(col).getColumnValue(be);</span>
+    }
+
+    public void updateTableFormat() {
+        // clear existing column configuration
+<span class="nc" id="L80">        tableColumns.clear();</span>
+
+<span class="nc" id="L82">        SpecialMainTableColumnsBuilder builder = new SpecialMainTableColumnsBuilder();</span>
+        // Add numbering column to tableColumns
+<span class="nc" id="L84">        tableColumns.add(builder.buildNumberColumn());</span>
+
+        // Add all file based columns
+<span class="nc bnc" id="L87" title="All 2 branches missed.">        if (Globals.prefs.getBoolean(JabRefPreferences.FILE_COLUMN)) {</span>
+<span class="nc" id="L88">            tableColumns.add(builder.buildFileColumn());</span>
+        }
+
+<span class="nc bnc" id="L91" title="All 2 branches missed.">        if (Globals.prefs.getBoolean(JabRefPreferences.URL_COLUMN)) {</span>
+<span class="nc bnc" id="L92" title="All 2 branches missed.">            if (Globals.prefs.getBoolean(JabRefPreferences.PREFER_URL_DOI)) {</span>
+<span class="nc" id="L93">                tableColumns.add(builder</span>
+<span class="nc" id="L94">                        .createIconColumn(JabRefPreferences.URL_COLUMN, MainTableFormat.DOI_FIRST,</span>
+<span class="nc" id="L95">                                new JLabel(IconTheme.JabRefIcon.DOI.getSmallIcon())));</span>
+<span class="nc" id="L96">            } else {</span>
+<span class="nc" id="L97">                tableColumns.add(builder</span>
+<span class="nc" id="L98">                        .createIconColumn(JabRefPreferences.URL_COLUMN, MainTableFormat.URL_FIRST,</span>
+<span class="nc" id="L99">                                new JLabel(IconTheme.JabRefIcon.WWW.getSmallIcon())));</span>
+            }
+
+        }
+
+<span class="nc bnc" id="L104" title="All 2 branches missed.">        if (Globals.prefs.getBoolean(JabRefPreferences.ARXIV_COLUMN)) {</span>
+<span class="nc" id="L105">            tableColumns.add(builder</span>
+<span class="nc" id="L106">                    .createIconColumn(JabRefPreferences.ARXIV_COLUMN, MainTableFormat.ARXIV,</span>
+<span class="nc" id="L107">                            new JLabel(IconTheme.JabRefIcon.WWW.getSmallIcon())));</span>
+        }
+
+<span class="nc bnc" id="L110" title="All 2 branches missed.">        if (Globals.prefs.getBoolean(JabRefPreferences.EXTRA_FILE_COLUMNS)) {</span>
+<span class="nc" id="L111">            List&lt;String&gt; desiredColumns = Globals.prefs.getStringList(JabRefPreferences.LIST_OF_FILE_COLUMNS);</span>
+<span class="nc bnc" id="L112" title="All 2 branches missed.">            for (String desiredColumn : desiredColumns) {</span>
+<span class="nc" id="L113">                tableColumns.add(builder.createFileIconColumn(desiredColumn));</span>
+            }
+        }
+
+        // Add 'normal' bibtex fields as configured in the preferences
+        // Read table columns from prefs:
+<span class="nc" id="L119">        List&lt;String&gt; colSettings = Globals.prefs.getStringList(JabRefPreferences.COLUMN_NAMES);</span>
+
+<span class="nc bnc" id="L121" title="All 2 branches missed.">        for (String columnName : colSettings) {</span>
+            // stored column name will be used as columnName
+            // There might be more than one field to display, e.g., &quot;author/editor&quot; or &quot;date/year&quot; - so split
+            // at MainTableFormat.COL_DEFINITION_FIELD_SEPARATOR
+<span class="nc" id="L125">            String[] fields = columnName.split(FieldName.FIELD_SEPARATOR);</span>
+<span class="nc" id="L126">            tableColumns.add(new MainTableColumn(columnName, Arrays.asList(fields), database));</span>
+        }
+
+        // Add the &quot;special&quot; icon columns (e.g., ranking, file, ...) that are enabled in preferences.
+<span class="nc bnc" id="L130" title="All 2 branches missed.">        if (Globals.prefs.getBoolean(JabRefPreferences.SPECIALFIELDSENABLED)) {</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">            if (Globals.prefs.getBoolean(JabRefPreferences.SHOWCOLUMN_RANKING)) {</span>
+<span class="nc" id="L132">                tableColumns.add(builder.buildRankingColumn());</span>
+            }
+<span class="nc bnc" id="L134" title="All 2 branches missed.">            if (Globals.prefs.getBoolean(JabRefPreferences.SHOWCOLUMN_RELEVANCE)) {</span>
+<span class="nc" id="L135">                tableColumns.add(builder.buildRelevanceColumn());</span>
+            }
+<span class="nc bnc" id="L137" title="All 2 branches missed.">            if (Globals.prefs.getBoolean(JabRefPreferences.SHOWCOLUMN_QUALITY)) {</span>
+<span class="nc" id="L138">                tableColumns.add(builder.buildQualityColumn());</span>
+            }
+<span class="nc bnc" id="L140" title="All 2 branches missed.">            if (Globals.prefs.getBoolean(JabRefPreferences.SHOWCOLUMN_PRIORITY)) {</span>
+<span class="nc" id="L141">                tableColumns.add(builder.buildPriorityColumn());</span>
+            }
+<span class="nc bnc" id="L143" title="All 2 branches missed.">            if (Globals.prefs.getBoolean(JabRefPreferences.SHOWCOLUMN_PRINTED)) {</span>
+<span class="nc" id="L144">                tableColumns.add(builder.buildPrintedColumn());</span>
+            }
+<span class="nc bnc" id="L146" title="All 2 branches missed.">            if (Globals.prefs.getBoolean(JabRefPreferences.SHOWCOLUMN_READ)) {</span>
+<span class="nc" id="L147">                tableColumns.add(builder.buildReadStatusColumn());</span>
+            }
+        }
+
+<span class="nc" id="L151">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

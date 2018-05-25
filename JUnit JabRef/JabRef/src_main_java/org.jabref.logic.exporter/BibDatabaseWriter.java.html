@@ -1,0 +1,325 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>BibDatabaseWriter.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.exporter</a> &gt; <span class="el_source">BibDatabaseWriter.java</span></div><h1>BibDatabaseWriter.java</h1><pre class="source lang-java linenums">package org.jabref.logic.exporter;
+
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.TreeMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+import org.jabref.logic.bibtex.LatexFieldFormatterPreferences;
+import org.jabref.logic.bibtex.comparator.BibtexStringComparator;
+import org.jabref.logic.bibtex.comparator.CrossRefEntryComparator;
+import org.jabref.logic.bibtex.comparator.FieldComparator;
+import org.jabref.logic.bibtex.comparator.FieldComparatorStack;
+import org.jabref.logic.bibtex.comparator.IdComparator;
+import org.jabref.model.EntryTypes;
+import org.jabref.model.FieldChange;
+import org.jabref.model.bibtexkeypattern.GlobalBibtexKeyPattern;
+import org.jabref.model.cleanup.FieldFormatterCleanups;
+import org.jabref.model.database.BibDatabase;
+import org.jabref.model.database.BibDatabaseContext;
+import org.jabref.model.database.BibDatabaseMode;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.BibtexString;
+import org.jabref.model.entry.CustomEntryType;
+import org.jabref.model.entry.EntryType;
+import org.jabref.model.metadata.MetaData;
+import org.jabref.model.metadata.SaveOrderConfig;
+
+public abstract class BibDatabaseWriter&lt;E extends SaveSession&gt; {
+
+<span class="fc" id="L42">    private static final Pattern REFERENCE_PATTERN = Pattern.compile(&quot;(#[A-Za-z]+#)&quot;); // Used to detect string references in strings</span>
+    private final SaveSessionFactory&lt;E&gt; saveSessionFactory;
+
+    private E session;
+
+<span class="fc" id="L47">    public BibDatabaseWriter(SaveSessionFactory&lt;E&gt; saveSessionFactory) {</span>
+<span class="fc" id="L48">        this.saveSessionFactory = saveSessionFactory;</span>
+<span class="fc" id="L49">    }</span>
+
+    public interface SaveSessionFactory&lt;E extends SaveSession&gt; {
+        E createSaveSession(Charset encoding, Boolean makeBackup) throws SaveException;
+    }
+
+    private static List&lt;FieldChange&gt; applySaveActions(List&lt;BibEntry&gt; toChange, MetaData metaData) {
+<span class="fc" id="L56">        List&lt;FieldChange&gt; changes = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L58">        Optional&lt;FieldFormatterCleanups&gt; saveActions = metaData.getSaveActions();</span>
+<span class="fc" id="L59">        saveActions.ifPresent(actions -&gt; {</span>
+            // save actions defined -&gt; apply for every entry
+<span class="pc bpc" id="L61" title="1 of 2 branches missed.">            for (BibEntry entry : toChange) {</span>
+<span class="nc" id="L62">                changes.addAll(actions.applySaveActions(entry));</span>
+            }
+<span class="fc" id="L64">        });</span>
+
+<span class="fc" id="L66">        return changes;</span>
+    }
+
+    public static List&lt;FieldChange&gt; applySaveActions(BibEntry entry, MetaData metaData) {
+<span class="nc" id="L70">        return applySaveActions(Arrays.asList(entry), metaData);</span>
+    }
+
+    private static List&lt;Comparator&lt;BibEntry&gt;&gt; getSaveComparators(SavePreferences preferences, MetaData metaData) {
+
+<span class="fc" id="L75">        List&lt;Comparator&lt;BibEntry&gt;&gt; comparators = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L76">        Optional&lt;SaveOrderConfig&gt; saveOrder = getSaveOrder(preferences, metaData);</span>
+
+        // Take care, using CrossRefEntry-Comparator, that referred entries occur after referring
+        // ones. This is a necessary requirement for BibTeX to be able to resolve referenced entries correctly.
+<span class="fc" id="L80">        comparators.add(new CrossRefEntryComparator());</span>
+
+<span class="pc bpc" id="L82" title="1 of 2 branches missed.">        if (! saveOrder.isPresent()) {</span>
+            // entries will be sorted based on their internal IDs
+<span class="fc" id="L84">            comparators.add(new IdComparator());</span>
+<span class="fc" id="L85">        } else {</span>
+            // use configured sorting strategy
+<span class="nc" id="L87">            comparators.add(new FieldComparator(saveOrder.get().sortCriteria[0]));</span>
+<span class="nc" id="L88">            comparators.add(new FieldComparator(saveOrder.get().sortCriteria[1]));</span>
+<span class="nc" id="L89">            comparators.add(new FieldComparator(saveOrder.get().sortCriteria[2]));</span>
+
+<span class="nc" id="L91">            comparators.add(new FieldComparator(BibEntry.KEY_FIELD));</span>
+        }
+
+<span class="fc" id="L94">        return comparators;</span>
+    }
+
+    /*
+     * We have begun to use getSortedEntries() for both database save operations
+     * and non-database save operations.  In a non-database save operation
+     * (such as the exportDatabase call), we do not wish to use the
+     * global preference of saving in standard order.
+    */
+    public static List&lt;BibEntry&gt; getSortedEntries(BibDatabaseContext bibDatabaseContext, List&lt;BibEntry&gt; entriesToSort,
+            SavePreferences preferences) {
+<span class="fc" id="L105">        Objects.requireNonNull(bibDatabaseContext);</span>
+<span class="fc" id="L106">        Objects.requireNonNull(entriesToSort);</span>
+
+        //if no meta data are present, simply return in original order
+<span class="pc bpc" id="L109" title="1 of 2 branches missed.">        if (bibDatabaseContext.getMetaData() == null) {</span>
+<span class="nc" id="L110">            List&lt;BibEntry&gt; result = new LinkedList&lt;&gt;();</span>
+<span class="nc" id="L111">            result.addAll(entriesToSort);</span>
+<span class="nc" id="L112">            return result;</span>
+        }
+
+<span class="fc" id="L115">        List&lt;Comparator&lt;BibEntry&gt;&gt; comparators = BibDatabaseWriter.getSaveComparators(preferences,</span>
+<span class="fc" id="L116">                bibDatabaseContext.getMetaData());</span>
+<span class="fc" id="L117">        FieldComparatorStack&lt;BibEntry&gt; comparatorStack = new FieldComparatorStack&lt;&gt;(comparators);</span>
+
+<span class="fc" id="L119">        List&lt;BibEntry&gt; sorted = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L120">        sorted.addAll(entriesToSort);</span>
+
+<span class="fc" id="L122">        Collections.sort(sorted, comparatorStack);</span>
+
+<span class="fc" id="L124">        return sorted;</span>
+    }
+
+    private static Optional&lt;SaveOrderConfig&gt; getSaveOrder(SavePreferences preferences, MetaData metaData) {
+        /* three options:
+         * 1. original order
+         * 2. order specified in metaData
+         * 3. order specified in preferences
+         */
+
+<span class="fc bfc" id="L134" title="All 2 branches covered.">        if (preferences.isSaveInOriginalOrder()) {</span>
+<span class="fc" id="L135">            return Optional.empty();</span>
+        }
+
+<span class="fc bfc" id="L138" title="All 2 branches covered.">        if (preferences.getTakeMetadataSaveOrderInAccount()) {</span>
+<span class="fc" id="L139">            return metaData.getSaveOrderConfig();</span>
+        }
+
+<span class="fc" id="L142">        return Optional.ofNullable(preferences.getSaveOrder());</span>
+    }
+
+    /**
+     * Saves the complete database.
+     */
+    public E saveDatabase(BibDatabaseContext bibDatabaseContext, SavePreferences preferences)
+            throws SaveException {
+<span class="nc" id="L150">        return savePartOfDatabase(bibDatabaseContext, bibDatabaseContext.getDatabase().getEntries(), preferences);</span>
+    }
+
+    /**
+     * Saves the database, including only the specified entries.
+     */
+    public E savePartOfDatabase(BibDatabaseContext bibDatabaseContext,
+            List&lt;BibEntry&gt; entries, SavePreferences preferences) throws SaveException {
+
+<span class="fc" id="L159">        session = saveSessionFactory.createSaveSession(preferences.getEncodingOrDefault(), preferences.getMakeBackup());</span>
+
+<span class="fc" id="L161">        Optional&lt;String&gt; sharedDatabaseIDOptional = bibDatabaseContext.getDatabase().getSharedDatabaseID();</span>
+
+<span class="pc bpc" id="L163" title="1 of 2 branches missed.">        if (sharedDatabaseIDOptional.isPresent()) {</span>
+<span class="nc" id="L164">            writeDatabaseID(sharedDatabaseIDOptional.get());</span>
+        }
+
+        // Map to collect entry type definitions that we must save along with entries using them.
+<span class="fc" id="L168">        Map&lt;String, EntryType&gt; typesToWrite = new TreeMap&lt;&gt;();</span>
+
+        // Some file formats write something at the start of the file (like the encoding)
+<span class="pc bpc" id="L171" title="1 of 2 branches missed.">        if (preferences.getSaveType() != SavePreferences.DatabaseSaveType.PLAIN_BIBTEX) {</span>
+<span class="fc" id="L172">            writePrelogue(bibDatabaseContext, preferences.getEncoding());</span>
+        }
+
+        // Write preamble if there is one.
+<span class="fc" id="L176">        writePreamble(bibDatabaseContext.getDatabase().getPreamble().orElse(&quot;&quot;));</span>
+
+        // Write strings if there are any.
+<span class="fc" id="L179">        writeStrings(bibDatabaseContext.getDatabase(), preferences.isReformatFile(),</span>
+<span class="fc" id="L180">                preferences.getLatexFieldFormatterPreferences());</span>
+
+        // Write database entries.
+<span class="fc" id="L183">        List&lt;BibEntry&gt; sortedEntries = getSortedEntries(bibDatabaseContext, entries, preferences);</span>
+<span class="fc" id="L184">        List&lt;FieldChange&gt; saveActionChanges = applySaveActions(sortedEntries, bibDatabaseContext.getMetaData());</span>
+<span class="fc" id="L185">        session.addFieldChanges(saveActionChanges);</span>
+
+<span class="fc bfc" id="L187" title="All 2 branches covered.">        for (BibEntry entry : sortedEntries) {</span>
+            // Check if we must write the type definition for this
+            // entry, as well. Our criterion is that all non-standard
+            // types (*not* all customized standard types) must be written.
+<span class="fc bfc" id="L191" title="All 2 branches covered.">            if (!EntryTypes.getStandardType(entry.getType(), bibDatabaseContext.getMode()).isPresent()) {</span>
+                // If user-defined entry type, then add it
+                // Otherwise (getType returns empty optional) it is a completely unknown entry type, so ignore it
+<span class="fc" id="L194">                EntryTypes.getType(entry.getType(), bibDatabaseContext.getMode()).ifPresent(</span>
+<span class="fc" id="L195">                        entryType -&gt; typesToWrite.put(entryType.getName(), entryType));</span>
+            }
+
+<span class="fc" id="L198">            writeEntry(entry, bibDatabaseContext.getMode(), preferences.isReformatFile(),</span>
+<span class="fc" id="L199">                    preferences.getLatexFieldFormatterPreferences());</span>
+        }
+
+<span class="pc bpc" id="L202" title="1 of 2 branches missed.">        if (preferences.getSaveType() != SavePreferences.DatabaseSaveType.PLAIN_BIBTEX) {</span>
+            // Write meta data.
+<span class="fc" id="L204">            writeMetaData(bibDatabaseContext.getMetaData(), preferences.getGlobalCiteKeyPattern());</span>
+
+            // Write type definitions, if any:
+<span class="fc" id="L207">            writeEntryTypeDefinitions(typesToWrite);</span>
+        }
+
+        //finally write whatever remains of the file, but at least a concluding newline
+<span class="fc" id="L211">        writeEpilogue(bibDatabaseContext.getDatabase().getEpilog());</span>
+
+        try {
+<span class="fc" id="L214">            session.getWriter().close();</span>
+<span class="pc" id="L215">        } catch (IOException e) {</span>
+<span class="nc" id="L216">            throw new SaveException(e);</span>
+        }
+<span class="fc" id="L218">        return session;</span>
+    }
+
+    protected abstract void writePrelogue(BibDatabaseContext bibDatabaseContext, Charset encoding) throws SaveException;
+
+    protected abstract void writeEntry(BibEntry entry, BibDatabaseMode mode, Boolean isReformatFile,
+            LatexFieldFormatterPreferences latexFieldFormatterPreferences) throws SaveException;
+
+    protected abstract void writeEpilogue(String epilogue) throws SaveException;
+
+    /**
+     * Writes all data to the specified writer, using each object's toString() method.
+     */
+    protected void writeMetaData(MetaData metaData, GlobalBibtexKeyPattern globalCiteKeyPattern) throws SaveException {
+<span class="fc" id="L232">        Objects.requireNonNull(metaData);</span>
+
+<span class="fc" id="L234">        Map&lt;String, String&gt; serializedMetaData = MetaDataSerializer.getSerializedStringMap(metaData,</span>
+<span class="fc" id="L235">                globalCiteKeyPattern);</span>
+
+<span class="fc bfc" id="L237" title="All 2 branches covered.">        for (Map.Entry&lt;String, String&gt; metaItem : serializedMetaData.entrySet()) {</span>
+<span class="fc" id="L238">            writeMetaDataItem(metaItem);</span>
+        }
+<span class="fc" id="L240">    }</span>
+
+    protected abstract void writeMetaDataItem(Map.Entry&lt;String, String&gt; metaItem) throws SaveException;
+
+    protected abstract void writePreamble(String preamble) throws SaveException;
+
+    protected abstract void writeDatabaseID(String sharedDatabaseID) throws SaveException;
+
+    /**
+     * Write all strings in alphabetical order, modified to produce a safe (for
+     * BibTeX) order of the strings if they reference each other.
+     *
+     * @param database The database whose strings we should write.
+     */
+    private void writeStrings(BibDatabase database, Boolean reformatFile,
+            LatexFieldFormatterPreferences latexFieldFormatterPreferences) throws SaveException {
+<span class="fc" id="L256">        List&lt;BibtexString&gt; strings = database.getStringKeySet().stream().map(database::getString).collect(</span>
+<span class="fc" id="L257">                Collectors.toList());</span>
+<span class="fc" id="L258">        strings.sort(new BibtexStringComparator(true));</span>
+        // First, make a Map of all entries:
+<span class="fc" id="L260">        Map&lt;String, BibtexString&gt; remaining = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L261">        int maxKeyLength = 0;</span>
+<span class="fc bfc" id="L262" title="All 2 branches covered.">        for (BibtexString string : strings) {</span>
+<span class="fc" id="L263">            remaining.put(string.getName(), string);</span>
+<span class="fc" id="L264">            maxKeyLength = Math.max(maxKeyLength, string.getName().length());</span>
+        }
+
+<span class="fc bfc" id="L267" title="All 2 branches covered.">        for (BibtexString.Type t : BibtexString.Type.values()) {</span>
+<span class="fc" id="L268">            boolean isFirstStringInType = true;</span>
+<span class="fc bfc" id="L269" title="All 2 branches covered.">            for (BibtexString bs : strings) {</span>
+<span class="pc bpc" id="L270" title="1 of 4 branches missed.">                if (remaining.containsKey(bs.getName()) &amp;&amp; (bs.getType() == t)) {</span>
+<span class="fc" id="L271">                    writeString(bs, isFirstStringInType, remaining, maxKeyLength, reformatFile,</span>
+<span class="fc" id="L272">                            latexFieldFormatterPreferences);</span>
+<span class="fc" id="L273">                    isFirstStringInType = false;</span>
+                }
+            }
+        }
+<span class="fc" id="L277">    }</span>
+
+    protected void writeString(BibtexString bibtexString, boolean isFirstString, Map&lt;String, BibtexString&gt; remaining, int maxKeyLength,
+            Boolean reformatFile, LatexFieldFormatterPreferences latexFieldFormatterPreferences)
+            throws SaveException {
+        // First remove this from the &quot;remaining&quot; list so it can't cause problem with circular refs:
+<span class="fc" id="L283">        remaining.remove(bibtexString.getName());</span>
+
+        // Then we go through the string looking for references to other strings. If we find references
+        // to strings that we will write, but still haven't, we write those before proceeding. This ensures
+        // that the string order will be acceptable for BibTeX.
+<span class="fc" id="L288">        String content = bibtexString.getContent();</span>
+        Matcher m;
+<span class="pc bpc" id="L290" title="1 of 2 branches missed.">        while ((m = REFERENCE_PATTERN.matcher(content)).find()) {</span>
+<span class="nc" id="L291">            String foundLabel = m.group(1);</span>
+<span class="nc" id="L292">            int restIndex = content.indexOf(foundLabel) + foundLabel.length();</span>
+<span class="nc" id="L293">            content = content.substring(restIndex);</span>
+<span class="nc" id="L294">            String label = foundLabel.substring(1, foundLabel.length() - 1);</span>
+
+            // If the label we found exists as a key in the &quot;remaining&quot; Map, we go on and write it now:
+<span class="nc bnc" id="L297" title="All 2 branches missed.">            if (remaining.containsKey(label)) {</span>
+<span class="nc" id="L298">                BibtexString referred = remaining.get(label);</span>
+<span class="nc" id="L299">                writeString(referred, isFirstString, remaining, maxKeyLength, reformatFile,</span>
+<span class="nc" id="L300">                        latexFieldFormatterPreferences);</span>
+            }
+        }
+
+<span class="fc" id="L304">        writeString(bibtexString, isFirstString, maxKeyLength, reformatFile, latexFieldFormatterPreferences);</span>
+<span class="fc" id="L305">    }</span>
+
+    protected abstract void writeString(BibtexString bibtexString, boolean isFirstString, int maxKeyLength,
+            Boolean reformatFile, LatexFieldFormatterPreferences latexFieldFormatterPreferences)
+            throws SaveException;
+
+    protected void writeEntryTypeDefinitions(Map&lt;String, EntryType&gt; types) throws SaveException {
+<span class="fc bfc" id="L312" title="All 2 branches covered.">        for (EntryType type : types.values()) {</span>
+<span class="pc bpc" id="L313" title="1 of 2 branches missed.">            if (type instanceof CustomEntryType) {</span>
+<span class="fc" id="L314">                writeEntryTypeDefinition((CustomEntryType) type);</span>
+            }
+        }
+<span class="fc" id="L317">    }</span>
+
+    protected abstract void writeEntryTypeDefinition(CustomEntryType customType) throws SaveException;
+
+    protected SaveSession getActiveSession() {
+<span class="fc" id="L322">        return session;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

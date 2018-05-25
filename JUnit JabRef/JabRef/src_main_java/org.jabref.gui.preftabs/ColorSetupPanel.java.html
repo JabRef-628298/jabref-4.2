@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>ColorSetupPanel.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.preftabs</a> &gt; <span class="el_source">ColorSetupPanel.java</span></div><h1>ColorSetupPanel.java</h1><pre class="source lang-java linenums">package org.jabref.gui.preftabs;
+
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Graphics;
+import java.awt.Rectangle;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+import javax.swing.BorderFactory;
+import javax.swing.Icon;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JColorChooser;
+import javax.swing.JPanel;
+
+import org.jabref.Globals;
+import org.jabref.logic.l10n.Localization;
+import org.jabref.preferences.JabRefPreferences;
+
+import com.jgoodies.forms.builder.FormBuilder;
+import com.jgoodies.forms.layout.FormLayout;
+
+public class ColorSetupPanel extends JPanel {
+
+    private static final int ICON_WIDTH = 30;
+    private static final int ICON_HEIGHT = 20;
+<span class="nc" id="L32">    private final List&lt;ColorButton&gt; buttons = new ArrayList&lt;&gt;();</span>
+
+
+<span class="nc" id="L35">    public ColorSetupPanel(JCheckBox colorCodes, JCheckBox resolvedColorCodes, JCheckBox showGrid) {</span>
+
+<span class="nc" id="L37">        FormLayout layout = new FormLayout(</span>
+<span class="nc" id="L38">                &quot;30dlu, 4dlu, fill:pref, 4dlu, fill:pref, 8dlu, 30dlu, 4dlu, fill:pref, 4dlu, fill:pref&quot;,</span>
+<span class="nc" id="L39">                &quot;pref, 2dlu, pref, 2dlu, pref, 2dlu, pref, 2dlu, pref, 2dlu, pref, 2dlu, pref, 2dlu, pref, 2dlu, pref, 2dlu, pref, 2dlu, pref&quot;);</span>
+<span class="nc" id="L40">        FormBuilder builder = FormBuilder.create().layout(layout);</span>
+
+<span class="nc" id="L42">        buttons.add(new ColorButton(JabRefPreferences.TABLE_TEXT, Localization.lang(&quot;Table text color&quot;)));</span>
+<span class="nc" id="L43">        buttons.add(new ColorButton(JabRefPreferences.MARKED_ENTRY_BACKGROUND0,</span>
+<span class="nc" id="L44">                Localization.lang(&quot;Marking color %0&quot;, &quot;1&quot;)));</span>
+<span class="nc" id="L45">        buttons.add(new ColorButton(JabRefPreferences.TABLE_BACKGROUND, Localization.lang(&quot;Table background color&quot;)));</span>
+<span class="nc" id="L46">        buttons.add(new ColorButton(JabRefPreferences.MARKED_ENTRY_BACKGROUND1,</span>
+<span class="nc" id="L47">                Localization.lang(&quot;Marking color %0&quot;, &quot;2&quot;)));</span>
+<span class="nc" id="L48">        buttons.add(new ColorButton(JabRefPreferences.TABLE_REQ_FIELD_BACKGROUND,</span>
+<span class="nc" id="L49">                Localization.lang(&quot;Background color for required fields&quot;), colorCodes));</span>
+<span class="nc" id="L50">        buttons.add(new ColorButton(JabRefPreferences.MARKED_ENTRY_BACKGROUND2,</span>
+<span class="nc" id="L51">                Localization.lang(&quot;Marking color %0&quot;, &quot;3&quot;)));</span>
+<span class="nc" id="L52">        buttons.add(new ColorButton(JabRefPreferences.TABLE_OPT_FIELD_BACKGROUND,</span>
+<span class="nc" id="L53">                Localization.lang(&quot;Background color for optional fields&quot;), colorCodes));</span>
+<span class="nc" id="L54">        buttons.add(new ColorButton(JabRefPreferences.MARKED_ENTRY_BACKGROUND3,</span>
+<span class="nc" id="L55">                Localization.lang(&quot;Marking color %0&quot;, &quot;4&quot;)));</span>
+<span class="nc" id="L56">        buttons.add(new ColorButton(JabRefPreferences.INCOMPLETE_ENTRY_BACKGROUND,</span>
+<span class="nc" id="L57">                Localization.lang(&quot;Color for marking incomplete entries&quot;)));</span>
+<span class="nc" id="L58">        buttons.add(new ColorButton(JabRefPreferences.MARKED_ENTRY_BACKGROUND4,</span>
+<span class="nc" id="L59">                Localization.lang(&quot;Marking color %0&quot;, &quot;5&quot;)));</span>
+<span class="nc" id="L60">        buttons.add(new ColorButton(JabRefPreferences.GRID_COLOR, Localization.lang(&quot;Table grid color&quot;), showGrid));</span>
+<span class="nc" id="L61">        buttons.add(</span>
+<span class="nc" id="L62">                new ColorButton(JabRefPreferences.MARKED_ENTRY_BACKGROUND5, Localization.lang(&quot;Import marking color&quot;)));</span>
+
+<span class="nc" id="L64">        buttons.add(new ColorButton(JabRefPreferences.FIELD_EDITOR_TEXT_COLOR,</span>
+<span class="nc" id="L65">                Localization.lang(&quot;Entry editor font color&quot;)));</span>
+<span class="nc" id="L66">        buttons.add(new ColorButton(JabRefPreferences.VALID_FIELD_BACKGROUND_COLOR,</span>
+<span class="nc" id="L67">                Localization.lang(&quot;Entry editor background color&quot;)));</span>
+<span class="nc" id="L68">        buttons.add(new ColorButton(JabRefPreferences.ACTIVE_FIELD_EDITOR_BACKGROUND_COLOR,</span>
+<span class="nc" id="L69">                Localization.lang(&quot;Entry editor active background color&quot;)));</span>
+<span class="nc" id="L70">        buttons.add(new ColorButton(JabRefPreferences.INVALID_FIELD_BACKGROUND_COLOR,</span>
+<span class="nc" id="L71">                Localization.lang(&quot;Entry editor invalid field color&quot;)));</span>
+<span class="nc" id="L72">        buttons.add(new ColorButton(JabRefPreferences.TABLE_RESOLVED_FIELD_BACKGROUND,</span>
+<span class="nc" id="L73">                Localization.lang(&quot;Background color for resolved fields&quot;), resolvedColorCodes));</span>
+
+<span class="nc" id="L75">        buttons.add(new ColorButton(JabRefPreferences.ICON_ENABLED_COLOR, Localization.lang(&quot;Color for enabled icons&quot;)));</span>
+<span class="nc" id="L76">        buttons.add(new ColorButton(JabRefPreferences.ICON_DISABLED_COLOR, Localization.lang(&quot;Color for disabled icons&quot;)));</span>
+
+<span class="nc" id="L78">        int rowcnt = 0;</span>
+<span class="nc" id="L79">        int col = 0;</span>
+        int row;
+<span class="nc bnc" id="L81" title="All 2 branches missed.">        for (ColorButton but : buttons) {</span>
+<span class="nc" id="L82">            row = (2 * (rowcnt / 2)) + 1; // == 2*floor(rowcnt/2) + 1</span>
+<span class="nc" id="L83">            builder.add((JButton)but).xy((6 * col) + 1, row);</span>
+<span class="nc" id="L84">            builder.add(but.getDefaultButton()).xy((6 * col) + 3, row);</span>
+<span class="nc" id="L85">            builder.add(but.getName()).xy((6 * col) + 5, row);</span>
+<span class="nc" id="L86">            but.addActionListener(new ColorButtonListener(but));</span>
+<span class="nc" id="L87">            col = 1 - col;  // Change 0 -&gt; 1 -&gt; 0 ...</span>
+<span class="nc" id="L88">            rowcnt++;</span>
+        }
+
+<span class="nc" id="L91">        setLayout(new BorderLayout());</span>
+<span class="nc" id="L92">        add(builder.getPanel(), BorderLayout.CENTER);</span>
+
+<span class="nc" id="L94">        setValues();</span>
+
+<span class="nc" id="L96">    }</span>
+
+    public void setValues() {
+<span class="nc bnc" id="L99" title="All 2 branches missed.">        for (ColorButton but : buttons) {</span>
+<span class="nc" id="L100">            but.setColor(Globals.prefs.getColor(but.getKey()));</span>
+        }
+
+<span class="nc" id="L103">    }</span>
+
+    public void storeSettings() {
+<span class="nc bnc" id="L106" title="All 2 branches missed.">        for (ColorButton but : buttons) {</span>
+<span class="nc" id="L107">            Globals.prefs.putColor(but.getKey(), but.getColor());</span>
+        }
+<span class="nc" id="L109">    }</span>
+
+    static class ColorButtonListener implements ActionListener {
+
+        private final ColorButton button;
+
+
+<span class="nc" id="L116">        public ColorButtonListener(ColorButton button) {</span>
+<span class="nc" id="L117">            this.button = button;</span>
+<span class="nc" id="L118">        }</span>
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L122">            Color chosen = JColorChooser.showDialog(null, button.getName(), button.getColor());</span>
+<span class="nc bnc" id="L123" title="All 2 branches missed.">            if (chosen != null) {</span>
+<span class="nc" id="L124">                button.setColor(chosen);</span>
+<span class="nc" id="L125">                button.getCheckBox().ifPresent(checkBox -&gt; checkBox.setSelected(true));</span>
+            }
+<span class="nc" id="L127">        }</span>
+    }
+
+    /**
+     * A button to display the chosen color, and hold key information about a color setting.
+     * Includes a method to produce a Default button for this setting.
+     */
+    static class ColorButton extends JButton implements Icon {
+<span class="nc" id="L135">        private Color color = Color.white;</span>
+        private final String key;
+        private final String name;
+<span class="nc" id="L138">        private Optional&lt;JCheckBox&gt; checkBox = Optional.empty();</span>
+
+        public ColorButton(String key, String name, JCheckBox checkBox) {
+<span class="nc" id="L141">            this(key, name);</span>
+<span class="nc" id="L142">            this.checkBox = Optional.of(checkBox);</span>
+<span class="nc" id="L143">        }</span>
+
+<span class="nc" id="L145">        public ColorButton(String key, String name) {</span>
+<span class="nc" id="L146">            setIcon(this);</span>
+<span class="nc" id="L147">            this.key = key;</span>
+<span class="nc" id="L148">            this.name = name;</span>
+<span class="nc" id="L149">            setBorder(BorderFactory.createRaisedBevelBorder());</span>
+<span class="nc" id="L150">        }</span>
+
+        public JButton getDefaultButton() {
+<span class="nc" id="L153">            JButton toDefault = new JButton(Localization.lang(&quot;Default&quot;));</span>
+<span class="nc" id="L154">            toDefault.addActionListener(e -&gt; {</span>
+<span class="nc" id="L155">                setColor(Globals.prefs.getDefaultColor(key));</span>
+<span class="nc" id="L156">                repaint();</span>
+<span class="nc" id="L157">            });</span>
+<span class="nc" id="L158">            return toDefault;</span>
+        }
+
+        public String getKey() {
+<span class="nc" id="L162">            return key;</span>
+        }
+
+        @Override
+        public String getName() {
+<span class="nc" id="L167">            return name;</span>
+        }
+
+        public Color getColor() {
+<span class="nc" id="L171">            return color;</span>
+        }
+
+        public void setColor(Color color) {
+<span class="nc" id="L175">            this.color = color;</span>
+<span class="nc" id="L176">        }</span>
+
+        @Override
+        public void paintIcon(Component c, Graphics g, int x, int y) {
+<span class="nc" id="L180">            Rectangle r = g.getClipBounds();</span>
+<span class="nc" id="L181">            g.setColor(color);</span>
+<span class="nc" id="L182">            g.fillRect(r.x, r.y, r.width, r.height);</span>
+<span class="nc" id="L183">        }</span>
+
+        @Override
+        public int getIconWidth() {
+<span class="nc" id="L187">            return ColorSetupPanel.ICON_WIDTH;</span>
+        }
+
+        @Override
+        public int getIconHeight() {
+<span class="nc" id="L192">            return ColorSetupPanel.ICON_HEIGHT;</span>
+        }
+
+        public Optional&lt;JCheckBox&gt; getCheckBox() {
+<span class="nc" id="L196">            return checkBox;</span>
+        }
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

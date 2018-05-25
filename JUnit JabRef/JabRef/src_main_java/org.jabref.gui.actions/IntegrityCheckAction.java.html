@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>IntegrityCheckAction.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.actions</a> &gt; <span class="el_source">IntegrityCheckAction.java</span></div><h1>IntegrityCheckAction.java</h1><pre class="source lang-java linenums"><span class="nc" id="L1">package org.jabref.gui.actions;</span>
+
+import java.awt.Component;
+import java.awt.event.ActionEvent;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.swing.Action;
+import javax.swing.JButton;
+import javax.swing.JCheckBoxMenuItem;
+import javax.swing.JDialog;
+import javax.swing.JOptionPane;
+import javax.swing.JPopupMenu;
+import javax.swing.JProgressBar;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.ListSelectionModel;
+import javax.swing.RowFilter;
+import javax.swing.SwingWorker;
+import javax.swing.table.AbstractTableModel;
+import javax.swing.table.TableColumnModel;
+import javax.swing.table.TableModel;
+import javax.swing.table.TableRowSorter;
+
+import org.jabref.Globals;
+import org.jabref.gui.JabRefFrame;
+import org.jabref.gui.keyboard.KeyBinding;
+import org.jabref.logic.integrity.IntegrityCheck;
+import org.jabref.logic.integrity.IntegrityMessage;
+import org.jabref.logic.l10n.Localization;
+import org.jabref.preferences.JabRefPreferences;
+
+import com.jgoodies.forms.builder.FormBuilder;
+import com.jgoodies.forms.layout.FormLayout;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class IntegrityCheckAction extends MnemonicAwareAction {
+
+<span class="fc" id="L41">    private static final Logger LOGGER = LoggerFactory.getLogger(IntegrityCheckAction.class);</span>
+<span class="fc" id="L42">    private static final String ELLIPSES = &quot;...&quot;;</span>
+
+    private final JabRefFrame frame;
+
+<span class="fc" id="L46">    public IntegrityCheckAction(JabRefFrame frame) {</span>
+<span class="fc" id="L47">        this.frame = frame;</span>
+<span class="fc" id="L48">        putValue(Action.NAME, Localization.menuTitle(&quot;Check integrity&quot;) + ELLIPSES);</span>
+<span class="fc" id="L49">        putValue(Action.ACCELERATOR_KEY, Globals.getKeyPrefs().getKey(KeyBinding.CHECK_INTEGRITY));</span>
+<span class="fc" id="L50">    }</span>
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L54">        IntegrityCheck check = new IntegrityCheck(frame.getCurrentBasePanel().getBibDatabaseContext(),</span>
+<span class="nc" id="L55">                Globals.prefs.getFileDirectoryPreferences(),</span>
+<span class="nc" id="L56">                Globals.prefs.getBibtexKeyPatternPreferences(),</span>
+<span class="nc" id="L57">                Globals.journalAbbreviationLoader.getRepository(Globals.prefs.getJournalAbbreviationPreferences()),</span>
+<span class="nc" id="L58">                Globals.prefs.getBoolean(JabRefPreferences.ENFORCE_LEGAL_BIBTEX_KEY));</span>
+
+<span class="nc" id="L60">        final JDialog integrityDialog = new JDialog(frame, true);</span>
+<span class="nc" id="L61">        integrityDialog.setUndecorated(true);</span>
+<span class="nc" id="L62">        integrityDialog.setLocationRelativeTo(frame);</span>
+<span class="nc" id="L63">        JProgressBar integrityProgressBar = new JProgressBar();</span>
+<span class="nc" id="L64">        integrityProgressBar.setIndeterminate(true);</span>
+<span class="nc" id="L65">        integrityProgressBar.setStringPainted(true);</span>
+<span class="nc" id="L66">        integrityProgressBar.setString(Localization.lang(&quot;Checking integrity...&quot;));</span>
+<span class="nc" id="L67">        integrityDialog.add(integrityProgressBar);</span>
+<span class="nc" id="L68">        integrityDialog.pack();</span>
+<span class="nc" id="L69">        SwingWorker&lt;List&lt;IntegrityMessage&gt;, Void&gt; worker = new SwingWorker&lt;List&lt;IntegrityMessage&gt;, Void&gt;() {</span>
+            @Override
+            protected List&lt;IntegrityMessage&gt; doInBackground() {
+<span class="nc" id="L72">                List&lt;IntegrityMessage&gt; messages = check.checkBibtexDatabase();</span>
+<span class="nc" id="L73">                return messages;</span>
+            }
+
+            @Override
+            protected void done() {
+<span class="nc" id="L78">                integrityDialog.dispose();</span>
+<span class="nc" id="L79">            }</span>
+        };
+<span class="nc" id="L81">        worker.execute();</span>
+<span class="nc" id="L82">        integrityDialog.setVisible(true);</span>
+<span class="nc" id="L83">        List&lt;IntegrityMessage&gt; messages = null;</span>
+        try {
+<span class="nc" id="L85">            messages = worker.get();</span>
+<span class="nc" id="L86">        } catch (Exception ex) {</span>
+<span class="nc" id="L87">            LOGGER.error(&quot;Integrity check failed.&quot;, ex);</span>
+        }
+
+<span class="nc bnc" id="L90" title="All 2 branches missed.">        if (messages.isEmpty()) {</span>
+<span class="nc" id="L91">            JOptionPane.showMessageDialog(frame.getCurrentBasePanel(), Localization.lang(&quot;No problems found.&quot;));</span>
+<span class="nc" id="L92">        } else {</span>
+<span class="nc" id="L93">            Map&lt;String, Boolean&gt; showMessage = new HashMap&lt;&gt;();</span>
+            // prepare data model
+<span class="nc" id="L95">            Object[][] model = new Object[messages.size()][4];</span>
+<span class="nc" id="L96">            int i = 0;</span>
+<span class="nc bnc" id="L97" title="All 2 branches missed.">            for (IntegrityMessage message : messages) {</span>
+<span class="nc" id="L98">                model[i][0] = message.getEntry().getId();</span>
+<span class="nc" id="L99">                model[i][1] = message.getEntry().getCiteKeyOptional().orElse(&quot;&quot;);</span>
+<span class="nc" id="L100">                model[i][2] = message.getFieldName();</span>
+<span class="nc" id="L101">                model[i][3] = message.getMessage();</span>
+<span class="nc" id="L102">                showMessage.put(message.getMessage(), true);</span>
+<span class="nc" id="L103">                i++;</span>
+            }
+
+            // construct view
+<span class="nc" id="L107">            JTable table = new JTable(model,</span>
+<span class="nc" id="L108">                    new Object[] {&quot;ID&quot;, Localization.lang(&quot;BibTeX key&quot;), Localization.lang(&quot;Field&quot;),</span>
+<span class="nc" id="L109">                            Localization.lang(&quot;Message&quot;)});</span>
+
+            // hide IDs
+<span class="nc" id="L112">            TableColumnModel columnModel = table.getColumnModel();</span>
+<span class="nc" id="L113">            columnModel.removeColumn(columnModel.getColumn(0));</span>
+
+<span class="nc" id="L115">            RowFilter&lt;Object, Object&gt; filter = new RowFilter&lt;Object, Object&gt;() {</span>
+
+                @Override
+                public boolean include(Entry&lt;?, ?&gt; entry) {
+<span class="nc" id="L119">                    return showMessage.get(entry.getStringValue(3));</span>
+                }
+            };
+
+<span class="nc" id="L123">            TableRowSorter&lt;TableModel&gt; sorter = new TableRowSorter&lt;&gt;(table.getModel());</span>
+<span class="nc" id="L124">            sorter.setRowFilter(filter);</span>
+<span class="nc" id="L125">            table.setRowSorter(sorter);</span>
+<span class="nc" id="L126">            table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);</span>
+<span class="nc" id="L127">            table.setDefaultEditor(Object.class, null);</span>
+<span class="nc" id="L128">            ListSelectionModel selectionModel = table.getSelectionModel();</span>
+
+<span class="nc" id="L130">            selectionModel.addListSelectionListener(event -&gt; {</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">                if (!event.getValueIsAdjusting()) {</span>
+                    try {
+<span class="nc" id="L133">                        String entryId = (String) model[table.convertRowIndexToModel(table.getSelectedRow())][0];</span>
+<span class="nc" id="L134">                        String fieldName = (String) model[table.convertRowIndexToModel(table.getSelectedRow())][2];</span>
+<span class="nc" id="L135">                        frame.getCurrentBasePanel().editEntryByIdAndFocusField(entryId, fieldName);</span>
+<span class="nc" id="L136">                    } catch (ArrayIndexOutOfBoundsException exception) {</span>
+                        // Ignore -- most likely caused by filtering out the earlier selected row
+                    }
+                }
+<span class="nc" id="L140">            });</span>
+
+            // BibTeX key
+<span class="nc" id="L143">            table.getColumnModel().getColumn(0).setPreferredWidth(100);</span>
+            // field name
+<span class="nc" id="L145">            table.getColumnModel().getColumn(1).setPreferredWidth(60);</span>
+            // message
+<span class="nc" id="L147">            table.getColumnModel().getColumn(2).setPreferredWidth(400);</span>
+<span class="nc" id="L148">            table.setAutoResizeMode(JTable.AUTO_RESIZE_LAST_COLUMN);</span>
+<span class="nc" id="L149">            JScrollPane scrollPane = new JScrollPane(table);</span>
+<span class="nc" id="L150">            String title = Localization.lang(&quot;%0 problem(s) found&quot;, String.valueOf(messages.size()));</span>
+<span class="nc" id="L151">            JDialog dialog = new JDialog(frame, title, false);</span>
+
+<span class="nc" id="L153">            JPopupMenu menu = new JPopupMenu();</span>
+<span class="nc bnc" id="L154" title="All 2 branches missed.">            for (String messageString : showMessage.keySet()) {</span>
+<span class="nc" id="L155">                JCheckBoxMenuItem menuItem = new JCheckBoxMenuItem(messageString, true);</span>
+<span class="nc" id="L156">                menuItem.addActionListener(event -&gt; {</span>
+<span class="nc" id="L157">                    showMessage.put(messageString, menuItem.isSelected());</span>
+<span class="nc" id="L158">                    ((AbstractTableModel) table.getModel()).fireTableDataChanged();</span>
+<span class="nc" id="L159">                });</span>
+<span class="nc" id="L160">                menu.add(menuItem);</span>
+            }
+
+<span class="nc" id="L163">            JButton menuButton = new JButton(Localization.lang(&quot;Filter&quot;));</span>
+<span class="nc" id="L164">            menuButton.addActionListener(entry -&gt; menu.show(menuButton, 0, menuButton.getHeight()));</span>
+<span class="nc" id="L165">            FormBuilder builder = FormBuilder.create()</span>
+<span class="nc" id="L166">                    .layout(new FormLayout(&quot;fill:pref:grow&quot;, &quot;fill:pref:grow, 2dlu, pref&quot;));</span>
+
+<span class="nc" id="L168">            JButton filterNoneButton = new JButton(Localization.lang(&quot;Filter None&quot;));</span>
+<span class="nc" id="L169">            filterNoneButton.addActionListener(event -&gt; {</span>
+<span class="nc bnc" id="L170" title="All 2 branches missed.">                for (Component component : menu.getComponents()) {</span>
+<span class="nc bnc" id="L171" title="All 2 branches missed.">                    if (component instanceof JCheckBoxMenuItem) {</span>
+<span class="nc" id="L172">                        JCheckBoxMenuItem checkBox = (JCheckBoxMenuItem) component;</span>
+<span class="nc bnc" id="L173" title="All 2 branches missed.">                        if (checkBox.isSelected()) {</span>
+<span class="nc" id="L174">                            checkBox.setSelected(false);</span>
+<span class="nc" id="L175">                            showMessage.put(checkBox.getText(), checkBox.isSelected());</span>
+                        }
+                    }
+<span class="nc" id="L178">                    ((AbstractTableModel) table.getModel()).fireTableDataChanged();</span>
+                }
+<span class="nc" id="L180">            });</span>
+
+<span class="nc" id="L182">            JButton filterAllButton = new JButton(Localization.lang(&quot;Filter All&quot;));</span>
+<span class="nc" id="L183">            filterAllButton.addActionListener(event -&gt; {</span>
+<span class="nc bnc" id="L184" title="All 2 branches missed.">                for (Component component : menu.getComponents()) {</span>
+<span class="nc bnc" id="L185" title="All 2 branches missed.">                    if (component instanceof JCheckBoxMenuItem) {</span>
+<span class="nc" id="L186">                        JCheckBoxMenuItem checkBox = (JCheckBoxMenuItem) component;</span>
+<span class="nc bnc" id="L187" title="All 2 branches missed.">                        if (!checkBox.isSelected()) {</span>
+<span class="nc" id="L188">                            checkBox.setSelected(true);</span>
+<span class="nc" id="L189">                            showMessage.put(checkBox.getText(), checkBox.isSelected());</span>
+                        }
+                    }
+<span class="nc" id="L192">                    ((AbstractTableModel) table.getModel()).fireTableDataChanged();</span>
+                }
+<span class="nc" id="L194">            });</span>
+
+<span class="nc" id="L196">            builder.add(filterNoneButton).xy(1, 3, &quot;left, b&quot;);</span>
+<span class="nc" id="L197">            builder.add(filterAllButton).xy(1, 3, &quot;right, b&quot;);</span>
+<span class="nc" id="L198">            builder.add(scrollPane).xy(1, 1);</span>
+<span class="nc" id="L199">            builder.add(menuButton).xy(1, 3, &quot;c, b&quot;);</span>
+<span class="nc" id="L200">            dialog.add(builder.getPanel());</span>
+<span class="nc" id="L201">            dialog.setSize(600, 600);</span>
+
+            // show view
+<span class="nc" id="L204">            dialog.setVisible(true);</span>
+        }
+<span class="nc" id="L206">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

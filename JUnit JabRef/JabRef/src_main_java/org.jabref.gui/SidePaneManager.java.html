@@ -1,0 +1,289 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>SidePaneManager.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui</a> &gt; <span class="el_source">SidePaneManager.java</span></div><h1>SidePaneManager.java</h1><pre class="source lang-java linenums">package org.jabref.gui;
+
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import javax.swing.SwingUtilities;
+
+import org.jabref.Globals;
+import org.jabref.gui.maintable.MainTable;
+import org.jabref.preferences.JabRefPreferences;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * Manages visibility of SideShowComponents in a given newly constructed
+ * sidePane.
+ */
+public class SidePaneManager {
+<span class="fc" id="L26">    private static final Logger LOGGER = LoggerFactory.getLogger(SidePaneManager.class);</span>
+
+    private final JabRefFrame frame;
+
+    private final SidePane sidep;
+
+<span class="fc" id="L32">    private final Map&lt;Class&lt;? extends SidePaneComponent&gt;, SidePaneComponent&gt; components = new LinkedHashMap&lt;&gt;();</span>
+
+<span class="fc" id="L34">    private final List&lt;SidePaneComponent&gt; visible = new LinkedList&lt;&gt;();</span>
+
+<span class="fc" id="L36">    public SidePaneManager(JabRefFrame frame) {</span>
+<span class="fc" id="L37">        this.frame = frame;</span>
+        /*
+         * Change by Morten Alver 2005.12.04: By postponing the updating of the
+         * side pane components, we get rid of the annoying latency when
+         * switching tabs:
+         */
+<span class="pc" id="L43">        frame.getTabbedPane().addChangeListener(event -&gt; SwingUtilities.invokeLater(</span>
+<span class="nc" id="L44">                () -&gt; setActiveBasePanel(SidePaneManager.this.frame.getCurrentBasePanel())));</span>
+<span class="fc" id="L45">        sidep = new SidePane();</span>
+<span class="fc" id="L46">        sidep.setVisible(false);</span>
+<span class="fc" id="L47">    }</span>
+
+    public SidePane getPanel() {
+<span class="fc" id="L50">        return sidep;</span>
+    }
+
+    public synchronized &lt;T extends SidePaneComponent&gt; boolean hasComponent(Class&lt;T&gt; sidePaneComponent) {
+<span class="nc" id="L54">        return components.containsKey(sidePaneComponent);</span>
+    }
+
+    public synchronized &lt;T extends SidePaneComponent&gt; boolean isComponentVisible(Class&lt;T&gt; sidePaneComponent) {
+<span class="nc" id="L58">        SidePaneComponent component = components.get(sidePaneComponent);</span>
+<span class="nc bnc" id="L59" title="All 2 branches missed.">        if (component == null) {</span>
+<span class="nc" id="L60">            return false;</span>
+        } else {
+<span class="nc" id="L62">            return visible.contains(component);</span>
+        }
+    }
+
+    /**
+     * If panel is visible it will be hidden and the other way around
+     */
+    public synchronized &lt;T extends SidePaneComponent&gt; void toggle(Class&lt;T&gt; sidePaneComponent) {
+<span class="nc bnc" id="L70" title="All 2 branches missed.">        if (isComponentVisible(sidePaneComponent)) {</span>
+<span class="nc" id="L71">            hide(sidePaneComponent);</span>
+<span class="nc" id="L72">        } else {</span>
+<span class="nc" id="L73">            show(sidePaneComponent);</span>
+        }
+<span class="nc" id="L75">    }</span>
+
+    /**
+     * If panel is hidden it will be shown and focused
+     * If panel is visible but not focused it will be focused
+     * If panel is visible and focused it will be hidden
+     */
+    public synchronized &lt;T extends SidePaneComponent&gt; void toggleThreeWay(Class&lt;T&gt; sidePaneComponent) {
+<span class="nc bnc" id="L83" title="All 2 branches missed.">        boolean isPanelFocused = Globals.getFocusListener().getFocused() == components.get(sidePaneComponent);</span>
+<span class="nc bnc" id="L84" title="All 4 branches missed.">        if (isComponentVisible(sidePaneComponent) &amp;&amp; isPanelFocused) {</span>
+<span class="nc" id="L85">            hide(sidePaneComponent);</span>
+<span class="nc" id="L86">        } else {</span>
+<span class="nc" id="L87">            show(sidePaneComponent);</span>
+        }
+<span class="nc" id="L89">    }</span>
+
+    public synchronized &lt;T extends SidePaneComponent&gt; void show(Class&lt;T&gt; sidePaneComponent) {
+<span class="nc" id="L92">        SidePaneComponent component = components.get(sidePaneComponent);</span>
+<span class="nc bnc" id="L93" title="All 2 branches missed.">        if (component == null) {</span>
+<span class="nc" id="L94">            LOGGER.warn(&quot;Side pane component '&quot; + sidePaneComponent + &quot;' unknown.&quot;);</span>
+<span class="nc" id="L95">        } else {</span>
+<span class="nc" id="L96">            show(component);</span>
+        }
+<span class="nc" id="L98">    }</span>
+
+    public synchronized &lt;T extends SidePaneComponent&gt; void hide(Class&lt;T&gt; sidePaneComponent) {
+<span class="nc" id="L101">        SidePaneComponent component = components.get(sidePaneComponent);</span>
+<span class="nc bnc" id="L102" title="All 2 branches missed.">        if (component == null) {</span>
+<span class="nc" id="L103">            LOGGER.warn(&quot;Side pane component '&quot; + sidePaneComponent + &quot;' unknown.&quot;);</span>
+<span class="nc" id="L104">        } else {</span>
+<span class="nc" id="L105">            hideComponent(component);</span>
+<span class="nc bnc" id="L106" title="All 2 branches missed.">            if (frame.getCurrentBasePanel() != null) {</span>
+<span class="nc" id="L107">                MainTable mainTable = frame.getCurrentBasePanel().getMainTable();</span>
+<span class="nc" id="L108">                mainTable.setSelected(mainTable.getSelectedRow());</span>
+<span class="nc" id="L109">                mainTable.requestFocus();</span>
+            }
+        }
+<span class="nc" id="L112">    }</span>
+
+    public synchronized void register(SidePaneComponent comp) {
+<span class="fc" id="L115">        components.put(comp.getClass(), comp);</span>
+<span class="fc" id="L116">    }</span>
+
+    private synchronized void show(SidePaneComponent component) {
+<span class="nc bnc" id="L119" title="All 2 branches missed.">        if (!visible.contains(component)) {</span>
+            // Put the new component at the top of the group
+<span class="nc" id="L121">            visible.add(0, component);</span>
+
+            // Sort the visible components by their preferred position
+<span class="nc" id="L124">            Collections.sort(visible, new PreferredIndexSort());</span>
+
+<span class="nc" id="L126">            updateView();</span>
+<span class="nc" id="L127">            component.componentOpening();</span>
+        }
+<span class="nc" id="L129">        Globals.getFocusListener().setFocused(component);</span>
+<span class="nc" id="L130">        component.grabFocus();</span>
+<span class="nc" id="L131">    }</span>
+
+    public synchronized &lt;T extends SidePaneComponent&gt; SidePaneComponent getComponent(Class&lt;T&gt; sidePaneComponent) {
+<span class="nc" id="L134">        return components.get(sidePaneComponent);</span>
+    }
+
+    public synchronized void hideComponent(SidePaneComponent comp) {
+<span class="nc bnc" id="L138" title="All 2 branches missed.">        if (visible.contains(comp)) {</span>
+<span class="nc" id="L139">            comp.componentClosing();</span>
+<span class="nc" id="L140">            visible.remove(comp);</span>
+<span class="nc" id="L141">            updateView();</span>
+        }
+<span class="nc" id="L143">    }</span>
+
+    public synchronized &lt;T extends SidePaneComponent&gt; void hideComponent(Class&lt;T&gt; sidePaneComponent) {
+<span class="nc" id="L146">        SidePaneComponent component = components.get(sidePaneComponent);</span>
+<span class="nc bnc" id="L147" title="All 2 branches missed.">        if (component == null) {</span>
+<span class="nc" id="L148">            return;</span>
+        }
+<span class="nc bnc" id="L150" title="All 2 branches missed.">        if (visible.contains(component)) {</span>
+<span class="nc" id="L151">            component.componentClosing();</span>
+<span class="nc" id="L152">            visible.remove(component);</span>
+<span class="nc" id="L153">            updateView();</span>
+        }
+<span class="nc" id="L155">    }</span>
+
+    private static Map&lt;Class&lt;? extends SidePaneComponent&gt;, Integer&gt; getPreferredPositions() {
+<span class="nc" id="L158">        Map&lt;Class&lt;? extends SidePaneComponent&gt;, Integer&gt; preferredPositions = new HashMap&lt;&gt;();</span>
+
+<span class="nc" id="L160">        List&lt;String&gt; componentNames = Globals.prefs.getStringList(JabRefPreferences.SIDE_PANE_COMPONENT_NAMES);</span>
+<span class="nc" id="L161">        List&lt;String&gt; componentPositions = Globals.prefs</span>
+<span class="nc" id="L162">                .getStringList(JabRefPreferences.SIDE_PANE_COMPONENT_PREFERRED_POSITIONS);</span>
+
+<span class="nc bnc" id="L164" title="All 2 branches missed.">        for (int i = 0; i &lt; componentNames.size(); ++i) {</span>
+<span class="nc" id="L165">            String componentName = componentNames.get(i);</span>
+            try {
+<span class="nc" id="L167">                Class&lt;? extends SidePaneComponent&gt; componentClass = (Class&lt;? extends SidePaneComponent&gt;) Class.forName(componentName);</span>
+<span class="nc" id="L168">                preferredPositions.put(componentClass, Integer.parseInt(componentPositions.get(i)));</span>
+<span class="nc" id="L169">            } catch (ClassNotFoundException e) {</span>
+<span class="nc" id="L170">                LOGGER.debug(&quot;Following side pane could not be found: &quot; + componentName, e);</span>
+<span class="nc" id="L171">            } catch (ClassCastException e) {</span>
+<span class="nc" id="L172">                LOGGER.debug(&quot;Following Class is no side pane: '&quot; + componentName, e);</span>
+<span class="nc" id="L173">            } catch (NumberFormatException e) {</span>
+<span class="nc" id="L174">                LOGGER.debug(&quot;Invalid number format for side pane component '&quot; + componentName + &quot;'.&quot;, e);</span>
+            }
+        }
+
+<span class="nc" id="L178">        return preferredPositions;</span>
+    }
+
+    private void updatePreferredPositions() {
+<span class="nc" id="L182">        Map&lt;Class&lt;? extends SidePaneComponent&gt;, Integer&gt; preferredPositions = getPreferredPositions();</span>
+
+        // Update the preferred positions of all visible components
+<span class="nc" id="L185">        int index = 0;</span>
+<span class="nc bnc" id="L186" title="All 2 branches missed.">        for (SidePaneComponent comp : visible) {</span>
+<span class="nc" id="L187">            preferredPositions.put(comp.getClass(), index);</span>
+<span class="nc" id="L188">            index++;</span>
+        }
+
+        // Split the map into a pair of parallel String lists suitable for storage
+<span class="nc" id="L192">        List&lt;String&gt; tmpComponentNames = preferredPositions.keySet().parallelStream()</span>
+<span class="nc" id="L193">                .map(Class::getName)</span>
+<span class="nc" id="L194">                .collect(Collectors.toList());</span>
+
+<span class="nc" id="L196">        List&lt;String&gt; componentPositions = preferredPositions.values().stream().map(Object::toString)</span>
+<span class="nc" id="L197">                .collect(Collectors.toList());</span>
+
+<span class="nc" id="L199">        Globals.prefs.putStringList(JabRefPreferences.SIDE_PANE_COMPONENT_NAMES, tmpComponentNames);</span>
+<span class="nc" id="L200">        Globals.prefs.putStringList(JabRefPreferences.SIDE_PANE_COMPONENT_PREFERRED_POSITIONS, componentPositions);</span>
+<span class="nc" id="L201">    }</span>
+
+
+    /**
+     * Helper class for sorting visible components based on their preferred position
+     */
+    private class PreferredIndexSort implements Comparator&lt;SidePaneComponent&gt; {
+
+        private final Map&lt;Class&lt;? extends SidePaneComponent&gt;, Integer&gt; preferredPositions;
+
+
+<span class="nc" id="L212">        public PreferredIndexSort() {</span>
+<span class="nc" id="L213">            preferredPositions = getPreferredPositions();</span>
+<span class="nc" id="L214">        }</span>
+
+        @Override
+        public int compare(SidePaneComponent comp1, SidePaneComponent comp2) {
+<span class="nc" id="L218">            int pos1 = preferredPositions.getOrDefault(comp1.getClass(), 0);</span>
+<span class="nc" id="L219">            int pos2 = preferredPositions.getOrDefault(comp2.getClass(), 0);</span>
+<span class="nc" id="L220">            return Integer.valueOf(pos1).compareTo(pos2);</span>
+        }
+    }
+
+    public synchronized void moveUp(SidePaneComponent comp) {
+<span class="nc bnc" id="L225" title="All 2 branches missed.">        if (visible.contains(comp)) {</span>
+<span class="nc" id="L226">            int currIndex = visible.indexOf(comp);</span>
+<span class="nc bnc" id="L227" title="All 2 branches missed.">            if (currIndex &gt; 0) {</span>
+<span class="nc" id="L228">                int newIndex = currIndex - 1;</span>
+<span class="nc" id="L229">                visible.remove(currIndex);</span>
+<span class="nc" id="L230">                visible.add(newIndex, comp);</span>
+
+<span class="nc" id="L232">                updatePreferredPositions();</span>
+<span class="nc" id="L233">                updateView();</span>
+            }
+        }
+<span class="nc" id="L236">    }</span>
+
+    public synchronized void moveDown(SidePaneComponent comp) {
+<span class="nc bnc" id="L239" title="All 2 branches missed.">        if (visible.contains(comp)) {</span>
+<span class="nc" id="L240">            int currIndex = visible.indexOf(comp);</span>
+<span class="nc bnc" id="L241" title="All 2 branches missed.">            if (currIndex &lt; (visible.size() - 1)) {</span>
+<span class="nc" id="L242">                int newIndex = currIndex + 1;</span>
+<span class="nc" id="L243">                visible.remove(currIndex);</span>
+<span class="nc" id="L244">                visible.add(newIndex, comp);</span>
+
+<span class="nc" id="L246">                updatePreferredPositions();</span>
+<span class="nc" id="L247">                updateView();</span>
+            }
+        }
+<span class="nc" id="L250">    }</span>
+
+    public synchronized &lt;T extends SidePaneComponent&gt; void unregisterComponent(Class&lt;T&gt; sidePaneComponent) {
+<span class="nc" id="L253">        components.remove(sidePaneComponent);</span>
+<span class="nc" id="L254">    }</span>
+
+    /**
+     * Update all side pane components to show information from the given
+     * BasePanel.
+     *
+     * @param panel
+     */
+    private synchronized void setActiveBasePanel(BasePanel panel) {
+<span class="nc bnc" id="L263" title="All 2 branches missed.">        for (SidePaneComponent component : components.values()) {</span>
+<span class="nc" id="L264">            component.setActiveBasePanel(panel);</span>
+        }
+<span class="nc" id="L266">    }</span>
+
+    public synchronized void updateView() {
+<span class="fc" id="L269">        sidep.setComponents(visible);</span>
+<span class="pc bpc" id="L270" title="1 of 2 branches missed.">        if (visible.isEmpty()) {</span>
+<span class="pc bpc" id="L271" title="1 of 2 branches missed.">            if (sidep.isVisible()) {</span>
+<span class="nc" id="L272">                Globals.prefs.putInt(JabRefPreferences.SIDE_PANE_WIDTH, frame.getSplitPane().getDividerLocation());</span>
+            }
+<span class="fc" id="L274">            sidep.setVisible(false);</span>
+<span class="fc" id="L275">        } else {</span>
+<span class="nc" id="L276">            boolean wasVisible = sidep.isVisible();</span>
+<span class="nc" id="L277">            sidep.setVisible(true);</span>
+<span class="nc bnc" id="L278" title="All 2 branches missed.">            if (!wasVisible) {</span>
+<span class="nc" id="L279">                int width = Globals.prefs.getInt(JabRefPreferences.SIDE_PANE_WIDTH);</span>
+<span class="nc bnc" id="L280" title="All 2 branches missed.">                if (width &gt; 0) {</span>
+<span class="nc" id="L281">                    frame.getSplitPane().setDividerLocation(width);</span>
+<span class="nc" id="L282">                } else {</span>
+<span class="nc" id="L283">                    frame.getSplitPane().setDividerLocation(getPanel().getPreferredSize().width);</span>
+                }
+            }
+        }
+<span class="fc" id="L287">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

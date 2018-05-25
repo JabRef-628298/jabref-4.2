@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>DoiFetcherTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.importer.fetcher</a> &gt; <span class="el_source">DoiFetcherTest.java</span></div><h1>DoiFetcherTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.importer.fetcher;
+
+import java.util.Optional;
+
+import org.jabref.logic.importer.FetcherException;
+import org.jabref.logic.importer.ImportFormatPreferences;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.BiblatexEntryTypes;
+import org.jabref.testutils.category.FetcherTest;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Answers;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
+
+@FetcherTest
+<span class="fc" id="L20">public class DoiFetcherTest {</span>
+
+    private DoiFetcher fetcher;
+    private BibEntry bibEntryBurd2011, bibEntryDecker2007;
+
+    @BeforeEach
+    public void setUp() {
+<span class="fc" id="L27">        fetcher = new DoiFetcher(mock(ImportFormatPreferences.class, Answers.RETURNS_DEEP_STUBS));</span>
+
+<span class="fc" id="L29">        bibEntryBurd2011 = new BibEntry();</span>
+<span class="fc" id="L30">        bibEntryBurd2011.setType(BiblatexEntryTypes.BOOK);</span>
+<span class="fc" id="L31">        bibEntryBurd2011.setField(&quot;bibtexkey&quot;, &quot;Burd_2011&quot;);</span>
+<span class="fc" id="L32">        bibEntryBurd2011.setField(&quot;title&quot;, &quot;Java{\\textregistered} For Dummies{\\textregistered}&quot;);</span>
+<span class="fc" id="L33">        bibEntryBurd2011.setField(&quot;publisher&quot;, &quot;Wiley Publishing, Inc.&quot;);</span>
+<span class="fc" id="L34">        bibEntryBurd2011.setField(&quot;year&quot;, &quot;2011&quot;);</span>
+<span class="fc" id="L35">        bibEntryBurd2011.setField(&quot;author&quot;, &quot;Barry Burd&quot;);</span>
+<span class="fc" id="L36">        bibEntryBurd2011.setField(&quot;month&quot;, &quot;jul&quot;);</span>
+<span class="fc" id="L37">        bibEntryBurd2011.setField(&quot;doi&quot;, &quot;10.1002/9781118257517&quot;);</span>
+
+<span class="fc" id="L39">        bibEntryDecker2007 = new BibEntry();</span>
+<span class="fc" id="L40">        bibEntryDecker2007.setType(BiblatexEntryTypes.INPROCEEDINGS);</span>
+<span class="fc" id="L41">        bibEntryDecker2007.setField(&quot;bibtexkey&quot;, &quot;Decker_2007&quot;);</span>
+<span class="fc" id="L42">        bibEntryDecker2007.setField(&quot;author&quot;, &quot;Gero Decker and Oliver Kopp and Frank Leymann and Mathias Weske&quot;);</span>
+<span class="fc" id="L43">        bibEntryDecker2007.setField(&quot;booktitle&quot;, &quot;{IEEE} International Conference on Web Services ({ICWS} 2007)&quot;);</span>
+<span class="fc" id="L44">        bibEntryDecker2007.setField(&quot;month&quot;, &quot;jul&quot;);</span>
+<span class="fc" id="L45">        bibEntryDecker2007.setField(&quot;publisher&quot;, &quot;{IEEE}&quot;);</span>
+<span class="fc" id="L46">        bibEntryDecker2007.setField(&quot;title&quot;, &quot;{BPEL}4Chor: Extending {BPEL} for Modeling Choreographies&quot;);</span>
+<span class="fc" id="L47">        bibEntryDecker2007.setField(&quot;year&quot;, &quot;2007&quot;);</span>
+<span class="fc" id="L48">        bibEntryDecker2007.setField(&quot;doi&quot;, &quot;10.1109/icws.2007.59&quot;);</span>
+<span class="fc" id="L49">    }</span>
+
+    @Test
+    public void testGetName() {
+<span class="fc" id="L53">        assertEquals(&quot;DOI&quot;, fetcher.getName());</span>
+<span class="fc" id="L54">    }</span>
+
+    @Test
+    public void testGetHelpPage() {
+<span class="fc" id="L58">        assertEquals(&quot;DOItoBibTeX&quot;, fetcher.getHelpPage().getPageName());</span>
+<span class="fc" id="L59">    }</span>
+
+    @Test
+    public void testPerformSearchBurd2011() throws FetcherException {
+<span class="fc" id="L63">        Optional&lt;BibEntry&gt; fetchedEntry = fetcher.performSearchById(&quot;10.1002/9781118257517&quot;);</span>
+<span class="fc" id="L64">        assertEquals(Optional.of(bibEntryBurd2011), fetchedEntry);</span>
+<span class="fc" id="L65">    }</span>
+
+    @Test
+    public void testPerformSearchDecker2007() throws FetcherException {
+<span class="fc" id="L69">        Optional&lt;BibEntry&gt; fetchedEntry = fetcher.performSearchById(&quot;10.1109/ICWS.2007.59&quot;);</span>
+<span class="fc" id="L70">        assertEquals(Optional.of(bibEntryDecker2007), fetchedEntry);</span>
+<span class="fc" id="L71">    }</span>
+
+    @Test
+    public void testPerformSearchEmptyDOI() {
+<span class="pc" id="L75">        assertThrows(FetcherException.class, () -&gt; fetcher.performSearchById(&quot;&quot;));</span>
+<span class="fc" id="L76">    }</span>
+
+    @Test
+    public void testPerformSearchInvalidDOI() {
+<span class="pc" id="L80">        assertThrows(FetcherException.class, () -&gt; fetcher.performSearchById(&quot;10.1002/9781118257517F&quot;));</span>
+
+<span class="fc" id="L82">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

@@ -1,0 +1,540 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>StyleSelectDialog.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.openoffice</a> &gt; <span class="el_source">StyleSelectDialog.java</span></div><h1>StyleSelectDialog.java</h1><pre class="source lang-java linenums"><span class="nc" id="L1">package org.jabref.gui.openoffice;</span>
+
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.Rectangle;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Objects;
+import java.util.Optional;
+
+import javax.swing.AbstractAction;
+import javax.swing.Action;
+import javax.swing.ActionMap;
+import javax.swing.BorderFactory;
+import javax.swing.InputMap;
+import javax.swing.JButton;
+import javax.swing.JComponent;
+import javax.swing.JDialog;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
+import javax.swing.JPopupMenu;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
+import javax.swing.KeyStroke;
+import javax.swing.ListSelectionModel;
+import javax.swing.table.TableColumnModel;
+
+import javafx.embed.swing.JFXPanel;
+import javafx.scene.Scene;
+
+import org.jabref.Globals;
+import org.jabref.gui.DialogService;
+import org.jabref.gui.FXDialogService;
+import org.jabref.gui.IconTheme;
+import org.jabref.gui.JabRefDialog;
+import org.jabref.gui.JabRefFrame;
+import org.jabref.gui.PreviewPanel;
+import org.jabref.gui.customjfx.CustomJFXPanel;
+import org.jabref.gui.desktop.JabRefDesktop;
+import org.jabref.gui.externalfiletype.ExternalFileType;
+import org.jabref.gui.externalfiletype.ExternalFileTypes;
+import org.jabref.gui.externalfiletype.UnknownExternalFileType;
+import org.jabref.gui.keyboard.KeyBinding;
+import org.jabref.gui.util.DefaultTaskExecutor;
+import org.jabref.gui.util.FileDialogConfiguration;
+import org.jabref.gui.util.WindowLocation;
+import org.jabref.logic.l10n.Localization;
+import org.jabref.logic.openoffice.OOBibStyle;
+import org.jabref.logic.openoffice.OpenOfficePreferences;
+import org.jabref.logic.openoffice.StyleLoader;
+import org.jabref.logic.util.FileType;
+import org.jabref.logic.util.TestEntry;
+import org.jabref.model.database.BibDatabaseContext;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.preferences.JabRefPreferences;
+
+import ca.odell.glazedlists.BasicEventList;
+import ca.odell.glazedlists.EventList;
+import ca.odell.glazedlists.SortedList;
+import ca.odell.glazedlists.event.ListEvent;
+import ca.odell.glazedlists.event.ListEventListener;
+import ca.odell.glazedlists.gui.TableFormat;
+import ca.odell.glazedlists.swing.DefaultEventSelectionModel;
+import ca.odell.glazedlists.swing.DefaultEventTableModel;
+import ca.odell.glazedlists.swing.GlazedListsSwing;
+import com.jgoodies.forms.builder.ButtonBarBuilder;
+import com.jgoodies.forms.builder.FormBuilder;
+import com.jgoodies.forms.layout.FormLayout;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * This class produces a dialog box for choosing a style file.
+ */
+class StyleSelectDialog {
+
+<span class="nc" id="L83">    private static final Logger LOGGER = LoggerFactory.getLogger(StyleSelectDialog.class);</span>
+
+    private final JabRefFrame frame;
+    private EventList&lt;OOBibStyle&gt; styles;
+    private JDialog diag;
+    private JTable table;
+    private DefaultEventTableModel&lt;OOBibStyle&gt; tableModel;
+    private DefaultEventSelectionModel&lt;OOBibStyle&gt; selectionModel;
+<span class="nc" id="L91">    private final JPopupMenu popup = new JPopupMenu();</span>
+<span class="nc" id="L92">    private final JMenuItem edit = new JMenuItem(Localization.lang(&quot;Edit&quot;));</span>
+<span class="nc" id="L93">    private final JMenuItem show = new JMenuItem(Localization.lang(&quot;View&quot;));</span>
+<span class="nc" id="L94">    private final JMenuItem remove = new JMenuItem(Localization.lang(&quot;Remove&quot;));</span>
+<span class="nc" id="L95">    private final JMenuItem reload = new JMenuItem(Localization.lang(&quot;Reload&quot;));</span>
+<span class="nc" id="L96">    private final JButton addButton = new JButton(IconTheme.JabRefIcon.ADD_NOBOX.getIcon());</span>
+<span class="nc" id="L97">    private final JButton removeButton = new JButton(IconTheme.JabRefIcon.REMOVE_NOBOX.getIcon());</span>
+    private PreviewPanel preview;
+    private ActionListener removeAction;
+
+<span class="nc" id="L101">    private final Rectangle toRect = new Rectangle(0, 0, 1, 1);</span>
+<span class="nc" id="L102">    private final JButton ok = new JButton(Localization.lang(&quot;OK&quot;));</span>
+<span class="nc" id="L103">    private final JButton cancel = new JButton(Localization.lang(&quot;Cancel&quot;));</span>
+    private final BibEntry prevEntry;
+
+    private boolean okPressed;
+    private final StyleLoader loader;
+    private final OpenOfficePreferences preferences;
+
+<span class="nc" id="L110">    public StyleSelectDialog(JabRefFrame frame, OpenOfficePreferences preferences, StyleLoader loader) {</span>
+
+<span class="nc" id="L112">        this.frame = Objects.requireNonNull(frame);</span>
+<span class="nc" id="L113">        this.preferences = Objects.requireNonNull(preferences);</span>
+<span class="nc" id="L114">        this.loader = Objects.requireNonNull(loader);</span>
+<span class="nc" id="L115">        prevEntry = TestEntry.getTestEntry();</span>
+<span class="nc" id="L116">        init();</span>
+
+<span class="nc" id="L118">    }</span>
+
+    private void init() {
+<span class="nc" id="L121">        setupPopupMenu();</span>
+
+<span class="nc" id="L123">        addButton.addActionListener(actionEvent -&gt; {</span>
+<span class="nc" id="L124">            AddFileDialog addDialog = new AddFileDialog();</span>
+<span class="nc" id="L125">            addDialog.setDirectoryPath(preferences.getCurrentStyle());</span>
+<span class="nc" id="L126">            addDialog.setVisible(true);</span>
+<span class="nc" id="L127">            addDialog.getFileName().ifPresent(fileName -&gt; {</span>
+<span class="nc bnc" id="L128" title="All 2 branches missed.">                if (loader.addStyleIfValid(fileName)) {</span>
+<span class="nc" id="L129">                    preferences.setCurrentStyle(fileName);</span>
+                }
+<span class="nc" id="L131">            });</span>
+<span class="nc" id="L132">            updateStyles();</span>
+
+<span class="nc" id="L134">        });</span>
+<span class="nc" id="L135">        addButton.setToolTipText(Localization.lang(&quot;Add style file&quot;));</span>
+
+<span class="nc" id="L137">        removeButton.addActionListener(removeAction);</span>
+<span class="nc" id="L138">        removeButton.setToolTipText(Localization.lang(&quot;Remove style&quot;));</span>
+
+        // Create a preview panel for previewing styles
+        // Must be done before creating the table to avoid NPEs
+<span class="nc" id="L142">        preview = new PreviewPanel(null, null);</span>
+        // Use the test entry from the Preview settings tab in Preferences:
+<span class="nc" id="L144">        preview.setEntry(prevEntry);</span>
+
+<span class="nc" id="L146">        setupTable();</span>
+<span class="nc" id="L147">        updateStyles();</span>
+
+        // Build dialog
+<span class="nc" id="L150">        diag = new JDialog(frame, Localization.lang(&quot;Select style&quot;), true);</span>
+
+<span class="nc" id="L152">        FormBuilder builder = FormBuilder.create();</span>
+<span class="nc" id="L153">        builder.layout(new FormLayout(&quot;fill:pref:grow, 4dlu, left:pref, 4dlu, left:pref&quot;,</span>
+<span class="nc" id="L154">                &quot;pref, 4dlu, 100dlu:grow, 4dlu, pref, 4dlu, fill:100dlu&quot;));</span>
+<span class="nc" id="L155">        builder.add(Localization.lang(&quot;Select one of the available styles or add a style file from disk.&quot;)).xyw(1, 1,</span>
+<span class="nc" id="L156">                5);</span>
+<span class="nc" id="L157">        builder.add(new JScrollPane(table)).xyw(1, 3, 5);</span>
+<span class="nc" id="L158">        builder.add(addButton).xy(3, 5);</span>
+<span class="nc" id="L159">        builder.add(removeButton).xy(5, 5);</span>
+<span class="nc" id="L160">        JFXPanel container = CustomJFXPanel.wrap(new Scene(preview));</span>
+<span class="nc" id="L161">        builder.add(container).xyw(1, 7, 5);</span>
+<span class="nc" id="L162">        builder.padding(&quot;5dlu, 5dlu, 5dlu, 5dlu&quot;);</span>
+
+<span class="nc" id="L164">        diag.add(builder.getPanel(), BorderLayout.CENTER);</span>
+
+<span class="nc" id="L166">        AbstractAction okListener = new AbstractAction() {</span>
+
+            @Override
+            public void actionPerformed(ActionEvent event) {
+<span class="nc bnc" id="L170" title="All 4 branches missed.">                if ((table.getRowCount() == 0) || (table.getSelectedRowCount() == 0)) {</span>
+<span class="nc" id="L171">                    JOptionPane.showMessageDialog(diag, Localization.lang(&quot;You must select a valid style file.&quot;),</span>
+<span class="nc" id="L172">                            Localization.lang(&quot;Style selection&quot;), JOptionPane.ERROR_MESSAGE);</span>
+<span class="nc" id="L173">                    return;</span>
+                }
+<span class="nc" id="L175">                okPressed = true;</span>
+<span class="nc" id="L176">                storeSettings();</span>
+<span class="nc" id="L177">                diag.dispose();</span>
+<span class="nc" id="L178">            }</span>
+        };
+<span class="nc" id="L180">        ok.addActionListener(okListener);</span>
+
+<span class="nc" id="L182">        Action cancelListener = new AbstractAction() {</span>
+
+            @Override
+            public void actionPerformed(ActionEvent event) {
+<span class="nc" id="L186">                diag.dispose();</span>
+<span class="nc" id="L187">            }</span>
+        };
+<span class="nc" id="L189">        cancel.addActionListener(cancelListener);</span>
+
+<span class="nc" id="L191">        ButtonBarBuilder bb = new ButtonBarBuilder();</span>
+<span class="nc" id="L192">        bb.addGlue();</span>
+<span class="nc" id="L193">        bb.addButton(ok);</span>
+<span class="nc" id="L194">        bb.addButton(cancel);</span>
+<span class="nc" id="L195">        bb.addGlue();</span>
+<span class="nc" id="L196">        bb.getPanel().setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));</span>
+<span class="nc" id="L197">        diag.add(bb.getPanel(), BorderLayout.SOUTH);</span>
+
+<span class="nc" id="L199">        ActionMap am = bb.getPanel().getActionMap();</span>
+<span class="nc" id="L200">        InputMap im = bb.getPanel().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);</span>
+<span class="nc" id="L201">        im.put(Globals.getKeyPrefs().getKey(KeyBinding.CLOSE_DIALOG), &quot;close&quot;);</span>
+<span class="nc" id="L202">        am.put(&quot;close&quot;, cancelListener);</span>
+<span class="nc" id="L203">        im.put(KeyStroke.getKeyStroke(&quot;ENTER&quot;), &quot;enterOk&quot;);</span>
+<span class="nc" id="L204">        am.put(&quot;enterOk&quot;, okListener);</span>
+
+<span class="nc" id="L206">        diag.pack();</span>
+
+<span class="nc" id="L208">        WindowLocation pw = new WindowLocation(diag, JabRefPreferences.STYLES_POS_X, JabRefPreferences.STYLES_POS_Y,</span>
+<span class="nc" id="L209">                JabRefPreferences.STYLES_SIZE_X, JabRefPreferences.STYLES_SIZE_Y);</span>
+<span class="nc" id="L210">        pw.displayWindowAtStoredLocation();</span>
+<span class="nc" id="L211">    }</span>
+
+    private void setupTable() {
+<span class="nc" id="L214">        styles = new BasicEventList&lt;&gt;();</span>
+<span class="nc" id="L215">        EventList&lt;OOBibStyle&gt; sortedStyles = new SortedList&lt;&gt;(styles);</span>
+
+<span class="nc" id="L217">        tableModel = (DefaultEventTableModel&lt;OOBibStyle&gt;) GlazedListsSwing</span>
+<span class="nc" id="L218">                .eventTableModelWithThreadProxyList(sortedStyles, new StyleTableFormat());</span>
+<span class="nc" id="L219">        table = new JTable(tableModel);</span>
+<span class="nc" id="L220">        TableColumnModel cm = table.getColumnModel();</span>
+<span class="nc" id="L221">        cm.getColumn(0).setPreferredWidth(100);</span>
+<span class="nc" id="L222">        cm.getColumn(1).setPreferredWidth(200);</span>
+<span class="nc" id="L223">        cm.getColumn(2).setPreferredWidth(80);</span>
+
+<span class="nc" id="L225">        selectionModel = (DefaultEventSelectionModel&lt;OOBibStyle&gt;) GlazedListsSwing</span>
+<span class="nc" id="L226">                .eventSelectionModelWithThreadProxyList(sortedStyles);</span>
+<span class="nc" id="L227">        table.setSelectionModel(selectionModel);</span>
+<span class="nc" id="L228">        table.getSelectionModel().setSelectionMode(ListSelectionModel.SINGLE_SELECTION);</span>
+<span class="nc" id="L229">        table.addMouseListener(new MouseAdapter() {</span>
+
+            @Override
+            public void mousePressed(MouseEvent mouseEvent) {
+<span class="nc bnc" id="L233" title="All 2 branches missed.">                if (mouseEvent.isPopupTrigger()) {</span>
+<span class="nc" id="L234">                    tablePopup(mouseEvent);</span>
+                }
+<span class="nc" id="L236">            }</span>
+
+            @Override
+            public void mouseReleased(MouseEvent mouseEvent) {
+<span class="nc bnc" id="L240" title="All 2 branches missed.">                if (mouseEvent.isPopupTrigger()) {</span>
+<span class="nc" id="L241">                    tablePopup(mouseEvent);</span>
+                }
+<span class="nc" id="L243">            }</span>
+        });
+
+<span class="nc" id="L246">        selectionModel.getSelected().addListEventListener(new EntrySelectionListener());</span>
+<span class="nc" id="L247">    }</span>
+
+    private void setupPopupMenu() {
+<span class="nc" id="L250">        popup.add(edit);</span>
+<span class="nc" id="L251">        popup.add(show);</span>
+<span class="nc" id="L252">        popup.add(remove);</span>
+<span class="nc" id="L253">        popup.add(reload);</span>
+
+        // Add action listener to &quot;Edit&quot; menu item, which is supposed to open the style file in an external editor:
+<span class="nc" id="L256">        edit.addActionListener(actionEvent -&gt; getSelectedStyle().ifPresent(style -&gt; {</span>
+<span class="nc" id="L257">            Optional&lt;ExternalFileType&gt; type = ExternalFileTypes.getInstance().getExternalFileTypeByExt(&quot;jstyle&quot;);</span>
+<span class="nc" id="L258">            String link = style.getPath();</span>
+            try {
+<span class="nc bnc" id="L260" title="All 2 branches missed.">                if (type.isPresent()) {</span>
+<span class="nc" id="L261">                    JabRefDesktop.openExternalFileAnyFormat(new BibDatabaseContext(), link, type);</span>
+<span class="nc" id="L262">                } else {</span>
+<span class="nc" id="L263">                    JabRefDesktop.openExternalFileUnknown(frame, new BibEntry(), new BibDatabaseContext(), link,</span>
+<span class="nc" id="L264">                            new UnknownExternalFileType(&quot;jstyle&quot;));</span>
+                }
+<span class="nc" id="L266">            } catch (IOException e) {</span>
+<span class="nc" id="L267">                LOGGER.warn(&quot;Problem open style file editor&quot;, e);</span>
+            }
+<span class="nc" id="L269">        }));</span>
+
+        // Add action listener to &quot;Show&quot; menu item, which is supposed to open the style file in a dialog:
+<span class="nc" id="L272">        show.addActionListener(actionEvent -&gt; getSelectedStyle().ifPresent(this::displayStyle));</span>
+
+        // Create action listener for removing a style, also used for the remove button
+<span class="nc" id="L275">        removeAction = actionEvent -&gt; getSelectedStyle().ifPresent(style -&gt; {</span>
+<span class="nc bnc" id="L276" title="All 4 branches missed.">            if (!style.isFromResource() &amp;&amp; (JOptionPane.showConfirmDialog(diag,</span>
+<span class="nc" id="L277">                    Localization.lang(&quot;Are you sure you want to remove the style?&quot;), Localization.lang(&quot;Remove style&quot;),</span>
+<span class="nc" id="L278">                    JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION)) {</span>
+<span class="nc bnc" id="L279" title="All 2 branches missed.">                if (!loader.removeStyle(style)) {</span>
+<span class="nc" id="L280">                    LOGGER.info(&quot;Problem removing style&quot;);</span>
+                }
+<span class="nc" id="L282">                updateStyles();</span>
+            }
+<span class="nc" id="L284">        });</span>
+        // Add it to the remove menu item
+<span class="nc" id="L286">        remove.addActionListener(removeAction);</span>
+
+        // Add action listener to the &quot;Reload&quot; menu item, which is supposed to reload an external style file
+<span class="nc" id="L289">        reload.addActionListener(actionEvent -&gt; getSelectedStyle().ifPresent(style -&gt; {</span>
+            try {
+<span class="nc" id="L291">                style.ensureUpToDate();</span>
+<span class="nc" id="L292">            } catch (IOException e) {</span>
+<span class="nc" id="L293">                LOGGER.warn(&quot;Problem with style file '&quot; + style.getPath() + &quot;'&quot;, e);</span>
+            }
+<span class="nc" id="L295">        }));</span>
+
+<span class="nc" id="L297">    }</span>
+
+    public void setVisible(boolean visible) {
+<span class="nc" id="L300">        okPressed = false;</span>
+<span class="nc" id="L301">        diag.setVisible(visible);</span>
+<span class="nc" id="L302">    }</span>
+
+    /**
+     * Read all style files or directories of style files indicated by the current
+     * settings, and add the styles to the list of styles.
+     */
+    private void updateStyles() {
+
+<span class="nc" id="L310">        table.clearSelection();</span>
+<span class="nc" id="L311">        styles.getReadWriteLock().writeLock().lock();</span>
+<span class="nc" id="L312">        styles.clear();</span>
+<span class="nc" id="L313">        styles.addAll(loader.getStyles());</span>
+<span class="nc" id="L314">        styles.getReadWriteLock().writeLock().unlock();</span>
+
+<span class="nc" id="L316">        selectLastUsed();</span>
+<span class="nc" id="L317">    }</span>
+
+    /**
+     * This method scans the current list of styles, and looks for the styles
+     * that was last used. If found, that style is selected. If not found,
+     * the first style is selected provided there are &gt;0 styles.
+     */
+    private void selectLastUsed() {
+<span class="nc" id="L325">        String usedStyleFile = preferences.getCurrentStyle();</span>
+        // Set the initial selection of the table:
+<span class="nc bnc" id="L327" title="All 2 branches missed.">        if (usedStyleFile == null) {</span>
+<span class="nc bnc" id="L328" title="All 2 branches missed.">            if (table.getRowCount() &gt; 0) {</span>
+<span class="nc" id="L329">                table.setRowSelectionInterval(0, 0);</span>
+            }
+<span class="nc" id="L331">        } else {</span>
+<span class="nc" id="L332">            boolean found = false;</span>
+<span class="nc bnc" id="L333" title="All 2 branches missed.">            for (int i = 0; i &lt; table.getRowCount(); i++) {</span>
+<span class="nc bnc" id="L334" title="All 2 branches missed.">                if (usedStyleFile.equals(tableModel.getElementAt(i).getPath())) {</span>
+<span class="nc" id="L335">                    table.setRowSelectionInterval(i, i);</span>
+<span class="nc" id="L336">                    found = true;</span>
+<span class="nc" id="L337">                    break;</span>
+                }
+            }
+<span class="nc bnc" id="L340" title="All 4 branches missed.">            if (!found &amp;&amp; (table.getRowCount() &gt; 0)) {</span>
+<span class="nc" id="L341">                table.setRowSelectionInterval(0, 0);</span>
+            }
+        }
+<span class="nc" id="L344">    }</span>
+
+    private void storeSettings() {
+<span class="nc" id="L347">        getSelectedStyle().ifPresent(style -&gt; preferences.setCurrentStyle(style.getPath()));</span>
+<span class="nc" id="L348">    }</span>
+
+    public Optional&lt;OOBibStyle&gt; getStyle() {
+<span class="nc bnc" id="L351" title="All 2 branches missed.">        if (okPressed) {</span>
+<span class="nc" id="L352">            return getSelectedStyle();</span>
+        }
+<span class="nc" id="L354">        return Optional.empty();</span>
+    }
+
+    /**
+     * Get the currently selected style.
+     * @return the selected style, or empty if no style is selected.
+     */
+    private Optional&lt;OOBibStyle&gt; getSelectedStyle() {
+<span class="nc bnc" id="L362" title="All 2 branches missed.">        if (!selectionModel.getSelected().isEmpty()) {</span>
+<span class="nc" id="L363">            return Optional.of(selectionModel.getSelected().get(0));</span>
+        }
+<span class="nc" id="L365">        return Optional.empty();</span>
+    }
+
+<span class="nc" id="L368">    static class StyleTableFormat implements TableFormat&lt;OOBibStyle&gt; {</span>
+
+        @Override
+        public int getColumnCount() {
+<span class="nc" id="L372">            return 3;</span>
+        }
+
+        @Override
+        public String getColumnName(int i) {
+<span class="nc bnc" id="L377" title="All 4 branches missed.">            switch (i) {</span>
+            case 0:
+<span class="nc" id="L379">                return Localization.lang(&quot;Name&quot;);</span>
+            case 1:
+<span class="nc" id="L381">                return Localization.lang(&quot;Journals&quot;);</span>
+            case 2:
+<span class="nc" id="L383">                return Localization.lang(&quot;File&quot;);</span>
+            default:
+<span class="nc" id="L385">                return &quot;&quot;;</span>
+            }
+        }
+
+        @Override
+        public Object getColumnValue(OOBibStyle style, int i) {
+<span class="nc bnc" id="L391" title="All 4 branches missed.">            switch (i) {</span>
+            case 0:
+<span class="nc" id="L393">                return style.getName();</span>
+            case 1:
+<span class="nc" id="L395">                return String.join(&quot;, &quot;, style.getJournals());</span>
+            case 2:
+<span class="nc bnc" id="L397" title="All 2 branches missed.">                return style.isFromResource() ? Localization.lang(&quot;Internal style&quot;) : style.getFile().getName();</span>
+            default:
+<span class="nc" id="L399">                return &quot;&quot;;</span>
+            }
+        }
+    }
+
+    public boolean isOkPressed() {
+<span class="nc" id="L405">        return okPressed;</span>
+    }
+
+    private void tablePopup(MouseEvent e) {
+<span class="nc" id="L409">        popup.show(e.getComponent(), e.getX(), e.getY());</span>
+<span class="nc" id="L410">    }</span>
+
+    private void displayStyle(OOBibStyle style) {
+        // Make a dialog box to display the contents:
+<span class="nc" id="L414">        final JDialog dd = new JDialog(diag, style.getName(), true);</span>
+
+<span class="nc" id="L416">        JTextArea ta = new JTextArea(style.getLocalCopy());</span>
+<span class="nc" id="L417">        ta.setEditable(false);</span>
+<span class="nc" id="L418">        JScrollPane sp = new JScrollPane(ta);</span>
+<span class="nc" id="L419">        sp.setPreferredSize(new Dimension(700, 500));</span>
+<span class="nc" id="L420">        dd.getContentPane().add(sp, BorderLayout.CENTER);</span>
+<span class="nc" id="L421">        JButton okButton = new JButton(Localization.lang(&quot;OK&quot;));</span>
+<span class="nc" id="L422">        ButtonBarBuilder bb = new ButtonBarBuilder();</span>
+<span class="nc" id="L423">        bb.addGlue();</span>
+<span class="nc" id="L424">        bb.addButton(okButton);</span>
+<span class="nc" id="L425">        bb.addGlue();</span>
+<span class="nc" id="L426">        bb.getPanel().setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));</span>
+<span class="nc" id="L427">        dd.getContentPane().add(bb.getPanel(), BorderLayout.SOUTH);</span>
+<span class="nc" id="L428">        okButton.addActionListener(actionEvent -&gt; dd.dispose());</span>
+<span class="nc" id="L429">        dd.pack();</span>
+<span class="nc" id="L430">        dd.setLocationRelativeTo(diag);</span>
+<span class="nc" id="L431">        dd.setVisible(true);</span>
+<span class="nc" id="L432">    }</span>
+
+    /**
+     * The listener for the Glazed list monitoring the current selection.
+     * When selection changes, we need to update the preview panel.
+     */
+<span class="nc" id="L438">    private class EntrySelectionListener implements ListEventListener&lt;OOBibStyle&gt; {</span>
+
+        @Override
+        public void listChanged(ListEvent&lt;OOBibStyle&gt; listEvent) {
+<span class="nc bnc" id="L442" title="All 2 branches missed.">            if (listEvent.getSourceList().size() == 1) {</span>
+<span class="nc" id="L443">                OOBibStyle style = listEvent.getSourceList().get(0);</span>
+
+                // Enable/disable popup menu items and buttons
+<span class="nc bnc" id="L446" title="All 2 branches missed.">                if (style.isFromResource()) {</span>
+<span class="nc" id="L447">                    remove.setEnabled(false);</span>
+<span class="nc" id="L448">                    edit.setEnabled(false);</span>
+<span class="nc" id="L449">                    reload.setEnabled(false);</span>
+<span class="nc" id="L450">                    removeButton.setEnabled(false);</span>
+<span class="nc" id="L451">                } else {</span>
+<span class="nc" id="L452">                    remove.setEnabled(true);</span>
+<span class="nc" id="L453">                    edit.setEnabled(true);</span>
+<span class="nc" id="L454">                    reload.setEnabled(true);</span>
+<span class="nc" id="L455">                    removeButton.setEnabled(true);</span>
+                }
+
+                // Set new preview layout
+<span class="nc" id="L459">                preview.setLayout(style.getReferenceFormat(&quot;default&quot;));</span>
+            }
+<span class="nc" id="L461">        }</span>
+    }
+
+    private class AddFileDialog extends JabRefDialog {
+
+<span class="nc" id="L466">        private final JTextField newFile = new JTextField();</span>
+        private boolean addOKPressed;
+
+<span class="nc" id="L469">        public AddFileDialog() {</span>
+<span class="nc" id="L470">            super(diag, Localization.lang(&quot;Add style file&quot;), true, AddFileDialog.class);</span>
+
+<span class="nc" id="L472">            JButton browse = new JButton(Localization.lang(&quot;Browse&quot;));</span>
+<span class="nc" id="L473">            FileDialogConfiguration fileDialogConfiguration = new FileDialogConfiguration.Builder()</span>
+<span class="nc" id="L474">                    .addExtensionFilter(FileType.JSTYLE)</span>
+<span class="nc" id="L475">                    .withDefaultExtension(FileType.JSTYLE)</span>
+<span class="nc" id="L476">                    .withInitialDirectory(Globals.prefs.get(JabRefPreferences.WORKING_DIRECTORY)).build();</span>
+<span class="nc" id="L477">            DialogService ds = new FXDialogService();</span>
+
+<span class="nc" id="L479">            browse.addActionListener(e -&gt; {</span>
+<span class="nc" id="L480">                Optional&lt;Path&gt; file = DefaultTaskExecutor</span>
+<span class="nc" id="L481">                        .runInJavaFXThread(() -&gt; ds.showFileOpenDialog(fileDialogConfiguration));</span>
+<span class="nc" id="L482">                file.ifPresent(f -&gt; newFile.setText(f.toAbsolutePath().toString()));</span>
+<span class="nc" id="L483">            });</span>
+
+            // Build content panel
+<span class="nc" id="L486">            FormBuilder builder = FormBuilder.create();</span>
+<span class="nc" id="L487">            builder.layout(new FormLayout(&quot;left:pref, 4dlu, fill:100dlu:grow, 4dlu, pref&quot;, &quot;p&quot;));</span>
+<span class="nc" id="L488">            builder.add(Localization.lang(&quot;File&quot;)).xy(1, 1);</span>
+<span class="nc" id="L489">            builder.add(newFile).xy(3, 1);</span>
+<span class="nc" id="L490">            builder.add(browse).xy(5, 1);</span>
+<span class="nc" id="L491">            builder.padding(&quot;10dlu, 10dlu, 10dlu, 10dlu&quot;);</span>
+<span class="nc" id="L492">            getContentPane().add(builder.build(), BorderLayout.CENTER);</span>
+
+            // Buttons
+<span class="nc" id="L495">            ButtonBarBuilder bb = new ButtonBarBuilder();</span>
+<span class="nc" id="L496">            JButton addOKButton = new JButton(Localization.lang(&quot;OK&quot;));</span>
+<span class="nc" id="L497">            JButton addCancelButton = new JButton(Localization.lang(&quot;Cancel&quot;));</span>
+<span class="nc" id="L498">            bb.addGlue();</span>
+<span class="nc" id="L499">            bb.addButton(addOKButton);</span>
+<span class="nc" id="L500">            bb.addButton(addCancelButton);</span>
+<span class="nc" id="L501">            bb.addGlue();</span>
+<span class="nc" id="L502">            bb.getPanel().setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));</span>
+<span class="nc" id="L503">            getContentPane().add(bb.getPanel(), BorderLayout.SOUTH);</span>
+<span class="nc" id="L504">            addOKButton.addActionListener(e -&gt; {</span>
+<span class="nc" id="L505">                addOKPressed = true;</span>
+<span class="nc" id="L506">                dispose();</span>
+<span class="nc" id="L507">            });</span>
+
+<span class="nc" id="L509">            Action cancelAction = new AbstractAction() {</span>
+
+                @Override
+                public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L513">                    addOKPressed = false;</span>
+<span class="nc" id="L514">                    dispose();</span>
+<span class="nc" id="L515">                }</span>
+            };
+<span class="nc" id="L517">            addCancelButton.addActionListener(cancelAction);</span>
+
+            // Key bindings:
+<span class="nc" id="L520">            bb.getPanel().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)</span>
+<span class="nc" id="L521">                    .put(Globals.getKeyPrefs().getKey(KeyBinding.CLOSE_DIALOG), &quot;close&quot;);</span>
+<span class="nc" id="L522">            bb.getPanel().getActionMap().put(&quot;close&quot;, cancelAction);</span>
+<span class="nc" id="L523">            pack();</span>
+<span class="nc" id="L524">            setLocationRelativeTo(diag);</span>
+<span class="nc" id="L525">        }</span>
+
+        public Optional&lt;String&gt; getFileName() {
+<span class="nc bnc" id="L528" title="All 6 branches missed.">            if (addOKPressed &amp;&amp; (newFile.getText() != null) &amp;&amp; !newFile.getText().isEmpty()) {</span>
+<span class="nc" id="L529">                return Optional.of(newFile.getText());</span>
+            }
+<span class="nc" id="L531">            return Optional.empty();</span>
+        }
+
+        public void setDirectoryPath(String path) {
+<span class="nc" id="L535">            this.newFile.setText(path);</span>
+<span class="nc" id="L536">        }</span>
+
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

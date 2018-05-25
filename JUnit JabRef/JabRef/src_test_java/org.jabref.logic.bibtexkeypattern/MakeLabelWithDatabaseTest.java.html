@@ -1,0 +1,445 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MakeLabelWithDatabaseTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.bibtexkeypattern</a> &gt; <span class="el_source">MakeLabelWithDatabaseTest.java</span></div><h1>MakeLabelWithDatabaseTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.bibtexkeypattern;
+
+import java.util.Optional;
+
+import org.jabref.model.bibtexkeypattern.DatabaseBibtexKeyPattern;
+import org.jabref.model.bibtexkeypattern.GlobalBibtexKeyPattern;
+import org.jabref.model.database.BibDatabase;
+import org.jabref.model.entry.BibEntry;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.Assert.assertEquals;
+
+<span class="fc" id="L15">public class MakeLabelWithDatabaseTest {</span>
+
+    private BibDatabase database;
+    private BibtexKeyPatternPreferences preferences;
+    private GlobalBibtexKeyPattern pattern;
+    private DatabaseBibtexKeyPattern bibtexKeyPattern;
+    private BibEntry entry;
+
+    @BeforeEach
+    public void setUp() {
+<span class="fc" id="L25">        database = new BibDatabase();</span>
+
+<span class="fc" id="L27">        entry = new BibEntry();</span>
+<span class="fc" id="L28">        entry.setField(&quot;author&quot;, &quot;John Doe&quot;);</span>
+<span class="fc" id="L29">        entry.setField(&quot;year&quot;, &quot;2016&quot;);</span>
+<span class="fc" id="L30">        entry.setField(&quot;title&quot;, &quot;An awesome paper on JabRef&quot;);</span>
+<span class="fc" id="L31">        database.insertEntry(entry);</span>
+<span class="fc" id="L32">        pattern = GlobalBibtexKeyPattern.fromPattern(&quot;[auth][year]&quot;);</span>
+<span class="fc" id="L33">        bibtexKeyPattern = new DatabaseBibtexKeyPattern(pattern);</span>
+<span class="fc" id="L34">        preferences = new BibtexKeyPatternPreferences(&quot;&quot;, &quot;&quot;, false, true, true, pattern, ',');</span>
+<span class="fc" id="L35">    }</span>
+
+    @Test
+    public void generateDefaultKey() {
+<span class="fc" id="L39">        new BibtexKeyGenerator(bibtexKeyPattern, database, preferences).generateAndSetKey(entry);</span>
+<span class="fc" id="L40">        assertEquals(Optional.of(&quot;Doe2016&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L41">    }</span>
+
+    @Test
+    public void generateDefaultKeyAlreadyExistsDuplicatesStartAtA() {
+<span class="fc" id="L45">        BibtexKeyGenerator keyGenerator = new BibtexKeyGenerator(bibtexKeyPattern, database, preferences);</span>
+<span class="fc" id="L46">        keyGenerator.generateAndSetKey(entry);</span>
+<span class="fc" id="L47">        BibEntry entry2 = new BibEntry();</span>
+<span class="fc" id="L48">        entry2.setField(&quot;author&quot;, &quot;John Doe&quot;);</span>
+<span class="fc" id="L49">        entry2.setField(&quot;year&quot;, &quot;2016&quot;);</span>
+<span class="fc" id="L50">        keyGenerator.generateAndSetKey(entry2);</span>
+<span class="fc" id="L51">        assertEquals(Optional.of(&quot;Doe2016a&quot;), entry2.getCiteKeyOptional());</span>
+<span class="fc" id="L52">    }</span>
+
+    @Test
+    public void generateDefaultKeyAlwaysLetter() {
+<span class="fc" id="L56">        preferences = new BibtexKeyPatternPreferences(&quot;&quot;, &quot;&quot;, true, true, true, pattern, ',');</span>
+<span class="fc" id="L57">        new BibtexKeyGenerator(bibtexKeyPattern, database, preferences).generateAndSetKey(entry);</span>
+<span class="fc" id="L58">        assertEquals(Optional.of(&quot;Doe2016a&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L59">    }</span>
+
+    @Test
+    public void generateDefaultKeyAlwaysLetterAlreadyExistsDuplicatesStartAtB() {
+<span class="fc" id="L63">        preferences = new BibtexKeyPatternPreferences(&quot;&quot;, &quot;&quot;, true, true, true, pattern, ',');</span>
+
+<span class="fc" id="L65">        BibtexKeyGenerator keyGenerator = new BibtexKeyGenerator(bibtexKeyPattern, database, preferences);</span>
+<span class="fc" id="L66">        keyGenerator.generateAndSetKey(entry);</span>
+<span class="fc" id="L67">        BibEntry entry2 = new BibEntry();</span>
+<span class="fc" id="L68">        entry2.setField(&quot;author&quot;, &quot;John Doe&quot;);</span>
+<span class="fc" id="L69">        entry2.setField(&quot;year&quot;, &quot;2016&quot;);</span>
+<span class="fc" id="L70">        keyGenerator.generateAndSetKey(entry2);</span>
+<span class="fc" id="L71">        assertEquals(Optional.of(&quot;Doe2016b&quot;), entry2.getCiteKeyOptional());</span>
+<span class="fc" id="L72">    }</span>
+
+    @Test
+    public void generateDefaultKeyStartDuplicatesAtB() {
+<span class="fc" id="L76">        preferences = new BibtexKeyPatternPreferences(&quot;&quot;, &quot;&quot;, false, false, true, pattern, ',');</span>
+<span class="fc" id="L77">        new BibtexKeyGenerator(bibtexKeyPattern, database, preferences).generateAndSetKey(entry);</span>
+<span class="fc" id="L78">        assertEquals(Optional.of(&quot;Doe2016&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L79">    }</span>
+
+    @Test
+    public void generateDefaultKeyAlreadyExistsDuplicatesStartAtB() {
+<span class="fc" id="L83">        preferences = new BibtexKeyPatternPreferences(&quot;&quot;, &quot;&quot;, false, false, true, pattern, ',');</span>
+
+<span class="fc" id="L85">        BibtexKeyGenerator keyGenerator = new BibtexKeyGenerator(bibtexKeyPattern, database, preferences);</span>
+<span class="fc" id="L86">        keyGenerator.generateAndSetKey(entry);</span>
+<span class="fc" id="L87">        BibEntry entry2 = new BibEntry();</span>
+<span class="fc" id="L88">        entry2.setField(&quot;author&quot;, &quot;John Doe&quot;);</span>
+<span class="fc" id="L89">        entry2.setField(&quot;year&quot;, &quot;2016&quot;);</span>
+<span class="fc" id="L90">        keyGenerator.generateAndSetKey(entry2);</span>
+<span class="fc" id="L91">        assertEquals(Optional.of(&quot;Doe2016b&quot;), entry2.getCiteKeyOptional());</span>
+<span class="fc" id="L92">    }</span>
+
+    @Test
+    public void generateDefaultKeyAlreadyExistsManyDuplicates() {
+<span class="fc" id="L96">        BibtexKeyGenerator keyGenerator = new BibtexKeyGenerator(bibtexKeyPattern, database, preferences);</span>
+<span class="fc" id="L97">        keyGenerator.generateAndSetKey(entry);</span>
+<span class="fc" id="L98">        BibEntry entry2 = new BibEntry();</span>
+<span class="fc" id="L99">        entry2.setField(&quot;author&quot;, &quot;John Doe&quot;);</span>
+<span class="fc" id="L100">        entry2.setField(&quot;year&quot;, &quot;2016&quot;);</span>
+<span class="fc" id="L101">        entry2.setCiteKey(entry.getCiteKeyOptional().get());</span>
+<span class="fc" id="L102">        database.insertEntry(entry2);</span>
+<span class="fc" id="L103">        BibEntry entry3 = new BibEntry();</span>
+<span class="fc" id="L104">        entry3.setField(&quot;author&quot;, &quot;John Doe&quot;);</span>
+<span class="fc" id="L105">        entry3.setField(&quot;year&quot;, &quot;2016&quot;);</span>
+<span class="fc" id="L106">        entry3.setCiteKey(entry.getCiteKeyOptional().get());</span>
+<span class="fc" id="L107">        database.insertEntry(entry3);</span>
+<span class="fc" id="L108">        keyGenerator.generateAndSetKey(entry3);</span>
+<span class="fc" id="L109">        assertEquals(Optional.of(&quot;Doe2016a&quot;), entry3.getCiteKeyOptional());</span>
+<span class="fc" id="L110">    }</span>
+
+    @Test
+    public void generateDefaultKeyFirstTwoAlreadyExists() {
+<span class="fc" id="L114">        BibtexKeyGenerator keyGenerator = new BibtexKeyGenerator(bibtexKeyPattern, database, preferences);</span>
+<span class="fc" id="L115">        keyGenerator.generateAndSetKey(entry);</span>
+<span class="fc" id="L116">        BibEntry entry2 = new BibEntry();</span>
+<span class="fc" id="L117">        entry2.setField(&quot;author&quot;, &quot;John Doe&quot;);</span>
+<span class="fc" id="L118">        entry2.setField(&quot;year&quot;, &quot;2016&quot;);</span>
+<span class="fc" id="L119">        keyGenerator.generateAndSetKey(entry2);</span>
+<span class="fc" id="L120">        database.insertEntry(entry2);</span>
+<span class="fc" id="L121">        BibEntry entry3 = new BibEntry();</span>
+<span class="fc" id="L122">        entry3.setField(&quot;author&quot;, &quot;John Doe&quot;);</span>
+<span class="fc" id="L123">        entry3.setField(&quot;year&quot;, &quot;2016&quot;);</span>
+<span class="fc" id="L124">        entry3.setCiteKey(entry.getCiteKeyOptional().get());</span>
+<span class="fc" id="L125">        database.insertEntry(entry3);</span>
+<span class="fc" id="L126">        keyGenerator.generateAndSetKey(entry3);</span>
+<span class="fc" id="L127">        assertEquals(Optional.of(&quot;Doe2016b&quot;), entry3.getCiteKeyOptional());</span>
+<span class="fc" id="L128">    }</span>
+
+    @Test
+    public void generateKeyAuthLowerModified() {
+<span class="fc" id="L132">        bibtexKeyPattern.setDefaultValue(&quot;[auth:lower][year]&quot;);</span>
+<span class="fc" id="L133">        new BibtexKeyGenerator(bibtexKeyPattern, database, preferences).generateAndSetKey(entry);</span>
+<span class="fc" id="L134">        assertEquals(Optional.of(&quot;doe2016&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L135">    }</span>
+
+    @Test
+    public void generateKeyAuthUpperModified() {
+<span class="fc" id="L139">        bibtexKeyPattern.setDefaultValue(&quot;[auth:upper][year]&quot;);</span>
+<span class="fc" id="L140">        new BibtexKeyGenerator(bibtexKeyPattern, database, preferences).generateAndSetKey(entry);</span>
+<span class="fc" id="L141">        assertEquals(Optional.of(&quot;DOE2016&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L142">    }</span>
+
+    @Test
+    public void generateKeyAuthTitleCaseModified() {
+<span class="fc" id="L146">        bibtexKeyPattern.setDefaultValue(&quot;[auth:title_case][year]&quot;);</span>
+<span class="fc" id="L147">        new BibtexKeyGenerator(bibtexKeyPattern, database, preferences).generateAndSetKey(entry);</span>
+<span class="fc" id="L148">        assertEquals(Optional.of(&quot;Doe2016&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L149">    }</span>
+
+    @Test
+    public void generateKeyAuthSentenceCaseModified() {
+<span class="fc" id="L153">        bibtexKeyPattern.setDefaultValue(&quot;[auth:sentence_case][year]&quot;);</span>
+<span class="fc" id="L154">        new BibtexKeyGenerator(bibtexKeyPattern, database, preferences).generateAndSetKey(entry);</span>
+<span class="fc" id="L155">        assertEquals(Optional.of(&quot;Doe2016&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L156">    }</span>
+
+    @Test
+    public void generateKeyAuthCapitalizeModified() {
+<span class="fc" id="L160">        bibtexKeyPattern.setDefaultValue(&quot;[auth:capitalize][year]&quot;);</span>
+<span class="fc" id="L161">        new BibtexKeyGenerator(bibtexKeyPattern, database, preferences).generateAndSetKey(entry);</span>
+<span class="fc" id="L162">        assertEquals(Optional.of(&quot;Doe2016&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L163">    }</span>
+
+    @Test
+    public void generateDefaultKeyFixedValue() {
+<span class="fc" id="L167">        bibtexKeyPattern.setDefaultValue(&quot;[auth]Test[year]&quot;);</span>
+<span class="fc" id="L168">        new BibtexKeyGenerator(bibtexKeyPattern, database, preferences).generateAndSetKey(entry);</span>
+<span class="fc" id="L169">        assertEquals(Optional.of(&quot;DoeTest2016&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L170">    }</span>
+
+    @Test
+    public void generateKeyShortYear() {
+<span class="fc" id="L174">        bibtexKeyPattern.setDefaultValue(&quot;[shortyear]&quot;);</span>
+<span class="fc" id="L175">        new BibtexKeyGenerator(bibtexKeyPattern, database, preferences).generateAndSetKey(entry);</span>
+<span class="fc" id="L176">        assertEquals(Optional.of(&quot;16&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L177">    }</span>
+
+    @Test
+    public void generateKeyAuthN() {
+<span class="fc" id="L181">        bibtexKeyPattern.setDefaultValue(&quot;[auth2]&quot;);</span>
+<span class="fc" id="L182">        new BibtexKeyGenerator(bibtexKeyPattern, database, preferences).generateAndSetKey(entry);</span>
+<span class="fc" id="L183">        assertEquals(Optional.of(&quot;Do&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L184">    }</span>
+
+    @Test
+    public void generateKeyAuthNShortName() {
+<span class="fc" id="L188">        bibtexKeyPattern.setDefaultValue(&quot;[auth10]&quot;);</span>
+<span class="fc" id="L189">        new BibtexKeyGenerator(bibtexKeyPattern, database, preferences).generateAndSetKey(entry);</span>
+<span class="fc" id="L190">        assertEquals(Optional.of(&quot;Doe&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L191">    }</span>
+
+    @Test
+    public void generateKeyEmptyField() {
+<span class="fc" id="L195">        entry = new BibEntry();</span>
+<span class="fc" id="L196">        new BibtexKeyGenerator(bibtexKeyPattern, database, preferences).generateAndSetKey(entry);</span>
+<span class="fc" id="L197">        assertEquals(Optional.empty(), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L198">    }</span>
+
+    @Test
+    public void generateKeyEmptyFieldDefaultText() {
+<span class="fc" id="L202">        bibtexKeyPattern.setDefaultValue(&quot;[author:(No Author Provided)]&quot;);</span>
+<span class="fc" id="L203">        entry.clearField(&quot;author&quot;);</span>
+<span class="fc" id="L204">        new BibtexKeyGenerator(bibtexKeyPattern, database, preferences).generateAndSetKey(entry);</span>
+<span class="fc" id="L205">        assertEquals(Optional.of(&quot;NoAuthorProvided&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L206">    }</span>
+
+    @Test
+    public void generateKeyEmptyFieldNoColonInDefaultText() {
+<span class="fc" id="L210">        bibtexKeyPattern.setDefaultValue(&quot;[author:(Problem:No Author Provided)]&quot;);</span>
+<span class="fc" id="L211">        entry.clearField(&quot;author&quot;);</span>
+<span class="fc" id="L212">        new BibtexKeyGenerator(bibtexKeyPattern, database, preferences).generateAndSetKey(entry);</span>
+<span class="fc" id="L213">        assertEquals(Optional.of(&quot;ProblemNoAuthorProvided&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L214">    }</span>
+
+    @Test
+    public void generateKeyTitle() {
+<span class="fc" id="L218">        bibtexKeyPattern.setDefaultValue(&quot;[title]&quot;);</span>
+<span class="fc" id="L219">        new BibtexKeyGenerator(bibtexKeyPattern, database, preferences).generateAndSetKey(entry);</span>
+<span class="fc" id="L220">        assertEquals(Optional.of(&quot;AnAwesomePaperonJabRef&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L221">    }</span>
+
+    @Test
+    public void generateKeyTitleAbbr() {
+<span class="fc" id="L225">        bibtexKeyPattern.setDefaultValue(&quot;[title:abbr]&quot;);</span>
+<span class="fc" id="L226">        new BibtexKeyGenerator(bibtexKeyPattern, database, preferences).generateAndSetKey(entry);</span>
+<span class="fc" id="L227">        assertEquals(Optional.of(&quot;AAPoJ&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L228">    }</span>
+
+    @Test
+    public void generateKeyShorttitle() {
+<span class="fc" id="L232">        bibtexKeyPattern.setDefaultValue(&quot;[shorttitle]&quot;);</span>
+<span class="fc" id="L233">        new BibtexKeyGenerator(bibtexKeyPattern, database, preferences).generateAndSetKey(entry);</span>
+<span class="fc" id="L234">        assertEquals(Optional.of(&quot;Anawesomepaper&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L235">    }</span>
+
+    @Test
+    public void generateKeyShorttitleLowerModified() {
+<span class="fc" id="L239">        bibtexKeyPattern.setDefaultValue(&quot;[shorttitle:lower]&quot;);</span>
+<span class="fc" id="L240">        entry.setField(&quot;title&quot;, &quot;An aweSOme Paper on JabRef&quot;);</span>
+<span class="fc" id="L241">        new BibtexKeyGenerator(bibtexKeyPattern, database, preferences).generateAndSetKey(entry);</span>
+<span class="fc" id="L242">        assertEquals(Optional.of(&quot;anawesomepaper&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L243">    }</span>
+
+    @Test
+    public void generateKeyShorttitleUpperModified() {
+<span class="fc" id="L247">        bibtexKeyPattern.setDefaultValue(&quot;[shorttitle:upper]&quot;);</span>
+<span class="fc" id="L248">        entry.setField(&quot;title&quot;, &quot;An aweSOme Paper on JabRef&quot;);</span>
+<span class="fc" id="L249">        new BibtexKeyGenerator(bibtexKeyPattern, database, preferences).generateAndSetKey(entry);</span>
+<span class="fc" id="L250">        assertEquals(Optional.of(&quot;ANAWESOMEPAPER&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L251">    }</span>
+
+    @Test
+    public void generateKeyShorttitleTitleCaseModified() {
+<span class="fc" id="L255">        bibtexKeyPattern.setDefaultValue(&quot;[shorttitle:title_case]&quot;);</span>
+<span class="fc" id="L256">        entry.setField(&quot;title&quot;, &quot;An aweSOme Paper on JabRef&quot;);</span>
+<span class="fc" id="L257">        new BibtexKeyGenerator(bibtexKeyPattern, database, preferences).generateAndSetKey(entry);</span>
+<span class="fc" id="L258">        assertEquals(Optional.of(&quot;AnAwesomePaper&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L259">    }</span>
+
+    @Test
+    public void generateKeyShorttitleSentenceCaseModified() {
+<span class="fc" id="L263">        bibtexKeyPattern.setDefaultValue(&quot;[shorttitle:sentence_case]&quot;);</span>
+<span class="fc" id="L264">        entry.setField(&quot;title&quot;, &quot;An aweSOme Paper on JabRef&quot;);</span>
+<span class="fc" id="L265">        new BibtexKeyGenerator(bibtexKeyPattern, database, preferences).generateAndSetKey(entry);</span>
+<span class="fc" id="L266">        assertEquals(Optional.of(&quot;Anawesomepaper&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L267">    }</span>
+
+    @Test
+    public void generateKeyShorttitleCapitalizeModified() {
+<span class="fc" id="L271">        bibtexKeyPattern.setDefaultValue(&quot;[shorttitle:capitalize]&quot;);</span>
+<span class="fc" id="L272">        entry.setField(&quot;title&quot;, &quot;An aweSOme Paper on JabRef&quot;);</span>
+<span class="fc" id="L273">        new BibtexKeyGenerator(bibtexKeyPattern, database, preferences).generateAndSetKey(entry);</span>
+<span class="fc" id="L274">        assertEquals(Optional.of(&quot;AnAwesomePaper&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L275">    }</span>
+
+    @Test
+    public void generateKeyVeryshorttitle() {
+<span class="fc" id="L279">        bibtexKeyPattern.setDefaultValue(&quot;[veryshorttitle]&quot;);</span>
+<span class="fc" id="L280">        new BibtexKeyGenerator(bibtexKeyPattern, database, preferences).generateAndSetKey(entry);</span>
+<span class="fc" id="L281">        assertEquals(Optional.of(&quot;awesome&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L282">    }</span>
+
+    @Test
+    public void generateKeyVeryshorttitleLowerModified() {
+<span class="fc" id="L286">        bibtexKeyPattern.setDefaultValue(&quot;[veryshorttitle:lower]&quot;);</span>
+<span class="fc" id="L287">        entry.setField(&quot;title&quot;, &quot;An aweSOme Paper on JabRef&quot;);</span>
+<span class="fc" id="L288">        new BibtexKeyGenerator(bibtexKeyPattern, database, preferences).generateAndSetKey(entry);</span>
+<span class="fc" id="L289">        assertEquals(Optional.of(&quot;awesome&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L290">    }</span>
+
+    @Test
+    public void generateKeyVeryshorttitleUpperModified() {
+<span class="fc" id="L294">        bibtexKeyPattern.setDefaultValue(&quot;[veryshorttitle:upper]&quot;);</span>
+<span class="fc" id="L295">        entry.setField(&quot;title&quot;, &quot;An aweSOme Paper on JabRef&quot;);</span>
+<span class="fc" id="L296">        new BibtexKeyGenerator(bibtexKeyPattern, database, preferences).generateAndSetKey(entry);</span>
+<span class="fc" id="L297">        assertEquals(Optional.of(&quot;AWESOME&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L298">    }</span>
+
+    @Test
+    public void generateKeyVeryshorttitleTitleCaseModified() {
+<span class="fc" id="L302">        bibtexKeyPattern.setDefaultValue(&quot;[veryshorttitle:title_case]&quot;);</span>
+<span class="fc" id="L303">        entry.setField(&quot;title&quot;, &quot;An aweSOme Paper on JabRef&quot;);</span>
+<span class="fc" id="L304">        new BibtexKeyGenerator(bibtexKeyPattern, database, preferences).generateAndSetKey(entry);</span>
+<span class="fc" id="L305">        assertEquals(Optional.of(&quot;Awesome&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L306">    }</span>
+
+    @Test
+    public void generateKeyVeryshorttitleSentenceCaseModified() {
+<span class="fc" id="L310">        bibtexKeyPattern.setDefaultValue(&quot;[veryshorttitle:sentence_case]&quot;);</span>
+<span class="fc" id="L311">        entry.setField(&quot;title&quot;, &quot;An aweSOme Paper on JabRef&quot;);</span>
+<span class="fc" id="L312">        new BibtexKeyGenerator(bibtexKeyPattern, database, preferences).generateAndSetKey(entry);</span>
+<span class="fc" id="L313">        assertEquals(Optional.of(&quot;Awesome&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L314">    }</span>
+
+    @Test
+    public void generateKeyVeryshorttitleCapitalizeModified() {
+<span class="fc" id="L318">        bibtexKeyPattern.setDefaultValue(&quot;[veryshorttitle:capitalize]&quot;);</span>
+<span class="fc" id="L319">        entry.setField(&quot;title&quot;, &quot;An aweSOme Paper on JabRef&quot;);</span>
+<span class="fc" id="L320">        new BibtexKeyGenerator(bibtexKeyPattern, database, preferences).generateAndSetKey(entry);</span>
+<span class="fc" id="L321">        assertEquals(Optional.of(&quot;Awesome&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L322">    }</span>
+
+    @Test
+    public void generateKeyShorttitleINI() {
+<span class="fc" id="L326">        bibtexKeyPattern.setDefaultValue(&quot;[shorttitleINI]&quot;);</span>
+<span class="fc" id="L327">        new BibtexKeyGenerator(bibtexKeyPattern, database, preferences).generateAndSetKey(entry);</span>
+<span class="fc" id="L328">        assertEquals(Optional.of(&quot;Aap&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L329">    }</span>
+
+    @Test
+    public void generateKeyCamel() {
+<span class="fc" id="L333">        bibtexKeyPattern.setDefaultValue(&quot;[camel]&quot;);</span>
+<span class="fc" id="L334">        new BibtexKeyGenerator(bibtexKeyPattern, database, preferences).generateAndSetKey(entry);</span>
+<span class="fc" id="L335">        assertEquals(Optional.of(&quot;AnAwesomePaperOnJabRef&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L336">    }</span>
+
+    @Test
+    public void generateKeyAuthNM() {
+<span class="fc" id="L340">        bibtexKeyPattern.setDefaultValue(&quot;[auth4_3]&quot;);</span>
+<span class="fc" id="L341">        entry.setField(&quot;author&quot;, &quot;John Doe and Donald Smith and Will Wonder&quot;);</span>
+<span class="fc" id="L342">        new BibtexKeyGenerator(bibtexKeyPattern, database, preferences).generateAndSetKey(entry);</span>
+<span class="fc" id="L343">        assertEquals(Optional.of(&quot;Wond&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L344">    }</span>
+
+    @Test
+    public void generateKeyAuthNMLargeN() {
+<span class="fc" id="L348">        bibtexKeyPattern.setDefaultValue(&quot;[auth20_3]&quot;);</span>
+<span class="fc" id="L349">        entry.setField(&quot;author&quot;, &quot;John Doe and Donald Smith and Will Wonder&quot;);</span>
+<span class="fc" id="L350">        new BibtexKeyGenerator(bibtexKeyPattern, database, preferences).generateAndSetKey(entry);</span>
+<span class="fc" id="L351">        assertEquals(Optional.of(&quot;Wonder&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L352">    }</span>
+
+    @Test
+    public void generateKeyAuthNMLargeM() {
+<span class="fc" id="L356">        bibtexKeyPattern.setDefaultValue(&quot;[auth2_4]&quot;);</span>
+<span class="fc" id="L357">        entry.setField(&quot;author&quot;, &quot;John Doe and Donald Smith and Will Wonder&quot;);</span>
+<span class="fc" id="L358">        new BibtexKeyGenerator(bibtexKeyPattern, database, preferences).generateAndSetKey(entry);</span>
+<span class="fc" id="L359">        assertEquals(Optional.empty(), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L360">    }</span>
+
+    @Test
+    public void generateKeyAuthNMLargeMReallyReturnsEmptyString() {
+<span class="fc" id="L364">        bibtexKeyPattern.setDefaultValue(&quot;[auth2_4][year]&quot;);</span>
+<span class="fc" id="L365">        entry.setField(&quot;author&quot;, &quot;John Doe and Donald Smith and Will Wonder&quot;);</span>
+<span class="fc" id="L366">        new BibtexKeyGenerator(bibtexKeyPattern, database, preferences).generateAndSetKey(entry);</span>
+<span class="fc" id="L367">        assertEquals(Optional.of(&quot;2016&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L368">    }</span>
+
+    @Test
+    public void generateKeyRegExReplace() {
+<span class="fc" id="L372">        preferences = new BibtexKeyPatternPreferences(&quot;2&quot;, &quot;3&quot;, false, true, true, pattern, ',');</span>
+<span class="fc" id="L373">        bibtexKeyPattern.setDefaultValue(&quot;[auth][year]&quot;);</span>
+<span class="fc" id="L374">        entry.setField(&quot;author&quot;, &quot;John Doe and Donald Smith and Will Wonder&quot;);</span>
+<span class="fc" id="L375">        new BibtexKeyGenerator(bibtexKeyPattern, database, preferences).generateAndSetKey(entry);</span>
+<span class="fc" id="L376">        assertEquals(Optional.of(&quot;Doe3016&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L377">    }</span>
+
+    @Test
+    public void generateKeyAuthIni() {
+<span class="fc" id="L381">        bibtexKeyPattern.setDefaultValue(&quot;[authIni2]&quot;);</span>
+<span class="fc" id="L382">        entry.setField(&quot;author&quot;, &quot;John Doe and Donald Smith and Will Wonder&quot;);</span>
+<span class="fc" id="L383">        new BibtexKeyGenerator(bibtexKeyPattern, database, preferences).generateAndSetKey(entry);</span>
+<span class="fc" id="L384">        assertEquals(Optional.of(&quot;DS&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L385">    }</span>
+
+    @Test
+    public void generateKeyAuthIniMany() {
+<span class="fc" id="L389">        bibtexKeyPattern.setDefaultValue(&quot;[authIni10]&quot;);</span>
+<span class="fc" id="L390">        entry.setField(&quot;author&quot;, &quot;John Doe and Donald Smith and Will Wonder&quot;);</span>
+<span class="fc" id="L391">        new BibtexKeyGenerator(bibtexKeyPattern, database, preferences).generateAndSetKey(entry);</span>
+<span class="fc" id="L392">        assertEquals(Optional.of(&quot;DoeSmiWon&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L393">    }</span>
+
+    @Test
+    public void generateKeyTitleRegexe() {
+<span class="fc" id="L397">        bibtexKeyPattern.setDefaultValue(&quot;[title:regex(\&quot; \&quot;,\&quot;-\&quot;)]&quot;);</span>
+<span class="fc" id="L398">        entry.setField(&quot;title&quot;, &quot;Please replace the spaces&quot;);</span>
+<span class="fc" id="L399">        new BibtexKeyGenerator(bibtexKeyPattern, database, preferences).generateAndSetKey(entry);</span>
+<span class="fc" id="L400">        assertEquals(Optional.of(&quot;Please-Replace-the-Spaces&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L401">    }</span>
+
+    @Test
+    public void generateKeyTitleTitleCase() {
+<span class="fc" id="L405">        bibtexKeyPattern.setDefaultValue(&quot;[title:title_case]&quot;);</span>
+<span class="fc" id="L406">        new BibtexKeyGenerator(bibtexKeyPattern, database, preferences).generateAndSetKey(entry);</span>
+<span class="fc" id="L407">        assertEquals(Optional.of(&quot;AnAwesomePaperonJabref&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L408">    }</span>
+
+    @Test
+    public void generateKeyTitleCapitalize() {
+<span class="fc" id="L412">        bibtexKeyPattern.setDefaultValue(&quot;[title:capitalize]&quot;);</span>
+<span class="fc" id="L413">        new BibtexKeyGenerator(bibtexKeyPattern, database, preferences).generateAndSetKey(entry);</span>
+<span class="fc" id="L414">        assertEquals(Optional.of(&quot;AnAwesomePaperOnJabref&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L415">    }</span>
+
+    @Test
+    public void generateKeyTitleSentenceCase() {
+<span class="fc" id="L419">        bibtexKeyPattern.setDefaultValue(&quot;[title:sentence_case]&quot;);</span>
+<span class="fc" id="L420">        new BibtexKeyGenerator(bibtexKeyPattern, database, preferences).generateAndSetKey(entry);</span>
+<span class="fc" id="L421">        assertEquals(Optional.of(&quot;Anawesomepaperonjabref&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L422">    }</span>
+
+    @Test
+    public void generateKeyTitleTitleCaseAbbr() {
+<span class="fc" id="L426">        bibtexKeyPattern.setDefaultValue(&quot;[title:title_case:abbr]&quot;);</span>
+<span class="fc" id="L427">        new BibtexKeyGenerator(bibtexKeyPattern, database, preferences).generateAndSetKey(entry);</span>
+<span class="fc" id="L428">        assertEquals(Optional.of(&quot;AAPoJ&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L429">    }</span>
+
+    @Test
+    public void generateKeyTitleCapitalizeAbbr() {
+<span class="fc" id="L433">        bibtexKeyPattern.setDefaultValue(&quot;[title:capitalize:abbr]&quot;);</span>
+<span class="fc" id="L434">        new BibtexKeyGenerator(bibtexKeyPattern, database, preferences).generateAndSetKey(entry);</span>
+<span class="fc" id="L435">        assertEquals(Optional.of(&quot;AAPOJ&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L436">    }</span>
+
+    @Test
+    public void generateKeyTitleSentenceCaseAbbr() {
+<span class="fc" id="L440">        bibtexKeyPattern.setDefaultValue(&quot;[title:sentence_case:abbr]&quot;);</span>
+<span class="fc" id="L441">        new BibtexKeyGenerator(bibtexKeyPattern, database, preferences).generateAndSetKey(entry);</span>
+<span class="fc" id="L442">        assertEquals(Optional.of(&quot;Aapoj&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L443">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>BiblioscapeImporterTestTypes.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.importer.fileformat</a> &gt; <span class="el_source">BiblioscapeImporterTestTypes.java</span></div><h1>BiblioscapeImporterTestTypes.java</h1><pre class="source lang-java linenums">package org.jabref.logic.importer.fileformat;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Stream;
+
+import org.jabref.model.entry.BibEntry;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+<span class="fc" id="L17">public class BiblioscapeImporterTestTypes {</span>
+
+    private static Stream&lt;String[]&gt; types() {
+<span class="fc" id="L20">        return Arrays.stream(new String[][] {</span>
+<span class="fc" id="L21">                {&quot;journal&quot;, &quot;article&quot;},</span>
+<span class="fc" id="L22">                {&quot;book section&quot;, &quot;inbook&quot;},</span>
+<span class="fc" id="L23">                {&quot;book&quot;, &quot;book&quot;},</span>
+<span class="fc" id="L24">                {&quot;conference&quot;, &quot;inproceedings&quot;},</span>
+<span class="fc" id="L25">                {&quot;proceedings&quot;, &quot;inproceedings&quot;},</span>
+<span class="fc" id="L26">                {&quot;report&quot;, &quot;techreport&quot;},</span>
+<span class="fc" id="L27">                {&quot;master thesis&quot;, &quot;mastersthesis&quot;},</span>
+<span class="fc" id="L28">                {&quot;thesis&quot;, &quot;phdthesis&quot;},</span>
+<span class="fc" id="L29">                {&quot;master&quot;, &quot;misc&quot;}});</span>
+    }
+
+    @ParameterizedTest
+    @MethodSource(&quot;types&quot;)
+    public void importConvertsToCorrectBibType(String biblioscapeType, String bibtexType) throws IOException {
+<span class="fc" id="L35">        String bsInput = &quot;--AU-- Baklouti, F.\n&quot; + &quot;--YP-- 1999\n&quot; + &quot;--KW-- Cells; Rna; Isoforms\n&quot; + &quot;--TI-- Blood\n&quot;</span>
+<span class="fc" id="L36">                + &quot;--RT-- &quot; + biblioscapeType + &quot;\n&quot; + &quot;------&quot;;</span>
+
+<span class="fc" id="L38">        List&lt;BibEntry&gt; bibEntries = new BiblioscapeImporter().importDatabase(new BufferedReader(new StringReader(bsInput)))</span>
+<span class="fc" id="L39">                .getDatabase().getEntries();</span>
+
+<span class="fc" id="L41">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L42">        entry.setField(&quot;author&quot;, &quot;Baklouti, F.&quot;);</span>
+<span class="fc" id="L43">        entry.setField(&quot;keywords&quot;, &quot;Cells; Rna; Isoforms&quot;);</span>
+<span class="fc" id="L44">        entry.setField(&quot;title&quot;, &quot;Blood&quot;);</span>
+<span class="fc" id="L45">        entry.setField(&quot;year&quot;, &quot;1999&quot;);</span>
+<span class="fc" id="L46">        entry.setType(bibtexType);</span>
+
+<span class="fc" id="L48">        Assertions.assertEquals(Collections.singletonList(entry), bibEntries);</span>
+<span class="fc" id="L49">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

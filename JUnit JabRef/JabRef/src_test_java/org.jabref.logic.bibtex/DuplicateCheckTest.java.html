@@ -1,0 +1,285 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>DuplicateCheckTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.bibtex</a> &gt; <span class="el_source">DuplicateCheckTest.java</span></div><h1>DuplicateCheckTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.bibtex;
+
+import org.jabref.model.database.BibDatabaseMode;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.BibtexEntryTypes;
+import org.jabref.model.entry.FieldName;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+<span class="fc" id="L15">public class DuplicateCheckTest {</span>
+
+    private BibEntry simpleArticle;
+    private BibEntry unrelatedArticle;
+    private BibEntry simpleInbook;
+    private BibEntry simpleIncollection;
+
+    @BeforeEach
+    public void setUp() {
+<span class="fc" id="L24">        simpleArticle = new BibEntry(BibtexEntryTypes.ARTICLE.getName())</span>
+<span class="fc" id="L25">                .withField(FieldName.AUTHOR, &quot;Single Author&quot;)</span>
+<span class="fc" id="L26">                .withField(FieldName.TITLE, &quot;A serious paper about something&quot;)</span>
+<span class="fc" id="L27">                .withField(FieldName.YEAR, &quot;2017&quot;);</span>
+<span class="fc" id="L28">        unrelatedArticle = new BibEntry(BibtexEntryTypes.ARTICLE.getName())</span>
+<span class="fc" id="L29">                .withField(FieldName.AUTHOR, &quot;Completely Different&quot;)</span>
+<span class="fc" id="L30">                .withField(FieldName.TITLE, &quot;Holy Moly Uffdada und Trallalla&quot;)</span>
+<span class="fc" id="L31">                .withField(FieldName.YEAR, &quot;1992&quot;);</span>
+<span class="fc" id="L32">        simpleInbook = new BibEntry(BibtexEntryTypes.INBOOK.getName())</span>
+<span class="fc" id="L33">                .withField(FieldName.TITLE, &quot;Alice in Wonderland&quot;)</span>
+<span class="fc" id="L34">                .withField(FieldName.AUTHOR, &quot;Charles Lutwidge Dodgson&quot;)</span>
+<span class="fc" id="L35">                .withField(FieldName.CHAPTER, &quot;Chapter One – Down the Rabbit Hole&quot;)</span>
+<span class="fc" id="L36">                .withField(FieldName.LANGUAGE, &quot;English&quot;)</span>
+<span class="fc" id="L37">                .withField(FieldName.PUBLISHER, &quot;Macmillan&quot;)</span>
+<span class="fc" id="L38">                .withField(FieldName.YEAR, &quot;1865&quot;);</span>
+<span class="fc" id="L39">        simpleIncollection = new BibEntry(BibtexEntryTypes.INCOLLECTION.getName())</span>
+<span class="fc" id="L40">                .withField(FieldName.TITLE, &quot;Innovation and Intellectual Property Rights&quot;)</span>
+<span class="fc" id="L41">                .withField(FieldName.AUTHOR, &quot;Ove Grandstrand&quot;)</span>
+<span class="fc" id="L42">                .withField(FieldName.BOOKTITLE, &quot;The Oxford Handbook of Innovation&quot;)</span>
+<span class="fc" id="L43">                .withField(FieldName.PUBLISHER, &quot;Oxford University Press&quot;)</span>
+<span class="fc" id="L44">                .withField(FieldName.YEAR, &quot;2004&quot;);</span>
+<span class="fc" id="L45">    }</span>
+
+    @Test
+    public void testDuplicateDetection() {
+<span class="fc" id="L49">        BibEntry one = new BibEntry(BibtexEntryTypes.ARTICLE.getName());</span>
+
+<span class="fc" id="L51">        BibEntry two = new BibEntry(BibtexEntryTypes.ARTICLE.getName());</span>
+
+<span class="fc" id="L53">        one.setField(&quot;author&quot;, &quot;Billy Bob&quot;);</span>
+<span class="fc" id="L54">        two.setField(&quot;author&quot;, &quot;Billy Bob&quot;);</span>
+<span class="fc" id="L55">        assertTrue(DuplicateCheck.isDuplicate(one, two, BibDatabaseMode.BIBTEX));</span>
+
+<span class="fc" id="L57">        two.setField(&quot;author&quot;, &quot;James Joyce&quot;);</span>
+<span class="fc" id="L58">        assertFalse(DuplicateCheck.isDuplicate(one, two, BibDatabaseMode.BIBTEX));</span>
+
+<span class="fc" id="L60">        two.setField(&quot;author&quot;, &quot;Billy Bob&quot;);</span>
+<span class="fc" id="L61">        two.setType(BibtexEntryTypes.BOOK);</span>
+<span class="fc" id="L62">        assertFalse(DuplicateCheck.isDuplicate(one, two, BibDatabaseMode.BIBTEX));</span>
+
+<span class="fc" id="L64">        two.setType(BibtexEntryTypes.ARTICLE);</span>
+<span class="fc" id="L65">        one.setField(&quot;year&quot;, &quot;2005&quot;);</span>
+<span class="fc" id="L66">        two.setField(&quot;year&quot;, &quot;2005&quot;);</span>
+<span class="fc" id="L67">        one.setField(&quot;title&quot;, &quot;A title&quot;);</span>
+<span class="fc" id="L68">        two.setField(&quot;title&quot;, &quot;A title&quot;);</span>
+<span class="fc" id="L69">        one.setField(&quot;journal&quot;, &quot;A&quot;);</span>
+<span class="fc" id="L70">        two.setField(&quot;journal&quot;, &quot;A&quot;);</span>
+<span class="fc" id="L71">        assertTrue(DuplicateCheck.isDuplicate(one, two, BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L72">        assertEquals(1.01, DuplicateCheck.compareEntriesStrictly(one, two), 0.01);</span>
+
+<span class="fc" id="L74">        two.setField(&quot;journal&quot;, &quot;B&quot;);</span>
+<span class="fc" id="L75">        assertTrue(DuplicateCheck.isDuplicate(one, two, BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L76">        assertEquals(0.75, DuplicateCheck.compareEntriesStrictly(one, two), 0.01);</span>
+
+<span class="fc" id="L78">        two.setField(&quot;journal&quot;, &quot;A&quot;);</span>
+<span class="fc" id="L79">        one.setField(&quot;number&quot;, &quot;1&quot;);</span>
+<span class="fc" id="L80">        two.setField(&quot;volume&quot;, &quot;21&quot;);</span>
+<span class="fc" id="L81">        one.setField(&quot;pages&quot;, &quot;334--337&quot;);</span>
+<span class="fc" id="L82">        two.setField(&quot;pages&quot;, &quot;334--337&quot;);</span>
+<span class="fc" id="L83">        assertTrue(DuplicateCheck.isDuplicate(one, two, BibDatabaseMode.BIBTEX));</span>
+
+<span class="fc" id="L85">        two.setField(&quot;number&quot;, &quot;1&quot;);</span>
+<span class="fc" id="L86">        one.setField(&quot;volume&quot;, &quot;21&quot;);</span>
+<span class="fc" id="L87">        assertTrue(DuplicateCheck.isDuplicate(one, two, BibDatabaseMode.BIBTEX));</span>
+
+<span class="fc" id="L89">        two.setField(&quot;volume&quot;, &quot;22&quot;);</span>
+<span class="fc" id="L90">        assertTrue(DuplicateCheck.isDuplicate(one, two, BibDatabaseMode.BIBTEX));</span>
+
+<span class="fc" id="L92">        two.setField(&quot;journal&quot;, &quot;B&quot;);</span>
+<span class="fc" id="L93">        assertTrue(DuplicateCheck.isDuplicate(one, two, BibDatabaseMode.BIBTEX));</span>
+
+<span class="fc" id="L95">        one.setField(&quot;journal&quot;, &quot;&quot;);</span>
+<span class="fc" id="L96">        two.setField(&quot;journal&quot;, &quot;&quot;);</span>
+<span class="fc" id="L97">        assertTrue(DuplicateCheck.isDuplicate(one, two, BibDatabaseMode.BIBTEX));</span>
+
+<span class="fc" id="L99">        two.setField(&quot;title&quot;, &quot;Another title&quot;);</span>
+<span class="fc" id="L100">        assertFalse(DuplicateCheck.isDuplicate(one, two, BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L101">    }</span>
+
+    @Test
+    public void testWordCorrelation() {
+<span class="fc" id="L105">        String d1 = &quot;Characterization of Calanus finmarchicus habitat in the North Sea&quot;;</span>
+<span class="fc" id="L106">        String d2 = &quot;Characterization of Calunus finmarchicus habitat in the North Sea&quot;;</span>
+<span class="fc" id="L107">        String d3 = &quot;Characterization of Calanus glacialissss habitat in the South Sea&quot;;</span>
+
+<span class="fc" id="L109">        assertEquals(1.0, (DuplicateCheck.correlateByWords(d1, d2)), 0.01);</span>
+<span class="fc" id="L110">        assertEquals(0.78, (DuplicateCheck.correlateByWords(d1, d3)), 0.01);</span>
+<span class="fc" id="L111">        assertEquals(0.78, (DuplicateCheck.correlateByWords(d2, d3)), 0.01);</span>
+<span class="fc" id="L112">    }</span>
+
+    @Test
+    public void twoUnrelatedEntriesAreNoDuplicates() {
+<span class="fc" id="L116">        assertFalse(DuplicateCheck.isDuplicate(simpleArticle, unrelatedArticle, BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L117">    }</span>
+
+    @Test
+    public void twoUnrelatedEntriesWithDifferentDoisAreNoDuplicates() {
+<span class="fc" id="L121">        simpleArticle.setField(FieldName.DOI, &quot;10.1016/j.is.2004.02.002&quot;);</span>
+<span class="fc" id="L122">        unrelatedArticle.setField(FieldName.DOI, &quot;10.1016/j.is.2004.02.00X&quot;);</span>
+
+<span class="fc" id="L124">        assertFalse(DuplicateCheck.isDuplicate(simpleArticle, unrelatedArticle, BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L125">    }</span>
+
+    @Test
+    public void twoUnrelatedEntriesWithEqualDoisAreDuplicates() {
+<span class="fc" id="L129">        simpleArticle.setField(FieldName.DOI, &quot;10.1016/j.is.2004.02.002&quot;);</span>
+<span class="fc" id="L130">        unrelatedArticle.setField(FieldName.DOI, &quot;10.1016/j.is.2004.02.002&quot;);</span>
+
+<span class="fc" id="L132">        assertTrue(DuplicateCheck.isDuplicate(simpleArticle, unrelatedArticle, BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L133">    }</span>
+
+    @Test
+    public void twoUnrelatedEntriesWithEqualPmidAreDuplicates() {
+<span class="fc" id="L137">        simpleArticle.setField(FieldName.PMID, &quot;12345678&quot;);</span>
+<span class="fc" id="L138">        unrelatedArticle.setField(FieldName.PMID, &quot;12345678&quot;);</span>
+
+<span class="fc" id="L140">        assertTrue(DuplicateCheck.isDuplicate(simpleArticle, unrelatedArticle, BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L141">    }</span>
+
+    @Test
+    public void twoUnrelatedEntriesWithEqualEprintAreDuplicates() {
+<span class="fc" id="L145">        simpleArticle.setField(FieldName.EPRINT, &quot;12345678&quot;);</span>
+<span class="fc" id="L146">        unrelatedArticle.setField(FieldName.EPRINT, &quot;12345678&quot;);</span>
+
+<span class="fc" id="L148">        assertTrue(DuplicateCheck.isDuplicate(simpleArticle, unrelatedArticle, BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L149">    }</span>
+
+    @Test
+    public void twoEntriesWithSameDoiButDifferentTypesAreDuplicates() {
+<span class="fc" id="L153">        simpleArticle.setField(FieldName.DOI, &quot;10.1016/j.is.2004.02.002&quot;);</span>
+<span class="fc" id="L154">        BibEntry duplicateWithDifferentType = (BibEntry) simpleArticle.clone();</span>
+<span class="fc" id="L155">        duplicateWithDifferentType.setType(BibtexEntryTypes.INCOLLECTION);</span>
+
+<span class="fc" id="L157">        assertTrue(DuplicateCheck.isDuplicate(simpleArticle, duplicateWithDifferentType, BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L158">    }</span>
+
+    @Test
+    public void twoInbooksWithDifferentChaptersAreNotDuplicates() {
+<span class="fc" id="L162">        twoEntriesWithDifferentSpecificFieldsAreNotDuplicates(simpleInbook, FieldName.CHAPTER,</span>
+<span class="fc" id="L163">                &quot;Chapter One – Down the Rabbit Hole&quot;,</span>
+<span class="fc" id="L164">                &quot;Chapter Two – The Pool of Tears&quot;);</span>
+<span class="fc" id="L165">    }</span>
+
+    @Test
+    public void twoInbooksWithDifferentPagesAreNotDuplicates() {
+<span class="fc" id="L169">        twoEntriesWithDifferentSpecificFieldsAreNotDuplicates(simpleInbook, FieldName.PAGES, &quot;1-20&quot;, &quot;21-40&quot;);</span>
+<span class="fc" id="L170">    }</span>
+
+    @Test
+    public void twoIncollectionsWithDifferentChaptersAreNotDuplicates() {
+<span class="fc" id="L174">        twoEntriesWithDifferentSpecificFieldsAreNotDuplicates(simpleIncollection, FieldName.CHAPTER, &quot;10&quot;, &quot;9&quot;);</span>
+<span class="fc" id="L175">    }</span>
+
+    @Test
+    public void twoIncollectionsWithDifferentPagesAreNotDuplicates() {
+<span class="fc" id="L179">        twoEntriesWithDifferentSpecificFieldsAreNotDuplicates(simpleIncollection, FieldName.PAGES, &quot;1-20&quot;, &quot;21-40&quot;);</span>
+<span class="fc" id="L180">    }</span>
+
+    private void twoEntriesWithDifferentSpecificFieldsAreNotDuplicates(final BibEntry cloneable,
+                                                                       final String fieldType,
+                                                                       final String firstValue,
+                                                                       final String secondValue) {
+<span class="fc" id="L186">        final BibEntry entry1 = (BibEntry) cloneable.clone();</span>
+<span class="fc" id="L187">        entry1.setField(fieldType, firstValue);</span>
+
+<span class="fc" id="L189">        final BibEntry entry2 = (BibEntry) cloneable.clone();</span>
+<span class="fc" id="L190">        entry2.setField(fieldType, secondValue);</span>
+
+<span class="fc" id="L192">        assertFalse(DuplicateCheck.isDuplicate(entry1, entry2, BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L193">    }</span>
+
+    @Test
+    public void inbookWithoutChapterCouldBeDuplicateOfInbookWithChapter() {
+<span class="fc" id="L197">        final BibEntry inbook1 = (BibEntry) simpleInbook.clone();</span>
+<span class="fc" id="L198">        final BibEntry inbook2 = (BibEntry) simpleInbook.clone();</span>
+<span class="fc" id="L199">        inbook2.setField(FieldName.CHAPTER, &quot;&quot;);</span>
+
+<span class="fc" id="L201">        assertTrue(DuplicateCheck.isDuplicate(inbook1, inbook2, BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L202">        assertTrue(DuplicateCheck.isDuplicate(inbook2, inbook1, BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L203">    }</span>
+
+    @Test
+    public void twoBooksWithDifferentEditionsAreNotDuplicates() {
+<span class="fc" id="L207">        BibEntry editionOne = new BibEntry(BibtexEntryTypes.BOOK.getName());</span>
+<span class="fc" id="L208">        editionOne.setField(FieldName.TITLE, &quot;Effective Java&quot;);</span>
+<span class="fc" id="L209">        editionOne.setField(FieldName.AUTHOR, &quot;Bloch, Joshua&quot;);</span>
+<span class="fc" id="L210">        editionOne.setField(FieldName.PUBLISHER, &quot;Prentice Hall&quot;);</span>
+<span class="fc" id="L211">        editionOne.setField(FieldName.DATE, &quot;2001&quot;);</span>
+<span class="fc" id="L212">        editionOne.setField(FieldName.EDITION, &quot;1&quot;);</span>
+
+<span class="fc" id="L214">        BibEntry editionTwo = new BibEntry(BibtexEntryTypes.BOOK.getName());</span>
+<span class="fc" id="L215">        editionTwo.setField(FieldName.TITLE, &quot;Effective Java&quot;);</span>
+<span class="fc" id="L216">        editionTwo.setField(FieldName.AUTHOR, &quot;Bloch, Joshua&quot;);</span>
+<span class="fc" id="L217">        editionTwo.setField(FieldName.PUBLISHER, &quot;Prentice Hall&quot;);</span>
+<span class="fc" id="L218">        editionTwo.setField(FieldName.DATE, &quot;2008&quot;);</span>
+<span class="fc" id="L219">        editionTwo.setField(FieldName.EDITION, &quot;2&quot;);</span>
+
+<span class="fc" id="L221">        assertFalse(DuplicateCheck.isDuplicate(editionOne, editionTwo, BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L222">    }</span>
+
+    @Test
+    public void sameBooksWithMissingEditionAreDuplicates() {
+<span class="fc" id="L226">        BibEntry editionOne = new BibEntry(BibtexEntryTypes.BOOK.getName());</span>
+<span class="fc" id="L227">        editionOne.setField(FieldName.TITLE, &quot;Effective Java&quot;);</span>
+<span class="fc" id="L228">        editionOne.setField(FieldName.AUTHOR, &quot;Bloch, Joshua&quot;);</span>
+<span class="fc" id="L229">        editionOne.setField(FieldName.PUBLISHER, &quot;Prentice Hall&quot;);</span>
+<span class="fc" id="L230">        editionOne.setField(FieldName.DATE, &quot;2001&quot;);</span>
+
+<span class="fc" id="L232">        BibEntry editionTwo = new BibEntry(BibtexEntryTypes.BOOK.getName());</span>
+<span class="fc" id="L233">        editionTwo.setField(FieldName.TITLE, &quot;Effective Java&quot;);</span>
+<span class="fc" id="L234">        editionTwo.setField(FieldName.AUTHOR, &quot;Bloch, Joshua&quot;);</span>
+<span class="fc" id="L235">        editionTwo.setField(FieldName.PUBLISHER, &quot;Prentice Hall&quot;);</span>
+<span class="fc" id="L236">        editionTwo.setField(FieldName.DATE, &quot;2008&quot;);</span>
+
+<span class="fc" id="L238">        assertTrue(DuplicateCheck.isDuplicate(editionOne, editionTwo, BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L239">    }</span>
+
+    @Test
+    public void sameBooksWithPartiallyMissingEditionAreDuplicates() {
+<span class="fc" id="L243">        BibEntry editionOne = new BibEntry(BibtexEntryTypes.BOOK.getName());</span>
+<span class="fc" id="L244">        editionOne.setField(FieldName.TITLE, &quot;Effective Java&quot;);</span>
+<span class="fc" id="L245">        editionOne.setField(FieldName.AUTHOR, &quot;Bloch, Joshua&quot;);</span>
+<span class="fc" id="L246">        editionOne.setField(FieldName.PUBLISHER, &quot;Prentice Hall&quot;);</span>
+<span class="fc" id="L247">        editionOne.setField(FieldName.DATE, &quot;2001&quot;);</span>
+
+<span class="fc" id="L249">        BibEntry editionTwo = new BibEntry(BibtexEntryTypes.BOOK.getName());</span>
+<span class="fc" id="L250">        editionTwo.setField(FieldName.TITLE, &quot;Effective Java&quot;);</span>
+<span class="fc" id="L251">        editionTwo.setField(FieldName.AUTHOR, &quot;Bloch, Joshua&quot;);</span>
+<span class="fc" id="L252">        editionTwo.setField(FieldName.PUBLISHER, &quot;Prentice Hall&quot;);</span>
+<span class="fc" id="L253">        editionTwo.setField(FieldName.DATE, &quot;2008&quot;);</span>
+<span class="fc" id="L254">        editionTwo.setField(FieldName.EDITION, &quot;2&quot;);</span>
+
+<span class="fc" id="L256">        assertTrue(DuplicateCheck.isDuplicate(editionOne, editionTwo, BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L257">    }</span>
+
+    @Test
+    public void sameBooksWithDifferentEditionsAreNotDuplicates() {
+<span class="fc" id="L261">        BibEntry editionTwo = new BibEntry(BibtexEntryTypes.BOOK.getName());</span>
+<span class="fc" id="L262">        editionTwo.setCiteKey(&quot;Sutton17reinfLrnIntroBook&quot;);</span>
+<span class="fc" id="L263">        editionTwo.setField(FieldName.TITLE, &quot;Reinforcement learning:An introduction&quot;);</span>
+<span class="fc" id="L264">        editionTwo.setField(FieldName.PUBLISHER, &quot;MIT Press&quot;);</span>
+<span class="fc" id="L265">        editionTwo.setField(FieldName.YEAR, &quot;2017&quot;);</span>
+<span class="fc" id="L266">        editionTwo.setField(FieldName.AUTHOR, &quot;Sutton, Richard S and Barto, Andrew G&quot;);</span>
+<span class="fc" id="L267">        editionTwo.setField(FieldName.ADDRESS, &quot;Cambridge, MA.USA&quot;);</span>
+<span class="fc" id="L268">        editionTwo.setField(FieldName.EDITION, &quot;Second&quot;);</span>
+<span class="fc" id="L269">        editionTwo.setField(FieldName.JOURNAL, &quot;MIT Press&quot;);</span>
+<span class="fc" id="L270">        editionTwo.setField(FieldName.URL, &quot;https://webdocs.cs.ualberta.ca/~sutton/book/the-book-2nd.html&quot;);</span>
+
+<span class="fc" id="L272">        BibEntry editionOne = new BibEntry(BibtexEntryTypes.BOOK.getName());</span>
+<span class="fc" id="L273">        editionOne.setCiteKey(&quot;Sutton98reinfLrnIntroBook&quot;);</span>
+<span class="fc" id="L274">        editionOne.setField(FieldName.TITLE, &quot;Reinforcement learning: An introduction&quot;);</span>
+<span class="fc" id="L275">        editionOne.setField(FieldName.PUBLISHER, &quot;MIT press Cambridge&quot;);</span>
+<span class="fc" id="L276">        editionOne.setField(FieldName.YEAR, &quot;1998&quot;);</span>
+<span class="fc" id="L277">        editionOne.setField(FieldName.AUTHOR, &quot;Sutton, Richard S and Barto, Andrew G&quot;);</span>
+<span class="fc" id="L278">        editionOne.setField(FieldName.VOLUME, &quot;1&quot;);</span>
+<span class="fc" id="L279">        editionOne.setField(FieldName.NUMBER, &quot;1&quot;);</span>
+<span class="fc" id="L280">        editionOne.setField(FieldName.EDITION, &quot;First&quot;);</span>
+
+<span class="fc" id="L282">        assertFalse(DuplicateCheck.isDuplicate(editionOne, editionTwo, BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L283">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

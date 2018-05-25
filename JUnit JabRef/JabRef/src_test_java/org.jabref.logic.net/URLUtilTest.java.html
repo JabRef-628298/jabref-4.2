@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>URLUtilTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.net</a> &gt; <span class="el_source">URLUtilTest.java</span></div><h1>URLUtilTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.net;
+
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+<span class="fc" id="L9">public class URLUtilTest {</span>
+
+    @Test
+    public void cleanGoogleSearchURL() throws Exception {
+        // empty text
+<span class="fc" id="L14">        assertEquals(&quot;&quot;, URLUtil.cleanGoogleSearchURL(&quot;&quot;));</span>
+<span class="fc" id="L15">        assertEquals(&quot; &quot;, URLUtil.cleanGoogleSearchURL(&quot; &quot;));</span>
+        // no URL
+<span class="fc" id="L17">        assertEquals(&quot;this is no url!&quot;, URLUtil.cleanGoogleSearchURL(&quot;this is no url!&quot;));</span>
+        // no Google search URL
+<span class="fc" id="L19">        assertEquals(&quot;http://dl.acm.org/citation.cfm?id=321811&quot;, URLUtil.cleanGoogleSearchURL(&quot;http://dl.acm.org/citation.cfm?id=321811&quot;));</span>
+        // malformed Google URL
+<span class="fc" id="L21">        assertEquals(&quot;https://www.google.de/url♥&quot;, URLUtil.cleanGoogleSearchURL(&quot;https://www.google.de/url♥&quot;));</span>
+        // no queries
+<span class="fc" id="L23">        assertEquals(&quot;https://www.google.de/url&quot;, URLUtil.cleanGoogleSearchURL(&quot;https://www.google.de/url&quot;));</span>
+<span class="fc" id="L24">        assertEquals(&quot;https://www.google.de/url?&quot;, URLUtil.cleanGoogleSearchURL(&quot;https://www.google.de/url?&quot;));</span>
+        // no multiple queries
+<span class="fc" id="L26">        assertEquals(&quot;https://www.google.de/url?key=value&quot;, URLUtil.cleanGoogleSearchURL(&quot;https://www.google.de/url?key=value&quot;));</span>
+        // no key values
+<span class="fc" id="L28">        assertEquals(&quot;https://www.google.de/url?key&quot;, URLUtil.cleanGoogleSearchURL(&quot;https://www.google.de/url?key&quot;));</span>
+<span class="fc" id="L29">        assertEquals(&quot;https://www.google.de/url?url&quot;, URLUtil.cleanGoogleSearchURL(&quot;https://www.google.de/url?url&quot;));</span>
+<span class="fc" id="L30">        assertEquals(&quot;https://www.google.de/url?key=&quot;, URLUtil.cleanGoogleSearchURL(&quot;https://www.google.de/url?key=&quot;));</span>
+        // no url param
+<span class="fc" id="L32">        assertEquals(&quot;https://www.google.de/url?key=value&amp;key2=value2&quot;, URLUtil.cleanGoogleSearchURL(&quot;https://www.google.de/url?key=value&amp;key2=value2&quot;));</span>
+        // no url param value
+<span class="fc" id="L34">        assertEquals(&quot;https://www.google.de/url?url=&quot;, URLUtil.cleanGoogleSearchURL(&quot;https://www.google.de/url?url=&quot;));</span>
+        // url param value no URL
+<span class="fc" id="L36">        assertEquals(&quot;https://www.google.de/url?url=this+is+no+url&quot;, URLUtil.cleanGoogleSearchURL(&quot;https://www.google.de/url?url=this+is+no+url&quot;));</span>
+        // Http
+<span class="fc" id="L38">        assertEquals(</span>
+<span class="fc" id="L39">                &quot;http://moz.com/ugc/the-ultimate-guide-to-the-google-search-parameters&quot;,</span>
+<span class="fc" id="L40">                URLUtil.cleanGoogleSearchURL(&quot;http://www.google.de/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=1&amp;cad=rja&amp;uact=8&amp;ved=0CCEQFjAAahUKEwjJurHd2sfHAhWBsxQKHSrEAaM&amp;url=http%3A%2F%2Fmoz.com%2Fugc%2Fthe-ultimate-guide-to-the-google-search-parameters&amp;ei=0THeVYmOJIHnUqqIh5gK&amp;usg=AFQjCNHnid_r_d2LP8_MqvI7lQnTC3lB_g&amp;sig2=ICzxDroG2ENTJSUGmdhI2w&quot;));</span>
+        // Https
+<span class="fc" id="L42">        assertEquals(</span>
+<span class="fc" id="L43">                &quot;https://moz.com/ugc/the-ultimate-guide-to-the-google-search-parameters&quot;,</span>
+<span class="fc" id="L44">                URLUtil.cleanGoogleSearchURL(&quot;https://www.google.de/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=1&amp;cad=rja&amp;uact=8&amp;ved=0CCEQFjAAahUKEwjJurHd2sfHAhWBsxQKHSrEAaM&amp;url=https%3A%2F%2Fmoz.com%2Fugc%2Fthe-ultimate-guide-to-the-google-search-parameters&amp;ei=0THeVYmOJIHnUqqIh5gK&amp;usg=AFQjCNHnid_r_d2LP8_MqvI7lQnTC3lB_g&amp;sig2=ICzxDroG2ENTJSUGmdhI2w&quot;));</span>
+        // root domain
+<span class="fc" id="L46">        assertEquals(</span>
+<span class="fc" id="L47">                &quot;https://moz.com/ugc/the-ultimate-guide-to-the-google-search-parameters&quot;,</span>
+<span class="fc" id="L48">                URLUtil.cleanGoogleSearchURL(&quot;https://google.de/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=1&amp;cad=rja&amp;uact=8&amp;ved=0CCEQFjAAahUKEwjJurHd2sfHAhWBsxQKHSrEAaM&amp;url=https%3A%2F%2Fmoz.com%2Fugc%2Fthe-ultimate-guide-to-the-google-search-parameters&amp;ei=0THeVYmOJIHnUqqIh5gK&amp;usg=AFQjCNHnid_r_d2LP8_MqvI7lQnTC3lB_g&amp;sig2=ICzxDroG2ENTJSUGmdhI2w&quot;));</span>
+        // foreign domain
+<span class="fc" id="L50">        assertEquals(</span>
+<span class="fc" id="L51">                &quot;https://moz.com/ugc/the-ultimate-guide-to-the-google-search-parameters&quot;,</span>
+<span class="fc" id="L52">                URLUtil.cleanGoogleSearchURL(&quot;https://www.google.fr/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=1&amp;cad=rja&amp;uact=8&amp;ved=0CCEQFjAAahUKEwjJurHd2sfHAhWBsxQKHSrEAaM&amp;url=https%3A%2F%2Fmoz.com%2Fugc%2Fthe-ultimate-guide-to-the-google-search-parameters&amp;ei=0THeVYmOJIHnUqqIh5gK&amp;usg=AFQjCNHnid_r_d2LP8_MqvI7lQnTC3lB_g&amp;sig2=ICzxDroG2ENTJSUGmdhI2w&quot;));</span>
+        // foreign domain co.uk
+<span class="fc" id="L54">        assertEquals(</span>
+<span class="fc" id="L55">                &quot;https://moz.com/ugc/the-ultimate-guide-to-the-google-search-parameters&quot;,</span>
+<span class="fc" id="L56">                URLUtil.cleanGoogleSearchURL(&quot;https://www.google.co.uk/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=1&amp;cad=rja&amp;uact=8&amp;ved=0CCEQFjAAahUKEwjJurHd2sfHAhWBsxQKHSrEAaM&amp;url=https%3A%2F%2Fmoz.com%2Fugc%2Fthe-ultimate-guide-to-the-google-search-parameters&amp;ei=0THeVYmOJIHnUqqIh5gK&amp;usg=AFQjCNHnid_r_d2LP8_MqvI7lQnTC3lB_g&amp;sig2=ICzxDroG2ENTJSUGmdhI2w&quot;));</span>
+        // accept ftp results
+<span class="fc" id="L58">        assertEquals(</span>
+<span class="fc" id="L59">                &quot;ftp://moz.com/ugc/the-ultimate-guide-to-the-google-search-parameters&quot;,</span>
+<span class="fc" id="L60">                URLUtil.cleanGoogleSearchURL(&quot;https://www.google.fr/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=1&amp;cad=rja&amp;uact=8&amp;ved=0CCEQFjAAahUKEwjJurHd2sfHAhWBsxQKHSrEAaM&amp;url=ftp%3A%2F%2Fmoz.com%2Fugc%2Fthe-ultimate-guide-to-the-google-search-parameters&amp;ei=0THeVYmOJIHnUqqIh5gK&amp;usg=AFQjCNHnid_r_d2LP8_MqvI7lQnTC3lB_g&amp;sig2=ICzxDroG2ENTJSUGmdhI2w&quot;));</span>
+<span class="fc" id="L61">    }</span>
+
+    @Test
+    public void isURLshouldAcceptValidURL() {
+<span class="fc" id="L65">        assertTrue(URLUtil.isURL(&quot;http://www.google.com&quot;));</span>
+<span class="fc" id="L66">        assertTrue(URLUtil.isURL(&quot;https://www.google.com&quot;));</span>
+<span class="fc" id="L67">    }</span>
+
+    @Test
+    public void isURLshouldRejectInvalidURL() {
+<span class="fc" id="L71">        assertFalse(URLUtil.isURL(&quot;www.google.com&quot;));</span>
+<span class="fc" id="L72">        assertFalse(URLUtil.isURL(&quot;google.com&quot;));</span>
+<span class="fc" id="L73">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

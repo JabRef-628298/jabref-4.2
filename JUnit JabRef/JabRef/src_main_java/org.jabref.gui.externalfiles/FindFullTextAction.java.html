@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>FindFullTextAction.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.externalfiles</a> &gt; <span class="el_source">FindFullTextAction.java</span></div><h1>FindFullTextAction.java</h1><pre class="source lang-java linenums">package org.jabref.gui.externalfiles;
+
+import java.io.IOException;
+import java.net.URL;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+
+import javax.swing.JOptionPane;
+
+import org.jabref.Globals;
+import org.jabref.gui.BasePanel;
+import org.jabref.gui.undo.UndoableFieldChange;
+import org.jabref.gui.util.DefaultTaskExecutor;
+import org.jabref.gui.worker.AbstractWorker;
+import org.jabref.logic.importer.FulltextFetchers;
+import org.jabref.logic.l10n.Localization;
+import org.jabref.model.FieldChange;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.FieldName;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * Try to download fulltext PDF for selected entry(ies) by following URL or DOI link.
+ */
+public class FindFullTextAction extends AbstractWorker {
+
+<span class="nc" id="L34">    private static final Logger LOGGER = LoggerFactory.getLogger(FindFullTextAction.class);</span>
+    // The minimum number of selected entries to ask the user for confirmation
+<span class="nc" id="L36">    private static final int WARNING_LIMIT = 5;</span>
+
+    private final BasePanel basePanel;
+<span class="nc" id="L39">    private final Map&lt;Optional&lt;URL&gt;, BibEntry&gt; downloads = new ConcurrentHashMap&lt;&gt;();</span>
+
+<span class="nc" id="L41">    public FindFullTextAction(BasePanel basePanel) {</span>
+<span class="nc" id="L42">        this.basePanel = basePanel;</span>
+<span class="nc" id="L43">    }</span>
+
+    @Override
+    public void init() throws Exception {
+<span class="nc bnc" id="L47" title="All 2 branches missed.">        if (!basePanel.getSelectedEntries().isEmpty()) {</span>
+<span class="nc" id="L48">            basePanel.output(Localization.lang(&quot;Looking for full text document...&quot;));</span>
+<span class="nc" id="L49">        } else {</span>
+<span class="nc" id="L50">            LOGGER.debug(&quot;No entry selected for fulltext download.&quot;);</span>
+        }
+<span class="nc" id="L52">    }</span>
+
+    @Override
+    public void run() {
+<span class="nc bnc" id="L56" title="All 2 branches missed.">        if (basePanel.getSelectedEntries().size() &gt;= WARNING_LIMIT) {</span>
+<span class="nc" id="L57">            String[] options = new String[] {Localization.lang(&quot;Look up full text documents&quot;),</span>
+<span class="nc" id="L58">                    Localization.lang(&quot;Cancel&quot;)};</span>
+<span class="nc" id="L59">            int answer = JOptionPane.showOptionDialog(basePanel.frame(),</span>
+<span class="nc" id="L60">                    Localization.lang(</span>
+<span class="nc" id="L61">                            &quot;You are about to look up full text documents for %0 entries.&quot;,</span>
+<span class="nc" id="L62">                            String.valueOf(basePanel.getSelectedEntries().size())) + &quot;\n&quot;</span>
+<span class="nc" id="L63">                            + Localization.lang(&quot;JabRef will send at least one request per entry to a publisher.&quot;)</span>
+<span class="nc" id="L64">                            + &quot;\n&quot;</span>
+<span class="nc" id="L65">                            + Localization.lang(&quot;Do you still want to continue?&quot;),</span>
+<span class="nc" id="L66">                    Localization.lang(&quot;Look up full text documents&quot;), JOptionPane.OK_CANCEL_OPTION,</span>
+<span class="nc" id="L67">                    JOptionPane.WARNING_MESSAGE, null, options, options[0]);</span>
+<span class="nc bnc" id="L68" title="All 2 branches missed.">            if (answer != JOptionPane.OK_OPTION) {</span>
+<span class="nc" id="L69">                basePanel.output(Localization.lang(&quot;Operation canceled.&quot;));</span>
+<span class="nc" id="L70">                return;</span>
+            }
+        }
+
+<span class="nc bnc" id="L74" title="All 2 branches missed.">        for (BibEntry entry : basePanel.getSelectedEntries()) {</span>
+<span class="nc" id="L75">            FulltextFetchers fetchers = new FulltextFetchers(Globals.prefs.getImportFormatPreferences());</span>
+<span class="nc" id="L76">            downloads.put(fetchers.findFullTextPDF(entry), entry);</span>
+        }
+<span class="nc" id="L78">    }</span>
+
+    @Override
+    public void update() {
+<span class="nc" id="L82">        List&lt;Optional&lt;URL&gt;&gt; finishedTasks = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L83" title="All 2 branches missed.">        for (Entry&lt;Optional&lt;URL&gt;, BibEntry&gt; download : downloads.entrySet()) {</span>
+<span class="nc" id="L84">            BibEntry entry = download.getValue();</span>
+<span class="nc" id="L85">            Optional&lt;URL&gt; result = download.getKey();</span>
+<span class="nc bnc" id="L86" title="All 2 branches missed.">            if (result.isPresent()) {</span>
+<span class="nc" id="L87">                Optional&lt;Path&gt; dir = basePanel.getBibDatabaseContext().getFirstExistingFileDir(Globals.prefs.getFileDirectoryPreferences());</span>
+
+<span class="nc bnc" id="L89" title="All 2 branches missed.">                if (!dir.isPresent()) {</span>
+<span class="nc" id="L90">                    JOptionPane.showMessageDialog(basePanel.frame(),</span>
+<span class="nc" id="L91">                            Localization.lang(&quot;Main file directory not set!&quot;) + &quot; &quot; + Localization.lang(&quot;Preferences&quot;)</span>
+<span class="nc" id="L92">                                    + &quot; -&gt; &quot; + Localization.lang(&quot;File&quot;),</span>
+<span class="nc" id="L93">                            Localization.lang(&quot;Directory not found&quot;), JOptionPane.ERROR_MESSAGE);</span>
+<span class="nc" id="L94">                    return;</span>
+                }
+<span class="nc" id="L96">                DownloadExternalFile fileDownload = new DownloadExternalFile(basePanel.frame(),</span>
+<span class="nc" id="L97">                        basePanel.getBibDatabaseContext(), entry);</span>
+                try {
+<span class="nc" id="L99">                    fileDownload.download(result.get(), &quot;application/pdf&quot;, file -&gt; {</span>
+<span class="nc" id="L100">                        DefaultTaskExecutor.runInJavaFXThread(() -&gt; {</span>
+<span class="nc" id="L101">                            Optional&lt;FieldChange&gt; fieldChange = entry.addFile(file);</span>
+<span class="nc bnc" id="L102" title="All 2 branches missed.">                            if (fieldChange.isPresent()) {</span>
+<span class="nc" id="L103">                                UndoableFieldChange edit = new UndoableFieldChange(entry, FieldName.FILE,</span>
+<span class="nc" id="L104">                                        entry.getField(FieldName.FILE).orElse(null), fieldChange.get().getNewValue());</span>
+<span class="nc" id="L105">                                basePanel.getUndoManager().addEdit(edit);</span>
+<span class="nc" id="L106">                                basePanel.markBaseChanged();</span>
+                            }
+<span class="nc" id="L108">                        });</span>
+
+<span class="nc" id="L110">                    });</span>
+<span class="nc" id="L111">                } catch (IOException e) {</span>
+<span class="nc" id="L112">                    LOGGER.warn(&quot;Problem downloading file&quot;, e);</span>
+<span class="nc" id="L113">                    basePanel.output(Localization.lang(&quot;Full text document download failed for entry %0&quot;,</span>
+<span class="nc" id="L114">                            entry.getCiteKeyOptional().orElse(Localization.lang(&quot;undefined&quot;))));</span>
+                }
+<span class="nc" id="L116">                basePanel.output(Localization.lang(&quot;Finished downloading full text document for entry %0.&quot;,</span>
+<span class="nc" id="L117">                        entry.getCiteKeyOptional().orElse(Localization.lang(&quot;undefined&quot;))));</span>
+<span class="nc" id="L118">            } else {</span>
+<span class="nc" id="L119">                String title = Localization.lang(&quot;No full text document found&quot;);</span>
+<span class="nc" id="L120">                String message = Localization.lang(&quot;No full text document found for entry %0.&quot;,</span>
+<span class="nc" id="L121">                        entry.getCiteKeyOptional().orElse(Localization.lang(&quot;undefined&quot;)));</span>
+
+<span class="nc" id="L123">                basePanel.output(message);</span>
+<span class="nc" id="L124">                JOptionPane.showMessageDialog(basePanel.frame(), message, title, JOptionPane.ERROR_MESSAGE);</span>
+            }
+<span class="nc" id="L126">            finishedTasks.add(result);</span>
+        }
+<span class="nc bnc" id="L128" title="All 2 branches missed.">        for (Optional&lt;URL&gt; result : finishedTasks) {</span>
+<span class="nc" id="L129">            downloads.remove(result);</span>
+        }
+<span class="nc" id="L131">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

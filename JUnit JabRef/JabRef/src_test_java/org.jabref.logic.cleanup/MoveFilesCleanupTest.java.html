@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MoveFilesCleanupTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.cleanup</a> &gt; <span class="el_source">MoveFilesCleanupTest.java</span></div><h1>MoveFilesCleanupTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.cleanup;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Optional;
+
+import org.jabref.logic.layout.LayoutFormatterPreferences;
+import org.jabref.model.Defaults;
+import org.jabref.model.database.BibDatabase;
+import org.jabref.model.database.BibDatabaseContext;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.FileFieldWriter;
+import org.jabref.model.entry.LinkedFile;
+import org.jabref.model.metadata.FileDirectoryPreferences;
+import org.jabref.model.metadata.MetaData;
+
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+<span class="fc" id="L31">public class MoveFilesCleanupTest {</span>
+
+<span class="fc" id="L33">    @Rule public TemporaryFolder bibFolder = new TemporaryFolder();</span>
+
+    private File pdfFolder;
+    private BibDatabaseContext databaseContext;
+    private MoveFilesCleanup cleanup;
+    private BibEntry entry;
+    private FileDirectoryPreferences fileDirPrefs;
+
+    @Before
+    public void setUp() throws IOException {
+<span class="fc" id="L43">        MetaData metaData = new MetaData();</span>
+<span class="fc" id="L44">        pdfFolder = bibFolder.newFolder();</span>
+<span class="fc" id="L45">        metaData.setDefaultFileDirectory(pdfFolder.getAbsolutePath());</span>
+<span class="fc" id="L46">        databaseContext = new BibDatabaseContext(new BibDatabase(), metaData, new Defaults());</span>
+<span class="fc" id="L47">        databaseContext.setDatabaseFile(bibFolder.newFile(&quot;test.bib&quot;));</span>
+<span class="fc" id="L48">        entry = new BibEntry();</span>
+<span class="fc" id="L49">        entry.setCiteKey(&quot;Toot&quot;);</span>
+<span class="fc" id="L50">        entry.setField(&quot;title&quot;, &quot;test title&quot;);</span>
+
+<span class="fc" id="L52">        fileDirPrefs = mock(FileDirectoryPreferences.class);</span>
+<span class="fc" id="L53">        when(fileDirPrefs.isBibLocationAsPrimary()).thenReturn(false); //Biblocation as Primary overwrites all other dirs, therefore we set it to false here</span>
+<span class="fc" id="L54">    }</span>
+
+    @Test
+    public void movesFileFromSubfolder() throws IOException {
+<span class="fc" id="L58">        File subfolder = bibFolder.newFolder();</span>
+<span class="fc" id="L59">        File fileBefore = new File(subfolder, &quot;test.pdf&quot;);</span>
+<span class="fc" id="L60">        assertTrue(fileBefore.createNewFile());</span>
+<span class="fc" id="L61">        assertTrue(new File(subfolder, &quot;test.pdf&quot;).exists());</span>
+
+<span class="fc" id="L63">        LinkedFile fileField = new LinkedFile(&quot;&quot;, fileBefore.getAbsolutePath(), &quot;&quot;);</span>
+<span class="fc" id="L64">        entry.setField(&quot;file&quot;, FileFieldWriter.getStringRepresentation(fileField));</span>
+<span class="fc" id="L65">        cleanup = new MoveFilesCleanup(databaseContext, &quot;&quot;, fileDirPrefs,</span>
+<span class="fc" id="L66">                mock(LayoutFormatterPreferences.class));</span>
+<span class="fc" id="L67">        cleanup.cleanup(entry);</span>
+
+<span class="fc" id="L69">        assertFalse(fileBefore.exists());</span>
+<span class="fc" id="L70">        File fileAfter = new File(pdfFolder, &quot;test.pdf&quot;);</span>
+<span class="fc" id="L71">        assertTrue(fileAfter.exists());</span>
+
+<span class="fc" id="L73">        assertEquals(Optional.of(FileFieldWriter.getStringRepresentation(new LinkedFile(&quot;&quot;, fileAfter.getName(), &quot;&quot;))),</span>
+<span class="fc" id="L74">                entry.getField(&quot;file&quot;));</span>
+<span class="fc" id="L75">    }</span>
+
+    @Test
+    public void movesFileFromSubfolderMultiple() throws IOException {
+<span class="fc" id="L79">        File subfolder = bibFolder.newFolder();</span>
+<span class="fc" id="L80">        File fileBefore = new File(subfolder, &quot;test.pdf&quot;);</span>
+<span class="fc" id="L81">        assertTrue(fileBefore.createNewFile());</span>
+<span class="fc" id="L82">        assertTrue(fileBefore.exists());</span>
+
+<span class="fc" id="L84">        LinkedFile fileField = new LinkedFile(&quot;&quot;, fileBefore.getAbsolutePath(), &quot;&quot;);</span>
+<span class="fc" id="L85">        entry.setField(&quot;file&quot;, FileFieldWriter.getStringRepresentation(</span>
+<span class="fc" id="L86">                Arrays.asList(new LinkedFile(&quot;&quot;, &quot;&quot;, &quot;&quot;), fileField, new LinkedFile(&quot;&quot;, &quot;&quot;, &quot;&quot;))));</span>
+
+<span class="fc" id="L88">        cleanup = new MoveFilesCleanup(databaseContext, &quot;&quot;, fileDirPrefs,</span>
+<span class="fc" id="L89">                mock(LayoutFormatterPreferences.class));</span>
+<span class="fc" id="L90">        cleanup.cleanup(entry);</span>
+
+<span class="fc" id="L92">        assertFalse(fileBefore.exists());</span>
+<span class="fc" id="L93">        File fileAfter = new File(pdfFolder, &quot;test.pdf&quot;);</span>
+<span class="fc" id="L94">        assertTrue(fileAfter.exists());</span>
+
+<span class="fc" id="L96">        assertEquals(</span>
+<span class="fc" id="L97">                Optional.of(FileFieldWriter.getStringRepresentation(new LinkedFile(&quot;&quot;, fileAfter.getName(), &quot;&quot;))),</span>
+<span class="fc" id="L98">                entry.getField(&quot;file&quot;));</span>
+<span class="fc" id="L99">    }</span>
+
+    @Test
+    public void movesFileFromSubfolderWithFileDirPattern() throws IOException {
+<span class="fc" id="L103">        File subfolder = bibFolder.newFolder();</span>
+<span class="fc" id="L104">        File fileBefore = new File(subfolder, &quot;test.pdf&quot;);</span>
+
+<span class="fc" id="L106">        assertTrue(fileBefore.createNewFile());</span>
+<span class="fc" id="L107">        assertTrue(new File(subfolder, &quot;test.pdf&quot;).exists());</span>
+
+<span class="fc" id="L109">        LinkedFile fileField = new LinkedFile(&quot;&quot;, fileBefore.getAbsolutePath(), &quot;&quot;);</span>
+<span class="fc" id="L110">        entry.setField(&quot;file&quot;, FileFieldWriter.getStringRepresentation(fileField));</span>
+
+<span class="fc" id="L112">        cleanup = new MoveFilesCleanup(databaseContext, &quot;[entrytype]&quot;, fileDirPrefs,</span>
+<span class="fc" id="L113">                mock(LayoutFormatterPreferences.class));</span>
+<span class="fc" id="L114">        cleanup.cleanup(entry);</span>
+
+<span class="fc" id="L116">        assertFalse(fileBefore.exists());</span>
+<span class="fc" id="L117">        Path after = pdfFolder.toPath().resolve(&quot;Misc&quot;).resolve(&quot;test.pdf&quot;);</span>
+<span class="fc" id="L118">        Path relativefileDir = pdfFolder.toPath().relativize(after);</span>
+<span class="fc" id="L119">        assertTrue(Files.exists(after));</span>
+
+<span class="fc" id="L121">        assertEquals(Optional</span>
+<span class="fc" id="L122">                .of(FileFieldWriter.getStringRepresentation(new LinkedFile(&quot;&quot;, relativefileDir.toString(), &quot;&quot;))),</span>
+<span class="fc" id="L123">                entry.getField(&quot;file&quot;));</span>
+<span class="fc" id="L124">    }</span>
+
+    @Test
+    public void movesFileFromSubfolderWithSubdirPattern() throws IOException {
+<span class="fc" id="L128">        BibEntry local_entry = (BibEntry) entry.clone();</span>
+<span class="fc" id="L129">        local_entry.setField(&quot;year&quot;, &quot;1989&quot;);</span>
+<span class="fc" id="L130">        File subfolder = bibFolder.newFolder();</span>
+<span class="fc" id="L131">        File fileBefore = new File(subfolder, &quot;test.pdf&quot;);</span>
+
+<span class="fc" id="L133">        assertTrue(fileBefore.createNewFile());</span>
+<span class="fc" id="L134">        assertTrue(new File(subfolder, &quot;test.pdf&quot;).exists());</span>
+
+<span class="fc" id="L136">        LinkedFile fileField = new LinkedFile(&quot;&quot;, fileBefore.getAbsolutePath(), &quot;&quot;);</span>
+<span class="fc" id="L137">        local_entry.setField(&quot;file&quot;, FileFieldWriter.getStringRepresentation(fileField));</span>
+
+<span class="fc" id="L139">        cleanup = new MoveFilesCleanup(databaseContext, &quot;[year]&quot;, fileDirPrefs,</span>
+<span class="fc" id="L140">                mock(LayoutFormatterPreferences.class));</span>
+<span class="fc" id="L141">        cleanup.cleanup(local_entry);</span>
+
+<span class="fc" id="L143">        assertFalse(fileBefore.exists());</span>
+<span class="fc" id="L144">        Path after = pdfFolder.toPath().resolve(&quot;1989&quot;).resolve(&quot;test.pdf&quot;);</span>
+<span class="fc" id="L145">        Path relativefileDir = pdfFolder.toPath().relativize(after);</span>
+<span class="fc" id="L146">        assertTrue(Files.exists(after));</span>
+
+<span class="fc" id="L148">        assertEquals(Optional</span>
+<span class="fc" id="L149">                .of(FileFieldWriter.getStringRepresentation(new LinkedFile(&quot;&quot;, relativefileDir.toString(), &quot;&quot;))),</span>
+<span class="fc" id="L150">                local_entry.getField(&quot;file&quot;));</span>
+<span class="fc" id="L151">    }</span>
+
+    @Test
+    public void movesFileFromSubfolderWithDeepSubdirPattern() throws IOException {
+<span class="fc" id="L155">        BibEntry local_entry = (BibEntry) entry.clone();</span>
+<span class="fc" id="L156">        local_entry.setField(&quot;year&quot;, &quot;1989&quot;);</span>
+<span class="fc" id="L157">        local_entry.setField(&quot;author&quot;, &quot;O. Kitsune&quot;);</span>
+<span class="fc" id="L158">        File subfolder = bibFolder.newFolder();</span>
+<span class="fc" id="L159">        File fileBefore = new File(subfolder, &quot;test.pdf&quot;);</span>
+
+<span class="fc" id="L161">        assertTrue(fileBefore.createNewFile());</span>
+<span class="fc" id="L162">        assertTrue(new File(subfolder, &quot;test.pdf&quot;).exists());</span>
+
+<span class="fc" id="L164">        LinkedFile fileField = new LinkedFile(&quot;&quot;, fileBefore.getAbsolutePath(), &quot;&quot;);</span>
+<span class="fc" id="L165">        local_entry.setField(&quot;file&quot;, FileFieldWriter.getStringRepresentation(fileField));</span>
+
+<span class="fc" id="L167">        cleanup = new MoveFilesCleanup(databaseContext, &quot;[entrytype]/[year]/[auth]&quot;, fileDirPrefs,</span>
+<span class="fc" id="L168">                mock(LayoutFormatterPreferences.class));</span>
+<span class="fc" id="L169">        cleanup.cleanup(local_entry);</span>
+
+<span class="fc" id="L171">        assertFalse(fileBefore.exists());</span>
+<span class="fc" id="L172">        Path after = pdfFolder.toPath().resolve(&quot;Misc&quot;).resolve(&quot;1989&quot;).resolve(&quot;Kitsune&quot;).resolve(&quot;test.pdf&quot;);</span>
+<span class="fc" id="L173">        Path relativefileDir = pdfFolder.toPath().relativize(after);</span>
+<span class="fc" id="L174">        assertTrue(Files.exists(after));</span>
+
+<span class="fc" id="L176">        assertEquals(Optional</span>
+<span class="fc" id="L177">                .of(FileFieldWriter.getStringRepresentation(new LinkedFile(&quot;&quot;, relativefileDir.toString(), &quot;&quot;))),</span>
+<span class="fc" id="L178">                local_entry.getField(&quot;file&quot;));</span>
+<span class="fc" id="L179">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

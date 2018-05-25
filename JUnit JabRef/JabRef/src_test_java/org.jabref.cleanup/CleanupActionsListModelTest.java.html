@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>CleanupActionsListModelTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.cleanup</a> &gt; <span class="el_source">CleanupActionsListModelTest.java</span></div><h1>CleanupActionsListModelTest.java</h1><pre class="source lang-java linenums">package org.jabref.cleanup;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+import javax.swing.event.ListDataEvent;
+import javax.swing.event.ListDataListener;
+
+import org.jabref.gui.cleanup.CleanupActionsListModel;
+import org.jabref.logic.cleanup.Cleanups;
+import org.jabref.logic.formatter.bibtexfields.ClearFormatter;
+import org.jabref.model.cleanup.FieldFormatterCleanup;
+import org.jabref.model.cleanup.FieldFormatterCleanups;
+
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
+
+<span class="nc" id="L26">public class CleanupActionsListModelTest {</span>
+
+    @Test
+    public void resetFiresItemsChanged() throws Exception {
+<span class="nc" id="L30">        CleanupActionsListModel model = new CleanupActionsListModel(Collections.emptyList());</span>
+<span class="nc" id="L31">        ListDataListener listener = mock(ListDataListener.class);</span>
+<span class="nc" id="L32">        model.addListDataListener(listener);</span>
+<span class="nc" id="L33">        FieldFormatterCleanups defaultFormatters = mock(FieldFormatterCleanups.class);</span>
+
+<span class="nc" id="L35">        model.reset(defaultFormatters);</span>
+
+<span class="nc" id="L37">        ArgumentCaptor&lt;ListDataEvent&gt; argument = ArgumentCaptor.forClass(ListDataEvent.class);</span>
+<span class="nc" id="L38">        verify(listener).contentsChanged(argument.capture());</span>
+<span class="nc" id="L39">        assertEquals(ListDataEvent.CONTENTS_CHANGED, argument.getValue().getType());</span>
+<span class="nc" id="L40">    }</span>
+
+    @Test
+    public void resetSetsFormattersToPassedList() throws Exception {
+<span class="nc" id="L44">        CleanupActionsListModel model = new CleanupActionsListModel(Collections.emptyList());</span>
+<span class="nc" id="L45">        FieldFormatterCleanups defaultFormatters = mock(FieldFormatterCleanups.class);</span>
+<span class="nc" id="L46">        List&lt;FieldFormatterCleanup&gt; formatters = Arrays.asList(new FieldFormatterCleanup(&quot;test&quot;, new ClearFormatter()));</span>
+<span class="nc" id="L47">        when(defaultFormatters.getConfiguredActions()).thenReturn(formatters);</span>
+
+<span class="nc" id="L49">        model.reset(defaultFormatters);</span>
+
+<span class="nc" id="L51">        assertEquals(formatters, model.getAllActions());</span>
+<span class="nc" id="L52">    }</span>
+
+    public List&lt;FieldFormatterCleanup&gt; getDefaultFieldFormatterCleanups() {
+<span class="nc" id="L55">        FieldFormatterCleanups formatters = Cleanups.DEFAULT_SAVE_ACTIONS;</span>
+        //new ArrayList because configured actions is an unmodifiable collection
+<span class="nc" id="L57">        return new ArrayList&lt;&gt;(formatters.getConfiguredActions());</span>
+    }
+
+    @Test
+    public void removedAtIndexOkay() {
+
+<span class="nc" id="L63">        CleanupActionsListModel model = new CleanupActionsListModel(getDefaultFieldFormatterCleanups());</span>
+<span class="nc" id="L64">        ListDataListener listener = mock(ListDataListener.class);</span>
+<span class="nc" id="L65">        model.addListDataListener(listener);</span>
+<span class="nc" id="L66">        model.removeAtIndex(0);</span>
+
+<span class="nc" id="L68">        ArgumentCaptor&lt;ListDataEvent&gt; argument = ArgumentCaptor.forClass(ListDataEvent.class);</span>
+<span class="nc" id="L69">        verify(listener).intervalRemoved(argument.capture());</span>
+<span class="nc" id="L70">        assertEquals(ListDataEvent.INTERVAL_REMOVED, argument.getValue().getType());</span>
+
+<span class="nc" id="L72">    }</span>
+
+    @Test
+    public void removedAtIndexMinus1DoesNothing() {
+
+<span class="nc" id="L77">        CleanupActionsListModel model = new CleanupActionsListModel(getDefaultFieldFormatterCleanups());</span>
+<span class="nc" id="L78">        ListDataListener listener = mock(ListDataListener.class);</span>
+<span class="nc" id="L79">        model.addListDataListener(listener);</span>
+<span class="nc" id="L80">        model.removeAtIndex(-1);</span>
+
+<span class="nc" id="L82">        verifyZeroInteractions(listener);</span>
+<span class="nc" id="L83">    }</span>
+
+    @Test
+    public void removedAtIndexgreaterListSizeDoesNothing() {
+
+<span class="nc" id="L88">        CleanupActionsListModel model = new CleanupActionsListModel(getDefaultFieldFormatterCleanups());</span>
+<span class="nc" id="L89">        ListDataListener listener = mock(ListDataListener.class);</span>
+<span class="nc" id="L90">        model.addListDataListener(listener);</span>
+<span class="nc" id="L91">        model.removeAtIndex((getDefaultFieldFormatterCleanups().size() + 1));</span>
+
+<span class="nc" id="L93">        verifyZeroInteractions(listener);</span>
+
+<span class="nc" id="L95">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

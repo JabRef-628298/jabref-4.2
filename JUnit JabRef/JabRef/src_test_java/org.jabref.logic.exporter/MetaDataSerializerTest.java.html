@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MetaDataSerializerTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.exporter</a> &gt; <span class="el_source">MetaDataSerializerTest.java</span></div><h1>MetaDataSerializerTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.exporter;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+
+import org.jabref.logic.formatter.casechanger.LowerCaseFormatter;
+import org.jabref.logic.util.OS;
+import org.jabref.model.bibtexkeypattern.GlobalBibtexKeyPattern;
+import org.jabref.model.cleanup.FieldFormatterCleanup;
+import org.jabref.model.cleanup.FieldFormatterCleanups;
+import org.jabref.model.metadata.ContentSelector;
+import org.jabref.model.metadata.MetaData;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+<span class="fc" id="L22">public class MetaDataSerializerTest {</span>
+
+    private MetaData metaData;
+    private GlobalBibtexKeyPattern pattern;
+
+    @BeforeEach
+    public void setUp() {
+<span class="fc" id="L29">        metaData = new MetaData();</span>
+<span class="fc" id="L30">        pattern = GlobalBibtexKeyPattern.fromPattern(&quot;[auth][year]&quot;);</span>
+<span class="fc" id="L31">    }</span>
+
+    @Test
+    public void serializeNewMetadataReturnsEmptyMap() throws Exception {
+<span class="fc" id="L35">        assertEquals(Collections.emptyMap(), MetaDataSerializer.getSerializedStringMap(metaData, pattern));</span>
+<span class="fc" id="L36">    }</span>
+
+    @Test
+    public void serializeSingleSaveAction() {
+<span class="fc" id="L40">        FieldFormatterCleanups saveActions = new FieldFormatterCleanups(true,</span>
+<span class="fc" id="L41">                Collections.singletonList(new FieldFormatterCleanup(&quot;title&quot;, new LowerCaseFormatter())));</span>
+<span class="fc" id="L42">        metaData.setSaveActions(saveActions);</span>
+
+<span class="fc" id="L44">        Map&lt;String, String&gt; expectedSerialization = new TreeMap&lt;&gt;();</span>
+<span class="fc" id="L45">        expectedSerialization.put(&quot;saveActions&quot;,</span>
+<span class="fc" id="L46">                &quot;enabled;&quot; + OS.NEWLINE + &quot;title[lower_case]&quot; + OS.NEWLINE + &quot;;&quot;);</span>
+<span class="fc" id="L47">        assertEquals(expectedSerialization, MetaDataSerializer.getSerializedStringMap(metaData, pattern));</span>
+<span class="fc" id="L48">    }</span>
+
+    @Test
+    public void serializeSingleContentSelectors() {
+<span class="fc" id="L52">        List&lt;String&gt; values = new ArrayList(4);</span>
+<span class="fc" id="L53">        values.add(&quot;approved&quot;);</span>
+<span class="fc" id="L54">        values.add(&quot;captured&quot;);</span>
+<span class="fc" id="L55">        values.add(&quot;received&quot;);</span>
+<span class="fc" id="L56">        values.add(&quot;status&quot;);</span>
+
+<span class="fc" id="L58">        metaData.addContentSelector(new ContentSelector(&quot;status&quot;, values));</span>
+
+<span class="fc" id="L60">        Map&lt;String, String&gt; expectedSerialization = new TreeMap&lt;&gt;();</span>
+<span class="fc" id="L61">        expectedSerialization.put(&quot;selector_status&quot;,</span>
+<span class="fc" id="L62">                &quot;approved;captured;received;status;&quot;);</span>
+<span class="fc" id="L63">        assertEquals(expectedSerialization, MetaDataSerializer.getSerializedStringMap(metaData, pattern));</span>
+<span class="fc" id="L64">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

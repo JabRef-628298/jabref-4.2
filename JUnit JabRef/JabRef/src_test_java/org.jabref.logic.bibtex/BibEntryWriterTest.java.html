@@ -1,0 +1,495 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>BibEntryWriterTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.bibtex</a> &gt; <span class="el_source">BibEntryWriterTest.java</span></div><h1>BibEntryWriterTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.bibtex;
+
+import java.io.IOException;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.util.Collection;
+import java.util.Set;
+
+import org.jabref.logic.importer.ImportFormatPreferences;
+import org.jabref.logic.importer.ParserResult;
+import org.jabref.logic.importer.fileformat.BibtexParser;
+import org.jabref.logic.util.OS;
+import org.jabref.model.database.BibDatabaseMode;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.util.DummyFileUpdateMonitor;
+import org.jabref.model.util.FileUpdateMonitor;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Answers;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+
+<span class="fc" id="L27">public class BibEntryWriterTest {</span>
+
+    private static ImportFormatPreferences importFormatPreferences;
+    private BibEntryWriter writer;
+<span class="fc" id="L31">    private final FileUpdateMonitor fileMonitor = new DummyFileUpdateMonitor();</span>
+
+    @BeforeEach
+    public void setUpWriter() {
+<span class="fc" id="L35">        importFormatPreferences = mock(ImportFormatPreferences.class, Answers.RETURNS_DEEP_STUBS);</span>
+<span class="fc" id="L36">        LatexFieldFormatterPreferences latexFieldFormatterPreferences = mock(LatexFieldFormatterPreferences.class, Answers.RETURNS_DEEP_STUBS);</span>
+<span class="fc" id="L37">        writer = new BibEntryWriter(new LatexFieldFormatter(latexFieldFormatterPreferences), true);</span>
+<span class="fc" id="L38">    }</span>
+
+    @Test
+    public void testSerialization() throws IOException {
+<span class="fc" id="L42">        StringWriter stringWriter = new StringWriter();</span>
+
+<span class="fc" id="L44">        BibEntry entry = new BibEntry(&quot;article&quot;);</span>
+        //set a required field
+<span class="fc" id="L46">        entry.setField(&quot;author&quot;, &quot;Foo Bar&quot;);</span>
+<span class="fc" id="L47">        entry.setField(&quot;journal&quot;, &quot;International Journal of Something&quot;);</span>
+        //set an optional field
+<span class="fc" id="L49">        entry.setField(&quot;number&quot;, &quot;1&quot;);</span>
+<span class="fc" id="L50">        entry.setField(&quot;note&quot;, &quot;some note&quot;);</span>
+
+<span class="fc" id="L52">        writer.write(entry, stringWriter, BibDatabaseMode.BIBTEX);</span>
+
+<span class="fc" id="L54">        String actual = stringWriter.toString();</span>
+
+        // @formatter:off
+<span class="fc" id="L57">        String expected = OS.NEWLINE + &quot;@Article{,&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L58">                &quot;  author  = {Foo Bar},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L59">                &quot;  journal = {International Journal of Something},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L60">                &quot;  number  = {1},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L61">                &quot;  note    = {some note},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L62">                &quot;}&quot; + OS.NEWLINE;</span>
+        // @formatter:on
+
+<span class="fc" id="L65">        assertEquals(expected, actual);</span>
+<span class="fc" id="L66">    }</span>
+
+    @Test
+    public void writeOtherTypeTest() throws Exception {
+<span class="fc" id="L70">        String expected = OS.NEWLINE + &quot;@Other{test,&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L71">                &quot;  comment = {testentry},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L72">                &quot;}&quot; + OS.NEWLINE;</span>
+
+<span class="fc" id="L74">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L75">        entry.setType(&quot;other&quot;);</span>
+<span class="fc" id="L76">        entry.setField(&quot;Comment&quot;, &quot;testentry&quot;);</span>
+<span class="fc" id="L77">        entry.setCiteKey(&quot;test&quot;);</span>
+
+        //write out bibtex string
+<span class="fc" id="L80">        StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L81">        writer.write(entry, stringWriter, BibDatabaseMode.BIBTEX);</span>
+<span class="fc" id="L82">        String actual = stringWriter.toString();</span>
+
+<span class="fc" id="L84">        assertEquals(expected, actual);</span>
+<span class="fc" id="L85">    }</span>
+
+    @Test
+    public void writeReallyunknownTypeTest() throws Exception {
+<span class="fc" id="L89">        String expected = OS.NEWLINE + &quot;@Reallyunknowntype{test,&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L90">                &quot;  comment = {testentry},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L91">                &quot;}&quot; + OS.NEWLINE;</span>
+
+<span class="fc" id="L93">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L94">        entry.setType(&quot;ReallyUnknownType&quot;);</span>
+<span class="fc" id="L95">        entry.setField(&quot;Comment&quot;, &quot;testentry&quot;);</span>
+<span class="fc" id="L96">        entry.setCiteKey(&quot;test&quot;);</span>
+
+        //write out bibtex string
+<span class="fc" id="L99">        StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L100">        writer.write(entry, stringWriter, BibDatabaseMode.BIBTEX);</span>
+<span class="fc" id="L101">        String actual = stringWriter.toString();</span>
+
+<span class="fc" id="L103">        assertEquals(expected, actual);</span>
+<span class="fc" id="L104">    }</span>
+
+    @Test
+    public void roundTripTest() throws IOException {
+        // @formatter:off
+<span class="fc" id="L109">        String bibtexEntry = &quot;@Article{test,&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L110">                &quot;  Author                   = {Foo Bar},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L111">                &quot;  Journal                  = {International Journal of Something},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L112">                &quot;  Note                     = {some note},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L113">                &quot;  Number                   = {1}&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L114">                &quot;}&quot;;</span>
+        // @formatter:on
+
+        // read in bibtex string
+<span class="fc" id="L118">        ParserResult result = new BibtexParser(importFormatPreferences, fileMonitor).parse(new StringReader(bibtexEntry));</span>
+<span class="fc" id="L119">        Collection&lt;BibEntry&gt; entries = result.getDatabase().getEntries();</span>
+<span class="fc" id="L120">        BibEntry entry = entries.iterator().next();</span>
+
+        //write out bibtex string
+<span class="fc" id="L123">        StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L124">        writer.write(entry, stringWriter, BibDatabaseMode.BIBTEX);</span>
+<span class="fc" id="L125">        String actual = stringWriter.toString();</span>
+
+<span class="fc" id="L127">        assertEquals(bibtexEntry, actual);</span>
+<span class="fc" id="L128">    }</span>
+
+    @Test
+    public void roundTripWithPrependingNewlines() throws IOException {
+        // @formatter:off
+<span class="fc" id="L133">        String bibtexEntry = &quot;\r\n@Article{test,&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L134">                &quot;  Author                   = {Foo Bar},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L135">                &quot;  Journal                  = {International Journal of Something},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L136">                &quot;  Note                     = {some note},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L137">                &quot;  Number                   = {1}&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L138">                &quot;}&quot;;</span>
+        // @formatter:on
+
+        // read in bibtex string
+<span class="fc" id="L142">        ParserResult result = new BibtexParser(importFormatPreferences, fileMonitor).parse(new StringReader(bibtexEntry));</span>
+<span class="fc" id="L143">        Collection&lt;BibEntry&gt; entries = result.getDatabase().getEntries();</span>
+<span class="fc" id="L144">        BibEntry entry = entries.iterator().next();</span>
+
+        //write out bibtex string
+<span class="fc" id="L147">        StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L148">        writer.write(entry, stringWriter, BibDatabaseMode.BIBTEX);</span>
+<span class="fc" id="L149">        String actual = stringWriter.toString();</span>
+
+<span class="fc" id="L151">        assertEquals(bibtexEntry, actual);</span>
+<span class="fc" id="L152">    }</span>
+
+    @Test
+    public void roundTripWithModification() throws IOException {
+        // @formatter:off
+<span class="fc" id="L157">        String bibtexEntry = OS.NEWLINE + &quot;@Article{test,&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L158">                &quot;  Author                   = {Foo Bar},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L159">                &quot;  Journal                  = {International Journal of Something},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L160">                &quot;  Note                     = {some note},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L161">                &quot;  Number                   = {1},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L162">                &quot;}&quot;;</span>
+        // @formatter:on
+
+        // read in bibtex string
+<span class="fc" id="L166">        ParserResult result = new BibtexParser(importFormatPreferences, fileMonitor).parse(new StringReader(bibtexEntry));</span>
+<span class="fc" id="L167">        Collection&lt;BibEntry&gt; entries = result.getDatabase().getEntries();</span>
+<span class="fc" id="L168">        BibEntry entry = entries.iterator().next();</span>
+
+        // Modify entry
+<span class="fc" id="L171">        entry.setField(&quot;author&quot;, &quot;BlaBla&quot;);</span>
+
+        // write out bibtex string
+<span class="fc" id="L174">        StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L175">        writer.write(entry, stringWriter, BibDatabaseMode.BIBTEX);</span>
+<span class="fc" id="L176">        String actual = stringWriter.toString();</span>
+
+        // @formatter:off
+<span class="fc" id="L179">        String expected = OS.NEWLINE + &quot;@Article{test,&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L180">                &quot;  author  = {BlaBla},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L181">                &quot;  journal = {International Journal of Something},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L182">                &quot;  number  = {1},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L183">                &quot;  note    = {some note},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L184">                &quot;}&quot; + OS.NEWLINE;</span>
+        // @formatter:on
+<span class="fc" id="L186">        assertEquals(expected, actual);</span>
+<span class="fc" id="L187">    }</span>
+
+    @Test
+    public void roundTripWithCamelCasingInTheOriginalEntryAndResultInLowerCase() throws IOException {
+        // @formatter:off
+<span class="fc" id="L192">        String bibtexEntry = OS.NEWLINE + &quot;@Article{test,&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L193">                &quot;  Author                   = {Foo Bar},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L194">                &quot;  Journal                  = {International Journal of Something},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L195">                &quot;  Note                     = {some note},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L196">                &quot;  Number                   = {1},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L197">                &quot;  HowPublished             = {asdf},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L198">                &quot;}&quot;;</span>
+        // @formatter:on
+
+        // read in bibtex string
+<span class="fc" id="L202">        ParserResult result = new BibtexParser(importFormatPreferences, fileMonitor).parse(new StringReader(bibtexEntry));</span>
+<span class="fc" id="L203">        Collection&lt;BibEntry&gt; entries = result.getDatabase().getEntries();</span>
+<span class="fc" id="L204">        BibEntry entry = entries.iterator().next();</span>
+
+        // modify entry
+<span class="fc" id="L207">        entry.setField(&quot;author&quot;, &quot;BlaBla&quot;);</span>
+
+        //write out bibtex string
+<span class="fc" id="L210">        StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L211">        writer.write(entry, stringWriter, BibDatabaseMode.BIBTEX);</span>
+<span class="fc" id="L212">        String actual = stringWriter.toString();</span>
+
+        // @formatter:off
+<span class="fc" id="L215">        String expected = OS.NEWLINE + &quot;@Article{test,&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L216">                &quot;  author       = {BlaBla},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L217">                &quot;  journal      = {International Journal of Something},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L218">                &quot;  number       = {1},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L219">                &quot;  note         = {some note},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L220">                &quot;  howpublished = {asdf},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L221">                &quot;}&quot; + OS.NEWLINE;</span>
+        // @formatter:on
+<span class="fc" id="L223">        assertEquals(expected, actual);</span>
+<span class="fc" id="L224">    }</span>
+
+    @Test
+    public void testEntryTypeChange() throws IOException {
+        // @formatter:off
+<span class="fc" id="L229">        String expected = OS.NEWLINE + &quot;@Article{test,&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L230">                &quot;  author       = {BlaBla},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L231">                &quot;  journal      = {International Journal of Something},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L232">                &quot;  number       = {1},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L233">                &quot;  note         = {some note},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L234">                &quot;  howpublished = {asdf},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L235">                &quot;}&quot; + OS.NEWLINE;</span>
+        // @formatter:on
+
+        // read in bibtex string
+<span class="fc" id="L239">        ParserResult result = new BibtexParser(importFormatPreferences, fileMonitor).parse(new StringReader(expected));</span>
+<span class="fc" id="L240">        Collection&lt;BibEntry&gt; entries = result.getDatabase().getEntries();</span>
+<span class="fc" id="L241">        BibEntry entry = entries.iterator().next();</span>
+
+        // modify entry
+<span class="fc" id="L244">        entry.setType(&quot;inproceedings&quot;);</span>
+
+        //write out bibtex string
+<span class="fc" id="L247">        StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L248">        writer.write(entry, stringWriter, BibDatabaseMode.BIBTEX);</span>
+<span class="fc" id="L249">        String actual = stringWriter.toString();</span>
+
+        // @formatter:off
+<span class="fc" id="L252">        String expectedNewEntry = OS.NEWLINE + &quot;@InProceedings{test,&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L253">                &quot;  author       = {BlaBla},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L254">                &quot;  number       = {1},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L255">                &quot;  note         = {some note},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L256">                &quot;  howpublished = {asdf},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L257">                &quot;  journal      = {International Journal of Something},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L258">                &quot;}&quot; + OS.NEWLINE;</span>
+        // @formatter:on
+<span class="fc" id="L260">        assertEquals(expectedNewEntry, actual);</span>
+<span class="fc" id="L261">    }</span>
+
+    @Test
+    public void roundTripWithAppendedNewlines() throws IOException {
+        // @formatter:off
+<span class="fc" id="L266">        String bibtexEntry = &quot;@Article{test,&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L267">                &quot;  Author                   = {Foo Bar},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L268">                &quot;  Journal                  = {International Journal of Something},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L269">                &quot;  Note                     = {some note},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L270">                &quot;  Number                   = {1}&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L271">                &quot;}\n\n&quot;;</span>
+        // @formatter:on
+
+        // read in bibtex string
+<span class="fc" id="L275">        ParserResult result = new BibtexParser(importFormatPreferences, fileMonitor).parse(new StringReader(bibtexEntry));</span>
+<span class="fc" id="L276">        Collection&lt;BibEntry&gt; entries = result.getDatabase().getEntries();</span>
+<span class="fc" id="L277">        BibEntry entry = entries.iterator().next();</span>
+
+        //write out bibtex string
+<span class="fc" id="L280">        StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L281">        writer.write(entry, stringWriter, BibDatabaseMode.BIBTEX);</span>
+<span class="fc" id="L282">        String actual = stringWriter.toString();</span>
+
+        // Only one appending newline is written by the writer, the rest by FileActions. So, these should be removed here.
+<span class="fc" id="L285">        assertEquals(bibtexEntry.substring(0, bibtexEntry.length() - 1), actual);</span>
+<span class="fc" id="L286">    }</span>
+
+    @Test
+    public void multipleWritesWithoutModification() throws IOException {
+        // @formatter:off
+<span class="fc" id="L291">        String bibtexEntry = &quot;@Article{test,&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L292">                &quot;  Author                   = {Foo Bar},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L293">                &quot;  Journal                  = {International Journal of Something},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L294">                &quot;  Note                     = {some note},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L295">                &quot;  Number                   = {1}&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L296">                &quot;}&quot;;</span>
+        // @formatter:on
+
+<span class="fc" id="L299">        String result = testSingleWrite(bibtexEntry);</span>
+<span class="fc" id="L300">        result = testSingleWrite(result);</span>
+<span class="fc" id="L301">        result = testSingleWrite(result);</span>
+
+<span class="fc" id="L303">        assertEquals(bibtexEntry, result);</span>
+<span class="fc" id="L304">    }</span>
+
+    private String testSingleWrite(String bibtexEntry) throws IOException {
+        // read in bibtex string
+<span class="fc" id="L308">        ParserResult result = new BibtexParser(importFormatPreferences, fileMonitor).parse(new StringReader(bibtexEntry));</span>
+<span class="fc" id="L309">        Collection&lt;BibEntry&gt; entries = result.getDatabase().getEntries();</span>
+<span class="fc" id="L310">        BibEntry entry = entries.iterator().next();</span>
+
+        //write out bibtex string
+<span class="fc" id="L313">        StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L314">        writer.write(entry, stringWriter, BibDatabaseMode.BIBTEX);</span>
+<span class="fc" id="L315">        String actual = stringWriter.toString();</span>
+
+<span class="fc" id="L317">        assertEquals(bibtexEntry, actual);</span>
+<span class="fc" id="L318">        return actual;</span>
+    }
+
+    @Test
+    public void monthFieldSpecialSyntax() throws IOException {
+        // @formatter:off
+<span class="fc" id="L324">        String bibtexEntry = &quot;@Article{test,&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L325">                &quot;  Author                   = {Foo Bar},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L326">                &quot;  Month                    = mar,&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L327">                &quot;  Number                   = {1}&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L328">                &quot;}&quot;;</span>
+        // @formatter:on
+
+        // read in bibtex string
+<span class="fc" id="L332">        ParserResult result = new BibtexParser(importFormatPreferences, fileMonitor).parse(new StringReader(bibtexEntry));</span>
+<span class="fc" id="L333">        Collection&lt;BibEntry&gt; entries = result.getDatabase().getEntries();</span>
+<span class="fc" id="L334">        BibEntry entry = entries.iterator().next();</span>
+
+        // modify month field
+<span class="fc" id="L337">        Set&lt;String&gt; fields = entry.getFieldNames();</span>
+<span class="fc" id="L338">        assertTrue(fields.contains(&quot;month&quot;));</span>
+<span class="fc" id="L339">        assertEquals(&quot;#mar#&quot;, entry.getField(&quot;month&quot;).get());</span>
+
+        //write out bibtex string
+<span class="fc" id="L342">        StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L343">        writer.write(entry, stringWriter, BibDatabaseMode.BIBTEX);</span>
+<span class="fc" id="L344">        String actual = stringWriter.toString();</span>
+
+<span class="fc" id="L346">        assertEquals(bibtexEntry, actual);</span>
+<span class="fc" id="L347">    }</span>
+
+    @Test
+    public void addFieldWithLongerLength() throws IOException {
+        // @formatter:off
+<span class="fc" id="L352">        String bibtexEntry = OS.NEWLINE + OS.NEWLINE + &quot;@Article{test,&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L353">                &quot;  author =  {BlaBla},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L354">                &quot;  journal = {International Journal of Something},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L355">                &quot;  number =  {1},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L356">                &quot;  note =    {some note},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L357">                &quot;}&quot;;</span>
+        // @formatter:on
+
+        // read in bibtex string
+<span class="fc" id="L361">        ParserResult result = new BibtexParser(importFormatPreferences, fileMonitor).parse(new StringReader(bibtexEntry));</span>
+<span class="fc" id="L362">        Collection&lt;BibEntry&gt; entries = result.getDatabase().getEntries();</span>
+<span class="fc" id="L363">        BibEntry entry = entries.iterator().next();</span>
+
+        // modify entry
+<span class="fc" id="L366">        entry.setField(&quot;howpublished&quot;, &quot;asdf&quot;);</span>
+
+        //write out bibtex string
+<span class="fc" id="L369">        StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L370">        writer.write(entry, stringWriter, BibDatabaseMode.BIBTEX);</span>
+<span class="fc" id="L371">        String actual = stringWriter.toString();</span>
+
+        // @formatter:off
+<span class="fc" id="L374">        String expected = OS.NEWLINE + &quot;@Article{test,&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L375">                &quot;  author       = {BlaBla},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L376">                &quot;  journal      = {International Journal of Something},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L377">                &quot;  number       = {1},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L378">                &quot;  note         = {some note},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L379">                &quot;  howpublished = {asdf},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L380">                &quot;}&quot; + OS.NEWLINE;</span>
+        // @formatter:on
+<span class="fc" id="L382">        assertEquals(expected, actual);</span>
+<span class="fc" id="L383">    }</span>
+
+    @Test
+    public void doNotWriteEmptyFields() throws IOException {
+<span class="fc" id="L387">        StringWriter stringWriter = new StringWriter();</span>
+
+<span class="fc" id="L389">        BibEntry entry = new BibEntry(&quot;article&quot;);</span>
+<span class="fc" id="L390">        entry.setField(&quot;author&quot;, &quot;  &quot;);</span>
+<span class="fc" id="L391">        entry.setField(&quot;note&quot;, &quot;some note&quot;);</span>
+
+<span class="fc" id="L393">        writer.write(entry, stringWriter, BibDatabaseMode.BIBTEX);</span>
+
+<span class="fc" id="L395">        String actual = stringWriter.toString();</span>
+
+<span class="fc" id="L397">        String expected = OS.NEWLINE + &quot;@Article{,&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L398">                &quot;  note   = {some note},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L399">                &quot;}&quot; + OS.NEWLINE;</span>
+
+<span class="fc" id="L401">        assertEquals(expected, actual);</span>
+<span class="fc" id="L402">    }</span>
+
+    @Test
+    public void trimFieldContents() throws IOException {
+<span class="fc" id="L406">        StringWriter stringWriter = new StringWriter();</span>
+
+<span class="fc" id="L408">        BibEntry entry = new BibEntry(&quot;article&quot;);</span>
+<span class="fc" id="L409">        entry.setField(&quot;note&quot;, &quot;        some note    \t&quot;);</span>
+
+<span class="fc" id="L411">        writer.write(entry, stringWriter, BibDatabaseMode.BIBTEX);</span>
+
+<span class="fc" id="L413">        String actual = stringWriter.toString();</span>
+
+<span class="fc" id="L415">        String expected = OS.NEWLINE + &quot;@Article{,&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L416">                &quot;  note = {some note},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L417">                &quot;}&quot; + OS.NEWLINE;</span>
+
+<span class="fc" id="L419">        assertEquals(expected, actual);</span>
+<span class="fc" id="L420">    }</span>
+
+    @Test
+    public void writeThrowsErrorIfFieldContainsUnbalancedBraces() {
+<span class="fc" id="L424">        StringWriter stringWriter = new StringWriter();</span>
+
+<span class="fc" id="L426">        BibEntry entry = new BibEntry(&quot;article&quot;);</span>
+<span class="fc" id="L427">        entry.setField(&quot;note&quot;, &quot;some text with unbalanced { braces&quot;);</span>
+
+<span class="pc" id="L429">        assertThrows(IOException.class, () -&gt; writer.write(entry, stringWriter, BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L430">    }</span>
+
+    @Test
+    public void roundTripWithPrecedingCommentTest() throws IOException {
+        // @formatter:off
+<span class="fc" id="L435">        String bibtexEntry = &quot;% Some random comment that should stay here&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L436">                &quot;@Article{test,&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L437">                &quot;  Author                   = {Foo Bar},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L438">                &quot;  Journal                  = {International Journal of Something},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L439">                &quot;  Note                     = {some note},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L440">                &quot;  Number                   = {1}&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L441">                &quot;}&quot;;</span>
+        // @formatter:on
+
+        // read in bibtex string
+<span class="fc" id="L445">        ParserResult result = new BibtexParser(importFormatPreferences, fileMonitor).parse(new StringReader(bibtexEntry));</span>
+<span class="fc" id="L446">        Collection&lt;BibEntry&gt; entries = result.getDatabase().getEntries();</span>
+<span class="fc" id="L447">        BibEntry entry = entries.iterator().next();</span>
+
+        //write out bibtex string
+<span class="fc" id="L450">        StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L451">        writer.write(entry, stringWriter, BibDatabaseMode.BIBTEX);</span>
+<span class="fc" id="L452">        String actual = stringWriter.toString();</span>
+
+<span class="fc" id="L454">        assertEquals(bibtexEntry, actual);</span>
+<span class="fc" id="L455">    }</span>
+
+    @Test
+    public void roundTripWithPrecedingCommentAndModificationTest() throws IOException {
+        // @formatter:off
+<span class="fc" id="L460">        String bibtexEntry = &quot;% Some random comment that should stay here&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L461">                &quot;@Article{test,&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L462">                &quot;  Author                   = {Foo Bar},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L463">                &quot;  Journal                  = {International Journal of Something},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L464">                &quot;  Note                     = {some note},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L465">                &quot;  Number                   = {1}&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L466">                &quot;}&quot;;</span>
+        // @formatter:on
+
+        // read in bibtex string
+<span class="fc" id="L470">        ParserResult result = new BibtexParser(importFormatPreferences, fileMonitor).parse(new StringReader(bibtexEntry));</span>
+<span class="fc" id="L471">        Collection&lt;BibEntry&gt; entries = result.getDatabase().getEntries();</span>
+<span class="fc" id="L472">        BibEntry entry = entries.iterator().next();</span>
+
+        // change the entry
+<span class="fc" id="L475">        entry.setField(&quot;author&quot;, &quot;John Doe&quot;);</span>
+
+        //write out bibtex string
+<span class="fc" id="L478">        StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L479">        writer.write(entry, stringWriter, BibDatabaseMode.BIBTEX);</span>
+<span class="fc" id="L480">        String actual = stringWriter.toString();</span>
+        // @formatter:off
+<span class="fc" id="L482">        String expected = &quot;% Some random comment that should stay here&quot; + OS.NEWLINE + OS.NEWLINE +</span>
+<span class="fc" id="L483">                &quot;@Article{test,&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L484">                &quot;  author  = {John Doe},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L485">                &quot;  journal = {International Journal of Something},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L486">                &quot;  number  = {1},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L487">                &quot;  note    = {some note},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L488">                &quot;}&quot; + OS.NEWLINE;</span>
+        // @formatter:on
+
+<span class="fc" id="L491">        assertEquals(expected, actual);</span>
+<span class="fc" id="L492">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

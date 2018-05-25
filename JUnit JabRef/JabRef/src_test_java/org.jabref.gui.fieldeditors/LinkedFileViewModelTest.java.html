@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>LinkedFileViewModelTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.fieldeditors</a> &gt; <span class="el_source">LinkedFileViewModelTest.java</span></div><h1>LinkedFileViewModelTest.java</h1><pre class="source lang-java linenums">package org.jabref.gui.fieldeditors;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Optional;
+
+import javafx.scene.control.Alert.AlertType;
+import javafx.scene.control.ButtonType;
+
+import org.jabref.Globals;
+import org.jabref.gui.DialogService;
+import org.jabref.gui.util.TaskExecutor;
+import org.jabref.logic.journals.JournalAbbreviationLoader;
+import org.jabref.model.database.BibDatabaseContext;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.LinkedFile;
+import org.jabref.model.metadata.FileDirectoryPreferences;
+import org.jabref.preferences.JabRefPreferences;
+
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
+
+<span class="fc" id="L37">public class LinkedFileViewModelTest {</span>
+
+<span class="fc" id="L39">    @Rule public TemporaryFolder tempFolder = new TemporaryFolder();</span>
+<span class="fc" id="L40">    private final JabRefPreferences preferences = mock(JabRefPreferences.class);</span>
+<span class="fc" id="L41">    private final JournalAbbreviationLoader abbreviationLoader = mock(JournalAbbreviationLoader.class);</span>
+    private LinkedFile linkedFile;
+    private BibEntry entry;
+    private BibDatabaseContext databaseContext;
+    private TaskExecutor taskExecutor;
+    private DialogService dialogService;
+<span class="fc" id="L47">    private final FileDirectoryPreferences fileDirectoryPreferences = mock(FileDirectoryPreferences.class);</span>
+
+    @Before
+    public void setUp() {
+<span class="fc" id="L51">        entry = new BibEntry();</span>
+<span class="fc" id="L52">        databaseContext = new BibDatabaseContext();</span>
+<span class="fc" id="L53">        taskExecutor = mock(TaskExecutor.class);</span>
+<span class="fc" id="L54">        dialogService = mock(DialogService.class);</span>
+<span class="fc" id="L55">        Globals.prefs = mock(JabRefPreferences.class);</span>
+<span class="fc" id="L56">        when(Globals.prefs.getDefaultEncoding()).thenReturn(StandardCharsets.UTF_8);</span>
+<span class="fc" id="L57">        FileDirectoryPreferences fileDirectoryPreferences = mock(FileDirectoryPreferences.class);</span>
+<span class="fc" id="L58">        when(Globals.prefs.getFileDirectoryPreferences()).thenReturn(fileDirectoryPreferences);</span>
+<span class="fc" id="L59">    }</span>
+
+    @Test
+    public void deleteWhenFilePathNotPresentReturnsTrue() {
+        // Making this a spy, so we can inject an empty optional without digging into the implementation
+<span class="fc" id="L64">        linkedFile = spy(new LinkedFile(&quot;&quot;, &quot;nonexistent file&quot;, &quot;&quot;));</span>
+<span class="fc" id="L65">        doReturn(Optional.empty()).when(linkedFile).findIn(any(BibDatabaseContext.class), any(FileDirectoryPreferences.class));</span>
+
+<span class="fc" id="L67">        LinkedFileViewModel viewModel = new LinkedFileViewModel(linkedFile, entry, databaseContext, taskExecutor, dialogService, preferences, abbreviationLoader);</span>
+<span class="fc" id="L68">        boolean removed = viewModel.delete(fileDirectoryPreferences);</span>
+
+<span class="fc" id="L70">        assertTrue(removed);</span>
+<span class="fc" id="L71">        verifyZeroInteractions(dialogService); // dialog was never shown</span>
+<span class="fc" id="L72">    }</span>
+
+    @Test
+    public void deleteWhenRemoveChosenReturnsTrue() throws IOException {
+<span class="fc" id="L76">        File tempFile = tempFolder.newFile();</span>
+<span class="fc" id="L77">        linkedFile = new LinkedFile(&quot;&quot;, tempFile.getAbsolutePath(), &quot;&quot;);</span>
+<span class="fc" id="L78">        when(dialogService.showCustomButtonDialogAndWait(</span>
+<span class="fc" id="L79">                any(AlertType.class),</span>
+<span class="fc" id="L80">                anyString(),</span>
+<span class="fc" id="L81">                anyString(),</span>
+<span class="fc" id="L82">                any(ButtonType.class),</span>
+<span class="fc" id="L83">                any(ButtonType.class),</span>
+<span class="fc" id="L84">                any(ButtonType.class))).thenAnswer(invocation -&gt; Optional.of(invocation.getArgument(3))); // first vararg - remove button</span>
+
+<span class="fc" id="L86">        LinkedFileViewModel viewModel = new LinkedFileViewModel(linkedFile, entry, databaseContext, taskExecutor, dialogService, preferences, abbreviationLoader);</span>
+<span class="fc" id="L87">        boolean removed = viewModel.delete(fileDirectoryPreferences);</span>
+
+<span class="fc" id="L89">        assertTrue(removed);</span>
+<span class="fc" id="L90">        assertTrue(tempFile.exists());</span>
+<span class="fc" id="L91">    }</span>
+
+    @Test
+    public void deleteWhenDeleteChosenReturnsTrueAndDeletesFile() throws IOException {
+<span class="fc" id="L95">        File tempFile = tempFolder.newFile();</span>
+<span class="fc" id="L96">        linkedFile = new LinkedFile(&quot;&quot;, tempFile.getAbsolutePath(), &quot;&quot;);</span>
+<span class="fc" id="L97">        when(dialogService.showCustomButtonDialogAndWait(</span>
+<span class="fc" id="L98">                any(AlertType.class),</span>
+<span class="fc" id="L99">                anyString(),</span>
+<span class="fc" id="L100">                anyString(),</span>
+<span class="fc" id="L101">                any(ButtonType.class),</span>
+<span class="fc" id="L102">                any(ButtonType.class),</span>
+<span class="fc" id="L103">                any(ButtonType.class))).thenAnswer(invocation -&gt; Optional.of(invocation.getArgument(4))); // second vararg - delete button</span>
+
+<span class="fc" id="L105">        LinkedFileViewModel viewModel = new LinkedFileViewModel(linkedFile, entry, databaseContext, taskExecutor, dialogService, preferences, abbreviationLoader);</span>
+<span class="fc" id="L106">        boolean removed = viewModel.delete(fileDirectoryPreferences);</span>
+
+<span class="fc" id="L108">        assertTrue(removed);</span>
+<span class="fc" id="L109">        assertFalse(tempFile.exists());</span>
+<span class="fc" id="L110">    }</span>
+
+    @Test
+    public void deleteWhenDeleteChosenAndFileMissingReturnsFalse() throws IOException {
+<span class="fc" id="L114">        linkedFile = new LinkedFile(&quot;&quot;, &quot;!!nonexistent file!!&quot;, &quot;&quot;);</span>
+<span class="fc" id="L115">        when(dialogService.showCustomButtonDialogAndWait(</span>
+<span class="fc" id="L116">                any(AlertType.class),</span>
+<span class="fc" id="L117">                anyString(),</span>
+<span class="fc" id="L118">                anyString(),</span>
+<span class="fc" id="L119">                any(ButtonType.class),</span>
+<span class="fc" id="L120">                any(ButtonType.class),</span>
+<span class="fc" id="L121">                any(ButtonType.class))).thenAnswer(invocation -&gt; Optional.of(invocation.getArgument(4))); // second vararg - delete button</span>
+
+<span class="fc" id="L123">        LinkedFileViewModel viewModel = new LinkedFileViewModel(linkedFile, entry, databaseContext, taskExecutor, dialogService, preferences, abbreviationLoader);</span>
+<span class="fc" id="L124">        boolean removed = viewModel.delete(fileDirectoryPreferences);</span>
+
+<span class="fc" id="L126">        verify(dialogService).showErrorDialogAndWait(anyString(), anyString());</span>
+<span class="fc" id="L127">        assertFalse(removed);</span>
+<span class="fc" id="L128">    }</span>
+
+    @Test
+    public void deleteWhenDialogCancelledReturnsFalse() throws IOException {
+<span class="fc" id="L132">        File tempFile = tempFolder.newFile();</span>
+<span class="fc" id="L133">        linkedFile = new LinkedFile(&quot;desc&quot;, tempFile.getAbsolutePath(), &quot;pdf&quot;);</span>
+<span class="fc" id="L134">        when(dialogService.showCustomButtonDialogAndWait(</span>
+<span class="fc" id="L135">                any(AlertType.class),</span>
+<span class="fc" id="L136">                anyString(),</span>
+<span class="fc" id="L137">                anyString(),</span>
+<span class="fc" id="L138">                any(ButtonType.class),</span>
+<span class="fc" id="L139">                any(ButtonType.class),</span>
+<span class="fc" id="L140">                any(ButtonType.class))).thenAnswer(invocation -&gt; Optional.of(invocation.getArgument(5))); // third vararg - cancel button</span>
+
+<span class="fc" id="L142">        LinkedFileViewModel viewModel = new LinkedFileViewModel(linkedFile, entry, databaseContext, taskExecutor, dialogService, preferences, abbreviationLoader);</span>
+<span class="fc" id="L143">        boolean removed = viewModel.delete(fileDirectoryPreferences);</span>
+
+<span class="fc" id="L145">        assertFalse(removed);</span>
+<span class="fc" id="L146">        assertTrue(tempFile.exists());</span>
+<span class="fc" id="L147">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>CopyFilesDialogController.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.copyfiles</a> &gt; <span class="el_source">CopyFilesDialogController.java</span></div><h1>CopyFilesDialogController.java</h1><pre class="source lang-java linenums">package org.jabref.gui.copyfiles;
+
+import javax.inject.Inject;
+
+import javafx.event.ActionEvent;
+import javafx.fxml.FXML;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Text;
+
+import org.jabref.gui.AbstractController;
+import org.jabref.gui.util.ValueTableCellFactory;
+
+import de.jensd.fx.glyphs.materialdesignicons.MaterialDesignIcon;
+import de.jensd.fx.glyphs.materialdesignicons.utils.MaterialDesignIconFactory;
+
+<span class="nc" id="L18">public class CopyFilesDialogController extends AbstractController&lt;CopyFilesDialogViewModel&gt; {</span>
+
+    @FXML private TableView&lt;CopyFilesResultItemViewModel&gt; tvResult;
+    @FXML private TableColumn&lt;CopyFilesResultItemViewModel, MaterialDesignIcon&gt; colStatus;
+    @FXML private TableColumn&lt;CopyFilesResultItemViewModel, String&gt; colMessage;
+    @FXML private TableColumn&lt;CopyFilesResultItemViewModel, String&gt; colFile;
+
+    @Inject private CopyFilesResultListDependency copyfilesresultlistDependency; //This var must have the same name as the key in the View
+
+    @FXML
+    private void close(@SuppressWarnings(&quot;unused&quot;) ActionEvent event) {
+<span class="nc" id="L29">        getStage().close();</span>
+<span class="nc" id="L30">    }</span>
+
+    @FXML
+    private void initialize() {
+<span class="nc" id="L34">        viewModel = new CopyFilesDialogViewModel(copyfilesresultlistDependency);</span>
+<span class="nc" id="L35">        setupTable();</span>
+<span class="nc" id="L36">    }</span>
+
+    private void setupTable() {
+<span class="nc" id="L39">        colFile.setCellValueFactory(cellData -&gt; cellData.getValue().getFile());</span>
+<span class="nc" id="L40">        colMessage.setCellValueFactory(cellData -&gt; cellData.getValue().getMessage());</span>
+<span class="nc" id="L41">        colStatus.setCellValueFactory(cellData -&gt; cellData.getValue().getIcon());</span>
+
+<span class="nc" id="L43">        colFile.setCellFactory(new ValueTableCellFactory&lt;CopyFilesResultItemViewModel, String&gt;().withText(item -&gt; item).withTooltip(item -&gt; item));</span>
+<span class="nc" id="L44">        colStatus.setCellFactory(new ValueTableCellFactory&lt;CopyFilesResultItemViewModel, MaterialDesignIcon&gt;().withGraphic(item -&gt; {</span>
+
+<span class="nc" id="L46">            Text icon = MaterialDesignIconFactory.get().createIcon(item);</span>
+<span class="nc bnc" id="L47" title="All 2 branches missed.">            if (item == MaterialDesignIcon.CHECK) {</span>
+<span class="nc" id="L48">                icon.setFill(Color.GREEN);</span>
+            }
+<span class="nc bnc" id="L50" title="All 2 branches missed.">            if (item == MaterialDesignIcon.ALERT) {</span>
+<span class="nc" id="L51">                icon.setFill(Color.RED);</span>
+            }
+<span class="nc" id="L53">            return icon;</span>
+        }));
+
+<span class="nc" id="L56">        tvResult.setItems(viewModel.copyFilesResultListProperty());</span>
+<span class="nc" id="L57">        tvResult.setColumnResizePolicy((param) -&gt; true);</span>
+<span class="nc" id="L58">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

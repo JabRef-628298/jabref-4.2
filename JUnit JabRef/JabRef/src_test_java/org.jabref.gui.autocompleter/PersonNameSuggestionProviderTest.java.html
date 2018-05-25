@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>PersonNameSuggestionProviderTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.autocompleter</a> &gt; <span class="el_source">PersonNameSuggestionProviderTest.java</span></div><h1>PersonNameSuggestionProviderTest.java</h1><pre class="source lang-java linenums">package org.jabref.gui.autocompleter;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+
+import org.jabref.model.entry.Author;
+import org.jabref.model.entry.BibEntry;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.jabref.gui.autocompleter.AutoCompleterUtil.getRequest;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+<span class="fc" id="L17">public class PersonNameSuggestionProviderTest {</span>
+
+<span class="fc" id="L19">    private static final Author vassilisKostakos = new Author(&quot;Vassilis&quot;, &quot;V.&quot;, &quot;&quot;, &quot;Kostakos&quot;, &quot;&quot;);</span>
+    private PersonNameSuggestionProvider autoCompleter;
+    private BibEntry entry;
+
+    public void initAutoCompleterWithNullFieldThrowsException() {
+<span class="nc" id="L24">        assertThrows(NullPointerException.class, () -&gt; new PersonNameSuggestionProvider((String) null));</span>
+<span class="nc" id="L25">    }</span>
+
+    @BeforeEach
+    public void setUp() throws Exception {
+<span class="fc" id="L29">        autoCompleter = new PersonNameSuggestionProvider(&quot;field&quot;);</span>
+
+<span class="fc" id="L31">        entry = new BibEntry();</span>
+<span class="fc" id="L32">        entry.setField(&quot;field&quot;, &quot;Vassilis Kostakos&quot;);</span>
+<span class="fc" id="L33">    }</span>
+
+    @Test
+    public void completeWithoutAddingAnythingReturnsNothing() {
+<span class="fc" id="L37">        Collection&lt;Author&gt; result = autoCompleter.call(getRequest((&quot;test&quot;)));</span>
+<span class="fc" id="L38">        assertEquals(Collections.emptyList(), result);</span>
+<span class="fc" id="L39">    }</span>
+
+    @Test
+    public void completeAfterAddingNullReturnsNothing() {
+<span class="fc" id="L43">        autoCompleter.indexEntry(null);</span>
+
+<span class="fc" id="L45">        Collection&lt;Author&gt; result = autoCompleter.call(getRequest((&quot;test&quot;)));</span>
+<span class="fc" id="L46">        assertEquals(Collections.emptyList(), result);</span>
+<span class="fc" id="L47">    }</span>
+
+    @Test
+    public void completeAfterAddingEmptyEntryReturnsNothing() {
+<span class="fc" id="L51">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L52">        autoCompleter.indexEntry(entry);</span>
+
+<span class="fc" id="L54">        Collection&lt;Author&gt; result = autoCompleter.call(getRequest((&quot;test&quot;)));</span>
+<span class="fc" id="L55">        assertEquals(Collections.emptyList(), result);</span>
+<span class="fc" id="L56">    }</span>
+
+    @Test
+    public void completeAfterAddingEntryWithoutFieldReturnsNothing() {
+<span class="fc" id="L60">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L61">        entry.setField(&quot;title&quot;, &quot;testTitle&quot;);</span>
+<span class="fc" id="L62">        autoCompleter.indexEntry(entry);</span>
+
+<span class="fc" id="L64">        Collection&lt;Author&gt; result = autoCompleter.call(getRequest((&quot;test&quot;)));</span>
+<span class="fc" id="L65">        assertEquals(Collections.emptyList(), result);</span>
+<span class="fc" id="L66">    }</span>
+
+    @Test
+    public void completeNameReturnsName() {
+<span class="fc" id="L70">        autoCompleter.indexEntry(entry);</span>
+
+<span class="fc" id="L72">        Collection&lt;Author&gt; result = autoCompleter.call(getRequest((&quot;Kostakos&quot;)));</span>
+<span class="fc" id="L73">        assertEquals(Collections.singletonList(vassilisKostakos), result);</span>
+<span class="fc" id="L74">    }</span>
+
+    @Test
+    public void completeBeginningOfNameReturnsName() {
+<span class="fc" id="L78">        autoCompleter.indexEntry(entry);</span>
+
+<span class="fc" id="L80">        Collection&lt;Author&gt; result = autoCompleter.call(getRequest((&quot;Kosta&quot;)));</span>
+<span class="fc" id="L81">        assertEquals(Collections.singletonList(vassilisKostakos), result);</span>
+<span class="fc" id="L82">    }</span>
+
+    @Test
+    public void completeLowercaseBeginningOfNameReturnsName() {
+<span class="fc" id="L86">        autoCompleter.indexEntry(entry);</span>
+
+<span class="fc" id="L88">        Collection&lt;Author&gt; result = autoCompleter.call(getRequest((&quot;kosta&quot;)));</span>
+<span class="fc" id="L89">        assertEquals(Collections.singletonList(vassilisKostakos), result);</span>
+<span class="fc" id="L90">    }</span>
+
+    @Test
+    public void completeNullThrowsException() {
+<span class="pc" id="L94">        assertThrows(NullPointerException.class, () -&gt; autoCompleter.call(getRequest((null))));</span>
+<span class="fc" id="L95">    }</span>
+
+    @Test
+    public void completeEmptyStringReturnsNothing() {
+<span class="fc" id="L99">        autoCompleter.indexEntry(entry);</span>
+
+<span class="fc" id="L101">        Collection&lt;Author&gt; result = autoCompleter.call(getRequest((&quot;&quot;)));</span>
+<span class="fc" id="L102">        assertEquals(Collections.emptyList(), result);</span>
+<span class="fc" id="L103">    }</span>
+
+    @Test
+    public void completeReturnsMultipleResults() {
+<span class="fc" id="L107">        autoCompleter.indexEntry(entry);</span>
+<span class="fc" id="L108">        BibEntry entryTwo = new BibEntry();</span>
+<span class="fc" id="L109">        entryTwo.setField(&quot;field&quot;, &quot;Kosta&quot;);</span>
+<span class="fc" id="L110">        autoCompleter.indexEntry(entryTwo);</span>
+<span class="fc" id="L111">        Author authorTwo = new Author(&quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;Kosta&quot;, &quot;&quot;);</span>
+
+<span class="fc" id="L113">        Collection&lt;Author&gt; result = autoCompleter.call(getRequest((&quot;Ko&quot;)));</span>
+<span class="fc" id="L114">        assertEquals(Arrays.asList(authorTwo, vassilisKostakos), result);</span>
+<span class="fc" id="L115">    }</span>
+
+    @Test
+    public void completePartOfNameReturnsName() {
+<span class="fc" id="L119">        autoCompleter.indexEntry(entry);</span>
+
+<span class="fc" id="L121">        Collection&lt;Author&gt; result = autoCompleter.call(getRequest((&quot;osta&quot;)));</span>
+<span class="fc" id="L122">        assertEquals(Collections.singletonList(vassilisKostakos), result);</span>
+<span class="fc" id="L123">    }</span>
+
+    @Test
+    public void completeBeginningOfFirstNameReturnsName() {
+<span class="fc" id="L127">        autoCompleter.indexEntry(entry);</span>
+
+<span class="fc" id="L129">        Collection&lt;Author&gt; result = autoCompleter.call(getRequest((&quot;Vas&quot;)));</span>
+<span class="fc" id="L130">        assertEquals(Collections.singletonList(vassilisKostakos), result);</span>
+<span class="fc" id="L131">    }</span>
+
+    @Test
+    public void completeBeginningOfFirstNameReturnsNameWithJr() {
+<span class="fc" id="L135">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L136">        entry.setField(&quot;field&quot;, &quot;Reagle, Jr., Joseph M.&quot;);</span>
+<span class="fc" id="L137">        autoCompleter.indexEntry(entry);</span>
+<span class="fc" id="L138">        Author author = new Author(&quot;Joseph M.&quot;, &quot;J. M.&quot;, &quot;&quot;, &quot;Reagle&quot;, &quot;Jr.&quot;);</span>
+
+<span class="fc" id="L140">        Collection&lt;Author&gt; result = autoCompleter.call(getRequest((&quot;Jos&quot;)));</span>
+<span class="fc" id="L141">        assertEquals(Collections.singletonList(author), result);</span>
+<span class="fc" id="L142">    }</span>
+
+    @Test
+    public void completeBeginningOfFirstNameReturnsNameWithVon() {
+<span class="fc" id="L146">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L147">        entry.setField(&quot;field&quot;, &quot;Eric von Hippel&quot;);</span>
+<span class="fc" id="L148">        autoCompleter.indexEntry(entry);</span>
+<span class="fc" id="L149">        Author author = new Author(&quot;Eric&quot;, &quot;E.&quot;, &quot;von&quot;, &quot;Hippel&quot;, &quot;&quot;);</span>
+
+<span class="fc" id="L151">        Collection&lt;Author&gt; result = autoCompleter.call(getRequest((&quot;Eric&quot;)));</span>
+<span class="fc" id="L152">        assertEquals(Collections.singletonList(author), result);</span>
+<span class="fc" id="L153">    }</span>
+
+    @Test
+    public void completeBeginningOfLastNameReturnsNameWithUmlauts() {
+<span class="fc" id="L157">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L158">        entry.setField(&quot;field&quot;, &quot;Honig Bär&quot;);</span>
+<span class="fc" id="L159">        autoCompleter.indexEntry(entry);</span>
+<span class="fc" id="L160">        Author author = new Author(&quot;Honig&quot;, &quot;H.&quot;, &quot;&quot;, &quot;Bär&quot;, &quot;&quot;);</span>
+
+<span class="fc" id="L162">        Collection&lt;Author&gt; result = autoCompleter.call(getRequest((&quot;Bä&quot;)));</span>
+<span class="fc" id="L163">        assertEquals(Collections.singletonList(author), result);</span>
+<span class="fc" id="L164">    }</span>
+
+    @Test
+    public void completeVonReturnsName() {
+<span class="fc" id="L168">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L169">        entry.setField(&quot;field&quot;, &quot;Eric von Hippel&quot;);</span>
+<span class="fc" id="L170">        autoCompleter.indexEntry(entry);</span>
+<span class="fc" id="L171">        Author author = new Author(&quot;Eric&quot;, &quot;E.&quot;, &quot;von&quot;, &quot;Hippel&quot;, &quot;&quot;);</span>
+
+<span class="fc" id="L173">        Collection&lt;Author&gt; result = autoCompleter.call(getRequest((&quot;von&quot;)));</span>
+<span class="fc" id="L174">        assertEquals(Collections.singletonList(author), result);</span>
+<span class="fc" id="L175">    }</span>
+
+    @Test
+    public void completeBeginningOfFullNameReturnsName() {
+<span class="fc" id="L179">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L180">        entry.setField(&quot;field&quot;, &quot;Vassilis Kostakos&quot;);</span>
+<span class="fc" id="L181">        autoCompleter.indexEntry(entry);</span>
+
+<span class="fc" id="L183">        Collection&lt;Author&gt; result = autoCompleter.call(getRequest((&quot;Kostakos, Va&quot;)));</span>
+<span class="fc" id="L184">        assertEquals(Collections.singletonList(vassilisKostakos), result);</span>
+<span class="fc" id="L185">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

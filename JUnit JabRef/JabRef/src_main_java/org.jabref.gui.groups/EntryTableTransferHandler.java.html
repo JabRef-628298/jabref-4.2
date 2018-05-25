@@ -1,0 +1,383 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>EntryTableTransferHandler.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.groups</a> &gt; <span class="el_source">EntryTableTransferHandler.java</span></div><h1>EntryTableTransferHandler.java</h1><pre class="source lang-java linenums">package org.jabref.gui.groups;
+
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.Transferable;
+import java.awt.datatransfer.UnsupportedFlavorException;
+import java.awt.dnd.DnDConstants;
+import java.awt.event.InputEvent;
+import java.awt.event.MouseEvent;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import javax.swing.JComponent;
+import javax.swing.JTable;
+import javax.swing.TransferHandler;
+
+import org.jabref.JabRefExecutorService;
+import org.jabref.gui.BasePanel;
+import org.jabref.gui.JabRefFrame;
+import org.jabref.gui.externalfiles.DroppedFileHandler;
+import org.jabref.gui.externalfiles.TransferableFileLinkSelection;
+import org.jabref.gui.externalfiletype.ExternalFileType;
+import org.jabref.gui.externalfiletype.ExternalFileTypes;
+import org.jabref.gui.importer.ImportMenuItem;
+import org.jabref.gui.importer.actions.OpenDatabaseAction;
+import org.jabref.gui.maintable.MainTable;
+import org.jabref.logic.net.URLDownload;
+import org.jabref.model.util.FileHelper;
+import org.jabref.pdfimport.PdfImporter;
+import org.jabref.pdfimport.PdfImporter.ImportPdfFilesResult;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class EntryTableTransferHandler extends TransferHandler {
+
+    private static final boolean DROP_ALLOWED = true;
+<span class="fc" id="L48">    private static final Logger LOGGER = LoggerFactory.getLogger(EntryTableTransferHandler.class);</span>
+    private final MainTable entryTable;
+    private final JabRefFrame frame;
+    private final BasePanel panel;
+    private DataFlavor urlFlavor;
+    private final DataFlavor stringFlavor;
+    private boolean draggingFile;
+
+    /**
+     * Construct the transfer handler.
+     *
+     * @param entryTable The table this transfer handler should operate on. This argument is allowed to equal null, in
+     *            which case the transfer handler can assume that it works for a JabRef instance with no databases open,
+     *            attached to the empty tabbed pane.
+     * @param frame The JabRefFrame instance.
+     * @param panel The BasePanel this transferhandler works for.
+     */
+<span class="fc" id="L65">    public EntryTableTransferHandler(MainTable entryTable, JabRefFrame frame, BasePanel panel) {</span>
+<span class="fc" id="L66">        this.entryTable = entryTable;</span>
+<span class="fc" id="L67">        this.frame = frame;</span>
+<span class="fc" id="L68">        this.panel = panel;</span>
+<span class="fc" id="L69">        stringFlavor = DataFlavor.stringFlavor;</span>
+        try {
+<span class="fc" id="L71">            urlFlavor = new DataFlavor(&quot;application/x-java-url; class=java.net.URL&quot;);</span>
+<span class="pc" id="L72">        } catch (ClassNotFoundException e) {</span>
+<span class="nc" id="L73">            LOGGER.info(&quot;Unable to configure drag and drop for main table&quot;, e);</span>
+        }
+<span class="fc" id="L75">    }</span>
+
+    /**
+     * Overridden to indicate which types of drags are supported (only LINK).
+     */
+    @Override
+    public int getSourceActions(JComponent c) {
+<span class="nc" id="L82">        return DnDConstants.ACTION_LINK;</span>
+    }
+
+    /**
+     * This method is called when dragging stuff *from* the table.
+     */
+    @Override
+    public Transferable createTransferable(JComponent c) {
+<span class="nc bnc" id="L90" title="All 2 branches missed.">        if (draggingFile) {</span>
+<span class="nc" id="L91">            draggingFile = false;</span>
+<span class="nc" id="L92">            return new TransferableFileLinkSelection(panel, entryTable.getSelectedEntries());//.getTransferable();</span>
+        } else {
+            /* so we can assume it will never be called if entryTable==null: */
+<span class="nc" id="L95">            return new TransferableEntrySelection(entryTable.getSelectedEntries());</span>
+        }
+    }
+
+    /**
+     * This method is called when stuff is drag to the component.
+     *
+     * Imports the dropped URL or plain text as a new entry in the current library.
+     *
+     */
+    @Override
+    public boolean importData(JComponent comp, Transferable t) {
+
+        // If the drop target is the main table, we want to record which
+        // row the item was dropped on, to identify the entry if needed:
+<span class="nc" id="L110">        int dropRow = -1;</span>
+<span class="nc bnc" id="L111" title="All 2 branches missed.">        if (comp instanceof JTable) {</span>
+<span class="nc" id="L112">            dropRow = ((JTable) comp).getSelectedRow();</span>
+        }
+
+        try {
+
+            // This flavor is used for dragged file links in Windows:
+<span class="nc bnc" id="L118" title="All 2 branches missed.">            if (t.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {</span>
+                // JOptionPane.showMessageDialog(null, &quot;Received
+                // javaFileListFlavor&quot;);
+                @SuppressWarnings(&quot;unchecked&quot;)
+<span class="nc" id="L122">                List&lt;Path&gt; files = ((List&lt;File&gt;) t.getTransferData(DataFlavor.javaFileListFlavor)).stream()</span>
+<span class="nc" id="L123">                        .map(File::toPath).collect(Collectors.toList());</span>
+<span class="nc" id="L124">                return handleDraggedFiles(files, dropRow);</span>
+<span class="nc bnc" id="L125" title="All 2 branches missed.">            } else if (t.isDataFlavorSupported(urlFlavor)) {</span>
+<span class="nc" id="L126">                URL dropLink = (URL) t.getTransferData(urlFlavor);</span>
+<span class="nc" id="L127">                return handleDropTransfer(dropLink);</span>
+<span class="nc bnc" id="L128" title="All 2 branches missed.">            } else if (t.isDataFlavorSupported(stringFlavor)) {</span>
+<span class="nc" id="L129">                String dropStr = (String) t.getTransferData(stringFlavor);</span>
+<span class="nc" id="L130">                LOGGER.debug(&quot;Received stringFlavor: &quot; + dropStr);</span>
+<span class="nc" id="L131">                return handleDropTransfer(dropStr, dropRow);</span>
+            }
+<span class="nc" id="L133">        } catch (IOException ioe) {</span>
+<span class="nc" id="L134">            LOGGER.error(&quot;Failed to read dropped data&quot;, ioe);</span>
+<span class="nc" id="L135">        } catch (UnsupportedFlavorException | ClassCastException ufe) {</span>
+<span class="nc" id="L136">            LOGGER.error(&quot;Drop type error&quot;, ufe);</span>
+        }
+
+        // all supported flavors failed
+<span class="nc" id="L140">        LOGGER.info(&quot;Can't transfer input: &quot;);</span>
+<span class="nc" id="L141">        DataFlavor[] inflavs = t.getTransferDataFlavors();</span>
+<span class="nc bnc" id="L142" title="All 2 branches missed.">        for (DataFlavor inflav : inflavs) {</span>
+<span class="nc" id="L143">            LOGGER.info(&quot;  &quot; + inflav);</span>
+        }
+
+<span class="nc" id="L146">        return false;</span>
+    }
+
+    /**
+     * This method is called to query whether the transfer can be imported.
+     *
+     * Will return true for urls, strings, javaFileLists
+     */
+    @Override
+    public boolean canImport(JComponent comp, DataFlavor[] transferFlavors) {
+        if (!EntryTableTransferHandler.DROP_ALLOWED) {
+            return false;
+        }
+
+        // accept this if any input flavor matches any of our supported flavors
+<span class="nc bnc" id="L161" title="All 2 branches missed.">        for (DataFlavor inflav : transferFlavors) {</span>
+<span class="nc bnc" id="L162" title="All 6 branches missed.">            if (inflav.match(urlFlavor) || inflav.match(stringFlavor) || inflav.match(DataFlavor.javaFileListFlavor)) {</span>
+<span class="nc" id="L163">                return true;</span>
+            }
+        }
+
+        // System.out.println(&quot;drop type forbidden&quot;);
+        // nope, never heard of this type
+<span class="nc" id="L169">        return false;</span>
+    }
+
+    @Override
+    public void exportAsDrag(JComponent comp, InputEvent e, int action) {
+<span class="nc bnc" id="L174" title="All 2 branches missed.">        if (e instanceof MouseEvent) {</span>
+<span class="nc" id="L175">            int columnIndex = entryTable.columnAtPoint(((MouseEvent) e).getPoint());</span>
+<span class="nc" id="L176">            int modelIndex = entryTable.getColumnModel().getColumn(columnIndex).getModelIndex();</span>
+<span class="nc bnc" id="L177" title="All 2 branches missed.">            if (entryTable.isFileColumn(modelIndex)) {</span>
+<span class="nc" id="L178">                LOGGER.info(&quot;Dragging file&quot;);</span>
+<span class="nc" id="L179">                draggingFile = true;</span>
+            }
+        }
+<span class="nc" id="L182">        super.exportAsDrag(comp, e, DnDConstants.ACTION_LINK);</span>
+<span class="nc" id="L183">    }</span>
+
+    @Override
+    protected void exportDone(JComponent source, Transferable data, int action) {
+        // default implementation is OK
+<span class="nc" id="L188">        super.exportDone(source, data, action);</span>
+<span class="nc" id="L189">    }</span>
+
+    @Override
+    public void exportToClipboard(JComponent comp, Clipboard clip, int action) {
+        // default implementation is OK
+<span class="nc" id="L194">        super.exportToClipboard(comp, clip, action);</span>
+<span class="nc" id="L195">    }</span>
+
+    // add-ons -----------------------
+
+    private boolean handleDropTransfer(String dropStr, final int dropRow) throws IOException {
+<span class="nc bnc" id="L200" title="All 2 branches missed.">        if (dropStr.startsWith(&quot;file:&quot;)) {</span>
+            // This appears to be a dragged file link and not a reference
+            // format. Check if we can map this to a set of files:
+<span class="nc bnc" id="L203" title="All 2 branches missed.">            if (handleDraggedFilenames(dropStr, dropRow)) {</span>
+<span class="nc" id="L204">                return true;</span>
+                // If not, handle it in the normal way...
+            }
+<span class="nc bnc" id="L207" title="All 2 branches missed.">        } else if (dropStr.startsWith(&quot;http:&quot;)) {</span>
+            // This is the way URL links are received on OS X and KDE (Gnome?):
+<span class="nc" id="L209">            URL url = new URL(dropStr);</span>
+            // JOptionPane.showMessageDialog(null, &quot;Making URL:
+            // &quot;+url.toString());
+<span class="nc" id="L212">            return handleDropTransfer(url);</span>
+        }
+<span class="nc" id="L214">        File tmpfile = File.createTempFile(&quot;jabrefimport&quot;, &quot;&quot;);</span>
+<span class="nc" id="L215">        tmpfile.deleteOnExit();</span>
+<span class="nc" id="L216">        try (FileWriter fw = new FileWriter(tmpfile)) {</span>
+<span class="nc" id="L217">            fw.write(dropStr);</span>
+<span class="nc bnc" id="L218" title="All 8 branches missed.">        }</span>
+
+        // System.out.println(&quot;importing from &quot; + tmpfile.getAbsolutePath());
+
+<span class="nc" id="L222">        ImportMenuItem importer = new ImportMenuItem(frame, false);</span>
+<span class="nc" id="L223">        importer.automatedImport(Collections.singletonList(tmpfile.getAbsolutePath()));</span>
+
+<span class="nc" id="L225">        return true;</span>
+    }
+
+    /**
+     * Translate a String describing a set of files or URLs dragged into JabRef into a List of File objects, taking care
+     * of URL special characters.
+     *
+     * @param s String describing a set of files or URLs dragged into JabRef
+     * @return a List&lt;File&gt; containing the individual file objects.
+     *
+     */
+    public static List&lt;Path&gt; getFilesFromDraggedFilesString(String s) {
+        // Split into lines:
+<span class="nc" id="L238">        String[] lines = s.replace(&quot;\r&quot;, &quot;&quot;).split(&quot;\n&quot;);</span>
+<span class="nc" id="L239">        List&lt;Path&gt; files = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L240" title="All 2 branches missed.">        for (String line1 : lines) {</span>
+<span class="nc" id="L241">            String line = line1;</span>
+
+            // Try to use url.toURI() to translate URL specific sequences like %20 into
+            // standard characters:
+<span class="nc" id="L245">            File fl = null;</span>
+            try {
+<span class="nc" id="L247">                URL url = new URL(line);</span>
+<span class="nc" id="L248">                fl = new File(url.toURI());</span>
+<span class="nc" id="L249">            } catch (MalformedURLException | URISyntaxException e) {</span>
+<span class="nc" id="L250">                LOGGER.warn(&quot;Could not get file&quot;, e);</span>
+            }
+
+            // Unless an exception was thrown, we should have the sanitized path:
+<span class="nc bnc" id="L254" title="All 2 branches missed.">            if (fl != null) {</span>
+<span class="nc" id="L255">                line = fl.getPath();</span>
+<span class="nc bnc" id="L256" title="All 2 branches missed.">            } else if (line.startsWith(&quot;file:&quot;)) {</span>
+<span class="nc" id="L257">                line = line.substring(5);</span>
+            } else {
+                continue;
+            }
+            // Under Gnome, the link is given as file:///...., so we
+            // need to strip the extra slashes:
+<span class="nc bnc" id="L263" title="All 2 branches missed.">            if (line.startsWith(&quot;//&quot;)) {</span>
+<span class="nc" id="L264">                line = line.substring(2);</span>
+            }
+
+<span class="nc" id="L267">            File f = new File(line);</span>
+<span class="nc bnc" id="L268" title="All 2 branches missed.">            if (f.exists()) {</span>
+<span class="nc" id="L269">                files.add(f.toPath());</span>
+            }
+        }
+<span class="nc" id="L272">        return files;</span>
+    }
+
+    /**
+     * Handle a String describing a set of files or URLs dragged into JabRef.
+     *
+     * @param s String describing a set of files or URLs dragged into JabRef
+     * @param dropRow The row in the table where the files were dragged.
+     * @return success status for the operation
+     *
+     */
+    private boolean handleDraggedFilenames(String s, final int dropRow) {
+
+<span class="nc" id="L285">        return handleDraggedFiles(EntryTableTransferHandler.getFilesFromDraggedFilesString(s), dropRow);</span>
+
+    }
+
+    /**
+     * Handle a List containing File objects for a set of files to import.
+     *
+     * @param files A List containing File instances pointing to files.
+     * @param dropRow @param dropRow The row in the table where the files were dragged.
+     * @return success status for the operation
+     */
+    private boolean handleDraggedFiles(List&lt;Path&gt; files, final int dropRow) {
+<span class="nc" id="L297">        final List&lt;String&gt; fileNames = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L298" title="All 2 branches missed.">        for (Path file : files) {</span>
+<span class="nc" id="L299">            fileNames.add(file.toAbsolutePath().toString());</span>
+        }
+        // Try to load BIB files normally, and import the rest into the current
+        // database.
+        // This process must be spun off into a background thread:
+<span class="nc" id="L304">        JabRefExecutorService.INSTANCE.execute(() -&gt; {</span>
+<span class="nc" id="L305">            final ImportPdfFilesResult importRes = new PdfImporter(frame, panel, entryTable, dropRow)</span>
+<span class="nc" id="L306">                    .importPdfFiles(fileNames);</span>
+<span class="nc bnc" id="L307" title="All 2 branches missed.">            if (!importRes.getNoPdfFiles().isEmpty()) {</span>
+<span class="nc" id="L308">                loadOrImportFiles(importRes.getNoPdfFiles(), dropRow);</span>
+            }
+<span class="nc" id="L310">        });</span>
+
+<span class="nc" id="L312">        return true;</span>
+    }
+
+    /**
+     * Take a set of filenames. Those with names indicating BIB files are opened as such if possible. All other files we
+     * will attempt to import into the current library.
+     *
+     * @param fileNames The names of the files to open.
+     * @param dropRow success status for the operation
+     */
+    private void loadOrImportFiles(List&lt;String&gt; fileNames, int dropRow) {
+
+<span class="nc" id="L324">        OpenDatabaseAction openAction = new OpenDatabaseAction(frame, false);</span>
+<span class="nc" id="L325">        List&lt;String&gt; notBibFiles = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L326">        List&lt;String&gt; bibFiles = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L327" title="All 2 branches missed.">        for (String fileName : fileNames) {</span>
+            // Find the file's extension, if any:
+<span class="nc" id="L329">            Optional&lt;String&gt; extension = FileHelper.getFileExtension(fileName);</span>
+            Optional&lt;ExternalFileType&gt; fileType;
+
+<span class="nc bnc" id="L332" title="All 4 branches missed.">            if (extension.isPresent() &amp;&amp; &quot;bib&quot;.equals(extension.get())) {</span>
+                // we assume that it is a BibTeX file.
+                // When a user wants to import something with file extension &quot;bib&quot;, but which is not a BibTeX file, he should use &quot;file -&gt; import&quot;
+<span class="nc" id="L335">                bibFiles.add(fileName);</span>
+<span class="nc" id="L336">                continue;</span>
+            }
+
+<span class="nc" id="L339">            fileType = ExternalFileTypes.getInstance().getExternalFileTypeByExt(extension.orElse(&quot;&quot;));</span>
+            /*
+             * This is a linkable file. If the user dropped it on an entry, we
+             * should offer options for autolinking to this files:
+             *
+             * TODO we should offer an option to highlight the row the user is on too.
+             */
+<span class="nc bnc" id="L346" title="All 4 branches missed.">            if ((fileType.isPresent()) &amp;&amp; (dropRow &gt;= 0)) {</span>
+
+                /*
+                 * TODO: make this an instance variable?
+                 */
+<span class="nc" id="L351">                DroppedFileHandler dfh = new DroppedFileHandler(frame, panel);</span>
+<span class="nc" id="L352">                dfh.handleDroppedfile(fileName, fileType.get(), entryTable, dropRow);</span>
+
+<span class="nc" id="L354">                continue;</span>
+            }
+<span class="nc" id="L356">            notBibFiles.add(fileName);</span>
+        }
+
+<span class="nc" id="L359">        openAction.openFilesAsStringList(bibFiles, true);</span>
+
+<span class="nc bnc" id="L361" title="All 2 branches missed.">        if (!notBibFiles.isEmpty()) {</span>
+            // Import into new if entryTable==null, otherwise into current
+            // database:
+<span class="nc bnc" id="L364" title="All 2 branches missed.">            ImportMenuItem importer = new ImportMenuItem(frame, entryTable == null);</span>
+<span class="nc" id="L365">            importer.automatedImport(notBibFiles);</span>
+        }
+<span class="nc" id="L367">    }</span>
+
+    private boolean handleDropTransfer(URL dropLink) throws IOException {
+<span class="nc" id="L370">        File tmpfile = File.createTempFile(&quot;jabrefimport&quot;, &quot;&quot;);</span>
+<span class="nc" id="L371">        tmpfile.deleteOnExit();</span>
+
+<span class="nc" id="L373">        new URLDownload(dropLink).toFile(tmpfile.toPath());</span>
+
+        // Import into new if entryTable==null, otherwise into current library:
+<span class="nc bnc" id="L376" title="All 2 branches missed.">        ImportMenuItem importer = new ImportMenuItem(frame, entryTable == null);</span>
+<span class="nc" id="L377">        importer.automatedImport(Collections.singletonList(tmpfile.getAbsolutePath()));</span>
+
+<span class="nc" id="L379">        return true;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

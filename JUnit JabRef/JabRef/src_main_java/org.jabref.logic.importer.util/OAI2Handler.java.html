@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>OAI2Handler.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.importer.util</a> &gt; <span class="el_source">OAI2Handler.java</span></div><h1>OAI2Handler.java</h1><pre class="source lang-java linenums">package org.jabref.logic.importer.util;
+
+import java.util.Optional;
+
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.FieldName;
+
+import org.xml.sax.Attributes;
+import org.xml.sax.SAXException;
+import org.xml.sax.helpers.DefaultHandler;
+
+/**
+ * SAX-Handler to parse OAI2-xml files.
+ *
+ * @author Ulrich St&amp;auml;rk
+ * @author Christian Kopf
+ * @author Christopher Oezbek
+ */
+public class OAI2Handler extends DefaultHandler {
+
+    private final BibEntry entry;
+
+    private StringBuilder authors;
+
+    private String keyname;
+
+    private String forenames;
+
+    private StringBuilder characters;
+
+
+<span class="fc" id="L32">    public OAI2Handler(BibEntry be) {</span>
+<span class="fc" id="L33">        this.entry = be;</span>
+<span class="fc" id="L34">    }</span>
+
+    @Override
+    public void startDocument() throws SAXException {
+<span class="fc" id="L38">        authors = new StringBuilder();</span>
+<span class="fc" id="L39">    }</span>
+
+    @Override
+    public void characters(char[] ch, int start, int length) throws SAXException {
+<span class="fc" id="L43">        characters.append(ch, start, length);</span>
+<span class="fc" id="L44">    }</span>
+
+    @Override
+    public void startElement(String uri, String localName, String qualifiedName,
+            Attributes attributes) throws SAXException {
+
+<span class="fc" id="L50">        characters = new StringBuilder();</span>
+<span class="fc" id="L51">    }</span>
+
+    @Override
+    public void endElement(String uri, String localName, String qualifiedName) throws SAXException {
+
+<span class="fc" id="L56">        String content = characters.toString();</span>
+
+<span class="pc bpc" id="L58" title="1 of 2 branches missed.">        if (&quot;error&quot;.equals(qualifiedName)) {</span>
+<span class="nc" id="L59">            throw new RuntimeException(content);</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">        } else if (&quot;id&quot;.equals(qualifiedName)) {</span>
+<span class="fc" id="L61">            entry.setField(FieldName.EPRINT, content);</span>
+<span class="fc bfc" id="L62" title="All 2 branches covered.">        } else if (&quot;keyname&quot;.equals(qualifiedName)) {</span>
+<span class="fc" id="L63">            keyname = content;</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">        } else if (&quot;forenames&quot;.equals(qualifiedName)) {</span>
+<span class="fc" id="L65">            forenames = content;</span>
+<span class="fc bfc" id="L66" title="All 2 branches covered.">        } else if (&quot;journal-ref&quot;.equals(qualifiedName)) {</span>
+<span class="fc" id="L67">            String journal = content.replaceFirst(&quot;[0-9].*&quot;, &quot;&quot;);</span>
+<span class="fc" id="L68">            entry.setField(FieldName.JOURNAL, journal);</span>
+<span class="fc" id="L69">            String volume = content.replaceFirst(journal, &quot;&quot;);</span>
+<span class="fc" id="L70">            volume = volume.replaceFirst(&quot; .*&quot;, &quot;&quot;);</span>
+<span class="fc" id="L71">            entry.setField(FieldName.VOLUME, volume);</span>
+<span class="fc" id="L72">            String year = content.replaceFirst(&quot;.*?\\(&quot;, &quot;&quot;);</span>
+<span class="fc" id="L73">            year = year.replaceFirst(&quot;\\).*&quot;, &quot;&quot;);</span>
+<span class="fc" id="L74">            entry.setField(FieldName.YEAR, year);</span>
+<span class="fc" id="L75">            String pages = content.replaceFirst(journal, &quot;&quot;);</span>
+<span class="fc" id="L76">            pages = pages.replaceFirst(volume, &quot;&quot;);</span>
+<span class="fc" id="L77">            pages = pages.replaceFirst(&quot;\\(&quot; + year + &quot;\\)&quot;, &quot;&quot;);</span>
+<span class="fc" id="L78">            pages = pages.replace(&quot; &quot;, &quot;&quot;);</span>
+<span class="fc" id="L79">            entry.setField(FieldName.PAGES, pages);</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">        } else if (&quot;datestamp&quot;.equals(qualifiedName)) {</span>
+<span class="fc" id="L81">            Optional&lt;String&gt; year = entry.getField(FieldName.YEAR);</span>
+<span class="pc bpc" id="L82" title="3 of 4 branches missed.">            if (!year.isPresent() || year.get().isEmpty()) {</span>
+<span class="fc" id="L83">                entry.setField(FieldName.YEAR, content.replaceFirst(&quot;-.*&quot;, &quot;&quot;));</span>
+            }
+<span class="fc bfc" id="L85" title="All 2 branches covered.">        } else if (&quot;title&quot;.equals(qualifiedName)) {</span>
+<span class="fc" id="L86">            entry.setField(FieldName.TITLE, content);</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">        } else if (&quot;abstract&quot;.equals(qualifiedName)) {</span>
+<span class="fc" id="L88">            entry.setField(FieldName.ABSTRACT, content);</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">        } else if (&quot;comments&quot;.equals(qualifiedName)) {</span>
+<span class="fc" id="L90">            entry.setField(FieldName.COMMENT, content);</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">        } else if (&quot;report-no&quot;.equals(qualifiedName)) {</span>
+<span class="fc" id="L92">            entry.setField(FieldName.REPORTNO, content);</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">        } else if (&quot;doi&quot;.equals(qualifiedName)) {</span>
+<span class="fc" id="L94">          entry.setField(FieldName.DOI, content);</span>
+<span class="fc bfc" id="L95" title="All 2 branches covered.">        } else if (&quot;author&quot;.equals(qualifiedName)) {</span>
+<span class="fc" id="L96">            String author = forenames + &quot; &quot; + keyname;</span>
+<span class="fc bfc" id="L97" title="All 2 branches covered.">            if (authors.length() &gt; 0) {</span>
+<span class="fc" id="L98">                authors.append(&quot; and &quot;);</span>
+            }
+<span class="fc" id="L100">            authors.append(author);</span>
+        }
+<span class="fc" id="L102">    }</span>
+
+    @Override
+    public void endDocument() throws SAXException {
+<span class="fc" id="L106">        entry.setField(FieldName.AUTHOR, authors.toString());</span>
+<span class="fc" id="L107">    }</span>
+
+    public static String correctLineBreaks(String s) {
+<span class="fc" id="L110">        String result = s.replaceAll(&quot;\\n(?!\\s*\\n)&quot;, &quot; &quot;);</span>
+<span class="fc" id="L111">        result = result.replaceAll(&quot;\\s*\\n\\s*&quot;, &quot;\n&quot;);</span>
+<span class="fc" id="L112">        return result.replaceAll(&quot; {2,}&quot;, &quot; &quot;).replaceAll(&quot;(^\\s*|\\s+$)&quot;, &quot;&quot;);</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>PdfAnnotationImporterTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.pdf</a> &gt; <span class="el_source">PdfAnnotationImporterTest.java</span></div><h1>PdfAnnotationImporterTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.pdf;
+
+import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.Optional;
+
+import org.jabref.model.pdf.FileAnnotation;
+import org.jabref.model.pdf.FileAnnotationType;
+
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+
+<span class="fc" id="L16">public class PdfAnnotationImporterTest {</span>
+
+<span class="fc" id="L18">    private final AnnotationImporter importer = new PdfAnnotationImporter();</span>
+
+    @Test
+    public void invalidPath() {
+<span class="fc" id="L22">        assertEquals(Collections.emptyList(), importer.importAnnotations(Paths.get(&quot;/asdf/does/not/exist.pdf&quot;)));</span>
+<span class="fc" id="L23">    }</span>
+
+    @Test
+    public void invalidDirectory() {
+<span class="fc" id="L27">        assertEquals(Collections.emptyList(), importer.importAnnotations(Paths.get(&quot;src/test/resources/pdfs&quot;)));</span>
+<span class="fc" id="L28">    }</span>
+
+    @Test
+    public void invalidDocumentType() {
+<span class="fc" id="L32">        assertEquals(Collections.emptyList(), importer.importAnnotations(Paths.get(&quot;src/test/resources/pdfs/write-protected.docx&quot;)));</span>
+<span class="fc" id="L33">    }</span>
+
+    @Test
+    public void noAnnotationsWriteProtected() {
+<span class="fc" id="L37">        assertEquals(Collections.emptyList(), importer.importAnnotations(Paths.get(&quot;src/test/resources/pdfs/write-protected.pdf&quot;)));</span>
+<span class="fc" id="L38">    }</span>
+
+    @Test
+    public void noAnnotationsEncrypted() {
+<span class="fc" id="L42">        assertEquals(Collections.emptyList(), importer.importAnnotations(Paths.get(&quot;src/test/resources/pdfs/encrypted.pdf&quot;)));</span>
+<span class="fc" id="L43">    }</span>
+
+    @Test
+    public void twoAnnotationsThesisExample() {
+<span class="fc" id="L47">        assertEquals(2, importer.importAnnotations(Paths.get(&quot;src/test/resources/pdfs/thesis-example.pdf&quot;)).size());</span>
+<span class="fc" id="L48">    }</span>
+
+    @Test
+    public void noAnnotationsMinimal() {
+<span class="fc" id="L52">        assertEquals(Collections.emptyList(), importer.importAnnotations(Paths.get(&quot;src/test/resources/pdfs/minimal.pdf&quot;)));</span>
+<span class="fc" id="L53">    }</span>
+
+    @Test
+    public void inlineNoteMinimal() {
+<span class="fc" id="L57">        final FileAnnotation expected = new FileAnnotation(&quot;Linus Dietz&quot;, LocalDateTime.of(2017, 3, 12, 20, 25), 1,</span>
+<span class="fc" id="L58">                &quot;inline note annotation&quot;, FileAnnotationType.FREETEXT, Optional.empty());</span>
+
+<span class="fc" id="L60">        assertEquals(Collections.singletonList(expected),</span>
+<span class="fc" id="L61">                importer.importAnnotations(Paths.get(&quot;src/test/resources/pdfs/minimal-inlinenote.pdf&quot;)));</span>
+<span class="fc" id="L62">    }</span>
+
+    @Test
+    public void popupNoteMinimal() {
+<span class="fc" id="L66">        final FileAnnotation expected = new FileAnnotation(&quot;Linus Dietz&quot;, LocalDateTime.of(2017, 3, 12, 20, 17, 24), 1,</span>
+<span class="fc" id="L67">                &quot;A simple pop-up note&quot;, FileAnnotationType.TEXT, Optional.empty());</span>
+
+<span class="fc" id="L69">        assertEquals(Collections.singletonList(expected),</span>
+<span class="fc" id="L70">                importer.importAnnotations(Paths.get(&quot;src/test/resources/pdfs/minimal-popup.pdf&quot;)));</span>
+<span class="fc" id="L71">    }</span>
+
+    @Test
+    public void highlightMinimalFoxit() {
+<span class="fc" id="L75">        final FileAnnotation expectedLinkedAnnotation = new FileAnnotation(&quot;lynyus&quot;, LocalDateTime.of(2017, 5, 31, 15, 16, 1), 1,</span>
+<span class="fc" id="L76">                &quot;this is a foxit highlight&quot;, FileAnnotationType.HIGHLIGHT, Optional.empty());</span>
+<span class="fc" id="L77">        final FileAnnotation expected = new FileAnnotation(&quot;lynyus&quot;, LocalDateTime.of(2017, 5, 31, 15, 16, 1), 1,</span>
+<span class="fc" id="L78">                &quot;Hello&quot;, FileAnnotationType.HIGHLIGHT, Optional.of(expectedLinkedAnnotation));</span>
+<span class="fc" id="L79">        assertEquals(Collections.singletonList(expected),</span>
+<span class="fc" id="L80">                importer.importAnnotations(Paths.get(&quot;src/test/resources/pdfs/minimal-foxithighlight.pdf&quot;)));</span>
+<span class="fc" id="L81">    }</span>
+
+    @Test
+    public void highlightNoNoteMinimal() {
+<span class="fc" id="L85">        final FileAnnotation expectedLinkedAnnotation = new FileAnnotation(&quot;Linus Dietz&quot;, LocalDateTime.of(2017, 3, 12, 20, 28, 39), 1,</span>
+<span class="fc" id="L86">                &quot;&quot;, FileAnnotationType.HIGHLIGHT, Optional.empty());</span>
+<span class="fc" id="L87">        final FileAnnotation expected = new FileAnnotation(&quot;Linus Dietz&quot;, LocalDateTime.of(2017, 3, 12, 20, 28, 39), 1,</span>
+<span class="fc" id="L88">                &quot;World&quot;, FileAnnotationType.HIGHLIGHT, Optional.of(expectedLinkedAnnotation));</span>
+
+<span class="fc" id="L90">        assertEquals(Collections.singletonList(expected),</span>
+<span class="fc" id="L91">                importer.importAnnotations(Paths.get(&quot;src/test/resources/pdfs/minimal-highlight-no-note.pdf&quot;)));</span>
+<span class="fc" id="L92">    }</span>
+
+    @Test
+    public void squigglyWithNoteMinimal() {
+<span class="fc" id="L96">        final FileAnnotation expectedLinkedAnnotation = new FileAnnotation(&quot;lynyus&quot;, LocalDateTime.of(2017, 6, 1, 2, 40, 25), 1,</span>
+<span class="fc" id="L97">                &quot;Squiggly note&quot;, FileAnnotationType.SQUIGGLY, Optional.empty());</span>
+<span class="fc" id="L98">        final FileAnnotation expected = new FileAnnotation(&quot;lynyus&quot;, LocalDateTime.of(2017, 6, 1, 2, 40, 25), 1,</span>
+<span class="fc" id="L99">                &quot;ello&quot;, FileAnnotationType.SQUIGGLY, Optional.of(expectedLinkedAnnotation));</span>
+
+<span class="fc" id="L101">        assertEquals(Collections.singletonList(expected),</span>
+<span class="fc" id="L102">                importer.importAnnotations(Paths.get(&quot;src/test/resources/pdfs/minimal-squiggly.pdf&quot;)));</span>
+<span class="fc" id="L103">    }</span>
+
+    @Test
+    public void strikeoutWithNoteMinimal() {
+<span class="fc" id="L107">        final FileAnnotation expectedLinkedAnnotation = new FileAnnotation(&quot;lynyus&quot;, LocalDateTime.of(2017, 6, 1, 13, 2, 3), 1,</span>
+<span class="fc" id="L108">                &quot;striked out&quot;, FileAnnotationType.STRIKEOUT, Optional.empty());</span>
+<span class="fc" id="L109">        final FileAnnotation expected = new FileAnnotation(&quot;lynyus&quot;, LocalDateTime.of(2017, 6, 1, 13, 2, 3), 1,</span>
+<span class="fc" id="L110">                &quot;World&quot;, FileAnnotationType.STRIKEOUT, Optional.of(expectedLinkedAnnotation));</span>
+
+<span class="fc" id="L112">        assertEquals(Collections.singletonList(expected),</span>
+<span class="fc" id="L113">                importer.importAnnotations(Paths.get(&quot;src/test/resources/pdfs/minimal-strikeout.pdf&quot;)));</span>
+<span class="fc" id="L114">    }</span>
+
+    @Test
+    public void highlightWithNoteMinimal() {
+<span class="fc" id="L118">        final FileAnnotation expectedLinkedAnnotation = new FileAnnotation(&quot;Linus Dietz&quot;, LocalDateTime.of(2017, 3, 12, 20, 32, 2), 1,</span>
+<span class="fc" id="L119">                &quot;linked note to highlight&quot;, FileAnnotationType.HIGHLIGHT, Optional.empty());</span>
+<span class="fc" id="L120">        final FileAnnotation expected = new FileAnnotation(&quot;Linus Dietz&quot;, LocalDateTime.of(2017, 3, 12, 20, 32, 2), 1,</span>
+<span class="fc" id="L121">                &quot;World&quot;, FileAnnotationType.HIGHLIGHT, Optional.of(expectedLinkedAnnotation));</span>
+
+<span class="fc" id="L123">        assertEquals(Collections.singletonList(expected),</span>
+<span class="fc" id="L124">                importer.importAnnotations(Paths.get(&quot;src/test/resources/pdfs/minimal-highlight-with-note.pdf&quot;)));</span>
+<span class="fc" id="L125">    }</span>
+
+    @Test
+    public void underlineWithNoteMinimal() {
+<span class="fc" id="L129">        final FileAnnotation expectedLinkedAnnotation = new FileAnnotation(&quot;Linus Dietz&quot;, LocalDateTime.of(2017, 3, 12, 20, 36, 9), 1,</span>
+<span class="fc" id="L130">                &quot;underlined&quot;, FileAnnotationType.UNDERLINE, Optional.empty());</span>
+<span class="fc" id="L131">        final FileAnnotation expected = new FileAnnotation(&quot;Linus Dietz&quot;, LocalDateTime.of(2017, 3, 12, 20, 36, 9), 1,</span>
+<span class="fc" id="L132">                &quot;Hello&quot;, FileAnnotationType.UNDERLINE, Optional.of(expectedLinkedAnnotation));</span>
+
+<span class="fc" id="L134">        assertEquals(Collections.singletonList(expected),</span>
+<span class="fc" id="L135">                importer.importAnnotations(Paths.get(&quot;src/test/resources/pdfs/minimal-underline.pdf&quot;)));</span>
+<span class="fc" id="L136">    }</span>
+
+    @Test
+    public void polygonNoNoteMinimal() {
+<span class="fc" id="L140">        final FileAnnotation expected = new FileAnnotation(&quot;Linus Dietz&quot;, LocalDateTime.of(2017, 3, 16, 9, 21, 1), 1,</span>
+<span class="fc" id="L141">                &quot;polygon annotation&quot;, FileAnnotationType.POLYGON, Optional.empty());</span>
+
+<span class="fc" id="L143">        assertEquals(Collections.singletonList(expected),</span>
+<span class="fc" id="L144">                importer.importAnnotations(Paths.get(&quot;src/test/resources/pdfs/minimal-polygon.pdf&quot;)));</span>
+<span class="fc" id="L145">    }</span>
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

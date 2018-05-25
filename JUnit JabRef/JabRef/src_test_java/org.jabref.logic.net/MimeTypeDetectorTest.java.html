@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MimeTypeDetectorTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.net</a> &gt; <span class="el_source">MimeTypeDetectorTest.java</span></div><h1>MimeTypeDetectorTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.net;
+
+import java.io.IOException;
+import java.net.URISyntaxException;
+
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
+import org.junit.Rule;
+import org.junit.Test;
+
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.any;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.head;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+<span class="fc" id="L19">public class MimeTypeDetectorTest {</span>
+
+<span class="fc" id="L21">    @Rule public WireMockRule wireMockRule = new WireMockRule();</span>
+
+    @Test
+    public void handlePermanentRedirections() throws IOException {
+<span class="fc" id="L25">        String redirectedUrl = &quot;http://localhost:8080/redirection&quot;;</span>
+
+<span class="fc" id="L27">        stubFor(any(urlEqualTo(&quot;/redirection&quot;))</span>
+<span class="fc" id="L28">                .willReturn(</span>
+<span class="fc" id="L29">                        aResponse()</span>
+<span class="fc" id="L30">                                .withStatus(301)</span>
+<span class="fc" id="L31">                                .withHeader(&quot;Location&quot;, &quot;http://docs.oasis-open.org/wsbpel/2.0/OS/wsbpel-v2.0-OS.pdf&quot;)</span>
+                )
+        );
+
+<span class="fc" id="L35">        assertTrue(new URLDownload(redirectedUrl).isMimeType(&quot;application/pdf&quot;));</span>
+<span class="fc" id="L36">    }</span>
+
+    @Test
+    public void beFalseForUnreachableUrl() throws IOException {
+<span class="fc" id="L40">        String invalidUrl = &quot;http://idontknowthisurlforsure.de&quot;;</span>
+<span class="fc" id="L41">        assertFalse(new URLDownload(invalidUrl).isMimeType(&quot;application/pdf&quot;));</span>
+<span class="fc" id="L42">    }</span>
+
+    @Test
+    public void beTrueForPdfMimeType() throws IOException {
+<span class="fc" id="L46">        String pdfUrl = &quot;http://docs.oasis-open.org/wsbpel/2.0/OS/wsbpel-v2.0-OS.pdf&quot;;</span>
+<span class="fc" id="L47">        assertTrue(new URLDownload(pdfUrl).isMimeType(&quot;application/pdf&quot;));</span>
+<span class="fc" id="L48">    }</span>
+
+    @Test
+    public void beTrueForLocalPdfUri() throws URISyntaxException, IOException {
+<span class="fc" id="L52">        String localPath = MimeTypeDetectorTest.class.getResource(&quot;empty.pdf&quot;).toURI().toASCIIString();</span>
+<span class="fc" id="L53">        assertTrue(new URLDownload(localPath).isMimeType(&quot;application/pdf&quot;));</span>
+<span class="fc" id="L54">    }</span>
+
+    @Test
+    public void beTrueForPDFMimeTypeVariations() throws IOException {
+<span class="fc" id="L58">        String mimeTypeVariation = &quot;http://localhost:8080/mimevariation&quot;;</span>
+
+<span class="fc" id="L60">        stubFor(any(urlEqualTo(&quot;/mimevariation&quot;))</span>
+<span class="fc" id="L61">                .willReturn(</span>
+<span class="fc" id="L62">                        aResponse().withHeader(&quot;Content-Type&quot;, &quot;application/pdf;charset=ISO-8859-1&quot;)</span>
+                )
+        );
+
+<span class="fc" id="L66">        assertTrue(new URLDownload(mimeTypeVariation).isMimeType(&quot;application/pdf&quot;));</span>
+<span class="fc" id="L67">    }</span>
+
+    @Test
+    public void beAbleToUseHeadRequest() throws IOException {
+<span class="fc" id="L71">        String mimeTypeVariation = &quot;http://localhost:8080/mimevariation&quot;;</span>
+
+<span class="fc" id="L73">        stubFor(head(urlEqualTo(&quot;/mimevariation&quot;))</span>
+<span class="fc" id="L74">                .willReturn(</span>
+<span class="fc" id="L75">                        aResponse().withHeader(&quot;Content-Type&quot;, &quot;application/pdf;charset=ISO-8859-1&quot;)</span>
+                )
+        );
+
+<span class="fc" id="L79">        assertTrue(new URLDownload(mimeTypeVariation).isMimeType(&quot;application/pdf&quot;));</span>
+<span class="fc" id="L80">    }</span>
+
+    @Test
+    public void beAbleToUseGetRequest() throws IOException {
+<span class="fc" id="L84">        String mimeTypeVariation = &quot;http://localhost:8080/mimevariation&quot;;</span>
+
+<span class="fc" id="L86">        stubFor(head(urlEqualTo(&quot;/mimevariation&quot;))</span>
+<span class="fc" id="L87">                .willReturn(</span>
+<span class="fc" id="L88">                        aResponse().withStatus(404)</span>
+                )
+        );
+<span class="fc" id="L91">        stubFor(get(urlEqualTo(&quot;/mimevariation&quot;))</span>
+<span class="fc" id="L92">                .willReturn(</span>
+<span class="fc" id="L93">                        aResponse().withHeader(&quot;Content-Type&quot;, &quot;application/pdf;charset=ISO-8859-1&quot;)</span>
+                )
+        );
+
+<span class="fc" id="L97">        assertTrue(new URLDownload(mimeTypeVariation).isMimeType(&quot;application/pdf&quot;));</span>
+<span class="fc" id="L98">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>AuthorLastFirstAbbreviatorTester.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.layout.format</a> &gt; <span class="el_source">AuthorLastFirstAbbreviatorTester.java</span></div><h1>AuthorLastFirstAbbreviatorTester.java</h1><pre class="source lang-java linenums">package org.jabref.logic.layout.format;
+
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
+
+/**
+ * Test case  that verifies the functionalities of the
+ * formater AuthorLastFirstAbbreviator.
+ *
+ * @author Carlos Silla
+ * @author Christopher Oezbek &lt;oezi@oezi.de&gt;
+ */
+<span class="fc" id="L13">public class AuthorLastFirstAbbreviatorTester {</span>
+
+    /**
+     * Verifies the Abbreviation of one single author with a simple name.
+     * &lt;p/&gt;
+     * Ex: Lastname, Name
+     */
+    @Test
+    public void testOneAuthorSimpleName() {
+<span class="nc" id="L22">        assertEquals(&quot;Abbreviator Test&quot;, &quot;Lastname, N.&quot;, abbreviate(&quot;Lastname, Name&quot;));</span>
+<span class="nc" id="L23">    }</span>
+
+    /**
+     * Verifies the Abbreviation of one single author with a common name.
+     * &lt;p/&gt;
+     * Ex: Lastname, Name Middlename
+     */
+    @Test
+    public void testOneAuthorCommonName() {
+<span class="nc" id="L32">        assertEquals(&quot;Abbreviator Test&quot;, &quot;Lastname, N. M.&quot;, abbreviate(&quot;Lastname, Name Middlename&quot;));</span>
+<span class="nc" id="L33">    }</span>
+
+    /**
+     * Verifies the Abbreviation of two single with a common name.
+     * &lt;p/&gt;
+     * Ex: Lastname, Name Middlename
+     */
+    @Test
+    public void testTwoAuthorsCommonName() {
+<span class="fc" id="L42">        String result = abbreviate(&quot;Lastname, Name Middlename and Sobrenome, Nome Nomedomeio&quot;);</span>
+<span class="fc" id="L43">        String expectedResult = &quot;Lastname, N. M. and Sobrenome, N. N.&quot;;</span>
+
+<span class="nc" id="L45">        assertEquals(&quot;Abbreviator Test&quot;, expectedResult, result);</span>
+<span class="nc" id="L46">    }</span>
+
+    @Test
+    public void testJrAuthor() {
+<span class="fc" id="L50">        assertEquals(&quot;Other, Jr., A. N.&quot;, abbreviate(&quot;Other, Jr., Anthony N.&quot;));</span>
+<span class="fc" id="L51">    }</span>
+
+    @Test
+    public void testFormat() {
+<span class="fc" id="L55">        assertEquals(&quot;&quot;, abbreviate(&quot;&quot;));</span>
+<span class="fc" id="L56">        assertEquals(&quot;Someone, V. S.&quot;, abbreviate(&quot;Someone, Van Something&quot;));</span>
+<span class="fc" id="L57">        assertEquals(&quot;Smith, J.&quot;, abbreviate(&quot;Smith, John&quot;));</span>
+<span class="fc" id="L58">        assertEquals(&quot;von Neumann, J. and Smith, J. and Black Brown, P.&quot;,</span>
+<span class="fc" id="L59">                abbreviate(&quot;von Neumann, John and Smith, John and Black Brown, Peter&quot;));</span>
+<span class="fc" id="L60">    }</span>
+
+    protected String abbreviate(String name) {
+<span class="fc" id="L63">        return new AuthorLastFirstAbbreviator().format(name);</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

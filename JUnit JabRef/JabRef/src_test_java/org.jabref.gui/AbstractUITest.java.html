@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>AbstractUITest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui</a> &gt; <span class="el_source">AbstractUITest.java</span></div><h1>AbstractUITest.java</h1><pre class="source lang-java linenums">package org.jabref.gui;
+
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+import org.jabref.JabRefMain;
+import org.jabref.testutils.category.GUITest;
+
+import org.assertj.swing.fixture.AbstractWindowFixture;
+import org.assertj.swing.fixture.FrameFixture;
+import org.assertj.swing.fixture.JFileChooserFixture;
+import org.assertj.swing.fixture.JTableFixture;
+import org.assertj.swing.image.ScreenshotTaker;
+import org.assertj.swing.junit.testcase.AssertJSwingJUnitTestCase;
+import org.assertj.swing.timing.Pause;
+import org.junit.Assert;
+import org.junit.experimental.categories.Category;
+
+import static org.assertj.swing.finder.WindowFinder.findFrame;
+import static org.assertj.swing.launcher.ApplicationLauncher.application;
+
+@Category(GUITest.class)
+<span class="fc" id="L27">public abstract class AbstractUITest extends AssertJSwingJUnitTestCase {</span>
+
+    protected final static int SPEED_NORMAL = 50;
+
+    protected AWTExceptionHandler awtExceptionHandler;
+    protected FrameFixture mainFrame;
+
+    @Override
+    protected void onSetUp() {
+<span class="fc" id="L36">        awtExceptionHandler = new AWTExceptionHandler();</span>
+<span class="fc" id="L37">        awtExceptionHandler.installExceptionDetectionInEDT();</span>
+<span class="fc" id="L38">        application(JabRefMain.class).start();</span>
+
+<span class="fc" id="L40">        robot().waitForIdle();</span>
+
+<span class="fc" id="L42">        robot().settings().timeoutToFindSubMenu(1_000);</span>
+<span class="fc" id="L43">        robot().settings().delayBetweenEvents(SPEED_NORMAL);</span>
+
+<span class="nc" id="L45">        mainFrame = findFrame(JabRefFrame.class).withTimeout(10_000).using(robot());</span>
+<span class="nc" id="L46">        robot().waitForIdle();</span>
+<span class="nc" id="L47">    }</span>
+
+    /**
+     * Returns the absolute Path of the given relative Path
+     * The backlashes are replaced with forwardslashes b/c assertJ can't type the former one on windows
+     * @param relativePath the relative path to the resource database
+     */
+    protected String getAbsolutePath(String relativePath) {
+<span class="nc" id="L55">        final URL resource = this.getClass().getClassLoader().getResource(relativePath);</span>
+        try {
+<span class="nc" id="L57">            return Paths.get(resource.toURI()).toAbsolutePath().toString().replace(&quot;\\&quot;, &quot;/&quot;);</span>
+<span class="nc" id="L58">        } catch (URISyntaxException e) {</span>
+<span class="nc" id="L59">            e.printStackTrace();</span>
+        }
+<span class="nc" id="L61">        return null;</span>
+    }
+
+    /**
+     * opens a database and gives JabRef a second to open it before proceeding
+     */
+    protected void importBibIntoNewDatabase(String path) {
+<span class="nc" id="L68">        mainFrame.menuItemWithPath(&quot;File&quot;, &quot;Import into new library&quot;).click();</span>
+<span class="nc" id="L69">        JFileChooserFixture openFileDialog = mainFrame.fileChooser();</span>
+<span class="nc" id="L70">        robot().settings().delayBetweenEvents(1);</span>
+<span class="nc" id="L71">        openFileDialog.fileNameTextBox().enterText(path);</span>
+<span class="nc" id="L72">        openFileDialog.approve();</span>
+<span class="nc" id="L73">        Pause.pause(1_000);</span>
+<span class="nc" id="L74">    }</span>
+
+    protected void exitJabRef() {
+<span class="nc" id="L77">        mainFrame.menuItemWithPath(&quot;File&quot;, &quot;Quit&quot;).click();</span>
+<span class="nc" id="L78">        awtExceptionHandler.assertNoExceptions();</span>
+<span class="nc" id="L79">    }</span>
+
+    protected void newDatabase() {
+<span class="nc" id="L82">        mainFrame.menuItemWithPath(&quot;File&quot;, &quot;New BibTeX database&quot;).click();</span>
+<span class="nc" id="L83">    }</span>
+
+    protected void closeDatabase() {
+<span class="nc" id="L86">        mainFrame.menuItemWithPath(&quot;File&quot;, &quot;Close library&quot;).click();</span>
+<span class="nc" id="L87">    }</span>
+
+    protected void takeScreenshot(AbstractWindowFixture&lt;?, ?, ?&gt; dialog, String filename) throws IOException {
+<span class="nc" id="L90">        ScreenshotTaker screenshotTaker = new ScreenshotTaker();</span>
+<span class="nc" id="L91">        Path folder = Paths.get(&quot;build&quot;, &quot;screenshots&quot;);</span>
+        // Create build/srceenshots folder if not present
+<span class="nc bnc" id="L93" title="All 2 branches missed.">        if (!Files.exists(folder)) {</span>
+<span class="nc" id="L94">            Files.createDirectory(folder);</span>
+        }
+<span class="nc" id="L96">        Path file = folder.resolve(filename + &quot;.png&quot;).toAbsolutePath();</span>
+        // Delete already present file
+<span class="nc bnc" id="L98" title="All 2 branches missed.">        if (Files.exists(file)) {</span>
+<span class="nc" id="L99">            Files.delete(file);</span>
+        }
+<span class="nc" id="L101">        screenshotTaker.saveComponentAsPng(dialog.target(), file.toString());</span>
+<span class="nc" id="L102">    }</span>
+
+    protected void assertColumnValue(JTableFixture table, int rowIndex, int columnIndex, String selectionValue){
+        String[][] tableContent;
+<span class="nc" id="L106">        tableContent = table.contents();</span>
+
+<span class="nc" id="L108">        String value = tableContent[rowIndex][columnIndex];</span>
+<span class="nc" id="L109">        Assert.assertEquals(value, selectionValue);</span>
+<span class="nc" id="L110">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

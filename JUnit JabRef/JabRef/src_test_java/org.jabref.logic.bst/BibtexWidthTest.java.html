@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>BibtexWidthTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.bst</a> &gt; <span class="el_source">BibtexWidthTest.java</span></div><h1>BibtexWidthTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.bst;
+
+
+
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+/**
+ * How to create these test using Bibtex:
+ * &lt;p/&gt;
+ * Execute this charWidth.bst with the following charWidth.aux:
+ * &lt;p/&gt;
+ * &lt;p/&gt;
+ * &lt;code&gt;
+ * ENTRY{}{}{}
+ * FUNCTION{test}
+ * {
+ * &quot;i&quot; width$ int.to.str$ write$ newline$
+ * &quot;0I~ &quot; width$ int.to.str$ write$ newline$
+ * &quot;Hi Hi &quot; width$ int.to.str$ write$ newline$
+ * &quot;{\oe}&quot; width$ int.to.str$ write$ newline$
+ * &quot;Hi {\oe   }Hi &quot; width$ int.to.str$ write$ newline$
+ * }
+ * READ
+ * EXECUTE{test}
+ * &lt;/code&gt;
+ * &lt;p/&gt;
+ * &lt;code&gt;
+ * \bibstyle{charWidth}
+ * \citation{canh05}
+ * \bibdata{test}
+ * \bibcite{canh05}{CMM{$^{+}$}05}
+ * &lt;/code&gt;
+ */
+<span class="fc" id="L36">public class BibtexWidthTest {</span>
+
+    private void assertBibtexWidth(final int i, final String string) {
+<span class="fc" id="L39">        assertEquals(i, BibtexWidth.width(string));</span>
+<span class="fc" id="L40">    }</span>
+
+    @Test
+    public void testWidth() {
+
+<span class="fc" id="L45">        assertBibtexWidth(278, &quot;i&quot;);</span>
+
+<span class="fc" id="L47">        assertBibtexWidth(1639, &quot;0I~ &quot;);</span>
+
+<span class="fc" id="L49">        assertBibtexWidth(2612, &quot;Hi Hi &quot;);</span>
+
+<span class="fc" id="L51">        assertBibtexWidth(778, &quot;{\\oe}&quot;);</span>
+
+<span class="fc" id="L53">        assertBibtexWidth(3390, &quot;Hi {\\oe   }Hi &quot;);</span>
+
+<span class="fc" id="L55">        assertBibtexWidth(444, &quot;{\\'e}&quot;);</span>
+
+<span class="fc" id="L57">        assertBibtexWidth(19762, &quot;Ulrich {\\\&quot;{U}}nderwood and Ned {\\~N}et and Paul {\\={P}}ot&quot;);</span>
+
+<span class="fc" id="L59">        assertBibtexWidth(7861, &quot;{\\'{E}}douard Masterly&quot;);</span>
+
+<span class="fc" id="L61">        assertBibtexWidth(30514, &quot;Jonathan Meyer and Charles Louis Xavier Joseph de la Vall{\\'e}e Poussin&quot;);</span>
+
+<span class="fc" id="L63">    }</span>
+
+    @Test
+    public void testGetCharWidth() {
+<span class="fc" id="L67">        assertEquals(500, BibtexWidth.getCharWidth('0'));</span>
+<span class="fc" id="L68">        assertEquals(361, BibtexWidth.getCharWidth('I'));</span>
+<span class="fc" id="L69">        assertEquals(500, BibtexWidth.getCharWidth('~'));</span>
+<span class="fc" id="L70">        assertEquals(500, BibtexWidth.getCharWidth('}'));</span>
+<span class="fc" id="L71">        assertEquals(278, BibtexWidth.getCharWidth(' '));</span>
+<span class="fc" id="L72">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

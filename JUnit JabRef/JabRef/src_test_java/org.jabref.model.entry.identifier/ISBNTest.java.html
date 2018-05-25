@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>ISBNTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.model.entry.identifier</a> &gt; <span class="el_source">ISBNTest.java</span></div><h1>ISBNTest.java</h1><pre class="source lang-java linenums">package org.jabref.model.entry.identifier;
+
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+<span class="fc" id="L8">public class ISBNTest {</span>
+
+    @Test
+    public void testIsValidFormat10Correct() {
+<span class="fc" id="L12">        assertTrue(new ISBN(&quot;0-123456-47-9&quot;).isValidFormat());</span>
+<span class="fc" id="L13">        assertTrue(new ISBN(&quot;0-9752298-0-X&quot;).isValidFormat());</span>
+<span class="fc" id="L14">    }</span>
+
+    @Test
+    public void testIsValidFormat10Incorrect() {
+<span class="fc" id="L18">        assertFalse(new ISBN(&quot;0-12B456-47-9&quot;).isValidFormat());</span>
+<span class="fc" id="L19">    }</span>
+
+    @Test
+    public void testIsValidChecksum10Correct() {
+<span class="fc" id="L23">        assertTrue(new ISBN(&quot;0-123456-47-9&quot;).isValidChecksum());</span>
+<span class="fc" id="L24">        assertTrue(new ISBN(&quot;0-9752298-0-X&quot;).isValidChecksum());</span>
+<span class="fc" id="L25">        assertTrue(new ISBN(&quot;0-9752298-0-x&quot;).isValidChecksum());</span>
+<span class="fc" id="L26">    }</span>
+
+    @Test
+    public void testIsValidChecksum10Incorrect() {
+<span class="fc" id="L30">        assertFalse(new ISBN(&quot;0-123456-47-8&quot;).isValidChecksum());</span>
+<span class="fc" id="L31">    }</span>
+
+    @Test
+    public void testIsValidFormat13Correct() {
+<span class="fc" id="L35">        assertTrue(new ISBN(&quot;978-1-56619-909-4&quot;).isValidFormat());</span>
+<span class="fc" id="L36">    }</span>
+
+    @Test
+    public void testIsValidFormat13Incorrect() {
+<span class="fc" id="L40">        assertFalse(new ISBN(&quot;978-1-56619-9O9-4 &quot;).isValidFormat());</span>
+<span class="fc" id="L41">    }</span>
+
+    @Test
+    public void testIsValidChecksum13Correct() {
+<span class="fc" id="L45">        assertTrue(new ISBN(&quot;978-1-56619-909-4 &quot;).isValidChecksum());</span>
+<span class="fc" id="L46">    }</span>
+
+    @Test
+    public void testIsValidChecksum13Incorrect() {
+<span class="fc" id="L50">        assertFalse(new ISBN(&quot;978-1-56619-909-5&quot;).isValidChecksum());</span>
+<span class="fc" id="L51">    }</span>
+
+    @Test
+    public void testIsIsbn10Correct() {
+<span class="fc" id="L55">        assertTrue(new ISBN(&quot;0-123456-47-9&quot;).isIsbn10());</span>
+<span class="fc" id="L56">        assertTrue(new ISBN(&quot;0-9752298-0-X&quot;).isIsbn10());</span>
+<span class="fc" id="L57">    }</span>
+
+    @Test
+    public void testIsIsbn10Incorrect() {
+<span class="fc" id="L61">        assertFalse(new ISBN(&quot;978-1-56619-909-4&quot;).isIsbn10());</span>
+<span class="fc" id="L62">    }</span>
+
+    @Test
+    public void testIsIsbn13Correct() {
+<span class="fc" id="L66">        assertTrue(new ISBN(&quot;978-1-56619-909-4&quot;).isIsbn13());</span>
+<span class="fc" id="L67">    }</span>
+
+    @Test
+    public void testIsIsbn13Incorrect() {
+<span class="fc" id="L71">        assertFalse(new ISBN(&quot;0-123456-47-9&quot;).isIsbn13());</span>
+<span class="fc" id="L72">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

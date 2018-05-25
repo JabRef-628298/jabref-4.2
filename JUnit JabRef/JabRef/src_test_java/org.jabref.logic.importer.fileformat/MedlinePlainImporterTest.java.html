@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MedlinePlainImporterTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.importer.fileformat</a> &gt; <span class="el_source">MedlinePlainImporterTest.java</span></div><h1>MedlinePlainImporterTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.importer.fileformat;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringReader;
+import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
+
+import org.jabref.logic.bibtex.BibEntryAssert;
+import org.jabref.logic.util.FileType;
+import org.jabref.model.entry.BibEntry;
+
+import org.apache.commons.codec.Charsets;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+<span class="fc" id="L35">public class MedlinePlainImporterTest {</span>
+
+    private MedlinePlainImporter importer;
+
+    private static final String FILE_ENDING = &quot;.txt&quot;;
+
+    private static Stream&lt;String&gt; fileNames() throws IOException {
+<span class="fc bfc" id="L42" title="All 2 branches covered.">        Predicate&lt;String&gt; fileName = name -&gt; name.startsWith(&quot;MedlinePlainImporterTest&quot;)</span>
+<span class="fc bfc" id="L43" title="All 2 branches covered.">                &amp;&amp; name.endsWith(FILE_ENDING);</span>
+<span class="fc" id="L44">        return ImporterTestEngine.getTestFiles(fileName).stream();</span>
+    }
+
+    private BufferedReader readerForString(String string) {
+<span class="fc" id="L48">        return new BufferedReader(new StringReader(string));</span>
+    }
+
+    @BeforeEach
+    public void setUp() {
+<span class="fc" id="L53">        importer = new MedlinePlainImporter();</span>
+<span class="fc" id="L54">    }</span>
+
+    @Test
+    public void testsGetExtensions() {
+<span class="fc" id="L58">        assertEquals(FileType.MEDLINE_PLAIN, importer.getFileType());</span>
+<span class="fc" id="L59">    }</span>
+
+    @Test
+    public void testGetDescription() {
+<span class="fc" id="L63">        assertEquals(&quot;Importer for the MedlinePlain format.&quot;, importer.getDescription());</span>
+<span class="fc" id="L64">    }</span>
+
+    @ParameterizedTest
+    @MethodSource(&quot;fileNames&quot;)
+    public void testIsRecognizedFormat(String fileName) throws Exception {
+<span class="fc" id="L69">        ImporterTestEngine.testIsRecognizedFormat(importer, fileName);</span>
+<span class="fc" id="L70">    }</span>
+
+    @Test
+    public void doesNotRecognizeEmptyFiles() throws IOException {
+<span class="fc" id="L74">        assertFalse(importer.isRecognizedFormat(readerForString(&quot;&quot;)));</span>
+<span class="fc" id="L75">    }</span>
+
+    @Test
+    public void testImportMultipleEntriesInSingleFile() throws IOException, URISyntaxException {
+<span class="fc" id="L79">        Path inputFile = Paths</span>
+<span class="fc" id="L80">                .get(MedlinePlainImporter.class.getResource(&quot;MedlinePlainImporterTestMultipleEntries.txt&quot;).toURI());</span>
+
+<span class="fc" id="L82">        List&lt;BibEntry&gt; entries = importer.importDatabase(inputFile, StandardCharsets.UTF_8).getDatabase()</span>
+<span class="fc" id="L83">                .getEntries();</span>
+<span class="fc" id="L84">        BibEntry testEntry = entries.get(0);</span>
+
+<span class="fc" id="L86">        assertEquals(7, entries.size());</span>
+<span class="fc" id="L87">        assertEquals(&quot;article&quot;, testEntry.getType());</span>
+<span class="fc" id="L88">        assertEquals(Optional.empty(), testEntry.getField(&quot;month&quot;));</span>
+<span class="fc" id="L89">        assertEquals(Optional.of(&quot;Long, Vicky and Marland, Hilary&quot;), testEntry.getField(&quot;author&quot;));</span>
+<span class="fc" id="L90">        assertEquals(</span>
+<span class="fc" id="L91">                Optional.of(</span>
+<span class="fc" id="L92">                        &quot;From danger and motherhood to health and beauty: health advice for the factory girl in early twentieth-century Britain.&quot;),</span>
+<span class="fc" id="L93">                testEntry.getField(&quot;title&quot;));</span>
+
+<span class="fc" id="L95">        testEntry = entries.get(1);</span>
+<span class="fc" id="L96">        assertEquals(&quot;conference&quot;, testEntry.getType());</span>
+<span class="fc" id="L97">        assertEquals(Optional.of(&quot;06&quot;), testEntry.getField(&quot;month&quot;));</span>
+<span class="fc" id="L98">        assertEquals(Optional.empty(), testEntry.getField(&quot;author&quot;));</span>
+<span class="fc" id="L99">        assertEquals(Optional.empty(), testEntry.getField(&quot;title&quot;));</span>
+
+<span class="fc" id="L101">        testEntry = entries.get(2);</span>
+<span class="fc" id="L102">        assertEquals(&quot;book&quot;, testEntry.getType());</span>
+<span class="fc" id="L103">        assertEquals(</span>
+<span class="fc" id="L104">                Optional.of(</span>
+<span class="fc" id="L105">                        &quot;This is a Testtitle: This title should be appended: This title should also be appended. Another append to the Title? LastTitle&quot;),</span>
+<span class="fc" id="L106">                testEntry.getField(&quot;title&quot;));</span>
+
+<span class="fc" id="L108">        testEntry = entries.get(3);</span>
+<span class="fc" id="L109">        assertEquals(&quot;techreport&quot;, testEntry.getType());</span>
+<span class="fc" id="L110">        assertTrue(testEntry.getField(&quot;doi&quot;).isPresent());</span>
+
+<span class="fc" id="L112">        testEntry = entries.get(4);</span>
+<span class="fc" id="L113">        assertEquals(&quot;inproceedings&quot;, testEntry.getType());</span>
+<span class="fc" id="L114">        assertEquals(Optional.of(&quot;Inproceedings book title&quot;), testEntry.getField(&quot;booktitle&quot;));</span>
+
+<span class="fc" id="L116">        BibEntry expectedEntry5 = new BibEntry();</span>
+<span class="fc" id="L117">        expectedEntry5.setType(&quot;proceedings&quot;);</span>
+<span class="fc" id="L118">        expectedEntry5.setField(&quot;keywords&quot;, &quot;Female&quot;);</span>
+<span class="fc" id="L119">        assertEquals(expectedEntry5, entries.get(5));</span>
+
+<span class="fc" id="L121">        BibEntry expectedEntry6 = new BibEntry();</span>
+<span class="fc" id="L122">        expectedEntry6.setType(&quot;misc&quot;);</span>
+<span class="fc" id="L123">        expectedEntry6.setField(&quot;keywords&quot;, &quot;Female&quot;);</span>
+<span class="fc" id="L124">        assertEquals(expectedEntry6, entries.get(6));</span>
+<span class="fc" id="L125">    }</span>
+
+    @Test
+    public void testEmptyFileImport() throws IOException {
+<span class="fc" id="L129">        List&lt;BibEntry&gt; emptyEntries = importer.importDatabase(readerForString(&quot;&quot;)).getDatabase().getEntries();</span>
+
+<span class="fc" id="L131">        assertEquals(Collections.emptyList(), emptyEntries);</span>
+<span class="fc" id="L132">    }</span>
+
+    @Test
+    public void testImportSingleEntriesInSingleFiles() throws IOException, URISyntaxException {
+<span class="fc" id="L136">        List&lt;String&gt; testFiles = Arrays.asList(&quot;MedlinePlainImporterTestCompleteEntry&quot;,</span>
+<span class="fc" id="L137">                &quot;MedlinePlainImporterTestMultiAbstract&quot;, &quot;MedlinePlainImporterTestMultiTitle&quot;,</span>
+<span class="fc" id="L138">                &quot;MedlinePlainImporterTestDOI&quot;, &quot;MedlinePlainImporterTestInproceeding&quot;);</span>
+
+<span class="fc bfc" id="L140" title="All 2 branches covered.">        for (String testFile : testFiles) {</span>
+<span class="fc" id="L141">            String medlineFile = testFile + &quot;.txt&quot;;</span>
+<span class="fc" id="L142">            String bibtexFile = testFile + &quot;.bib&quot;;</span>
+<span class="fc" id="L143">            assertImportOfMedlineFileEqualsBibtexFile(medlineFile, bibtexFile);</span>
+        }
+<span class="fc" id="L145">    }</span>
+
+    private void assertImportOfMedlineFileEqualsBibtexFile(String medlineFile, String bibtexFile)
+            throws IOException, URISyntaxException {
+<span class="fc" id="L149">        Path file = Paths.get(MedlinePlainImporter.class.getResource(medlineFile).toURI());</span>
+
+<span class="fc" id="L151">        try (InputStream nis = MedlinePlainImporter.class.getResourceAsStream(bibtexFile)) {</span>
+<span class="fc" id="L152">            List&lt;BibEntry&gt; entries = importer.importDatabase(file, StandardCharsets.UTF_8).getDatabase().getEntries();</span>
+<span class="fc" id="L153">            assertNotNull(entries);</span>
+<span class="fc" id="L154">            assertEquals(1, entries.size());</span>
+<span class="fc" id="L155">            BibEntryAssert.assertEquals(nis, entries.get(0));</span>
+<span class="pc bpc" id="L156" title="7 of 8 branches missed.">        }</span>
+<span class="fc" id="L157">    }</span>
+
+    @Test
+    public void testMultiLineComments() throws IOException {
+<span class="fc" id="L161">        try (BufferedReader reader = readerForString(&quot;PMID-22664220&quot; + &quot;\n&quot; + &quot;CON - Comment1&quot; + &quot;\n&quot; + &quot;CIN - Comment2&quot;</span>
+                + &quot;\n&quot; + &quot;EIN - Comment3&quot; + &quot;\n&quot; + &quot;EFR - Comment4&quot; + &quot;\n&quot; + &quot;CRI - Comment5&quot; + &quot;\n&quot; + &quot;CRF - Comment6&quot;
+                + &quot;\n&quot; + &quot;PRIN- Comment7&quot; + &quot;\n&quot; + &quot;PROF- Comment8&quot; + &quot;\n&quot; + &quot;RPI - Comment9&quot; + &quot;\n&quot; + &quot;RPF - Comment10&quot;
+                + &quot;\n&quot; + &quot;RIN - Comment11&quot; + &quot;\n&quot; + &quot;ROF - Comment12&quot; + &quot;\n&quot; + &quot;UIN - Comment13&quot; + &quot;\n&quot;
+                + &quot;UOF - Comment14&quot; + &quot;\n&quot; + &quot;SPIN- Comment15&quot; + &quot;\n&quot; + &quot;ORI - Comment16&quot;)) {
+<span class="fc" id="L166">            List&lt;BibEntry&gt; actualEntries = importer.importDatabase(reader).getDatabase().getEntries();</span>
+<span class="fc" id="L167">            BibEntry expectedEntry = new BibEntry();</span>
+
+<span class="fc" id="L169">            expectedEntry.setField(&quot;comment&quot;,</span>
+<span class="fc" id="L170">                    &quot;Comment1&quot; + &quot;\n&quot; + &quot;Comment2&quot; + &quot;\n&quot; + &quot;Comment3&quot; + &quot;\n&quot; + &quot;Comment4&quot; + &quot;\n&quot; + &quot;Comment5&quot; + &quot;\n&quot;</span>
+                            + &quot;Comment6&quot; + &quot;\n&quot; + &quot;Comment7&quot; + &quot;\n&quot; + &quot;Comment8&quot; + &quot;\n&quot; + &quot;Comment9&quot; + &quot;\n&quot;
+                            + &quot;Comment10&quot; + &quot;\n&quot; + &quot;Comment11&quot; + &quot;\n&quot; + &quot;Comment12&quot; + &quot;\n&quot; + &quot;Comment13&quot; + &quot;\n&quot;
+                            + &quot;Comment14&quot; + &quot;\n&quot; + &quot;Comment15&quot; + &quot;\n&quot; + &quot;Comment16&quot;);
+<span class="fc" id="L174">            assertEquals(Collections.singletonList(expectedEntry), actualEntries);</span>
+<span class="pc bpc" id="L175" title="7 of 8 branches missed.">        }</span>
+<span class="fc" id="L176">    }</span>
+
+    @Test
+    public void testKeyWords() throws IOException {
+<span class="fc" id="L180">        try (BufferedReader reader = readerForString(&quot;PMID-22664795&quot; + &quot;\n&quot; + &quot;MH  - Female&quot; + &quot;\n&quot; + &quot;OT  - Male&quot;)) {</span>
+<span class="fc" id="L181">            List&lt;BibEntry&gt; actualEntries = importer.importDatabase(reader).getDatabase().getEntries();</span>
+
+<span class="fc" id="L183">            BibEntry expectedEntry = new BibEntry();</span>
+<span class="fc" id="L184">            expectedEntry.setField(&quot;keywords&quot;, &quot;Female, Male&quot;);</span>
+
+<span class="fc" id="L186">            assertEquals(Collections.singletonList(expectedEntry), actualEntries);</span>
+<span class="pc bpc" id="L187" title="7 of 8 branches missed.">        }</span>
+<span class="fc" id="L188">    }</span>
+
+    @Test
+    public void testWithNbibFile() throws IOException, URISyntaxException {
+<span class="fc" id="L192">        Path file = Paths.get(MedlinePlainImporter.class.getResource(&quot;NbibImporterTest.nbib&quot;).toURI());</span>
+
+<span class="fc" id="L194">        List&lt;BibEntry&gt; entries = importer.importDatabase(file, StandardCharsets.UTF_8).getDatabase().getEntries();</span>
+
+<span class="fc" id="L196">        BibEntryAssert.assertEquals(MedlinePlainImporter.class, &quot;NbibImporterTest.bib&quot;, entries);</span>
+<span class="fc" id="L197">    }</span>
+
+    @Test
+    public void testWithMultipleEntries() throws IOException, URISyntaxException {
+<span class="fc" id="L201">        Path file = Paths</span>
+<span class="fc" id="L202">                .get(MedlinePlainImporter.class.getResource(&quot;MedlinePlainImporterStringOutOfBounds.txt&quot;).toURI());</span>
+
+<span class="fc" id="L204">        List&lt;BibEntry&gt; entries = importer.importDatabase(file, Charsets.UTF_8).getDatabase().getEntries();</span>
+
+<span class="fc" id="L206">        BibEntryAssert.assertEquals(MedlinePlainImporter.class, &quot;MedlinePlainImporterStringOutOfBounds.bib&quot;, entries);</span>
+<span class="fc" id="L207">    }</span>
+
+    @Test
+    public void testInvalidFormat() throws URISyntaxException, IOException {
+<span class="fc" id="L211">        Path file = Paths</span>
+<span class="fc" id="L212">                .get(MedlinePlainImporter.class.getResource(&quot;MedlinePlainImporterTestInvalidFormat.xml&quot;).toURI());</span>
+
+<span class="fc" id="L214">        List&lt;BibEntry&gt; entries = importer.importDatabase(file, Charsets.UTF_8).getDatabase().getEntries();</span>
+
+<span class="fc" id="L216">        assertEquals(Collections.emptyList(), entries);</span>
+<span class="fc" id="L217">    }</span>
+
+    @Test
+    public void testNullReader() throws IOException {
+<span class="fc" id="L221">        Executable fail = () -&gt; {</span>
+<span class="fc" id="L222">            try (BufferedReader reader = null) {</span>
+<span class="nc" id="L223">                importer.importDatabase(reader);</span>
+<span class="pc bpc" id="L224" title="5 of 8 branches missed.">            }</span>
+<span class="nc" id="L225">        };</span>
+<span class="fc" id="L226">        assertThrows(NullPointerException.class, fail);</span>
+<span class="fc" id="L227">    }</span>
+
+    @Test
+    public void testAllArticleTypes() throws IOException {
+<span class="fc" id="L231">        try (BufferedReader reader = readerForString(&quot;PMID-22664795&quot; + &quot;\n&quot; + &quot;MH  - Female\n&quot; + &quot;PT  - journal article&quot;</span>
+                + &quot;\n&quot; + &quot;PT  - classical article&quot; + &quot;\n&quot; + &quot;PT  - corrected and republished article&quot; + &quot;\n&quot;
+                + &quot;PT  - introductory journal article&quot; + &quot;\n&quot; + &quot;PT  - newspaper article&quot;)) {
+<span class="fc" id="L234">            List&lt;BibEntry&gt; actualEntries = importer.importDatabase(reader).getDatabase().getEntries();</span>
+
+<span class="fc" id="L236">            BibEntry expectedEntry = new BibEntry();</span>
+<span class="fc" id="L237">            expectedEntry.setType(&quot;article&quot;);</span>
+<span class="fc" id="L238">            expectedEntry.setField(&quot;keywords&quot;, &quot;Female&quot;);</span>
+
+<span class="fc" id="L240">            assertEquals(Collections.singletonList(expectedEntry), actualEntries);</span>
+<span class="pc bpc" id="L241" title="7 of 8 branches missed.">        }</span>
+<span class="fc" id="L242">    }</span>
+
+    @Test
+    public void testGetFormatName() {
+<span class="fc" id="L246">        assertEquals(&quot;Medline/PubMed Plain&quot;, importer.getName());</span>
+<span class="fc" id="L247">    }</span>
+
+    @Test
+    public void testGetCLIId() {
+<span class="fc" id="L251">        assertEquals(&quot;medlineplain&quot;, importer.getId());</span>
+<span class="fc" id="L252">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

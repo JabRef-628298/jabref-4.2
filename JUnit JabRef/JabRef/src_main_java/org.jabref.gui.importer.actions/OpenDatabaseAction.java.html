@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>OpenDatabaseAction.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.importer.actions</a> &gt; <span class="el_source">OpenDatabaseAction.java</span></div><h1>OpenDatabaseAction.java</h1><pre class="source lang-java linenums">package org.jabref.gui.importer.actions;
+
+import java.awt.event.ActionEvent;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.attribute.FileTime;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import javax.swing.Action;
+import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
+
+import org.jabref.Globals;
+import org.jabref.JabRefExecutorService;
+import org.jabref.gui.BasePanel;
+import org.jabref.gui.DialogService;
+import org.jabref.gui.FXDialogService;
+import org.jabref.gui.IconTheme;
+import org.jabref.gui.JabRefFrame;
+import org.jabref.gui.actions.MnemonicAwareAction;
+import org.jabref.gui.dialogs.BackupUIManager;
+import org.jabref.gui.importer.ParserResultWarningDialog;
+import org.jabref.gui.keyboard.KeyBinding;
+import org.jabref.gui.shared.SharedDatabaseUIManager;
+import org.jabref.gui.util.DefaultTaskExecutor;
+import org.jabref.gui.util.FileDialogConfiguration;
+import org.jabref.logic.autosaveandbackup.BackupManager;
+import org.jabref.logic.importer.OpenDatabase;
+import org.jabref.logic.importer.ParserResult;
+import org.jabref.logic.l10n.Localization;
+import org.jabref.logic.shared.exception.InvalidDBMSConnectionPropertiesException;
+import org.jabref.logic.shared.exception.NotASharedDatabaseException;
+import org.jabref.logic.util.FileType;
+import org.jabref.logic.util.io.FileBasedLock;
+import org.jabref.migrations.FileLinksUpgradeWarning;
+import org.jabref.model.database.BibDatabase;
+import org.jabref.model.database.shared.DatabaseNotSupportedException;
+import org.jabref.model.strings.StringUtil;
+import org.jabref.preferences.JabRefPreferences;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+// The action concerned with opening an existing database.
+public class OpenDatabaseAction extends MnemonicAwareAction {
+
+<span class="fc" id="L56">    public static final Logger LOGGER = LoggerFactory.getLogger(OpenDatabaseAction.class);</span>
+    // List of actions that may need to be called after opening the file. Such as
+    // upgrade actions etc. that may depend on the JabRef version that wrote the file:
+<span class="fc" id="L59">    private static final List&lt;GUIPostOpenAction&gt; POST_OPEN_ACTIONS = Arrays.asList(</span>
+            // Migrations:
+            // Warning for migrating the Review into the Comment field
+<span class="fc" id="L62">            new MergeReviewIntoCommentAction(),</span>
+            // External file handling system in version 2.3:
+<span class="fc" id="L64">            new FileLinksUpgradeWarning(),</span>
+
+            // Check for new custom entry types loaded from the BIB file:
+<span class="fc" id="L67">            new CheckForNewEntryTypesAction(),</span>
+            // Warning about and handling duplicate BibTeX keys:
+<span class="fc" id="L69">            new HandleDuplicateWarnings());</span>
+
+
+    private final boolean showDialog;
+    private final JabRefFrame frame;
+
+    public OpenDatabaseAction(JabRefFrame frame, boolean showDialog) {
+<span class="fc" id="L76">        super(IconTheme.JabRefIcon.OPEN.getIcon());</span>
+<span class="fc" id="L77">        this.frame = frame;</span>
+<span class="fc" id="L78">        this.showDialog = showDialog;</span>
+<span class="fc" id="L79">        putValue(Action.NAME, Localization.menuTitle(&quot;Open library&quot;));</span>
+<span class="fc" id="L80">        putValue(Action.ACCELERATOR_KEY, Globals.getKeyPrefs().getKey(KeyBinding.OPEN_DATABASE));</span>
+<span class="fc" id="L81">        putValue(Action.SHORT_DESCRIPTION, Localization.lang(&quot;Open BibTeX library&quot;));</span>
+<span class="fc" id="L82">    }</span>
+
+    /**
+     * Go through the list of post open actions, and perform those that need to be performed.
+     *
+     * @param panel  The BasePanel where the database is shown.
+     * @param result The result of the BIB file parse operation.
+     */
+    public static void performPostOpenActions(BasePanel panel, ParserResult result) {
+<span class="nc bnc" id="L91" title="All 2 branches missed.">        for (GUIPostOpenAction action : OpenDatabaseAction.POST_OPEN_ACTIONS) {</span>
+<span class="nc bnc" id="L92" title="All 2 branches missed.">            if (action.isActionNecessary(result)) {</span>
+<span class="nc" id="L93">                action.performAction(panel, result);</span>
+<span class="nc" id="L94">                panel.frame().getTabbedPane().setSelectedComponent(panel);</span>
+            }
+        }
+<span class="nc" id="L97">    }</span>
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L101">        List&lt;Path&gt; filesToOpen = new ArrayList&lt;&gt;();</span>
+
+<span class="nc bnc" id="L103" title="All 2 branches missed.">        if (showDialog) {</span>
+<span class="nc" id="L104">            DialogService ds = new FXDialogService();</span>
+<span class="nc" id="L105">            FileDialogConfiguration fileDialogConfiguration = new FileDialogConfiguration.Builder()</span>
+<span class="nc" id="L106">                    .addExtensionFilter(FileType.BIBTEX_DB)</span>
+<span class="nc" id="L107">                    .withDefaultExtension(FileType.BIBTEX_DB)</span>
+<span class="nc" id="L108">                    .withInitialDirectory(Paths.get(Globals.prefs.get(JabRefPreferences.WORKING_DIRECTORY)))</span>
+<span class="nc" id="L109">                    .build();</span>
+
+<span class="nc" id="L111">            List&lt;Path&gt; chosenFiles = DefaultTaskExecutor</span>
+<span class="nc" id="L112">                    .runInJavaFXThread(() -&gt; ds.showFileOpenDialogAndGetMultipleFiles(fileDialogConfiguration));</span>
+<span class="nc" id="L113">            filesToOpen.addAll(chosenFiles);</span>
+<span class="nc" id="L114">        } else {</span>
+<span class="nc" id="L115">            LOGGER.info(Action.NAME + &quot; &quot; + e.getActionCommand());</span>
+<span class="nc" id="L116">            filesToOpen.add(Paths.get(StringUtil.getCorrectFileName(e.getActionCommand(), &quot;bib&quot;)));</span>
+        }
+
+<span class="nc" id="L119">        openFiles(filesToOpen, true);</span>
+<span class="nc" id="L120">    }</span>
+
+    /**
+     * Opens the given file. If null or 404, nothing happens
+     *
+     * @param file the file, may be null or not existing
+     */
+    public void openFile(Path file, boolean raisePanel) {
+<span class="nc" id="L128">        List&lt;Path&gt; filesToOpen = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L129">        filesToOpen.add(file);</span>
+<span class="nc" id="L130">        openFiles(filesToOpen, raisePanel);</span>
+<span class="nc" id="L131">    }</span>
+
+    public void openFilesAsStringList(List&lt;String&gt; fileNamesToOpen, boolean raisePanel) {
+<span class="nc" id="L134">        List&lt;Path&gt; filesToOpen = fileNamesToOpen.stream().map(Paths::get).collect(Collectors.toList());</span>
+
+<span class="nc" id="L136">        openFiles(filesToOpen, raisePanel);</span>
+<span class="nc" id="L137">    }</span>
+
+    /**
+     * Opens the given files. If one of it is null or 404, nothing happens
+     *
+     * @param filesToOpen the filesToOpen, may be null or not existing
+     */
+    public void openFiles(List&lt;Path&gt; filesToOpen, boolean raisePanel) {
+<span class="nc" id="L145">        BasePanel toRaise = null;</span>
+<span class="nc" id="L146">        int initialCount = filesToOpen.size();</span>
+<span class="nc" id="L147">        int removed = 0;</span>
+
+        // Check if any of the files are already open:
+<span class="nc bnc" id="L150" title="All 2 branches missed.">        for (Iterator&lt;Path&gt; iterator = filesToOpen.iterator(); iterator.hasNext(); ) {</span>
+<span class="nc" id="L151">            Path file = iterator.next();</span>
+<span class="nc bnc" id="L152" title="All 2 branches missed.">            for (int i = 0; i &lt; frame.getTabbedPane().getTabCount(); i++) {</span>
+<span class="nc" id="L153">                BasePanel basePanel = frame.getBasePanelAt(i);</span>
+<span class="nc bnc" id="L154" title="All 2 branches missed.">                if ((basePanel.getBibDatabaseContext().getDatabasePath().isPresent())</span>
+<span class="nc bnc" id="L155" title="All 2 branches missed.">                        &amp;&amp; basePanel.getBibDatabaseContext().getDatabasePath().get().equals(file)) {</span>
+<span class="nc" id="L156">                    iterator.remove();</span>
+<span class="nc" id="L157">                    removed++;</span>
+                    // See if we removed the final one. If so, we must perhaps
+                    // raise the BasePanel in question:
+<span class="nc bnc" id="L160" title="All 2 branches missed.">                    if (removed == initialCount) {</span>
+<span class="nc" id="L161">                        toRaise = basePanel;</span>
+                    }
+                    // no more bps to check, we found a matching one
+<span class="nc" id="L164">                    break;</span>
+                }
+            }
+        }
+
+        // Run the actual open in a thread to prevent the program
+        // locking until the file is loaded.
+<span class="nc bnc" id="L171" title="All 2 branches missed.">        if (!filesToOpen.isEmpty()) {</span>
+<span class="nc" id="L172">            final List&lt;Path&gt; theFiles = Collections.unmodifiableList(filesToOpen);</span>
+<span class="nc" id="L173">            JabRefExecutorService.INSTANCE.execute(() -&gt; {</span>
+<span class="nc bnc" id="L174" title="All 2 branches missed.">                for (Path theFile : theFiles) {</span>
+<span class="nc" id="L175">                    openTheFile(theFile, raisePanel);</span>
+                }
+<span class="nc" id="L177">            });</span>
+<span class="nc bnc" id="L178" title="All 2 branches missed.">            for (Path theFile : theFiles) {</span>
+<span class="nc" id="L179">                frame.getFileHistory().newFile(theFile.toString());</span>
+            }
+<span class="nc" id="L181">        }</span>
+        // If no files are remaining to open, this could mean that a file was
+        // already open. If so, we may have to raise the correct tab:
+<span class="nc bnc" id="L184" title="All 2 branches missed.">        else if (toRaise != null) {</span>
+<span class="nc" id="L185">            frame.output(Localization.lang(&quot;File '%0' is already open.&quot;,</span>
+<span class="nc" id="L186">                    toRaise.getBibDatabaseContext().getDatabaseFile().get().getPath()));</span>
+<span class="nc" id="L187">            frame.getTabbedPane().setSelectedComponent(toRaise);</span>
+        }
+
+<span class="nc" id="L190">        frame.output(Localization.lang(&quot;Files opened&quot;) + &quot;: &quot; + (filesToOpen.size()));</span>
+<span class="nc" id="L191">    }</span>
+
+    /**
+     * @param file the file, may be null or not existing
+     */
+    private void openTheFile(Path file, boolean raisePanel) {
+<span class="nc" id="L197">        Objects.requireNonNull(file);</span>
+<span class="nc bnc" id="L198" title="All 2 branches missed.">        if (Files.exists(file)) {</span>
+<span class="nc" id="L199">            Path fileToLoad = file.toAbsolutePath();</span>
+
+<span class="nc" id="L201">            frame.output(Localization.lang(&quot;Opening&quot;) + &quot;: '&quot; + file + &quot;'&quot;);</span>
+
+<span class="nc" id="L203">            String fileName = file.getFileName().toString();</span>
+<span class="nc" id="L204">            Globals.prefs.put(JabRefPreferences.WORKING_DIRECTORY, fileToLoad.getParent().toString());</span>
+
+<span class="nc bnc" id="L206" title="All 2 branches missed.">            if (FileBasedLock.hasLockFile(file)) {</span>
+<span class="nc" id="L207">                Optional&lt;FileTime&gt; modificationTime = FileBasedLock.getLockFileTimeStamp(file);</span>
+<span class="nc bnc" id="L208" title="All 2 branches missed.">                if ((modificationTime.isPresent()) &amp;&amp; ((System.currentTimeMillis()</span>
+<span class="nc bnc" id="L209" title="All 2 branches missed.">                        - modificationTime.get().toMillis()) &gt; FileBasedLock.LOCKFILE_CRITICAL_AGE)) {</span>
+                    // The lock file is fairly old, so we can offer to &quot;steal&quot; the file:
+<span class="nc" id="L211">                    int answer = JOptionPane.showConfirmDialog(null,</span>
+<span class="nc" id="L212">                            &quot;&lt;html&gt;&quot; + Localization.lang(&quot;Error opening file&quot;) + &quot; '&quot; + fileName + &quot;'. &quot;</span>
+<span class="nc" id="L213">                                    + Localization.lang(&quot;File is locked by another JabRef instance.&quot;) + &quot;&lt;p&gt;&quot;</span>
+<span class="nc" id="L214">                                    + Localization.lang(&quot;Do you want to override the file lock?&quot;),</span>
+<span class="nc" id="L215">                            Localization.lang(&quot;File locked&quot;), JOptionPane.YES_NO_OPTION);</span>
+<span class="nc bnc" id="L216" title="All 2 branches missed.">                    if (answer == JOptionPane.YES_OPTION) {</span>
+<span class="nc" id="L217">                        FileBasedLock.deleteLockFile(file);</span>
+<span class="nc" id="L218">                    } else {</span>
+<span class="nc" id="L219">                        return;</span>
+                    }
+<span class="nc bnc" id="L221" title="All 2 branches missed.">                } else if (!FileBasedLock.waitForFileLock(file)) {</span>
+<span class="nc" id="L222">                    JOptionPane.showMessageDialog(null,</span>
+<span class="nc" id="L223">                            Localization.lang(&quot;Error opening file&quot;) + &quot; '&quot; + fileName + &quot;'. &quot;</span>
+<span class="nc" id="L224">                                    + Localization.lang(&quot;File is locked by another JabRef instance.&quot;),</span>
+<span class="nc" id="L225">                            Localization.lang(&quot;Error&quot;), JOptionPane.ERROR_MESSAGE);</span>
+<span class="nc" id="L226">                    return;</span>
+                }
+            }
+
+<span class="nc bnc" id="L230" title="All 2 branches missed.">            if (BackupManager.checkForBackupFile(fileToLoad)) {</span>
+<span class="nc" id="L231">                BackupUIManager.showRestoreBackupDialog(frame, fileToLoad);</span>
+            }
+
+            ParserResult result;
+<span class="nc" id="L235">            result = OpenDatabase.loadDatabase(fileToLoad.toString(),</span>
+<span class="nc" id="L236">                    Globals.prefs.getImportFormatPreferences(), Globals.getFileUpdateMonitor());</span>
+
+<span class="nc bnc" id="L238" title="All 2 branches missed.">            if (result.getDatabase().isShared()) {</span>
+                try {
+<span class="nc" id="L240">                    new SharedDatabaseUIManager(frame).openSharedDatabaseFromParserResult(result);</span>
+<span class="nc" id="L241">                } catch (SQLException | DatabaseNotSupportedException | InvalidDBMSConnectionPropertiesException |</span>
+<span class="nc" id="L242">                        NotASharedDatabaseException e) {</span>
+<span class="nc" id="L243">                    result.getDatabaseContext().clearDatabaseFile(); // do not open the original file</span>
+<span class="nc" id="L244">                    result.getDatabase().clearSharedDatabaseID();</span>
+<span class="nc" id="L245">                    LOGGER.error(&quot;Connection error&quot;, e);</span>
+<span class="nc" id="L246">                    JOptionPane.showMessageDialog(frame,</span>
+<span class="nc" id="L247">                            e.getMessage() + &quot;\n\n&quot; + Localization.lang(&quot;A local copy will be opened.&quot;),</span>
+<span class="nc" id="L248">                            Localization.lang(&quot;Connection error&quot;), JOptionPane.WARNING_MESSAGE);</span>
+                }
+            }
+
+<span class="nc" id="L252">            BasePanel panel = addNewDatabase(result, file, raisePanel);</span>
+
+            // After adding the database, go through our list and see if
+            // any post open actions need to be done. For instance, checking
+            // if we found new entry types that can be imported, or checking
+            // if the database contents should be modified due to new features
+            // in this version of JabRef:
+<span class="nc" id="L259">            final ParserResult finalReferenceToResult = result;</span>
+<span class="nc" id="L260">            SwingUtilities.invokeLater(() -&gt; OpenDatabaseAction.performPostOpenActions(panel, finalReferenceToResult));</span>
+        }
+<span class="nc" id="L262">    }</span>
+
+    private BasePanel addNewDatabase(ParserResult result, final Path file, boolean raisePanel) {
+
+<span class="nc" id="L266">        BibDatabase database = result.getDatabase();</span>
+
+<span class="nc bnc" id="L268" title="All 2 branches missed.">        if (result.hasWarnings()) {</span>
+<span class="nc" id="L269">            JabRefExecutorService.INSTANCE</span>
+<span class="nc" id="L270">                    .execute(() -&gt; ParserResultWarningDialog.showParserResultWarningDialog(result, frame));</span>
+        }
+
+<span class="nc" id="L273">        BasePanel basePanel = new BasePanel(frame, result.getDatabaseContext());</span>
+
+        // file is set to null inside the EventDispatcherThread
+<span class="nc" id="L276">        SwingUtilities.invokeLater(() -&gt; frame.addTab(basePanel, raisePanel));</span>
+
+<span class="nc bnc" id="L278" title="All 2 branches missed.">        if (Objects.nonNull(file)) {</span>
+<span class="nc" id="L279">            frame.output(Localization.lang(&quot;Opened library&quot;) + &quot; '&quot; + file.toString() + &quot;' &quot;</span>
+<span class="nc" id="L280">                    + Localization.lang(&quot;with&quot;)</span>
+<span class="nc" id="L281">                    + &quot; &quot;</span>
+<span class="nc" id="L282">                    + database.getEntryCount() + &quot; &quot; + Localization.lang(&quot;entries&quot;) + &quot;.&quot;);</span>
+        }
+
+<span class="nc" id="L285">        return basePanel;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

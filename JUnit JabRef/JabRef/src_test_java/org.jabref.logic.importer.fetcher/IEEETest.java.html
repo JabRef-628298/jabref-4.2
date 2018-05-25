@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>IEEETest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.importer.fetcher</a> &gt; <span class="el_source">IEEETest.java</span></div><h1>IEEETest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.importer.fetcher;
+
+import java.io.IOException;
+import java.net.URL;
+import java.util.Optional;
+
+import org.jabref.model.entry.BibEntry;
+import org.jabref.support.DisabledOnCIServer;
+import org.jabref.testutils.category.FetcherTest;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+@FetcherTest
+<span class="fc" id="L17">class IEEETest {</span>
+
+    private IEEE finder;
+    private BibEntry entry;
+
+    @BeforeEach
+    void setUp() {
+<span class="fc" id="L24">        finder = new IEEE();</span>
+<span class="fc" id="L25">        entry = new BibEntry();</span>
+<span class="fc" id="L26">    }</span>
+
+    @Test
+    void findByDOI() throws IOException {
+<span class="fc" id="L30">        entry.setField(&quot;doi&quot;, &quot;10.1109/ACCESS.2016.2535486&quot;);</span>
+
+<span class="fc" id="L32">        assertEquals(</span>
+<span class="fc" id="L33">                Optional.of(</span>
+<span class="fc" id="L34">                        new URL(&quot;https://ieeexplore.ieee.org/ielx7/6287639/7419931/07421926.pdf?tp=&amp;arnumber=7421926&amp;isnumber=7419931&quot;)),</span>
+<span class="fc" id="L35">                finder.findFullText(entry));</span>
+<span class="fc" id="L36">    }</span>
+
+    @Test
+    void findByDocumentUrl() throws IOException {
+<span class="fc" id="L40">        entry.setField(&quot;url&quot;, &quot;https://ieeexplore.ieee.org/document/7421926/&quot;);</span>
+<span class="fc" id="L41">        assertEquals(</span>
+<span class="fc" id="L42">                Optional.of(</span>
+<span class="fc" id="L43">                        new URL(&quot;https://ieeexplore.ieee.org/ielx7/6287639/7419931/07421926.pdf?tp=&amp;arnumber=7421926&amp;isnumber=7419931&quot;)),</span>
+<span class="fc" id="L44">                finder.findFullText(entry));</span>
+<span class="fc" id="L45">    }</span>
+
+    @Test
+    void findByURL() throws IOException {
+<span class="fc" id="L49">        entry.setField(&quot;url&quot;, &quot;https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&amp;arnumber=7421926&quot;);</span>
+
+<span class="fc" id="L51">        assertEquals(</span>
+<span class="fc" id="L52">                Optional.of(</span>
+<span class="fc" id="L53">                        new URL(&quot;https://ieeexplore.ieee.org/ielx7/6287639/7419931/07421926.pdf?tp=&amp;arnumber=7421926&amp;isnumber=7419931&quot;)),</span>
+<span class="fc" id="L54">                finder.findFullText(entry));</span>
+<span class="fc" id="L55">    }</span>
+
+    @Test
+    void findByOldURL() throws IOException {
+<span class="fc" id="L59">        entry.setField(&quot;url&quot;, &quot;https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=7421926&quot;);</span>
+
+<span class="fc" id="L61">        assertEquals(</span>
+<span class="fc" id="L62">                Optional.of(</span>
+<span class="fc" id="L63">                        new URL(&quot;https://ieeexplore.ieee.org/ielx7/6287639/7419931/07421926.pdf?tp=&amp;arnumber=7421926&amp;isnumber=7419931&quot;)),</span>
+<span class="fc" id="L64">                finder.findFullText(entry));</span>
+<span class="fc" id="L65">    }</span>
+
+    @Test
+    void findByDOIButNotURL() throws IOException {
+<span class="fc" id="L69">        entry.setField(&quot;doi&quot;, &quot;10.1109/ACCESS.2016.2535486&quot;);</span>
+<span class="fc" id="L70">        entry.setField(&quot;url&quot;, &quot;http://dx.doi.org/10.1109/ACCESS.2016.2535486&quot;);</span>
+
+<span class="fc" id="L72">        assertEquals(</span>
+<span class="fc" id="L73">                Optional.of(</span>
+<span class="fc" id="L74">                        new URL(&quot;https://ieeexplore.ieee.org/ielx7/6287639/7419931/07421926.pdf?tp=&amp;arnumber=7421926&amp;isnumber=7419931&quot;)),</span>
+<span class="fc" id="L75">                finder.findFullText(entry));</span>
+<span class="fc" id="L76">    }</span>
+
+    @Test
+    @DisabledOnCIServer(&quot;CI server is unreliable&quot;)
+    void notFoundByURL() throws IOException {
+<span class="fc" id="L81">        entry.setField(&quot;url&quot;, &quot;http://dx.doi.org/10.1109/ACCESS.2016.2535486&quot;);</span>
+
+<span class="fc" id="L83">        assertEquals(Optional.empty(), finder.findFullText(entry));</span>
+<span class="fc" id="L84">    }</span>
+
+    @Test
+    void notFoundByDOI() throws IOException {
+<span class="fc" id="L88">        entry.setField(&quot;doi&quot;, &quot;10.1021/bk-2006-WWW.ch014&quot;);</span>
+
+<span class="fc" id="L90">        assertEquals(Optional.empty(), finder.findFullText(entry));</span>
+<span class="fc" id="L91">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

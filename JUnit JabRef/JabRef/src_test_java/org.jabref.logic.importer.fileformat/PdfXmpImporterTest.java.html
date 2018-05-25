@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>PdfXmpImporterTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.importer.fileformat</a> &gt; <span class="el_source">PdfXmpImporterTest.java</span></div><h1>PdfXmpImporterTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.importer.fileformat;
+
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
+
+import org.jabref.logic.importer.ParserResult;
+import org.jabref.logic.util.FileType;
+import org.jabref.logic.xmp.XmpPreferences;
+import org.jabref.model.entry.BibEntry;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+
+<span class="fc" id="L27">public class PdfXmpImporterTest {</span>
+
+    private PdfXmpImporter importer;
+
+    private static Stream&lt;String&gt; invalidFileNames() throws IOException {
+<span class="fc bfc" id="L32" title="All 2 branches covered.">        Predicate&lt;String&gt; fileName = name -&gt; !name.contains(&quot;annotated.pdf&quot;);</span>
+<span class="fc" id="L33">        return ImporterTestEngine.getTestFiles(fileName).stream();</span>
+    }
+
+    @BeforeEach
+    public void setUp() {
+<span class="fc" id="L38">        importer = new PdfXmpImporter(mock(XmpPreferences.class));</span>
+<span class="fc" id="L39">    }</span>
+
+    @Test
+    public void testGetFormatName() {
+<span class="fc" id="L43">        assertEquals(&quot;XMP-annotated PDF&quot;, importer.getName());</span>
+<span class="fc" id="L44">    }</span>
+
+    @Test
+    public void testsGetExtensions() {
+<span class="fc" id="L48">        assertEquals(FileType.PDF_XMP, importer.getFileType());</span>
+<span class="fc" id="L49">    }</span>
+
+    @Test
+    public void testGetDescription() {
+<span class="fc" id="L53">        assertEquals(&quot;Wraps the XMPUtility function to be used as an Importer.&quot;, importer.getDescription());</span>
+<span class="fc" id="L54">    }</span>
+
+    @Test
+    public void importEncryptedFileReturnsError() throws URISyntaxException {
+<span class="fc" id="L58">        Path file = Paths.get(PdfXmpImporterTest.class.getResource(&quot;/pdfs/encrypted.pdf&quot;).toURI());</span>
+<span class="fc" id="L59">        ParserResult result = importer.importDatabase(file, StandardCharsets.UTF_8);</span>
+<span class="fc" id="L60">        assertTrue(result.hasWarnings());</span>
+<span class="fc" id="L61">    }</span>
+
+    @Test
+    public void testImportEntries() throws URISyntaxException {
+<span class="fc" id="L65">        Path file = Paths.get(PdfXmpImporterTest.class.getResource(&quot;annotated.pdf&quot;).toURI());</span>
+<span class="fc" id="L66">        List&lt;BibEntry&gt; bibEntries = importer.importDatabase(file, StandardCharsets.UTF_8).getDatabase().getEntries();</span>
+
+<span class="fc" id="L68">        assertEquals(1, bibEntries.size());</span>
+
+<span class="fc" id="L70">        BibEntry be0 = bibEntries.get(0);</span>
+<span class="fc" id="L71">        assertEquals(Optional.of(&quot;how to annotate a pdf&quot;), be0.getField(&quot;abstract&quot;));</span>
+<span class="fc" id="L72">        assertEquals(Optional.of(&quot;Chris&quot;), be0.getField(&quot;author&quot;));</span>
+<span class="fc" id="L73">        assertEquals(Optional.of(&quot;pdf, annotation&quot;), be0.getField(&quot;keywords&quot;));</span>
+<span class="fc" id="L74">        assertEquals(Optional.of(&quot;The best Pdf ever&quot;), be0.getField(&quot;title&quot;));</span>
+<span class="fc" id="L75">    }</span>
+
+    @Test
+    public void testIsRecognizedFormat() throws IOException, URISyntaxException {
+<span class="fc" id="L79">        Path file = Paths.get(PdfXmpImporterTest.class.getResource(&quot;annotated.pdf&quot;).toURI());</span>
+<span class="fc" id="L80">        assertTrue(importer.isRecognizedFormat(file, StandardCharsets.UTF_8));</span>
+<span class="fc" id="L81">    }</span>
+
+    @ParameterizedTest
+    @MethodSource(&quot;invalidFileNames&quot;)
+    public void testIsRecognizedFormatReject(String fileName) throws IOException, URISyntaxException {
+<span class="fc" id="L86">        ImporterTestEngine.testIsNotRecognizedFormat(importer, fileName);</span>
+<span class="fc" id="L87">    }</span>
+
+    @Test
+    public void testGetCommandLineId() {
+<span class="fc" id="L91">        assertEquals(&quot;xmp&quot;, importer.getId());</span>
+<span class="fc" id="L92">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

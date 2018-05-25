@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>FieldFormatterCleanupTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.cleanup</a> &gt; <span class="el_source">FieldFormatterCleanupTest.java</span></div><h1>FieldFormatterCleanupTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.cleanup;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import org.jabref.logic.formatter.casechanger.UpperCaseFormatter;
+import org.jabref.model.cleanup.FieldFormatterCleanup;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.BibtexEntryTypes;
+import org.jabref.model.entry.FieldName;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+<span class="fc" id="L17">public class FieldFormatterCleanupTest {</span>
+
+    private BibEntry entry;
+    private Map&lt;String, String&gt; fieldMap;
+
+    @BeforeEach
+    public void setUp() {
+<span class="fc" id="L24">        fieldMap = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L25">        entry = new BibEntry();</span>
+
+<span class="fc" id="L27">        entry.setType(BibtexEntryTypes.ARTICLE);</span>
+<span class="fc" id="L28">        fieldMap.put(&quot;title&quot;, &quot;JabRef&quot;);</span>
+<span class="fc" id="L29">        fieldMap.put(&quot;booktitle&quot;, &quot;JabRefBook&quot;);</span>
+<span class="fc" id="L30">        fieldMap.put(&quot;year&quot;, &quot;twohundredsixteen&quot;);</span>
+<span class="fc" id="L31">        fieldMap.put(&quot;month&quot;, &quot;october&quot;);</span>
+<span class="fc" id="L32">        fieldMap.put(&quot;abstract&quot;, &quot;JabRefAbstract&quot;);</span>
+<span class="fc" id="L33">        fieldMap.put(&quot;doi&quot;, &quot;jabrefdoi&quot;);</span>
+<span class="fc" id="L34">        fieldMap.put(&quot;issn&quot;, &quot;jabrefissn&quot;);</span>
+<span class="fc" id="L35">        entry.setField(fieldMap);</span>
+
+<span class="fc" id="L37">    }</span>
+
+    @Test
+    public void testInternalAllField() throws Exception {
+<span class="fc" id="L41">        FieldFormatterCleanup cleanup = new FieldFormatterCleanup(FieldName.INTERNAL_ALL_FIELD, new UpperCaseFormatter());</span>
+<span class="fc" id="L42">        cleanup.cleanup(entry);</span>
+
+<span class="fc" id="L44">        assertEquals(fieldMap.get(&quot;title&quot;).toUpperCase(), entry.getField(&quot;title&quot;).get());</span>
+<span class="fc" id="L45">        assertEquals(fieldMap.get(&quot;booktitle&quot;).toUpperCase(), entry.getField(&quot;booktitle&quot;).get());</span>
+<span class="fc" id="L46">        assertEquals(fieldMap.get(&quot;year&quot;).toUpperCase(), entry.getField(&quot;year&quot;).get());</span>
+<span class="fc" id="L47">        assertEquals(fieldMap.get(&quot;month&quot;).toUpperCase(), entry.getField(&quot;month&quot;).get());</span>
+<span class="fc" id="L48">        assertEquals(fieldMap.get(&quot;abstract&quot;).toUpperCase(), entry.getField(&quot;abstract&quot;).get());</span>
+<span class="fc" id="L49">        assertEquals(fieldMap.get(&quot;doi&quot;).toUpperCase(), entry.getField(&quot;doi&quot;).get());</span>
+<span class="fc" id="L50">        assertEquals(fieldMap.get(&quot;issn&quot;).toUpperCase(), entry.getField(&quot;issn&quot;).get());</span>
+<span class="fc" id="L51">    }</span>
+
+    @Test
+    public void testInternalAllTextFieldsField() throws Exception {
+<span class="fc" id="L55">        FieldFormatterCleanup cleanup = new FieldFormatterCleanup(FieldName.INTERNAL_ALL_TEXT_FIELDS_FIELD, new UpperCaseFormatter());</span>
+<span class="fc" id="L56">        cleanup.cleanup(entry);</span>
+
+<span class="fc" id="L58">        assertEquals(fieldMap.get(&quot;title&quot;).toUpperCase(), entry.getField(&quot;title&quot;).get());</span>
+<span class="fc" id="L59">        assertEquals(fieldMap.get(&quot;booktitle&quot;).toUpperCase(), entry.getField(&quot;booktitle&quot;).get());</span>
+<span class="fc" id="L60">        assertEquals(fieldMap.get(&quot;year&quot;), entry.getField(&quot;year&quot;).get());</span>
+<span class="fc" id="L61">        assertEquals(fieldMap.get(&quot;month&quot;), entry.getField(&quot;month&quot;).get());</span>
+<span class="fc" id="L62">        assertEquals(fieldMap.get(&quot;abstract&quot;).toUpperCase(), entry.getField(&quot;abstract&quot;).get());</span>
+<span class="fc" id="L63">        assertEquals(fieldMap.get(&quot;doi&quot;), entry.getField(&quot;doi&quot;).get());</span>
+<span class="fc" id="L64">        assertEquals(fieldMap.get(&quot;issn&quot;), entry.getField(&quot;issn&quot;).get());</span>
+<span class="fc" id="L65">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

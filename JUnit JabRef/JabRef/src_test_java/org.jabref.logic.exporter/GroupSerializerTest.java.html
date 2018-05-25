@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>GroupSerializerTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.exporter</a> &gt; <span class="el_source">GroupSerializerTest.java</span></div><h1>GroupSerializerTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.exporter;
+
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+import javafx.scene.paint.Color;
+
+import org.jabref.logic.auxparser.DefaultAuxParser;
+import org.jabref.model.database.BibDatabase;
+import org.jabref.model.groups.AllEntriesGroup;
+import org.jabref.model.groups.AutomaticGroup;
+import org.jabref.model.groups.AutomaticKeywordGroup;
+import org.jabref.model.groups.AutomaticPersonsGroup;
+import org.jabref.model.groups.ExplicitGroup;
+import org.jabref.model.groups.GroupHierarchyType;
+import org.jabref.model.groups.GroupTreeNode;
+import org.jabref.model.groups.GroupTreeNodeTest;
+import org.jabref.model.groups.KeywordGroup;
+import org.jabref.model.groups.RegexKeywordGroup;
+import org.jabref.model.groups.SearchGroup;
+import org.jabref.model.groups.TexGroup;
+import org.jabref.model.groups.WordKeywordGroup;
+import org.jabref.model.util.DummyFileUpdateMonitor;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+<span class="fc" id="L32">public class GroupSerializerTest {</span>
+
+    private GroupSerializer groupSerializer;
+
+    @BeforeEach
+    public void setUp() throws Exception {
+<span class="fc" id="L38">        groupSerializer = new GroupSerializer();</span>
+<span class="fc" id="L39">    }</span>
+
+    @Test
+    public void serializeSingleAllEntriesGroup() {
+<span class="fc" id="L43">        AllEntriesGroup group = new AllEntriesGroup(&quot;&quot;);</span>
+<span class="fc" id="L44">        List&lt;String&gt; serialization = groupSerializer.serializeTree(GroupTreeNode.fromGroup(group));</span>
+<span class="fc" id="L45">        assertEquals(Collections.singletonList(&quot;0 AllEntriesGroup:&quot;), serialization);</span>
+<span class="fc" id="L46">    }</span>
+
+    @Test
+    public void serializeSingleExplicitGroup() {
+<span class="fc" id="L50">        ExplicitGroup group = new ExplicitGroup(&quot;myExplicitGroup&quot;, GroupHierarchyType.INDEPENDENT, ',');</span>
+<span class="fc" id="L51">        List&lt;String&gt; serialization = groupSerializer.serializeTree(GroupTreeNode.fromGroup(group));</span>
+<span class="fc" id="L52">        assertEquals(Collections.singletonList(&quot;0 StaticGroup:myExplicitGroup;0;1;;;;&quot;), serialization);</span>
+<span class="fc" id="L53">    }</span>
+
+    @Test
+    public void serializeSingleExplicitGroupWithIconAndDescription() {
+<span class="fc" id="L57">        ExplicitGroup group = new ExplicitGroup(&quot;myExplicitGroup&quot;, GroupHierarchyType.INDEPENDENT, ',');</span>
+<span class="fc" id="L58">        group.setIconName(&quot;test icon&quot;);</span>
+<span class="fc" id="L59">        group.setExpanded(true);</span>
+<span class="fc" id="L60">        group.setColor(Color.ALICEBLUE);</span>
+<span class="fc" id="L61">        group.setDescription(&quot;test description&quot;);</span>
+<span class="fc" id="L62">        List&lt;String&gt; serialization = groupSerializer.serializeTree(GroupTreeNode.fromGroup(group));</span>
+<span class="fc" id="L63">        assertEquals(Collections.singletonList(&quot;0 StaticGroup:myExplicitGroup;0;1;0xf0f8ffff;test icon;test description;&quot;), serialization);</span>
+<span class="fc" id="L64">    }</span>
+
+    @Test
+    // For https://github.com/JabRef/jabref/issues/1681
+    public void serializeSingleExplicitGroupWithEscapedSlash() {
+<span class="fc" id="L69">        ExplicitGroup group = new ExplicitGroup(&quot;B{\\\&quot;{o}}hmer&quot;, GroupHierarchyType.INDEPENDENT, ',');</span>
+<span class="fc" id="L70">        List&lt;String&gt; serialization = groupSerializer.serializeTree(GroupTreeNode.fromGroup(group));</span>
+<span class="fc" id="L71">        assertEquals(Collections.singletonList(&quot;0 StaticGroup:B{\\\\\&quot;{o}}hmer;0;1;;;;&quot;), serialization);</span>
+<span class="fc" id="L72">    }</span>
+
+    @Test
+    public void serializeSingleSimpleKeywordGroup() {
+<span class="fc" id="L76">        WordKeywordGroup group = new WordKeywordGroup(&quot;name&quot;, GroupHierarchyType.INDEPENDENT, &quot;keywords&quot;, &quot;test&quot;, false, ',', false);</span>
+<span class="fc" id="L77">        List&lt;String&gt; serialization = groupSerializer.serializeTree(GroupTreeNode.fromGroup(group));</span>
+<span class="fc" id="L78">        assertEquals(Collections.singletonList(&quot;0 KeywordGroup:name;0;keywords;test;0;0;1;;;;&quot;), serialization);</span>
+<span class="fc" id="L79">    }</span>
+
+    @Test
+    public void serializeSingleRegexKeywordGroup() {
+<span class="fc" id="L83">        KeywordGroup group = new RegexKeywordGroup(&quot;myExplicitGroup&quot;, GroupHierarchyType.REFINING, &quot;author&quot;, &quot;asdf&quot;, false);</span>
+<span class="fc" id="L84">        List&lt;String&gt; serialization = groupSerializer.serializeTree(GroupTreeNode.fromGroup(group));</span>
+<span class="fc" id="L85">        assertEquals(Collections.singletonList(&quot;0 KeywordGroup:myExplicitGroup;1;author;asdf;0;1;1;;;;&quot;), serialization);</span>
+<span class="fc" id="L86">    }</span>
+
+    @Test
+    public void serializeSingleSearchGroup() {
+<span class="fc" id="L90">        SearchGroup group = new SearchGroup(&quot;myExplicitGroup&quot;, GroupHierarchyType.INDEPENDENT, &quot;author=harrer&quot;, true, true);</span>
+<span class="fc" id="L91">        List&lt;String&gt; serialization = groupSerializer.serializeTree(GroupTreeNode.fromGroup(group));</span>
+<span class="fc" id="L92">        assertEquals(Collections.singletonList(&quot;0 SearchGroup:myExplicitGroup;0;author=harrer;1;1;1;;;;&quot;), serialization);</span>
+<span class="fc" id="L93">    }</span>
+
+    @Test
+    public void serializeSingleSearchGroupWithRegex() {
+<span class="fc" id="L97">        SearchGroup group = new SearchGroup(&quot;myExplicitGroup&quot;, GroupHierarchyType.INCLUDING, &quot;author=\&quot;harrer\&quot;&quot;, true, false);</span>
+<span class="fc" id="L98">        List&lt;String&gt; serialization = groupSerializer.serializeTree(GroupTreeNode.fromGroup(group));</span>
+<span class="fc" id="L99">        assertEquals(Collections.singletonList(&quot;0 SearchGroup:myExplicitGroup;2;author=\&quot;harrer\&quot;;1;0;1;;;;&quot;), serialization);</span>
+<span class="fc" id="L100">    }</span>
+
+    @Test
+    public void serializeSingleAutomaticKeywordGroup() {
+<span class="fc" id="L104">        AutomaticGroup group = new AutomaticKeywordGroup(&quot;myAutomaticGroup&quot;, GroupHierarchyType.INDEPENDENT, &quot;keywords&quot;, ',', '&gt;');</span>
+<span class="fc" id="L105">        List&lt;String&gt; serialization = groupSerializer.serializeTree(GroupTreeNode.fromGroup(group));</span>
+<span class="fc" id="L106">        assertEquals(Collections.singletonList(&quot;0 AutomaticKeywordGroup:myAutomaticGroup;0;keywords;,;&gt;;1;;;;&quot;), serialization);</span>
+<span class="fc" id="L107">    }</span>
+
+    @Test
+    public void serializeSingleAutomaticPersonGroup() {
+<span class="fc" id="L111">        AutomaticPersonsGroup group = new AutomaticPersonsGroup(&quot;myAutomaticGroup&quot;, GroupHierarchyType.INDEPENDENT, &quot;authors&quot;);</span>
+<span class="fc" id="L112">        List&lt;String&gt; serialization = groupSerializer.serializeTree(GroupTreeNode.fromGroup(group));</span>
+<span class="fc" id="L113">        assertEquals(Collections.singletonList(&quot;0 AutomaticPersonsGroup:myAutomaticGroup;0;authors;1;;;;&quot;), serialization);</span>
+<span class="fc" id="L114">    }</span>
+
+    @Test
+    public void serializeSingleTexGroup() throws Exception {
+<span class="fc" id="L118">        TexGroup group = new TexGroup(&quot;myTexGroup&quot;, GroupHierarchyType.INDEPENDENT, Paths.get(&quot;path&quot;, &quot;To&quot;, &quot;File&quot;), new DefaultAuxParser(new BibDatabase()), new DummyFileUpdateMonitor());</span>
+<span class="fc" id="L119">        List&lt;String&gt; serialization = groupSerializer.serializeTree(GroupTreeNode.fromGroup(group));</span>
+<span class="fc" id="L120">        assertEquals(Collections.singletonList(&quot;0 TexGroup:myTexGroup;0;path/To/File;1;;;;&quot;), serialization);</span>
+<span class="fc" id="L121">    }</span>
+
+    @Test
+    public void getTreeAsStringInSimpleTree() throws Exception {
+<span class="fc" id="L125">        GroupTreeNode root = GroupTreeNodeTest.getRoot();</span>
+<span class="fc" id="L126">        GroupTreeNodeTest.getNodeInSimpleTree(root);</span>
+
+<span class="fc" id="L128">        List&lt;String&gt; expected = Arrays.asList(</span>
+<span class="fc" id="L129">                &quot;0 AllEntriesGroup:&quot;,</span>
+<span class="fc" id="L130">                &quot;1 StaticGroup:ExplicitA;2;1;;;;&quot;,</span>
+<span class="fc" id="L131">                &quot;1 StaticGroup:ExplicitParent;0;1;;;;&quot;,</span>
+<span class="fc" id="L132">                &quot;2 StaticGroup:ExplicitNode;1;1;;;;&quot;</span>
+        );
+<span class="fc" id="L134">        assertEquals(expected, groupSerializer.serializeTree(root));</span>
+<span class="fc" id="L135">    }</span>
+
+    @Test
+    public void getTreeAsStringInComplexTree() throws Exception {
+<span class="fc" id="L139">        GroupTreeNode root = GroupTreeNodeTest.getRoot();</span>
+<span class="fc" id="L140">        GroupTreeNodeTest.getNodeInComplexTree(root);</span>
+
+<span class="fc" id="L142">        List&lt;String&gt; expected = Arrays.asList(</span>
+<span class="fc" id="L143">                &quot;0 AllEntriesGroup:&quot;,</span>
+<span class="fc" id="L144">                &quot;1 SearchGroup:SearchA;2;searchExpression;1;0;1;;;;&quot;,</span>
+<span class="fc" id="L145">                &quot;1 StaticGroup:ExplicitA;2;1;;;;&quot;,</span>
+<span class="fc" id="L146">                &quot;1 StaticGroup:ExplicitGrandParent;0;1;;;;&quot;,</span>
+<span class="fc" id="L147">                &quot;2 StaticGroup:ExplicitB;1;1;;;;&quot;,</span>
+<span class="fc" id="L148">                &quot;2 KeywordGroup:KeywordParent;0;searchField;searchExpression;1;0;1;;;;&quot;,</span>
+<span class="fc" id="L149">                &quot;3 KeywordGroup:KeywordNode;0;searchField;searchExpression;1;0;1;;;;&quot;,</span>
+<span class="fc" id="L150">                &quot;4 StaticGroup:ExplicitChild;1;1;;;;&quot;,</span>
+<span class="fc" id="L151">                &quot;3 SearchGroup:SearchC;2;searchExpression;1;0;1;;;;&quot;,</span>
+<span class="fc" id="L152">                &quot;3 StaticGroup:ExplicitC;1;1;;;;&quot;,</span>
+<span class="fc" id="L153">                &quot;3 KeywordGroup:KeywordC;0;searchField;searchExpression;1;0;1;;;;&quot;,</span>
+<span class="fc" id="L154">                &quot;2 SearchGroup:SearchB;2;searchExpression;1;0;1;;;;&quot;,</span>
+<span class="fc" id="L155">                &quot;2 KeywordGroup:KeywordB;0;searchField;searchExpression;1;0;1;;;;&quot;,</span>
+<span class="fc" id="L156">                &quot;1 KeywordGroup:KeywordA;0;searchField;searchExpression;1;0;1;;;;&quot;</span>
+        );
+<span class="fc" id="L158">        assertEquals(expected, groupSerializer.serializeTree(root));</span>
+<span class="fc" id="L159">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

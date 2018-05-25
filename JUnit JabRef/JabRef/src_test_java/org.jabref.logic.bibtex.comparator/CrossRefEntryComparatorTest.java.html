@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>CrossRefEntryComparatorTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.bibtex.comparator</a> &gt; <span class="el_source">CrossRefEntryComparatorTest.java</span></div><h1>CrossRefEntryComparatorTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.bibtex.comparator;
+
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.FieldName;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+<span class="fc" id="L12">public class CrossRefEntryComparatorTest {</span>
+    private CrossRefEntryComparator comparator;
+
+    @BeforeEach
+    public void setUp() {
+<span class="fc" id="L17">        comparator = new CrossRefEntryComparator();</span>
+<span class="fc" id="L18">    }</span>
+
+    @AfterEach
+    public void tearDown() {
+<span class="fc" id="L22">        comparator = null;</span>
+<span class="fc" id="L23">    }</span>
+
+    @Test
+    public void isEqualForEntriesWithoutCrossRef() {
+<span class="fc" id="L27">        BibEntry e1 = new BibEntry();</span>
+<span class="fc" id="L28">        BibEntry e2 = new BibEntry();</span>
+<span class="fc" id="L29">        assertEquals(0, comparator.compare(e1, e2));</span>
+<span class="fc" id="L30">    }</span>
+
+    @Test
+    public void isEqualForEntriesWithCrossRef() {
+<span class="fc" id="L34">        BibEntry e1 = new BibEntry();</span>
+<span class="fc" id="L35">        e1.setField(FieldName.CROSSREF, &quot;1&quot;);</span>
+<span class="fc" id="L36">        BibEntry e2 = new BibEntry();</span>
+<span class="fc" id="L37">        e2.setField(FieldName.CROSSREF, &quot;2&quot;);</span>
+<span class="fc" id="L38">        assertEquals(0, comparator.compare(e1, e2));</span>
+<span class="fc" id="L39">    }</span>
+
+    @Test
+    public void isGreaterForEntriesWithoutCrossRef() {
+<span class="fc" id="L43">        BibEntry e1 = new BibEntry();</span>
+<span class="fc" id="L44">        BibEntry e2 = new BibEntry();</span>
+<span class="fc" id="L45">        e2.setField(FieldName.CROSSREF, &quot;1&quot;);</span>
+<span class="fc" id="L46">        assertEquals(1, comparator.compare(e1, e2));</span>
+<span class="fc" id="L47">    }</span>
+
+    @Test
+    public void isSmallerForEntriesWithCrossRef() {
+<span class="fc" id="L51">        BibEntry e1 = new BibEntry();</span>
+<span class="fc" id="L52">        e1.setField(FieldName.CROSSREF, &quot;1&quot;);</span>
+<span class="fc" id="L53">        BibEntry e2 = new BibEntry();</span>
+<span class="fc" id="L54">        assertEquals(-1, comparator.compare(e1, e2));</span>
+<span class="fc" id="L55">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>BibEntryAssert.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.bibtex</a> &gt; <span class="el_source">BibEntryAssert.java</span></div><h1>BibEntryAssert.java</h1><pre class="source lang-java linenums">package org.jabref.logic.bibtex;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Collections;
+import java.util.List;
+
+import org.jabref.logic.importer.ImportFormatPreferences;
+import org.jabref.logic.importer.Importer;
+import org.jabref.logic.importer.ParserResult;
+import org.jabref.logic.importer.fileformat.BibtexParser;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.util.DummyFileUpdateMonitor;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+import org.junit.jupiter.api.Assertions;
+import org.mockito.Answers;
+
+import static org.mockito.Mockito.mock;
+
+<span class="nc" id="L29">public class BibEntryAssert {</span>
+
+    /**
+     * Reads a single entry from the resource using `getResourceAsStream` from the given class. The resource has to
+     * contain a single entry
+     *
+     * @param clazz the class where to call `getResourceAsStream`
+     * @param resourceName the resource to read
+     * @param entry the entry to compare with
+     */
+    public static void assertEquals(Class&lt;?&gt; clazz, String resourceName, BibEntry entry)
+            throws IOException {
+<span class="fc" id="L41">        assertNotNull(clazz);</span>
+<span class="fc" id="L42">        assertNotNull(resourceName);</span>
+<span class="fc" id="L43">        assertNotNull(entry);</span>
+<span class="fc" id="L44">        try (InputStream shouldBeIs = clazz.getResourceAsStream(resourceName)) {</span>
+<span class="fc" id="L45">            BibEntryAssert.assertEquals(shouldBeIs, entry);</span>
+<span class="pc bpc" id="L46" title="7 of 8 branches missed.">        }</span>
+<span class="fc" id="L47">    }</span>
+
+    /**
+     * Reads a single entry from the resource using `getResourceAsStream` from the given class. The resource has to
+     * contain a single entry
+     *
+     * @param clazz the class where to call `getResourceAsStream`
+     * @param resourceName the resource to read
+     * @param asIsEntries a list containing a single entry to compare with
+     */
+    public static void assertEquals(Class&lt;?&gt; clazz, String resourceName, List&lt;BibEntry&gt; asIsEntries)
+            throws IOException {
+<span class="fc" id="L59">        assertNotNull(clazz);</span>
+<span class="fc" id="L60">        assertNotNull(resourceName);</span>
+<span class="fc" id="L61">        assertNotNull(asIsEntries);</span>
+<span class="fc" id="L62">        try (InputStream shouldBeIs = clazz.getResourceAsStream(resourceName)) {</span>
+<span class="fc" id="L63">            BibEntryAssert.assertEquals(shouldBeIs, asIsEntries);</span>
+<span class="pc bpc" id="L64" title="4 of 8 branches missed.">        }</span>
+<span class="fc" id="L65">    }</span>
+
+    private static List&lt;BibEntry&gt; getListFromInputStream(InputStream is) throws IOException {
+        ParserResult result;
+<span class="fc" id="L69">        try (Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {</span>
+<span class="fc" id="L70">            BibtexParser parser = new BibtexParser(mock(ImportFormatPreferences.class, Answers.RETURNS_DEEP_STUBS), new DummyFileUpdateMonitor());</span>
+<span class="fc" id="L71">            result = parser.parse(reader);</span>
+<span class="pc bpc" id="L72" title="7 of 8 branches missed.">        }</span>
+<span class="fc" id="L73">        assertNotNull(result);</span>
+<span class="fc" id="L74">        assertFalse(result.isEmpty());</span>
+<span class="fc" id="L75">        return result.getDatabase().getEntries();</span>
+    }
+
+    /**
+     * Reads a bibtex database from the given InputStream. The list is compared with the given list.
+     *
+     * @param expectedInputStream the inputStream reading the entry from
+     * @param actualEntries a list containing a single entry to compare with
+     */
+    public static void assertEquals(InputStream expectedInputStream, List&lt;BibEntry&gt; actualEntries)
+            throws IOException {
+<span class="fc" id="L86">        assertNotNull(expectedInputStream);</span>
+<span class="fc" id="L87">        assertNotNull(actualEntries);</span>
+        // explicit reference of Assertions is needed here to disambiguate from the methods defined by this class
+<span class="fc" id="L89">        Assertions.assertEquals(getListFromInputStream(expectedInputStream), actualEntries);</span>
+<span class="fc" id="L90">    }</span>
+
+    public static void assertEquals(List&lt;BibEntry&gt; expectedEntries, InputStream actualInputStream)
+            throws IOException {
+<span class="nc" id="L94">        assertNotNull(actualInputStream);</span>
+<span class="nc" id="L95">        assertNotNull(expectedEntries);</span>
+        // explicit reference of Assertions is needed here to disambiguate from the methods defined by this class
+<span class="nc" id="L97">        Assertions.assertEquals(expectedEntries, getListFromInputStream(actualInputStream));</span>
+<span class="nc" id="L98">    }</span>
+
+    /**
+     * Reads a bibtex database from the given InputStream. The result has to contain a single BibEntry. This entry is
+     * compared to the given entry
+     *
+     * @param expected the inputStream reading the entry from
+     * @param actual the entry to compare with
+     */
+    public static void assertEquals(InputStream expected, BibEntry actual)
+            throws IOException {
+<span class="fc" id="L109">        assertEquals(expected, Collections.singletonList(actual));</span>
+<span class="fc" id="L110">    }</span>
+
+    /**
+     * Compares two InputStreams. For each InputStream a list will be created. expectedIs is read directly, actualIs is filtered through importer to convert to a list of BibEntries.
+     * @param expectedIs A BibtexImporter InputStream.
+     * @param fileToImport The path to the file to be imported.
+     * @param importer The fileformat you want to use to read the passed file to get the list of expected BibEntries
+     * @throws IOException
+     */
+    public static void assertEquals(InputStream expectedIs, Path fileToImport, Importer importer)
+            throws IOException {
+<span class="nc" id="L121">        assertEquals(getListFromInputStream(expectedIs), fileToImport, importer);</span>
+<span class="nc" id="L122">    }</span>
+
+    public static void assertEquals(InputStream expectedIs, URL fileToImport, Importer importer)
+            throws URISyntaxException, IOException {
+<span class="nc" id="L126">        assertEquals(expectedIs, Paths.get(fileToImport.toURI()), importer);</span>
+<span class="nc" id="L127">    }</span>
+
+    /**
+     * Compares a list of BibEntries to an InputStream. actualIs is filtered through importerForActualIs to convert to a list of BibEntries.
+     * @param expected A BibtexImporter InputStream.
+     * @param fileToImport The path to the file to be imported.
+     * @param importer The fileformat you want to use to read the passed file to get the list of expected BibEntries
+     * @throws IOException
+     */
+    public static void assertEquals(List&lt;BibEntry&gt; expected, Path fileToImport, Importer importer)
+            throws IOException {
+<span class="fc" id="L138">        List&lt;BibEntry&gt; actualEntries = importer.importDatabase(fileToImport, StandardCharsets.UTF_8)</span>
+<span class="fc" id="L139">                .getDatabase().getEntries();</span>
+        // explicit reference of Assertions is needed here to disambiguate from the methods defined by this class
+<span class="fc" id="L141">        Assertions.assertEquals(expected, actualEntries);</span>
+<span class="fc" id="L142">    }</span>
+
+    public static void assertEquals(List&lt;BibEntry&gt; expected, URL fileToImport, Importer importer)
+            throws URISyntaxException, IOException {
+<span class="fc" id="L146">        assertEquals(expected, Paths.get(fileToImport.toURI()), importer);</span>
+<span class="fc" id="L147">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

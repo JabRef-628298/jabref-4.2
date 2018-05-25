@@ -1,0 +1,451 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>SearchParser.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/gen</a> &gt; <a href="index.source.html" class="el_package">org.jabref.search</a> &gt; <span class="el_source">SearchParser.java</span></div><h1>SearchParser.java</h1><pre class="source lang-java linenums">// Generated from /home/ufscar/Desktop/jabref/jabref-4.2/src/main/antlr4/org/jabref/search/Search.g4 by ANTLR 4.7.1
+package org.jabref.search;
+import org.antlr.v4.runtime.atn.*;
+import org.antlr.v4.runtime.dfa.DFA;
+import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.misc.*;
+import org.antlr.v4.runtime.tree.*;
+import java.util.List;
+import java.util.Iterator;
+import java.util.ArrayList;
+
+@SuppressWarnings({&quot;all&quot;, &quot;warnings&quot;, &quot;unchecked&quot;, &quot;unused&quot;, &quot;cast&quot;})
+public class SearchParser extends Parser {
+<span class="fc" id="L14">	static { RuntimeMetaData.checkVersion(&quot;4.7.1&quot;, RuntimeMetaData.VERSION); }</span>
+
+	protected static final DFA[] _decisionToDFA;
+<span class="fc" id="L17">	protected static final PredictionContextCache _sharedContextCache =</span>
+<span class="fc" id="L18">		new PredictionContextCache();</span>
+	public static final int
+		WS=1, LPAREN=2, RPAREN=3, EQUAL=4, EEQUAL=5, NEQUAL=6, AND=7, OR=8, CONTAINS=9, 
+		MATCHES=10, NOT=11, STRING=12, QUOTE=13, FIELDTYPE=14;
+	public static final int
+		RULE_start = 0, RULE_expression = 1, RULE_comparison = 2, RULE_name = 3;
+<span class="fc" id="L24">	public static final String[] ruleNames = {</span>
+<span class="fc" id="L25">		&quot;start&quot;, &quot;expression&quot;, &quot;comparison&quot;, &quot;name&quot;</span>
+	};
+
+<span class="fc" id="L28">	private static final String[] _LITERAL_NAMES = {</span>
+<span class="fc" id="L29">		null, null, &quot;'('&quot;, &quot;')'&quot;, &quot;'='&quot;, &quot;'=='&quot;, &quot;'!='&quot;, null, null, null, null, </span>
+<span class="fc" id="L30">		null, null, &quot;'\&quot;'&quot;</span>
+	};
+<span class="fc" id="L32">	private static final String[] _SYMBOLIC_NAMES = {</span>
+<span class="fc" id="L33">		null, &quot;WS&quot;, &quot;LPAREN&quot;, &quot;RPAREN&quot;, &quot;EQUAL&quot;, &quot;EEQUAL&quot;, &quot;NEQUAL&quot;, &quot;AND&quot;, &quot;OR&quot;, </span>
+<span class="fc" id="L34">		&quot;CONTAINS&quot;, &quot;MATCHES&quot;, &quot;NOT&quot;, &quot;STRING&quot;, &quot;QUOTE&quot;, &quot;FIELDTYPE&quot;</span>
+	};
+<span class="fc" id="L36">	public static final Vocabulary VOCABULARY = new VocabularyImpl(_LITERAL_NAMES, _SYMBOLIC_NAMES);</span>
+
+	/**
+	 * @deprecated Use {@link #VOCABULARY} instead.
+	 */
+	@Deprecated
+	public static final String[] tokenNames;
+	static {
+<span class="fc" id="L44">		tokenNames = new String[_SYMBOLIC_NAMES.length];</span>
+<span class="fc bfc" id="L45" title="All 2 branches covered.">		for (int i = 0; i &lt; tokenNames.length; i++) {</span>
+<span class="fc" id="L46">			tokenNames[i] = VOCABULARY.getLiteralName(i);</span>
+<span class="fc bfc" id="L47" title="All 2 branches covered.">			if (tokenNames[i] == null) {</span>
+<span class="fc" id="L48">				tokenNames[i] = VOCABULARY.getSymbolicName(i);</span>
+			}
+
+<span class="fc bfc" id="L51" title="All 2 branches covered.">			if (tokenNames[i] == null) {</span>
+<span class="fc" id="L52">				tokenNames[i] = &quot;&lt;INVALID&gt;&quot;;</span>
+			}
+		}
+	}
+
+	@Override
+	@Deprecated
+	public String[] getTokenNames() {
+<span class="nc" id="L60">		return tokenNames;</span>
+	}
+
+	@Override
+
+	public Vocabulary getVocabulary() {
+<span class="nc" id="L66">		return VOCABULARY;</span>
+	}
+
+	@Override
+<span class="nc" id="L70">	public String getGrammarFileName() { return &quot;Search.g4&quot;; }</span>
+
+	@Override
+<span class="nc" id="L73">	public String[] getRuleNames() { return ruleNames; }</span>
+
+	@Override
+<span class="nc" id="L76">	public String getSerializedATN() { return _serializedATN; }</span>
+
+	@Override
+<span class="nc" id="L79">	public ATN getATN() { return _ATN; }</span>
+
+	public SearchParser(TokenStream input) {
+<span class="fc" id="L82">		super(input);</span>
+<span class="fc" id="L83">		_interp = new ParserATNSimulator(this,_ATN,_decisionToDFA,_sharedContextCache);</span>
+<span class="fc" id="L84">	}</span>
+	public static class StartContext extends ParserRuleContext {
+		public ExpressionContext expression() {
+<span class="fc" id="L87">			return getRuleContext(ExpressionContext.class,0);</span>
+		}
+<span class="nc" id="L89">		public TerminalNode EOF() { return getToken(SearchParser.EOF, 0); }</span>
+		public StartContext(ParserRuleContext parent, int invokingState) {
+<span class="fc" id="L91">			super(parent, invokingState);</span>
+<span class="fc" id="L92">		}</span>
+<span class="nc" id="L93">		@Override public int getRuleIndex() { return RULE_start; }</span>
+		@Override
+		public &lt;T&gt; T accept(ParseTreeVisitor&lt;? extends T&gt; visitor) {
+<span class="pc bpc" id="L96" title="1 of 2 branches missed.">			if ( visitor instanceof SearchVisitor ) return ((SearchVisitor&lt;? extends T&gt;)visitor).visitStart(this);</span>
+<span class="nc" id="L97">			else return visitor.visitChildren(this);</span>
+		}
+	}
+
+	public final StartContext start() throws RecognitionException {
+<span class="fc" id="L102">		StartContext _localctx = new StartContext(_ctx, getState());</span>
+<span class="fc" id="L103">		enterRule(_localctx, 0, RULE_start);</span>
+		try {
+<span class="fc" id="L105">			enterOuterAlt(_localctx, 1);</span>
+			{
+<span class="fc" id="L107">			setState(8);</span>
+<span class="fc" id="L108">			expression(0);</span>
+<span class="fc" id="L109">			setState(9);</span>
+<span class="fc" id="L110">			match(EOF);</span>
+			}
+<span class="fc" id="L112">		}</span>
+<span class="nc" id="L113">		catch (RecognitionException re) {</span>
+<span class="nc" id="L114">			_localctx.exception = re;</span>
+<span class="nc" id="L115">			_errHandler.reportError(this, re);</span>
+<span class="nc" id="L116">			_errHandler.recover(this, re);</span>
+		}
+<span class="nc" id="L118">		finally {</span>
+<span class="pc" id="L119">			exitRule();</span>
+<span class="nc" id="L120">		}</span>
+<span class="fc" id="L121">		return _localctx;</span>
+	}
+
+	public static class ExpressionContext extends ParserRuleContext {
+		public ExpressionContext(ParserRuleContext parent, int invokingState) {
+<span class="fc" id="L126">			super(parent, invokingState);</span>
+<span class="fc" id="L127">		}</span>
+<span class="nc" id="L128">		@Override public int getRuleIndex() { return RULE_expression; }</span>
+	 
+<span class="fc" id="L130">		public ExpressionContext() { }</span>
+		public void copyFrom(ExpressionContext ctx) {
+<span class="fc" id="L132">			super.copyFrom(ctx);</span>
+<span class="fc" id="L133">		}</span>
+	}
+	public static class BinaryExpressionContext extends ExpressionContext {
+		public ExpressionContext left;
+		public Token operator;
+		public ExpressionContext right;
+		public List&lt;ExpressionContext&gt; expression() {
+<span class="nc" id="L140">			return getRuleContexts(ExpressionContext.class);</span>
+		}
+		public ExpressionContext expression(int i) {
+<span class="nc" id="L143">			return getRuleContext(ExpressionContext.class,i);</span>
+		}
+<span class="nc" id="L145">		public TerminalNode AND() { return getToken(SearchParser.AND, 0); }</span>
+<span class="nc" id="L146">		public TerminalNode OR() { return getToken(SearchParser.OR, 0); }</span>
+<span class="fc" id="L147">		public BinaryExpressionContext(ExpressionContext ctx) { copyFrom(ctx); }</span>
+		@Override
+		public &lt;T&gt; T accept(ParseTreeVisitor&lt;? extends T&gt; visitor) {
+<span class="pc bpc" id="L150" title="1 of 2 branches missed.">			if ( visitor instanceof SearchVisitor ) return ((SearchVisitor&lt;? extends T&gt;)visitor).visitBinaryExpression(this);</span>
+<span class="nc" id="L151">			else return visitor.visitChildren(this);</span>
+		}
+	}
+	public static class AtomExpressionContext extends ExpressionContext {
+		public ComparisonContext comparison() {
+<span class="nc" id="L156">			return getRuleContext(ComparisonContext.class,0);</span>
+		}
+<span class="fc" id="L158">		public AtomExpressionContext(ExpressionContext ctx) { copyFrom(ctx); }</span>
+		@Override
+		public &lt;T&gt; T accept(ParseTreeVisitor&lt;? extends T&gt; visitor) {
+<span class="pc bpc" id="L161" title="1 of 2 branches missed.">			if ( visitor instanceof SearchVisitor ) return ((SearchVisitor&lt;? extends T&gt;)visitor).visitAtomExpression(this);</span>
+<span class="nc" id="L162">			else return visitor.visitChildren(this);</span>
+		}
+	}
+	public static class ParenExpressionContext extends ExpressionContext {
+<span class="nc" id="L166">		public TerminalNode LPAREN() { return getToken(SearchParser.LPAREN, 0); }</span>
+		public ExpressionContext expression() {
+<span class="nc" id="L168">			return getRuleContext(ExpressionContext.class,0);</span>
+		}
+<span class="nc" id="L170">		public TerminalNode RPAREN() { return getToken(SearchParser.RPAREN, 0); }</span>
+<span class="nc" id="L171">		public ParenExpressionContext(ExpressionContext ctx) { copyFrom(ctx); }</span>
+		@Override
+		public &lt;T&gt; T accept(ParseTreeVisitor&lt;? extends T&gt; visitor) {
+<span class="nc bnc" id="L174" title="All 2 branches missed.">			if ( visitor instanceof SearchVisitor ) return ((SearchVisitor&lt;? extends T&gt;)visitor).visitParenExpression(this);</span>
+<span class="nc" id="L175">			else return visitor.visitChildren(this);</span>
+		}
+	}
+	public static class UnaryExpressionContext extends ExpressionContext {
+<span class="nc" id="L179">		public TerminalNode NOT() { return getToken(SearchParser.NOT, 0); }</span>
+		public ExpressionContext expression() {
+<span class="fc" id="L181">			return getRuleContext(ExpressionContext.class,0);</span>
+		}
+<span class="fc" id="L183">		public UnaryExpressionContext(ExpressionContext ctx) { copyFrom(ctx); }</span>
+		@Override
+		public &lt;T&gt; T accept(ParseTreeVisitor&lt;? extends T&gt; visitor) {
+<span class="pc bpc" id="L186" title="1 of 2 branches missed.">			if ( visitor instanceof SearchVisitor ) return ((SearchVisitor&lt;? extends T&gt;)visitor).visitUnaryExpression(this);</span>
+<span class="nc" id="L187">			else return visitor.visitChildren(this);</span>
+		}
+	}
+
+	public final ExpressionContext expression() throws RecognitionException {
+<span class="nc" id="L192">		return expression(0);</span>
+	}
+
+	private ExpressionContext expression(int _p) throws RecognitionException {
+<span class="fc" id="L196">		ParserRuleContext _parentctx = _ctx;</span>
+<span class="fc" id="L197">		int _parentState = getState();</span>
+<span class="fc" id="L198">		ExpressionContext _localctx = new ExpressionContext(_ctx, _parentState);</span>
+<span class="fc" id="L199">		ExpressionContext _prevctx = _localctx;</span>
+<span class="fc" id="L200">		int _startState = 2;</span>
+<span class="fc" id="L201">		enterRecursionRule(_localctx, 2, RULE_expression, _p);</span>
+		int _la;
+		try {
+			int _alt;
+<span class="fc" id="L205">			enterOuterAlt(_localctx, 1);</span>
+			{
+<span class="fc" id="L207">			setState(19);</span>
+<span class="fc" id="L208">			_errHandler.sync(this);</span>
+<span class="pc bpc" id="L209" title="2 of 4 branches missed.">			switch (_input.LA(1)) {</span>
+			case LPAREN:
+				{
+<span class="nc" id="L212">				_localctx = new ParenExpressionContext(_localctx);</span>
+<span class="nc" id="L213">				_ctx = _localctx;</span>
+<span class="nc" id="L214">				_prevctx = _localctx;</span>
+
+<span class="nc" id="L216">				setState(12);</span>
+<span class="nc" id="L217">				match(LPAREN);</span>
+<span class="nc" id="L218">				setState(13);</span>
+<span class="nc" id="L219">				expression(0);</span>
+<span class="nc" id="L220">				setState(14);</span>
+<span class="nc" id="L221">				match(RPAREN);</span>
+				}
+<span class="nc" id="L223">				break;</span>
+			case NOT:
+				{
+<span class="fc" id="L226">				_localctx = new UnaryExpressionContext(_localctx);</span>
+<span class="fc" id="L227">				_ctx = _localctx;</span>
+<span class="fc" id="L228">				_prevctx = _localctx;</span>
+<span class="fc" id="L229">				setState(16);</span>
+<span class="fc" id="L230">				match(NOT);</span>
+<span class="fc" id="L231">				setState(17);</span>
+<span class="fc" id="L232">				expression(2);</span>
+				}
+<span class="fc" id="L234">				break;</span>
+			case STRING:
+			case FIELDTYPE:
+				{
+<span class="fc" id="L238">				_localctx = new AtomExpressionContext(_localctx);</span>
+<span class="fc" id="L239">				_ctx = _localctx;</span>
+<span class="fc" id="L240">				_prevctx = _localctx;</span>
+<span class="fc" id="L241">				setState(18);</span>
+<span class="fc" id="L242">				comparison();</span>
+				}
+<span class="fc" id="L244">				break;</span>
+			default:
+<span class="nc" id="L246">				throw new NoViableAltException(this);</span>
+			}
+<span class="fc" id="L248">			_ctx.stop = _input.LT(-1);</span>
+<span class="fc" id="L249">			setState(26);</span>
+<span class="fc" id="L250">			_errHandler.sync(this);</span>
+<span class="fc" id="L251">			_alt = getInterpreter().adaptivePredict(_input,1,_ctx);</span>
+<span class="pc bpc" id="L252" title="1 of 4 branches missed.">			while ( _alt!=2 &amp;&amp; _alt!=org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER ) {</span>
+<span class="pc bpc" id="L253" title="1 of 2 branches missed.">				if ( _alt==1 ) {</span>
+<span class="pc bpc" id="L254" title="1 of 2 branches missed.">					if ( _parseListeners!=null ) triggerExitRuleEvent();</span>
+<span class="fc" id="L255">					_prevctx = _localctx;</span>
+					{
+					{
+<span class="fc" id="L258">					_localctx = new BinaryExpressionContext(new ExpressionContext(_parentctx, _parentState));</span>
+<span class="fc" id="L259">					((BinaryExpressionContext)_localctx).left = _prevctx;</span>
+<span class="fc" id="L260">					pushNewRecursionContext(_localctx, _startState, RULE_expression);</span>
+<span class="fc" id="L261">					setState(21);</span>
+<span class="pc bpc" id="L262" title="1 of 2 branches missed.">					if (!(precpred(_ctx, 3))) throw new FailedPredicateException(this, &quot;precpred(_ctx, 3)&quot;);</span>
+<span class="fc" id="L263">					setState(22);</span>
+<span class="fc" id="L264">					((BinaryExpressionContext)_localctx).operator = _input.LT(1);</span>
+<span class="fc" id="L265">					_la = _input.LA(1);</span>
+<span class="pc bpc" id="L266" title="1 of 4 branches missed.">					if ( !(_la==AND || _la==OR) ) {</span>
+<span class="nc" id="L267">						((BinaryExpressionContext)_localctx).operator = (Token)_errHandler.recoverInline(this);</span>
+<span class="nc" id="L268">					}</span>
+					else {
+<span class="pc bpc" id="L270" title="1 of 2 branches missed.">						if ( _input.LA(1)==Token.EOF ) matchedEOF = true;</span>
+<span class="fc" id="L271">						_errHandler.reportMatch(this);</span>
+<span class="fc" id="L272">						consume();</span>
+					}
+<span class="fc" id="L274">					setState(23);</span>
+<span class="fc" id="L275">					((BinaryExpressionContext)_localctx).right = expression(4);</span>
+					}
+					} 
+				}
+<span class="fc" id="L279">				setState(28);</span>
+<span class="fc" id="L280">				_errHandler.sync(this);</span>
+<span class="fc" id="L281">				_alt = getInterpreter().adaptivePredict(_input,1,_ctx);</span>
+			}
+			}
+<span class="nc" id="L284">		}</span>
+<span class="nc" id="L285">		catch (RecognitionException re) {</span>
+<span class="nc" id="L286">			_localctx.exception = re;</span>
+<span class="nc" id="L287">			_errHandler.reportError(this, re);</span>
+<span class="nc" id="L288">			_errHandler.recover(this, re);</span>
+		}
+<span class="nc" id="L290">		finally {</span>
+<span class="pc" id="L291">			unrollRecursionContexts(_parentctx);</span>
+<span class="nc" id="L292">		}</span>
+<span class="fc" id="L293">		return _localctx;</span>
+	}
+
+	public static class ComparisonContext extends ParserRuleContext {
+		public NameContext left;
+		public Token operator;
+		public NameContext right;
+		public List&lt;NameContext&gt; name() {
+<span class="nc" id="L301">			return getRuleContexts(NameContext.class);</span>
+		}
+		public NameContext name(int i) {
+<span class="nc" id="L304">			return getRuleContext(NameContext.class,i);</span>
+		}
+<span class="nc" id="L306">		public TerminalNode CONTAINS() { return getToken(SearchParser.CONTAINS, 0); }</span>
+<span class="nc" id="L307">		public TerminalNode MATCHES() { return getToken(SearchParser.MATCHES, 0); }</span>
+<span class="nc" id="L308">		public TerminalNode EQUAL() { return getToken(SearchParser.EQUAL, 0); }</span>
+<span class="nc" id="L309">		public TerminalNode EEQUAL() { return getToken(SearchParser.EEQUAL, 0); }</span>
+<span class="nc" id="L310">		public TerminalNode NEQUAL() { return getToken(SearchParser.NEQUAL, 0); }</span>
+		public ComparisonContext(ParserRuleContext parent, int invokingState) {
+<span class="fc" id="L312">			super(parent, invokingState);</span>
+<span class="fc" id="L313">		}</span>
+<span class="nc" id="L314">		@Override public int getRuleIndex() { return RULE_comparison; }</span>
+		@Override
+		public &lt;T&gt; T accept(ParseTreeVisitor&lt;? extends T&gt; visitor) {
+<span class="pc bpc" id="L317" title="1 of 2 branches missed.">			if ( visitor instanceof SearchVisitor ) return ((SearchVisitor&lt;? extends T&gt;)visitor).visitComparison(this);</span>
+<span class="nc" id="L318">			else return visitor.visitChildren(this);</span>
+		}
+	}
+
+	public final ComparisonContext comparison() throws RecognitionException {
+<span class="fc" id="L323">		ComparisonContext _localctx = new ComparisonContext(_ctx, getState());</span>
+<span class="fc" id="L324">		enterRule(_localctx, 4, RULE_comparison);</span>
+		int _la;
+		try {
+<span class="fc" id="L327">			setState(34);</span>
+<span class="fc" id="L328">			_errHandler.sync(this);</span>
+<span class="pc bpc" id="L329" title="1 of 3 branches missed.">			switch ( getInterpreter().adaptivePredict(_input,2,_ctx) ) {</span>
+			case 1:
+<span class="fc" id="L331">				enterOuterAlt(_localctx, 1);</span>
+				{
+<span class="fc" id="L333">				setState(29);</span>
+<span class="fc" id="L334">				((ComparisonContext)_localctx).left = name();</span>
+<span class="fc" id="L335">				setState(30);</span>
+<span class="fc" id="L336">				((ComparisonContext)_localctx).operator = _input.LT(1);</span>
+<span class="fc" id="L337">				_la = _input.LA(1);</span>
+<span class="pc bpc" id="L338" title="2 of 4 branches missed.">				if ( !((((_la) &amp; ~0x3f) == 0 &amp;&amp; ((1L &lt;&lt; _la) &amp; ((1L &lt;&lt; EQUAL) | (1L &lt;&lt; EEQUAL) | (1L &lt;&lt; NEQUAL) | (1L &lt;&lt; CONTAINS) | (1L &lt;&lt; MATCHES))) != 0)) ) {</span>
+<span class="nc" id="L339">					((ComparisonContext)_localctx).operator = (Token)_errHandler.recoverInline(this);</span>
+<span class="nc" id="L340">				}</span>
+				else {
+<span class="pc bpc" id="L342" title="1 of 2 branches missed.">					if ( _input.LA(1)==Token.EOF ) matchedEOF = true;</span>
+<span class="fc" id="L343">					_errHandler.reportMatch(this);</span>
+<span class="fc" id="L344">					consume();</span>
+				}
+<span class="fc" id="L346">				setState(31);</span>
+<span class="fc" id="L347">				((ComparisonContext)_localctx).right = name();</span>
+				}
+<span class="fc" id="L349">				break;</span>
+			case 2:
+<span class="fc" id="L351">				enterOuterAlt(_localctx, 2);</span>
+				{
+<span class="fc" id="L353">				setState(33);</span>
+<span class="fc" id="L354">				((ComparisonContext)_localctx).right = name();</span>
+				}
+				break;
+			}
+<span class="fc" id="L358">		}</span>
+<span class="nc" id="L359">		catch (RecognitionException re) {</span>
+<span class="nc" id="L360">			_localctx.exception = re;</span>
+<span class="nc" id="L361">			_errHandler.reportError(this, re);</span>
+<span class="nc" id="L362">			_errHandler.recover(this, re);</span>
+		}
+<span class="nc" id="L364">		finally {</span>
+<span class="pc" id="L365">			exitRule();</span>
+<span class="nc" id="L366">		}</span>
+<span class="fc" id="L367">		return _localctx;</span>
+	}
+
+	public static class NameContext extends ParserRuleContext {
+<span class="nc" id="L371">		public TerminalNode STRING() { return getToken(SearchParser.STRING, 0); }</span>
+<span class="nc" id="L372">		public TerminalNode FIELDTYPE() { return getToken(SearchParser.FIELDTYPE, 0); }</span>
+		public NameContext(ParserRuleContext parent, int invokingState) {
+<span class="fc" id="L374">			super(parent, invokingState);</span>
+<span class="fc" id="L375">		}</span>
+<span class="nc" id="L376">		@Override public int getRuleIndex() { return RULE_name; }</span>
+		@Override
+		public &lt;T&gt; T accept(ParseTreeVisitor&lt;? extends T&gt; visitor) {
+<span class="nc bnc" id="L379" title="All 2 branches missed.">			if ( visitor instanceof SearchVisitor ) return ((SearchVisitor&lt;? extends T&gt;)visitor).visitName(this);</span>
+<span class="nc" id="L380">			else return visitor.visitChildren(this);</span>
+		}
+	}
+
+	public final NameContext name() throws RecognitionException {
+<span class="fc" id="L385">		NameContext _localctx = new NameContext(_ctx, getState());</span>
+<span class="fc" id="L386">		enterRule(_localctx, 6, RULE_name);</span>
+		int _la;
+		try {
+<span class="fc" id="L389">			enterOuterAlt(_localctx, 1);</span>
+			{
+<span class="fc" id="L391">			setState(36);</span>
+<span class="fc" id="L392">			_la = _input.LA(1);</span>
+<span class="pc bpc" id="L393" title="1 of 4 branches missed.">			if ( !(_la==STRING || _la==FIELDTYPE) ) {</span>
+<span class="nc" id="L394">			_errHandler.recoverInline(this);</span>
+<span class="nc" id="L395">			}</span>
+			else {
+<span class="pc bpc" id="L397" title="1 of 2 branches missed.">				if ( _input.LA(1)==Token.EOF ) matchedEOF = true;</span>
+<span class="fc" id="L398">				_errHandler.reportMatch(this);</span>
+<span class="fc" id="L399">				consume();</span>
+			}
+			}
+<span class="fc" id="L402">		}</span>
+<span class="nc" id="L403">		catch (RecognitionException re) {</span>
+<span class="nc" id="L404">			_localctx.exception = re;</span>
+<span class="nc" id="L405">			_errHandler.reportError(this, re);</span>
+<span class="nc" id="L406">			_errHandler.recover(this, re);</span>
+		}
+<span class="nc" id="L408">		finally {</span>
+<span class="pc" id="L409">			exitRule();</span>
+<span class="nc" id="L410">		}</span>
+<span class="fc" id="L411">		return _localctx;</span>
+	}
+
+	public boolean sempred(RuleContext _localctx, int ruleIndex, int predIndex) {
+<span class="nc bnc" id="L415" title="All 2 branches missed.">		switch (ruleIndex) {</span>
+		case 1:
+<span class="nc" id="L417">			return expression_sempred((ExpressionContext)_localctx, predIndex);</span>
+		}
+<span class="nc" id="L419">		return true;</span>
+	}
+	private boolean expression_sempred(ExpressionContext _localctx, int predIndex) {
+<span class="nc bnc" id="L422" title="All 2 branches missed.">		switch (predIndex) {</span>
+		case 0:
+<span class="nc" id="L424">			return precpred(_ctx, 3);</span>
+		}
+<span class="nc" id="L426">		return true;</span>
+	}
+
+	public static final String _serializedATN =
+		&quot;\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3\20)\4\2\t\2\4\3\t&quot;+
+		&quot;\3\4\4\t\4\4\5\t\5\3\2\3\2\3\2\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\5\3\26&quot;+
+		&quot;\n\3\3\3\3\3\3\3\7\3\33\n\3\f\3\16\3\36\13\3\3\4\3\4\3\4\3\4\3\4\5\4%&quot;+
+		&quot;\n\4\3\5\3\5\3\5\2\3\4\6\2\4\6\b\2\5\3\2\t\n\4\2\6\b\13\f\4\2\16\16\20&quot;+
+		&quot;\20\2(\2\n\3\2\2\2\4\25\3\2\2\2\6$\3\2\2\2\b&amp;\3\2\2\2\n\13\5\4\3\2\13&quot;+
+		&quot;\f\7\2\2\3\f\3\3\2\2\2\r\16\b\3\1\2\16\17\7\4\2\2\17\20\5\4\3\2\20\21&quot;+
+		&quot;\7\5\2\2\21\26\3\2\2\2\22\23\7\r\2\2\23\26\5\4\3\4\24\26\5\6\4\2\25\r&quot;+
+		&quot;\3\2\2\2\25\22\3\2\2\2\25\24\3\2\2\2\26\34\3\2\2\2\27\30\f\5\2\2\30\31&quot;+
+		&quot;\t\2\2\2\31\33\5\4\3\6\32\27\3\2\2\2\33\36\3\2\2\2\34\32\3\2\2\2\34\35&quot;+
+		&quot;\3\2\2\2\35\5\3\2\2\2\36\34\3\2\2\2\37 \5\b\5\2 !\t\3\2\2!\&quot;\5\b\5\2\&quot;&quot;+
+		&quot;%\3\2\2\2#%\5\b\5\2$\37\3\2\2\2$#\3\2\2\2%\7\3\2\2\2&amp;\'\t\4\2\2\'\t\3&quot;+
+		&quot;\2\2\2\5\25\34$&quot;;
+<span class="fc" id="L442">	public static final ATN _ATN =</span>
+<span class="fc" id="L443">		new ATNDeserializer().deserialize(_serializedATN.toCharArray());</span>
+	static {
+<span class="fc" id="L445">		_decisionToDFA = new DFA[_ATN.getNumberOfDecisions()];</span>
+<span class="fc bfc" id="L446" title="All 2 branches covered.">		for (int i = 0; i &lt; _ATN.getNumberOfDecisions(); i++) {</span>
+<span class="fc" id="L447">			_decisionToDFA[i] = new DFA(_ATN.getDecisionState(i), i);</span>
+		}
+<span class="fc" id="L449">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>GvkParserTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.importer.fetcher</a> &gt; <span class="el_source">GvkParserTest.java</span></div><h1>GvkParserTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.importer.fetcher;
+
+import java.io.InputStream;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+
+import org.jabref.logic.bibtex.BibEntryAssert;
+import org.jabref.logic.importer.fileformat.GvkParser;
+import org.jabref.model.entry.BibEntry;
+
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+
+<span class="fc" id="L19">public class GvkParserTest {</span>
+
+    private void doTest(String xmlName, int expectedSize, List&lt;String&gt; resourceNames) throws Exception {
+<span class="fc" id="L22">        try (InputStream is = GvkParserTest.class.getResourceAsStream(xmlName)) {</span>
+<span class="fc" id="L23">            GvkParser parser = new GvkParser();</span>
+<span class="fc" id="L24">            List&lt;BibEntry&gt; entries = parser.parseEntries(is);</span>
+<span class="fc" id="L25">            assertNotNull(entries);</span>
+<span class="fc" id="L26">            assertEquals(expectedSize, entries.size());</span>
+<span class="fc" id="L27">            int i = 0;</span>
+<span class="fc bfc" id="L28" title="All 2 branches covered.">            for (String resourceName : resourceNames) {</span>
+<span class="fc" id="L29">                BibEntryAssert.assertEquals(GvkParserTest.class, resourceName, entries.get(i));</span>
+<span class="fc" id="L30">                i++;</span>
+            }
+<span class="pc bpc" id="L32" title="7 of 8 branches missed.">        }</span>
+<span class="fc" id="L33">    }</span>
+
+    @Test
+    public void emptyResult() throws Exception {
+<span class="fc" id="L37">        doTest(&quot;gvk_empty_result_because_of_bad_query.xml&quot;, 0, Collections.emptyList());</span>
+<span class="fc" id="L38">    }</span>
+
+    @Test
+    public void resultFor797485368() throws Exception {
+<span class="fc" id="L42">        doTest(&quot;gvk_result_for_797485368.xml&quot;, 1, Collections.singletonList(&quot;gvk_result_for_797485368.bib&quot;));</span>
+<span class="fc" id="L43">    }</span>
+
+    @Test
+    public void testGMP() throws Exception {
+<span class="fc" id="L47">        doTest(&quot;gvk_gmp.xml&quot;, 2, Arrays.asList(&quot;gvk_gmp.1.bib&quot;, &quot;gvk_gmp.2.bib&quot;));</span>
+<span class="fc" id="L48">    }</span>
+
+    @Test
+    public void subTitleTest() throws Exception {
+<span class="fc" id="L52">        try (InputStream is = GvkParserTest.class.getResourceAsStream(&quot;gvk_artificial_subtitle_test.xml&quot;)) {</span>
+<span class="fc" id="L53">            GvkParser parser = new GvkParser();</span>
+<span class="fc" id="L54">            List&lt;BibEntry&gt; entries = parser.parseEntries(is);</span>
+<span class="fc" id="L55">            assertNotNull(entries);</span>
+<span class="fc" id="L56">            assertEquals(5, entries.size());</span>
+
+<span class="fc" id="L58">            BibEntry entry = entries.get(0);</span>
+<span class="fc" id="L59">            assertEquals(Optional.empty(), entry.getField(&quot;subtitle&quot;));</span>
+
+<span class="fc" id="L61">            entry = entries.get(1);</span>
+<span class="fc" id="L62">            assertEquals(Optional.of(&quot;C&quot;), entry.getField(&quot;subtitle&quot;));</span>
+
+<span class="fc" id="L64">            entry = entries.get(2);</span>
+<span class="fc" id="L65">            assertEquals(Optional.of(&quot;Word&quot;), entry.getField(&quot;subtitle&quot;));</span>
+
+<span class="fc" id="L67">            entry = entries.get(3);</span>
+<span class="fc" id="L68">            assertEquals(Optional.of(&quot;Word1 word2&quot;), entry.getField(&quot;subtitle&quot;));</span>
+
+<span class="fc" id="L70">            entry = entries.get(4);</span>
+<span class="fc" id="L71">            assertEquals(Optional.of(&quot;Word1 word2&quot;), entry.getField(&quot;subtitle&quot;));</span>
+<span class="pc bpc" id="L72" title="7 of 8 branches missed.">        }</span>
+<span class="fc" id="L73">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>DBMSType.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.model.database.shared</a> &gt; <span class="el_source">DBMSType.java</span></div><h1>DBMSType.java</h1><pre class="source lang-java linenums"><span class="pc" id="L1">package org.jabref.model.database.shared;</span>
+
+import java.util.Locale;
+import java.util.Optional;
+
+/**
+ * Enumerates all supported database systems (DBMS) by JabRef.
+ */
+<span class="fc" id="L9">public enum DBMSType {</span>
+
+<span class="fc" id="L11">    MYSQL(</span>
+<span class="fc" id="L12">            &quot;MySQL&quot;,</span>
+<span class="fc" id="L13">            &quot;com.mysql.jdbc.Driver&quot;,</span>
+<span class="fc" id="L14">            &quot;jdbc:mysql://%s:%d/%s&quot;, 3306),</span>
+<span class="fc" id="L15">    ORACLE(</span>
+<span class="fc" id="L16">            &quot;Oracle&quot;,</span>
+<span class="fc" id="L17">            &quot;oracle.jdbc.driver.OracleDriver&quot;,</span>
+<span class="fc" id="L18">            &quot;jdbc:oracle:thin:@%s:%d:%s&quot;, 1521),</span>
+<span class="fc" id="L19">    POSTGRESQL(</span>
+<span class="fc" id="L20">            &quot;PostgreSQL&quot;,</span>
+<span class="fc" id="L21">            &quot;com.impossibl.postgres.jdbc.PGDriver&quot;,</span>
+<span class="fc" id="L22">            &quot;jdbc:pgsql://%s:%d/%s&quot;, 5432);</span>
+
+    private final String type;
+    private final String driverPath;
+    private final String urlPattern;
+    private final int defaultPort;
+
+
+<span class="fc" id="L30">    private DBMSType(String type, String driverPath, String urlPattern, int defaultPort) {</span>
+<span class="fc" id="L31">        this.type = type;</span>
+<span class="fc" id="L32">        this.driverPath = driverPath;</span>
+<span class="fc" id="L33">        this.urlPattern = urlPattern;</span>
+<span class="fc" id="L34">        this.defaultPort = defaultPort;</span>
+<span class="fc" id="L35">    }</span>
+
+    @Override
+    public String toString() {
+<span class="fc" id="L39">        return this.type;</span>
+    }
+
+    /**
+     * @return Java Class path for establishing JDBC connection.
+     */
+    public String getDriverClassPath() throws Error {
+<span class="fc" id="L46">        return this.driverPath;</span>
+    }
+
+    /**
+     * @return prepared connection URL for appropriate system.
+     */
+    public String getUrl(String host, int port, String database) {
+<span class="fc" id="L53">        return String.format(urlPattern, host, port, database);</span>
+    }
+
+    /**
+     * Retrieves the port number dependent on the type of the database system.
+     */
+    public int getDefaultPort() {
+<span class="fc" id="L60">        return this.defaultPort;</span>
+    }
+
+    public static Optional&lt;DBMSType&gt; fromString(String typeName) {
+        try {
+<span class="fc" id="L65">            return Optional.of(Enum.valueOf(DBMSType.class, typeName.toUpperCase(Locale.ENGLISH)));</span>
+<span class="fc" id="L66">        } catch (IllegalArgumentException exception) {</span>
+<span class="fc" id="L67">            return Optional.empty();</span>
+        }
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

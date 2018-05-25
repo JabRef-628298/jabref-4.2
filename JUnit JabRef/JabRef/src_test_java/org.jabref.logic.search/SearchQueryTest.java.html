@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>SearchQueryTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.search</a> &gt; <span class="el_source">SearchQueryTest.java</span></div><h1>SearchQueryTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.search;
+
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.BibtexEntryTypes;
+import org.jabref.model.entry.FieldName;
+
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+
+<span class="fc" id="L14">public class SearchQueryTest {</span>
+
+    @Test
+    public void testToString() {
+<span class="fc" id="L18">        assertEquals(&quot;\&quot;asdf\&quot; (case sensitive, regular expression)&quot;, new SearchQuery(&quot;asdf&quot;, true, true).toString());</span>
+<span class="fc" id="L19">        assertEquals(&quot;\&quot;asdf\&quot; (case insensitive, plain text)&quot;, new SearchQuery(&quot;asdf&quot;, false, false).toString());</span>
+<span class="fc" id="L20">    }</span>
+
+    @Test
+    public void testIsContainsBasedSearch() {
+<span class="fc" id="L24">        assertTrue(new SearchQuery(&quot;asdf&quot;, true, false).isContainsBasedSearch());</span>
+<span class="fc" id="L25">        assertTrue(new SearchQuery(&quot;asdf&quot;, true, true).isContainsBasedSearch());</span>
+<span class="fc" id="L26">        assertFalse(new SearchQuery(&quot;author=asdf&quot;, true, false).isContainsBasedSearch());</span>
+<span class="fc" id="L27">    }</span>
+
+    @Test
+    public void testIsGrammarBasedSearch() {
+<span class="fc" id="L31">        assertFalse(new SearchQuery(&quot;asdf&quot;, true, false).isGrammarBasedSearch());</span>
+<span class="fc" id="L32">        assertFalse(new SearchQuery(&quot;asdf&quot;, true, true).isGrammarBasedSearch());</span>
+<span class="fc" id="L33">        assertTrue(new SearchQuery(&quot;author=asdf&quot;, true, false).isGrammarBasedSearch());</span>
+<span class="fc" id="L34">    }</span>
+
+    @Test
+    public void testGrammarSearch() {
+<span class="fc" id="L38">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L39">        entry.addKeyword(&quot;one two&quot;, ',');</span>
+<span class="fc" id="L40">        SearchQuery searchQuery = new SearchQuery(&quot;keywords=\&quot;one two\&quot;&quot;, false, false);</span>
+<span class="fc" id="L41">        assertTrue(searchQuery.isMatch(entry));</span>
+<span class="fc" id="L42">    }</span>
+
+    @Test
+    public void testGrammarSearchFullEntryLastCharMissing() {
+<span class="fc" id="L46">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L47">        entry.setField(FieldName.TITLE, &quot;systematic revie&quot;);</span>
+<span class="fc" id="L48">        SearchQuery searchQuery = new SearchQuery(&quot;title=\&quot;systematic review\&quot;&quot;, false, false);</span>
+<span class="fc" id="L49">        assertFalse(searchQuery.isMatch(entry));</span>
+<span class="fc" id="L50">    }</span>
+
+    @Test
+    public void testGrammarSearchFullEntry() {
+<span class="fc" id="L54">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L55">        entry.setField(FieldName.TITLE, &quot;systematic review&quot;);</span>
+<span class="fc" id="L56">        SearchQuery searchQuery = new SearchQuery(&quot;title=\&quot;systematic review\&quot;&quot;, false, false);</span>
+<span class="fc" id="L57">        assertTrue(searchQuery.isMatch(entry));</span>
+<span class="fc" id="L58">    }</span>
+
+    @Test
+    public void testSearchingForOpenBraketInBooktitle() {
+<span class="fc" id="L62">        BibEntry e = new BibEntry(BibtexEntryTypes.INPROCEEDINGS.getName());</span>
+<span class="fc" id="L63">        e.setField(FieldName.BOOKTITLE, &quot;Super Conference (SC)&quot;);</span>
+
+<span class="fc" id="L65">        SearchQuery searchQuery = new SearchQuery(&quot;booktitle=\&quot;(\&quot;&quot;, false, false);</span>
+<span class="fc" id="L66">        assertTrue(searchQuery.isMatch(e));</span>
+<span class="fc" id="L67">    }</span>
+
+    @Test
+    public void testSearchMatchesSingleKeywordNotPart() {
+<span class="fc" id="L71">        BibEntry e = new BibEntry(BibtexEntryTypes.INPROCEEDINGS.getName());</span>
+<span class="fc" id="L72">        e.setField(&quot;keywords&quot;, &quot;banana, pineapple, orange&quot;);</span>
+
+<span class="fc" id="L74">        SearchQuery searchQuery = new SearchQuery(&quot;anykeyword==apple&quot;, false, false);</span>
+<span class="fc" id="L75">        assertFalse(searchQuery.isMatch(e));</span>
+<span class="fc" id="L76">    }</span>
+
+    @Test
+    public void testSearchMatchesSingleKeyword() {
+<span class="fc" id="L80">        BibEntry e = new BibEntry(BibtexEntryTypes.INPROCEEDINGS.getName());</span>
+<span class="fc" id="L81">        e.setField(&quot;keywords&quot;, &quot;banana, pineapple, orange&quot;);</span>
+
+<span class="fc" id="L83">        SearchQuery searchQuery = new SearchQuery(&quot;anykeyword==pineapple&quot;, false, false);</span>
+<span class="fc" id="L84">        assertTrue(searchQuery.isMatch(e));</span>
+<span class="fc" id="L85">    }</span>
+
+    @Test
+    public void testSearchAllFields() {
+<span class="fc" id="L89">        BibEntry e = new BibEntry(BibtexEntryTypes.INPROCEEDINGS.getName());</span>
+<span class="fc" id="L90">        e.setField(&quot;title&quot;, &quot;Fruity features&quot;);</span>
+<span class="fc" id="L91">        e.setField(&quot;keywords&quot;, &quot;banana, pineapple, orange&quot;);</span>
+
+<span class="fc" id="L93">        SearchQuery searchQuery = new SearchQuery(&quot;anyfield==\&quot;fruity features\&quot;&quot;, false, false);</span>
+<span class="fc" id="L94">        assertTrue(searchQuery.isMatch(e));</span>
+<span class="fc" id="L95">    }</span>
+
+    @Test
+    public void testSearchAllFieldsNotForSpecificField() {
+<span class="fc" id="L99">        BibEntry e = new BibEntry(BibtexEntryTypes.INPROCEEDINGS.getName());</span>
+<span class="fc" id="L100">        e.setField(&quot;title&quot;, &quot;Fruity features&quot;);</span>
+<span class="fc" id="L101">        e.setField(&quot;keywords&quot;, &quot;banana, pineapple, orange&quot;);</span>
+
+<span class="fc" id="L103">        SearchQuery searchQuery = new SearchQuery(&quot;anyfield=fruit and keywords!=banana&quot;, false, false);</span>
+<span class="fc" id="L104">        assertFalse(searchQuery.isMatch(e));</span>
+<span class="fc" id="L105">    }</span>
+
+    @Test
+    public void testSearchAllFieldsAndSpecificField() {
+<span class="fc" id="L109">        BibEntry e = new BibEntry(BibtexEntryTypes.INPROCEEDINGS.getName());</span>
+<span class="fc" id="L110">        e.setField(&quot;title&quot;, &quot;Fruity features&quot;);</span>
+<span class="fc" id="L111">        e.setField(&quot;keywords&quot;, &quot;banana, pineapple, orange&quot;);</span>
+
+<span class="fc" id="L113">        SearchQuery searchQuery = new SearchQuery(&quot;anyfield=fruit and keywords=apple&quot;, false, false);</span>
+<span class="fc" id="L114">        assertTrue(searchQuery.isMatch(e));</span>
+<span class="fc" id="L115">    }</span>
+
+    @Test
+    public void testIsMatch() {
+<span class="fc" id="L119">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L120">        entry.setType(BibtexEntryTypes.ARTICLE);</span>
+<span class="fc" id="L121">        entry.setField(&quot;author&quot;, &quot;asdf&quot;);</span>
+
+<span class="fc" id="L123">        assertFalse(new SearchQuery(&quot;qwer&quot;, true, true).isMatch(entry));</span>
+<span class="fc" id="L124">        assertTrue(new SearchQuery(&quot;asdf&quot;, true, true).isMatch(entry));</span>
+<span class="fc" id="L125">        assertTrue(new SearchQuery(&quot;author=asdf&quot;, true, true).isMatch(entry));</span>
+<span class="fc" id="L126">    }</span>
+
+    @Test
+    public void testIsValidQueryNotAsRegEx() {
+<span class="fc" id="L130">        assertTrue(new SearchQuery(&quot;asdf&quot;, true, false).isValid());</span>
+<span class="fc" id="L131">    }</span>
+
+    @Test
+    public void testIsValidQueryContainsBracketNotAsRegEx() {
+<span class="fc" id="L135">        assertTrue(new SearchQuery(&quot;asdf[&quot;, true, false).isValid());</span>
+<span class="fc" id="L136">    }</span>
+
+    @Test
+    public void testIsNotValidQueryContainsBracketNotAsRegEx() {
+<span class="fc" id="L140">        assertTrue(new SearchQuery(&quot;asdf[&quot;, true, true).isValid());</span>
+<span class="fc" id="L141">    }</span>
+
+    @Test
+    public void testIsValidQueryAsRegEx() {
+<span class="fc" id="L145">        assertTrue(new SearchQuery(&quot;asdf&quot;, true, true).isValid());</span>
+<span class="fc" id="L146">    }</span>
+
+    @Test
+    public void testIsValidQueryWithNumbersAsRegEx() {
+<span class="fc" id="L150">        assertTrue(new SearchQuery(&quot;123&quot;, true, true).isValid());</span>
+<span class="fc" id="L151">    }</span>
+
+    @Test
+    public void testIsValidQueryContainsBracketAsRegEx() {
+<span class="fc" id="L155">        assertTrue(new SearchQuery(&quot;asdf[&quot;, true, true).isValid());</span>
+<span class="fc" id="L156">    }</span>
+
+    @Test
+    public void testIsValidQueryWithEqualSignAsRegEx() {
+<span class="fc" id="L160">        assertTrue(new SearchQuery(&quot;author=asdf&quot;, true, true).isValid());</span>
+<span class="fc" id="L161">    }</span>
+
+    @Test
+    public void testIsValidQueryWithNumbersAndEqualSignAsRegEx() {
+<span class="fc" id="L165">        assertTrue(new SearchQuery(&quot;author=123&quot;, true, true).isValid());</span>
+<span class="fc" id="L166">    }</span>
+
+    @Test
+    public void testIsValidQueryWithEqualSignNotAsRegEx() {
+<span class="fc" id="L170">        assertTrue(new SearchQuery(&quot;author=asdf&quot;, true, false).isValid());</span>
+<span class="fc" id="L171">    }</span>
+
+    @Test
+    public void testIsValidQueryWithNumbersAndEqualSignNotAsRegEx() {
+<span class="fc" id="L175">        assertTrue(new SearchQuery(&quot;author=123&quot;, true, false).isValid());</span>
+<span class="fc" id="L176">    }</span>
+
+    @Test
+    public void isMatchedForNormalAndFieldBasedSearchMixed() {
+<span class="fc" id="L180">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L181">        entry.setType(BibtexEntryTypes.ARTICLE);</span>
+<span class="fc" id="L182">        entry.setField(&quot;author&quot;, &quot;asdf&quot;);</span>
+<span class="fc" id="L183">        entry.setField(&quot;abstract&quot;, &quot;text&quot;);</span>
+
+<span class="fc" id="L185">        assertTrue(new SearchQuery(&quot;text AND author=asdf&quot;, true, true).isMatch(entry));</span>
+
+<span class="fc" id="L187">    }</span>
+
+    @Test
+    public void testSimpleTerm() {
+<span class="fc" id="L191">        String query = &quot;progress&quot;;</span>
+
+<span class="fc" id="L193">        SearchQuery result = new SearchQuery(query, false, false);</span>
+
+<span class="fc" id="L195">        assertFalse(result.isGrammarBasedSearch());</span>
+<span class="fc" id="L196">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

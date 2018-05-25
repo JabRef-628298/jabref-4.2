@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MainArchitectureTests.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.architecture</a> &gt; <span class="el_source">MainArchitectureTests.java</span></div><h1>MainArchitectureTests.java</h1><pre class="source lang-java linenums">package org.jabref.architecture;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+<span class="fc" id="L24">public class MainArchitectureTests {</span>
+
+    public static final String CLASS_ORG_JABREF_GLOBALS = &quot;org.jabref.Globals&quot;;
+    private static final String PACKAGE_JAVAX_SWING = &quot;javax.swing&quot;;
+    private static final String PACKAGE_JAVA_AWT = &quot;java.awt&quot;;
+    private static final String PACKAGE_JAVA_FX = &quot;javafx&quot;;
+    private static final String PACKAGE_ORG_JABREF_GUI = &quot;org.jabref.gui&quot;;
+    private static final String PACKAGE_ORG_JABREF_LOGIC = &quot;org.jabref.logic&quot;;
+    private static final String PACKAGE_ORG_JABREF_MODEL = &quot;org.jabref.model&quot;;
+    private static final String EXCEPTION_PACKAGE_JAVA_AWT_GEOM = &quot;java.awt.geom&quot;;
+    private static final String EXCEPTION_PACKAGE_JAVA_FX_COLLECTIONS = &quot;javafx.collections&quot;;
+    private static final String EXCEPTION_PACKAGE_JAVA_FX_BEANS = &quot;javafx.beans&quot;;
+    private static final String EXCEPTION_CLASS_JAVA_FX_COLOR = &quot;javafx.scene.paint.Color&quot;;
+    private static final String EXCEPTION_CLASS_JAVA_FX_PAIR = &quot;javafx.util.Pair&quot;;
+
+    private static Map&lt;String, List&lt;String&gt;&gt; exceptions;
+
+    @BeforeAll
+    public static void setUp() {
+<span class="fc" id="L43">        exceptions = new HashMap&lt;&gt;();</span>
+        // Add exceptions for the architectural test here
+        // Note that bending the architectural constraints should not be done inconsiderately
+
+<span class="fc" id="L47">        List&lt;String&gt; logicExceptions = new ArrayList&lt;&gt;(4);</span>
+<span class="fc" id="L48">        logicExceptions.add(EXCEPTION_PACKAGE_JAVA_AWT_GEOM);</span>
+<span class="fc" id="L49">        logicExceptions.add(EXCEPTION_PACKAGE_JAVA_FX_COLLECTIONS);</span>
+<span class="fc" id="L50">        logicExceptions.add(EXCEPTION_PACKAGE_JAVA_FX_BEANS);</span>
+<span class="fc" id="L51">        logicExceptions.add(EXCEPTION_CLASS_JAVA_FX_COLOR);</span>
+<span class="fc" id="L52">        logicExceptions.add(EXCEPTION_CLASS_JAVA_FX_PAIR);</span>
+
+<span class="fc" id="L54">        List&lt;String&gt; modelExceptions = new ArrayList&lt;&gt;(4);</span>
+<span class="fc" id="L55">        modelExceptions.add(EXCEPTION_PACKAGE_JAVA_FX_COLLECTIONS);</span>
+<span class="fc" id="L56">        modelExceptions.add(EXCEPTION_CLASS_JAVA_FX_COLOR);</span>
+<span class="fc" id="L57">        modelExceptions.add(EXCEPTION_PACKAGE_JAVA_FX_COLLECTIONS);</span>
+<span class="fc" id="L58">        modelExceptions.add(EXCEPTION_PACKAGE_JAVA_FX_BEANS);</span>
+
+<span class="fc" id="L60">        exceptions.put(PACKAGE_ORG_JABREF_LOGIC, logicExceptions);</span>
+<span class="fc" id="L61">        exceptions.put(PACKAGE_ORG_JABREF_MODEL, modelExceptions);</span>
+<span class="fc" id="L62">    }</span>
+
+    public static Stream&lt;Arguments&gt; getPackages() {
+
+<span class="fc" id="L66">        return Stream.of(</span>
+<span class="fc" id="L67">                Arguments.of(PACKAGE_ORG_JABREF_LOGIC, PACKAGE_JAVA_AWT),</span>
+<span class="fc" id="L68">                Arguments.of(PACKAGE_ORG_JABREF_LOGIC, PACKAGE_JAVAX_SWING),</span>
+<span class="fc" id="L69">                Arguments.of(PACKAGE_ORG_JABREF_LOGIC, PACKAGE_JAVA_FX),</span>
+<span class="fc" id="L70">                Arguments.of(PACKAGE_ORG_JABREF_LOGIC, PACKAGE_ORG_JABREF_GUI),</span>
+<span class="fc" id="L71">                Arguments.of(PACKAGE_ORG_JABREF_LOGIC, CLASS_ORG_JABREF_GLOBALS),</span>
+
+<span class="fc" id="L73">                Arguments.of(PACKAGE_ORG_JABREF_MODEL, PACKAGE_JAVA_AWT),</span>
+<span class="fc" id="L74">                Arguments.of(PACKAGE_ORG_JABREF_MODEL, PACKAGE_JAVAX_SWING),</span>
+<span class="fc" id="L75">                Arguments.of(PACKAGE_ORG_JABREF_MODEL, PACKAGE_JAVA_FX),</span>
+<span class="fc" id="L76">                Arguments.of(PACKAGE_ORG_JABREF_MODEL, PACKAGE_ORG_JABREF_GUI),</span>
+<span class="fc" id="L77">                Arguments.of(PACKAGE_ORG_JABREF_MODEL, PACKAGE_ORG_JABREF_LOGIC),</span>
+<span class="fc" id="L78">                Arguments.of(PACKAGE_ORG_JABREF_MODEL, CLASS_ORG_JABREF_GLOBALS));</span>
+    }
+
+    @ParameterizedTest(name = &quot;{index} -- is {0} independent of {1}?&quot;)
+    @MethodSource(&quot;getPackages&quot;)
+    public void firstPackageIsIndependentOfSecondPackage(String firstPackage, String secondPackage) throws IOException {
+<span class="fc bfc" id="L84" title="All 2 branches covered.">        Predicate&lt;String&gt; isExceptionPackage = (s) -&gt; (s.startsWith(&quot;import &quot; + secondPackage)</span>
+<span class="pc bpc" id="L85" title="1 of 2 branches missed.">                || s.startsWith(&quot;import static &quot; + secondPackage))</span>
+<span class="fc" id="L86">                &amp;&amp; exceptions.getOrDefault(firstPackage, Collections.emptyList())</span>
+<span class="fc" id="L87">                        .stream()</span>
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">                        .noneMatch(exception -&gt; s.startsWith(&quot;import &quot; + exception));</span>
+
+<span class="fc" id="L90">        Predicate&lt;String&gt; isPackage = (s) -&gt; s.startsWith(&quot;package &quot; + firstPackage);</span>
+
+<span class="fc" id="L92">        try (Stream&lt;Path&gt; pathStream = Files.walk(Paths.get(&quot;src/main/&quot;))) {</span>
+<span class="fc" id="L93">            List&lt;Path&gt; files = pathStream</span>
+<span class="fc" id="L94">                    .filter(p -&gt; p.toString().endsWith(&quot;.java&quot;))</span>
+<span class="fc" id="L95">                    .filter(p -&gt; {</span>
+                        try {
+<span class="fc" id="L97">                            return Files.readAllLines(p, StandardCharsets.UTF_8).stream().anyMatch(isPackage);</span>
+<span class="nc" id="L98">                        } catch (IOException e) {</span>
+<span class="nc" id="L99">                            return false;</span>
+                        }
+                    })
+<span class="fc" id="L102">                    .filter(p -&gt; {</span>
+                        try {
+<span class="fc" id="L104">                            return Files.readAllLines(p, StandardCharsets.UTF_8).stream().anyMatch(isExceptionPackage);</span>
+<span class="nc" id="L105">                        } catch (IOException e) {</span>
+<span class="nc" id="L106">                            return false;</span>
+                        }
+                    })
+<span class="fc" id="L109">                    .collect(Collectors.toList());</span>
+
+<span class="fc" id="L111">            assertEquals(Collections.emptyList(), files, &quot;The following classes are not allowed to depend on &quot; + secondPackage);</span>
+<span class="pc bpc" id="L112" title="7 of 8 branches missed.">        }</span>
+<span class="fc" id="L113">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

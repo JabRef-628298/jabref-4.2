@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>AuxParserTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.auxparser</a> &gt; <span class="el_source">AuxParserTest.java</span></div><h1>AuxParserTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.auxparser;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Optional;
+
+import org.jabref.logic.importer.ImportFormatPreferences;
+import org.jabref.logic.importer.ParserResult;
+import org.jabref.logic.importer.fileformat.BibtexParser;
+import org.jabref.model.auxparser.AuxParser;
+import org.jabref.model.auxparser.AuxParserResult;
+import org.jabref.model.database.BibDatabase;
+import org.jabref.model.util.DummyFileUpdateMonitor;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Answers;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+
+<span class="fc" id="L30">public class AuxParserTest {</span>
+    private ImportFormatPreferences importFormatPreferences;
+
+    @BeforeEach
+    public void setUp() {
+<span class="fc" id="L35">        importFormatPreferences = mock(ImportFormatPreferences.class, Answers.RETURNS_DEEP_STUBS);</span>
+<span class="fc" id="L36">    }</span>
+
+    @AfterEach
+    public void tearDown() {
+<span class="fc" id="L40">        importFormatPreferences = null;</span>
+<span class="fc" id="L41">    }</span>
+
+    @Test
+    public void testNormal() throws URISyntaxException, IOException {
+<span class="fc" id="L45">        InputStream originalStream = AuxParserTest.class.getResourceAsStream(&quot;origin.bib&quot;);</span>
+<span class="fc" id="L46">        Path auxFile = Paths.get(AuxParserTest.class.getResource(&quot;paper.aux&quot;).toURI());</span>
+<span class="fc" id="L47">        try (InputStreamReader originalReader = new InputStreamReader(originalStream, StandardCharsets.UTF_8)) {</span>
+<span class="fc" id="L48">            ParserResult result = new BibtexParser(importFormatPreferences, new DummyFileUpdateMonitor()).parse(originalReader);</span>
+
+<span class="fc" id="L50">            AuxParser auxParser = new DefaultAuxParser(result.getDatabase());</span>
+<span class="fc" id="L51">            AuxParserResult auxResult = auxParser.parse(auxFile);</span>
+
+<span class="fc" id="L53">            assertTrue(auxResult.getGeneratedBibDatabase().hasEntries());</span>
+<span class="fc" id="L54">            assertEquals(0, auxResult.getUnresolvedKeysCount());</span>
+<span class="fc" id="L55">            BibDatabase newDB = auxResult.getGeneratedBibDatabase();</span>
+<span class="fc" id="L56">            assertEquals(2, newDB.getEntries().size());</span>
+<span class="fc" id="L57">            assertEquals(2, auxResult.getResolvedKeysCount());</span>
+<span class="fc" id="L58">            assertEquals(2, auxResult.getFoundKeysInAux());</span>
+<span class="fc" id="L59">            assertEquals(auxResult.getFoundKeysInAux() + auxResult.getCrossRefEntriesCount(),</span>
+<span class="fc" id="L60">                    auxResult.getResolvedKeysCount() + auxResult.getUnresolvedKeysCount());</span>
+<span class="fc" id="L61">            assertEquals(0, auxResult.getCrossRefEntriesCount());</span>
+<span class="pc bpc" id="L62" title="7 of 8 branches missed.">        }</span>
+<span class="fc" id="L63">    }</span>
+
+    @Test
+    public void testNotAllFound() throws URISyntaxException, IOException {
+<span class="fc" id="L67">        InputStream originalStream = AuxParserTest.class.getResourceAsStream(&quot;origin.bib&quot;);</span>
+<span class="fc" id="L68">        Path auxFile = Paths.get(AuxParserTest.class.getResource(&quot;badpaper.aux&quot;).toURI());</span>
+<span class="fc" id="L69">        try (InputStreamReader originalReader = new InputStreamReader(originalStream, StandardCharsets.UTF_8)) {</span>
+<span class="fc" id="L70">            ParserResult result = new BibtexParser(importFormatPreferences, new DummyFileUpdateMonitor()).parse(originalReader);</span>
+
+<span class="fc" id="L72">            AuxParser auxParser = new DefaultAuxParser(result.getDatabase());</span>
+<span class="fc" id="L73">            AuxParserResult auxResult = auxParser.parse(auxFile);</span>
+
+<span class="fc" id="L75">            assertTrue(auxResult.getGeneratedBibDatabase().hasEntries());</span>
+<span class="fc" id="L76">            assertEquals(1, auxResult.getUnresolvedKeysCount());</span>
+<span class="fc" id="L77">            BibDatabase newDB = auxResult.getGeneratedBibDatabase();</span>
+<span class="fc" id="L78">            assertEquals(2, newDB.getEntries().size());</span>
+<span class="fc" id="L79">            assertEquals(2, auxResult.getResolvedKeysCount());</span>
+<span class="fc" id="L80">            assertEquals(3, auxResult.getFoundKeysInAux());</span>
+<span class="fc" id="L81">            assertEquals(auxResult.getFoundKeysInAux() + auxResult.getCrossRefEntriesCount(),</span>
+<span class="fc" id="L82">                    auxResult.getResolvedKeysCount() + auxResult.getUnresolvedKeysCount());</span>
+<span class="fc" id="L83">            assertEquals(0, auxResult.getCrossRefEntriesCount());</span>
+<span class="pc bpc" id="L84" title="7 of 8 branches missed.">        }</span>
+<span class="fc" id="L85">    }</span>
+
+    @Test
+    public void duplicateBibDatabaseConfiguration() throws URISyntaxException, IOException {
+<span class="fc" id="L89">        InputStream originalStream = AuxParserTest.class.getResourceAsStream(&quot;config.bib&quot;);</span>
+<span class="fc" id="L90">        Path auxFile = Paths.get(AuxParserTest.class.getResource(&quot;paper.aux&quot;).toURI());</span>
+<span class="fc" id="L91">        try (InputStreamReader originalReader = new InputStreamReader(originalStream, StandardCharsets.UTF_8)) {</span>
+<span class="fc" id="L92">            ParserResult result = new BibtexParser(importFormatPreferences, new DummyFileUpdateMonitor()).parse(originalReader);</span>
+
+<span class="fc" id="L94">            AuxParser auxParser = new DefaultAuxParser(result.getDatabase());</span>
+<span class="fc" id="L95">            AuxParserResult auxResult = auxParser.parse(auxFile);</span>
+<span class="fc" id="L96">            BibDatabase db = auxResult.getGeneratedBibDatabase();</span>
+
+<span class="fc" id="L98">            assertEquals(Optional.of(&quot;\&quot;Maintained by \&quot; # maintainer&quot;), db.getPreamble());</span>
+<span class="fc" id="L99">            assertEquals(1, db.getStringCount());</span>
+<span class="pc bpc" id="L100" title="7 of 8 branches missed.">        }</span>
+<span class="fc" id="L101">    }</span>
+
+    @Test
+    public void testNestedAux() throws URISyntaxException, IOException {
+<span class="fc" id="L105">        InputStream originalStream = AuxParserTest.class.getResourceAsStream(&quot;origin.bib&quot;);</span>
+<span class="fc" id="L106">        Path auxFile = Paths.get(AuxParserTest.class.getResource(&quot;nested.aux&quot;).toURI());</span>
+<span class="fc" id="L107">        try (InputStreamReader originalReader = new InputStreamReader(originalStream, StandardCharsets.UTF_8)) {</span>
+<span class="fc" id="L108">            ParserResult result = new BibtexParser(importFormatPreferences, new DummyFileUpdateMonitor()).parse(originalReader);</span>
+
+<span class="fc" id="L110">            AuxParser auxParser = new DefaultAuxParser(result.getDatabase());</span>
+<span class="fc" id="L111">            AuxParserResult auxResult = auxParser.parse(auxFile);</span>
+
+<span class="fc" id="L113">            assertTrue(auxResult.getGeneratedBibDatabase().hasEntries());</span>
+<span class="fc" id="L114">            assertEquals(0, auxResult.getUnresolvedKeysCount());</span>
+<span class="fc" id="L115">            BibDatabase newDB = auxResult.getGeneratedBibDatabase();</span>
+<span class="fc" id="L116">            assertEquals(2, newDB.getEntries().size());</span>
+<span class="fc" id="L117">            assertEquals(2, auxResult.getResolvedKeysCount());</span>
+<span class="fc" id="L118">            assertEquals(2, auxResult.getFoundKeysInAux());</span>
+<span class="fc" id="L119">            assertEquals(auxResult.getFoundKeysInAux() + auxResult.getCrossRefEntriesCount(),</span>
+<span class="fc" id="L120">                    auxResult.getResolvedKeysCount() + auxResult.getUnresolvedKeysCount());</span>
+<span class="fc" id="L121">            assertEquals(0, auxResult.getCrossRefEntriesCount());</span>
+<span class="pc bpc" id="L122" title="7 of 8 branches missed.">        }</span>
+<span class="fc" id="L123">    }</span>
+
+    @Test
+    public void testCrossRef() throws URISyntaxException, IOException {
+<span class="fc" id="L127">        InputStream originalStream = AuxParserTest.class.getResourceAsStream(&quot;origin.bib&quot;);</span>
+<span class="fc" id="L128">        Path auxFile = Paths.get(AuxParserTest.class.getResource(&quot;crossref.aux&quot;).toURI());</span>
+<span class="fc" id="L129">        try (InputStreamReader originalReader = new InputStreamReader(originalStream, StandardCharsets.UTF_8)) {</span>
+<span class="fc" id="L130">            ParserResult result = new BibtexParser(importFormatPreferences, new DummyFileUpdateMonitor()).parse(originalReader);</span>
+
+<span class="fc" id="L132">            AuxParser auxParser = new DefaultAuxParser(result.getDatabase());</span>
+<span class="fc" id="L133">            AuxParserResult auxResult = auxParser.parse(auxFile);</span>
+
+<span class="fc" id="L135">            assertTrue(auxResult.getGeneratedBibDatabase().hasEntries());</span>
+<span class="fc" id="L136">            assertEquals(2, auxResult.getUnresolvedKeysCount());</span>
+<span class="fc" id="L137">            BibDatabase newDB = auxResult.getGeneratedBibDatabase();</span>
+<span class="fc" id="L138">            assertEquals(4, newDB.getEntries().size());</span>
+<span class="fc" id="L139">            assertEquals(3, auxResult.getResolvedKeysCount());</span>
+<span class="fc" id="L140">            assertEquals(4, auxResult.getFoundKeysInAux());</span>
+<span class="fc" id="L141">            assertEquals(auxResult.getFoundKeysInAux() + auxResult.getCrossRefEntriesCount(),</span>
+<span class="fc" id="L142">                    auxResult.getResolvedKeysCount() + auxResult.getUnresolvedKeysCount());</span>
+<span class="fc" id="L143">            assertEquals(1, auxResult.getCrossRefEntriesCount());</span>
+<span class="pc bpc" id="L144" title="7 of 8 branches missed.">        }</span>
+<span class="fc" id="L145">    }</span>
+
+    @Test
+    public void testFileNotFound() {
+<span class="fc" id="L149">        AuxParser auxParser = new DefaultAuxParser(new BibDatabase());</span>
+<span class="fc" id="L150">        AuxParserResult auxResult = auxParser.parse(Paths.get(&quot;unknownfile.aux&quot;));</span>
+
+<span class="fc" id="L152">        assertFalse(auxResult.getGeneratedBibDatabase().hasEntries());</span>
+<span class="fc" id="L153">        assertEquals(0, auxResult.getUnresolvedKeysCount());</span>
+<span class="fc" id="L154">        BibDatabase newDB = auxResult.getGeneratedBibDatabase();</span>
+<span class="fc" id="L155">        assertEquals(0, newDB.getEntries().size());</span>
+<span class="fc" id="L156">        assertEquals(0, auxResult.getResolvedKeysCount());</span>
+<span class="fc" id="L157">        assertEquals(0, auxResult.getFoundKeysInAux());</span>
+<span class="fc" id="L158">        assertEquals(auxResult.getFoundKeysInAux() + auxResult.getCrossRefEntriesCount(),</span>
+<span class="fc" id="L159">                auxResult.getResolvedKeysCount() + auxResult.getUnresolvedKeysCount());</span>
+<span class="fc" id="L160">        assertEquals(0, auxResult.getCrossRefEntriesCount());</span>
+<span class="fc" id="L161">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

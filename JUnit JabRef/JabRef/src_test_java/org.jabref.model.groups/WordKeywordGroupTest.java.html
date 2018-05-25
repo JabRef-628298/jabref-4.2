@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>WordKeywordGroupTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.model.groups</a> &gt; <span class="el_source">WordKeywordGroupTest.java</span></div><h1>WordKeywordGroupTest.java</h1><pre class="source lang-java linenums">package org.jabref.model.groups;
+
+import java.util.Optional;
+
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.FieldName;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+<span class="fc" id="L15">public class WordKeywordGroupTest {</span>
+
+    private WordKeywordGroup testGroup;
+    private WordKeywordGroup testCaseSensitiveGroup;
+    private WordKeywordGroup waterGroup;
+    private BibEntry entry;
+
+    @BeforeEach
+    public void setUp() {
+<span class="fc" id="L24">        testGroup = new WordKeywordGroup(&quot;name&quot;, GroupHierarchyType.INDEPENDENT, &quot;keywords&quot;, &quot;test&quot;, false, ',', false);</span>
+<span class="fc" id="L25">        testCaseSensitiveGroup = new WordKeywordGroup(&quot;name&quot;, GroupHierarchyType.INDEPENDENT, &quot;keywords&quot;, &quot;test&quot;, true, ',', false);</span>
+<span class="fc" id="L26">        waterGroup = new WordKeywordGroup(&quot;name&quot;, GroupHierarchyType.INDEPENDENT, &quot;keywords&quot;, &quot;\\H2O&quot;, false, ',', false);</span>
+<span class="fc" id="L27">        entry = new BibEntry();</span>
+<span class="fc" id="L28">    }</span>
+
+    @Test
+    public void containsFindsSameWord() {
+<span class="fc" id="L32">        entry.setField(&quot;keywords&quot;, &quot;test&quot;);</span>
+
+<span class="fc" id="L34">        assertTrue(testGroup.contains(entry));</span>
+<span class="fc" id="L35">    }</span>
+
+    @Test
+    public void containsFindsWordInSentence() throws Exception {
+<span class="fc" id="L39">        entry.setField(&quot;keywords&quot;, &quot;Some sentence containing test word&quot;);</span>
+
+<span class="fc" id="L41">        assertTrue(testGroup.contains(entry));</span>
+<span class="fc" id="L42">    }</span>
+
+    @Test
+    public void containsFindsWordInCommaSeparatedList() throws Exception {
+<span class="fc" id="L46">        entry.setField(&quot;keywords&quot;, &quot;Some,list,containing,test,word&quot;);</span>
+
+<span class="fc" id="L48">        assertTrue(testGroup.contains(entry));</span>
+<span class="fc" id="L49">    }</span>
+
+    @Test
+    public void containsFindsWordInSemicolonSeparatedList() throws Exception {
+<span class="fc" id="L53">        entry.setField(&quot;keywords&quot;, &quot;Some;list;containing;test;word&quot;);</span>
+
+<span class="fc" id="L55">        assertTrue(testGroup.contains(entry));</span>
+<span class="fc" id="L56">    }</span>
+
+    @Test
+    public void containsFindsSameComplexWord() throws Exception {
+<span class="fc" id="L60">        entry.setField(&quot;keywords&quot;, &quot;\\H2O&quot;);</span>
+
+<span class="fc" id="L62">        assertTrue(waterGroup.contains(entry));</span>
+<span class="fc" id="L63">    }</span>
+
+    @Test
+    public void containsFindsComplexWordInSentence() throws Exception {
+<span class="fc" id="L67">        entry.setField(&quot;keywords&quot;, &quot;Some sentence containing \\H2O word&quot;);</span>
+
+<span class="fc" id="L69">        assertTrue(waterGroup.contains(entry));</span>
+<span class="fc" id="L70">    }</span>
+
+    @Test
+    public void containsDoesNotFindWordIfCaseDiffers() throws Exception {
+<span class="fc" id="L74">        entry.setField(&quot;keywords&quot;, &quot;Test&quot;);</span>
+
+<span class="fc" id="L76">        assertFalse(testCaseSensitiveGroup.contains(entry));</span>
+<span class="fc" id="L77">    }</span>
+
+    @Test
+    public void containsDoesNotFindsWordInSentenceIfCaseDiffers() throws Exception {
+<span class="fc" id="L81">        entry.setField(&quot;keywords&quot;, &quot;Some sentence containing Test word&quot;);</span>
+
+<span class="fc" id="L83">        assertFalse(testCaseSensitiveGroup.contains(entry));</span>
+<span class="fc" id="L84">    }</span>
+
+    @Test
+    public void addChangesFieldIfEmptyBefore() throws Exception {
+<span class="fc" id="L88">        testGroup.add(entry);</span>
+
+<span class="fc" id="L90">        assertEquals(Optional.of(&quot;test&quot;), entry.getField(FieldName.KEYWORDS));</span>
+<span class="fc" id="L91">    }</span>
+
+    @Test
+    public void addChangesFieldIfNotEmptyBefore() throws Exception {
+<span class="fc" id="L95">        entry.setField(FieldName.KEYWORDS, &quot;bla, blubb&quot;);</span>
+<span class="fc" id="L96">        testGroup.add(entry);</span>
+
+<span class="fc" id="L98">        assertEquals(Optional.of(&quot;bla, blubb, test&quot;), entry.getField(FieldName.KEYWORDS));</span>
+<span class="fc" id="L99">    }</span>
+
+    @Test
+    public void addDoesNotAddDuplicate() throws Exception {
+<span class="fc" id="L103">        entry.setField(FieldName.KEYWORDS, &quot;test, blubb&quot;);</span>
+<span class="fc" id="L104">        testGroup.add(entry);</span>
+
+<span class="fc" id="L106">        assertEquals(Optional.of(&quot;test, blubb&quot;), entry.getField(FieldName.KEYWORDS));</span>
+<span class="fc" id="L107">    }</span>
+
+    @Test
+    public void removeDoesNothingIfEntryNotMatched() throws Exception {
+<span class="fc" id="L111">        entry.setField(FieldName.KEYWORDS, &quot;something&quot;);</span>
+<span class="fc" id="L112">        testGroup.remove(entry);</span>
+
+<span class="fc" id="L114">        assertEquals(Optional.of(&quot;something&quot;), entry.getField(FieldName.KEYWORDS));</span>
+<span class="fc" id="L115">    }</span>
+
+    @Test
+    public void removeRemovesNameFromField() throws Exception {
+<span class="fc" id="L119">        entry.setField(FieldName.KEYWORDS, &quot;test, blubb&quot;);</span>
+<span class="fc" id="L120">        testGroup.remove(entry);</span>
+
+<span class="fc" id="L122">        assertEquals(Optional.of(&quot;blubb&quot;), entry.getField(FieldName.KEYWORDS));</span>
+<span class="fc" id="L123">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

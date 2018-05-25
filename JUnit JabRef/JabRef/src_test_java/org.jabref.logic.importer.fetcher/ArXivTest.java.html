@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>ArXivTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.importer.fetcher</a> &gt; <span class="el_source">ArXivTest.java</span></div><h1>ArXivTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.importer.fetcher;
+
+import java.io.IOException;
+import java.net.URL;
+import java.util.Collections;
+import java.util.Optional;
+
+import org.jabref.logic.importer.FetcherException;
+import org.jabref.logic.importer.ImportFormatPreferences;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.BiblatexEntryTypes;
+import org.jabref.model.entry.FieldName;
+import org.jabref.model.entry.identifier.ArXivIdentifier;
+import org.jabref.testutils.category.FetcherTest;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+@FetcherTest
+<span class="fc" id="L25">public class ArXivTest {</span>
+
+    private ArXiv finder;
+    private BibEntry entry;
+    private BibEntry sliceTheoremPaper;
+
+    @BeforeEach
+    public void setUp() {
+<span class="fc" id="L33">        ImportFormatPreferences importFormatPreferences = mock(ImportFormatPreferences.class);</span>
+<span class="fc" id="L34">        when(importFormatPreferences.getKeywordSeparator()).thenReturn(',');</span>
+<span class="fc" id="L35">        finder = new ArXiv(importFormatPreferences);</span>
+<span class="fc" id="L36">        entry = new BibEntry();</span>
+
+<span class="fc" id="L38">        sliceTheoremPaper = new BibEntry();</span>
+<span class="fc" id="L39">        sliceTheoremPaper.setType(BiblatexEntryTypes.ARTICLE);</span>
+<span class="fc" id="L40">        sliceTheoremPaper.setField(&quot;author&quot;, &quot;Tobias Diez&quot;);</span>
+<span class="fc" id="L41">        sliceTheoremPaper.setField(&quot;title&quot;, &quot;Slice theorem for Fréchet group actions and covariant symplectic field theory&quot;);</span>
+<span class="fc" id="L42">        sliceTheoremPaper.setField(&quot;date&quot;, &quot;2014-05-09&quot;);</span>
+<span class="fc" id="L43">        sliceTheoremPaper.setField(&quot;abstract&quot;, &quot;A general slice theorem for the action of a Fr\\'echet Lie group on a Fr\\'echet manifolds is established. The Nash-Moser theorem provides the fundamental tool to generalize the result of Palais to this infinite-dimensional setting. The presented slice theorem is illustrated by its application to gauge theories: the action of the gauge transformation group admits smooth slices at every point and thus the gauge orbit space is stratified by Fr\\'echet manifolds. Furthermore, a covariant and symplectic formulation of classical field theory is proposed and extensively discussed. At the root of this novel framework is the incorporation of field degrees of freedom F and spacetime M into the product manifold F * M. The induced bigrading of differential forms is used in order to carry over the usual symplectic theory to this new setting. The examples of the Klein-Gordon field and general Yang-Mills theory illustrate that the presented approach conveniently handles the occurring symmetries.&quot;);</span>
+<span class="fc" id="L44">        sliceTheoremPaper.setField(&quot;eprint&quot;, &quot;1405.2249v1&quot;);</span>
+<span class="fc" id="L45">        sliceTheoremPaper.setField(&quot;file&quot;, &quot;:http\\://arxiv.org/pdf/1405.2249v1:PDF&quot;);</span>
+<span class="fc" id="L46">        sliceTheoremPaper.setField(&quot;eprinttype&quot;, &quot;arXiv&quot;);</span>
+<span class="fc" id="L47">        sliceTheoremPaper.setField(&quot;eprintclass&quot;, &quot;math-ph&quot;);</span>
+<span class="fc" id="L48">        sliceTheoremPaper.setField(&quot;keywords&quot;, &quot;math-ph, math.DG, math.MP, math.SG, 58B99, 58Z05, 58B25, 22E65, 58D19, 53D20, 53D42&quot;);</span>
+<span class="fc" id="L49">    }</span>
+
+    @Test
+    public void findFullTextForEmptyEntryResultsEmptyOptional() throws IOException {
+<span class="fc" id="L53">        assertEquals(Optional.empty(), finder.findFullText(entry));</span>
+<span class="fc" id="L54">    }</span>
+
+    @Test
+    public void findFullTextRejectsNullParameter() {
+<span class="pc" id="L58">        assertThrows(NullPointerException.class, () -&gt; finder.findFullText(null));</span>
+<span class="fc" id="L59">    }</span>
+
+    @Test
+    public void findFullTextByDOI() throws IOException {
+<span class="fc" id="L63">        entry.setField(FieldName.DOI, &quot;10.1529/biophysj.104.047340&quot;);</span>
+<span class="fc" id="L64">        entry.setField(FieldName.TITLE, &quot;Pause Point Spectra in DNA Constant-Force Unzipping&quot;);</span>
+
+<span class="fc" id="L66">        assertEquals(Optional.of(new URL(&quot;http://arxiv.org/pdf/cond-mat/0406246v1&quot;)), finder.findFullText(entry));</span>
+
+<span class="fc" id="L68">    }</span>
+
+    @Test
+    public void findFullTextByEprint() throws IOException {
+<span class="fc" id="L72">        entry.setField(&quot;eprint&quot;, &quot;1603.06570&quot;);</span>
+<span class="fc" id="L73">        assertEquals(Optional.of(new URL(&quot;http://arxiv.org/pdf/1603.06570v1&quot;)), finder.findFullText(entry));</span>
+<span class="fc" id="L74">    }</span>
+
+    @Test
+    public void findFullTextByEprintWithPrefix() throws IOException {
+<span class="fc" id="L78">        entry.setField(&quot;eprint&quot;, &quot;arXiv:1603.06570&quot;);</span>
+<span class="fc" id="L79">        assertEquals(Optional.of(new URL(&quot;http://arxiv.org/pdf/1603.06570v1&quot;)), finder.findFullText(entry));</span>
+<span class="fc" id="L80">    }</span>
+
+    @Test
+    public void findFullTextByEprintWithUnknownDOI() throws IOException {
+<span class="fc" id="L84">        entry.setField(&quot;doi&quot;, &quot;10.1529/unknown&quot;);</span>
+<span class="fc" id="L85">        entry.setField(&quot;eprint&quot;, &quot;1603.06570&quot;);</span>
+
+<span class="fc" id="L87">        assertEquals(Optional.of(new URL(&quot;http://arxiv.org/pdf/1603.06570v1&quot;)), finder.findFullText(entry));</span>
+<span class="fc" id="L88">    }</span>
+
+    @Test
+    public void findFullTextByTitle() throws IOException {
+<span class="fc" id="L92">        entry.setField(&quot;title&quot;, &quot;Pause Point Spectra in DNA Constant-Force Unzipping&quot;);</span>
+
+<span class="fc" id="L94">        assertEquals(Optional.of(new URL(&quot;http://arxiv.org/pdf/cond-mat/0406246v1&quot;)), finder.findFullText(entry));</span>
+<span class="fc" id="L95">    }</span>
+
+    @Test
+    public void findFullTextByTitleAndPartOfAuthor() throws IOException {
+<span class="fc" id="L99">        entry.setField(&quot;title&quot;, &quot;Pause Point Spectra in DNA Constant-Force Unzipping&quot;);</span>
+<span class="fc" id="L100">        entry.setField(&quot;author&quot;, &quot;Weeks and Lucks&quot;);</span>
+
+<span class="fc" id="L102">        assertEquals(Optional.of(new URL(&quot;http://arxiv.org/pdf/cond-mat/0406246v1&quot;)), finder.findFullText(entry));</span>
+<span class="fc" id="L103">    }</span>
+
+    @Test
+    public void notFindFullTextByUnknownDOI() throws IOException {
+<span class="fc" id="L107">        entry.setField(&quot;doi&quot;, &quot;10.1529/unknown&quot;);</span>
+<span class="fc" id="L108">        assertEquals(Optional.empty(), finder.findFullText(entry));</span>
+<span class="fc" id="L109">    }</span>
+
+    @Test
+    public void notFindFullTextByUnknownId() throws IOException {
+<span class="fc" id="L113">        entry.setField(&quot;eprint&quot;, &quot;1234.12345&quot;);</span>
+<span class="fc" id="L114">        assertEquals(Optional.empty(), finder.findFullText(entry));</span>
+<span class="fc" id="L115">    }</span>
+
+    @Test
+    public void findFullTextByDOINotAvailableInCatalog() throws IOException {
+<span class="fc" id="L119">        entry.setField(FieldName.DOI, &quot;10.1016/0370-2693(77)90015-6&quot;);</span>
+<span class="fc" id="L120">        entry.setField(FieldName.TITLE, &quot;Superspace formulation of supergravity&quot;);</span>
+
+<span class="fc" id="L122">        assertEquals(Optional.empty(), finder.findFullText(entry));</span>
+<span class="fc" id="L123">    }</span>
+
+    @Test
+    public void searchEntryByPartOfTitle() throws Exception {
+<span class="fc" id="L127">        assertEquals(Collections.singletonList(sliceTheoremPaper),</span>
+<span class="fc" id="L128">                finder.performSearch(&quot;ti:\&quot;slice theorem for Frechet\&quot;&quot;));</span>
+<span class="fc" id="L129">    }</span>
+
+    @Test
+    public void searchEntryByPartOfTitleWithAcuteAccent() throws Exception {
+<span class="fc" id="L133">        assertEquals(Collections.singletonList(sliceTheoremPaper),</span>
+<span class="fc" id="L134">                finder.performSearch(&quot;ti:\&quot;slice theorem for Fréchet\&quot;&quot;));</span>
+<span class="fc" id="L135">    }</span>
+
+    @Test
+    public void searchEntryByOldId() throws Exception {
+<span class="fc" id="L139">        BibEntry expected = new BibEntry();</span>
+<span class="fc" id="L140">        expected.setType(BiblatexEntryTypes.ARTICLE);</span>
+<span class="fc" id="L141">        expected.setField(&quot;author&quot;, &quot;H1 Collaboration&quot;);</span>
+<span class="fc" id="L142">        expected.setField(&quot;title&quot;, &quot;Multi-Electron Production at High Transverse Momenta in ep Collisions at HERA&quot;);</span>
+<span class="fc" id="L143">        expected.setField(&quot;date&quot;, &quot;2003-07-07&quot;);</span>
+<span class="fc" id="L144">        expected.setField(&quot;abstract&quot;, &quot;Multi-electron production is studied at high electron transverse momentum in positron- and electron-proton collisions using the H1 detector at HERA. The data correspond to an integrated luminosity of 115 pb-1. Di-electron and tri-electron event yields are measured. Cross sections are derived in a restricted phase space region dominated by photon-photon collisions. In general good agreement is found with the Standard Model predictions. However, for electron pair invariant masses above 100 GeV, three di-electron events and three tri-electron events are observed, compared to Standard Model expectations of 0.30 \\pm 0.04 and 0.23 \\pm 0.04, respectively.&quot;);</span>
+<span class="fc" id="L145">        expected.setField(&quot;eprint&quot;, &quot;hep-ex/0307015v1&quot;);</span>
+<span class="fc" id="L146">        expected.setField(&quot;file&quot;, &quot;:http\\://arxiv.org/pdf/hep-ex/0307015v1:PDF&quot;);</span>
+<span class="fc" id="L147">        expected.setField(&quot;eprinttype&quot;, &quot;arXiv&quot;);</span>
+<span class="fc" id="L148">        expected.setField(&quot;eprintclass&quot;, &quot;hep-ex&quot;);</span>
+<span class="fc" id="L149">        expected.setField(&quot;keywords&quot;, &quot;hep-ex&quot;);</span>
+<span class="fc" id="L150">        expected.setField(&quot;doi&quot;, &quot;10.1140/epjc/s2003-01326-x&quot;);</span>
+<span class="fc" id="L151">        expected.setField(&quot;journaltitle&quot;, &quot;Eur.Phys.J.C31:17-29,2003&quot;);</span>
+
+<span class="fc" id="L153">        assertEquals(Optional.of(expected), finder.performSearchById(&quot;hep-ex/0307015&quot;));</span>
+<span class="fc" id="L154">    }</span>
+
+    @Test
+    public void searchEntryByIdWith4DigitsAndVersion() throws Exception {
+<span class="fc" id="L158">        assertEquals(Optional.of(sliceTheoremPaper), finder.performSearchById(&quot;1405.2249v1&quot;));</span>
+<span class="fc" id="L159">    }</span>
+
+    @Test
+    public void searchEntryByIdWith4Digits() throws Exception {
+<span class="fc" id="L163">        assertEquals(Optional.of(sliceTheoremPaper), finder.performSearchById(&quot;1405.2249&quot;));</span>
+<span class="fc" id="L164">    }</span>
+
+    @Test
+    public void searchEntryByIdWith4DigitsAndPrefix() throws Exception {
+<span class="fc" id="L168">        assertEquals(Optional.of(sliceTheoremPaper), finder.performSearchById(&quot;arXiv:1405.2249&quot;));</span>
+<span class="fc" id="L169">    }</span>
+
+    @Test
+    public void searchEntryByIdWith5Digits() throws Exception {
+<span class="fc" id="L173">        assertEquals(Optional.of(</span>
+<span class="fc" id="L174">                &quot;An Optimal Convergence Theorem for Mean Curvature Flow of Arbitrary Codimension in Hyperbolic Spaces&quot;),</span>
+<span class="fc" id="L175">                finder.performSearchById(&quot;1503.06747&quot;).flatMap(entry -&gt; entry.getField(&quot;title&quot;)));</span>
+<span class="fc" id="L176">    }</span>
+
+    @Test
+    public void searchWithMalformedIdThrowsException() throws Exception {
+<span class="pc" id="L180">        assertThrows(FetcherException.class, () -&gt; finder.performSearchById(&quot;123412345&quot;));</span>
+<span class="fc" id="L181">    }</span>
+
+    @Test
+    public void searchIdentifierForSlicePaper() throws Exception {
+<span class="fc" id="L185">        sliceTheoremPaper.clearField(FieldName.EPRINT);</span>
+
+<span class="fc" id="L187">        assertEquals(ArXivIdentifier.parse(&quot;1405.2249v1&quot;), finder.findIdentifier(sliceTheoremPaper));</span>
+<span class="fc" id="L188">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

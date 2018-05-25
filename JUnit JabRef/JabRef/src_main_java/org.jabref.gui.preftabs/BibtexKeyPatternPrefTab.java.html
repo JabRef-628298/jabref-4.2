@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>BibtexKeyPatternPrefTab.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.preftabs</a> &gt; <span class="el_source">BibtexKeyPatternPrefTab.java</span></div><h1>BibtexKeyPatternPrefTab.java</h1><pre class="source lang-java linenums">package org.jabref.gui.preftabs;
+
+import java.awt.GridBagConstraints;
+
+import javax.swing.BorderFactory;
+import javax.swing.ButtonGroup;
+import javax.swing.JCheckBox;
+import javax.swing.JPanel;
+import javax.swing.JRadioButton;
+import javax.swing.JTextField;
+
+import org.jabref.Globals;
+import org.jabref.gui.BasePanel;
+import org.jabref.gui.bibtexkeypattern.BibtexKeyPatternPanel;
+import org.jabref.logic.l10n.Localization;
+import org.jabref.model.bibtexkeypattern.GlobalBibtexKeyPattern;
+import org.jabref.preferences.JabRefPreferences;
+
+import com.jgoodies.forms.builder.DefaultFormBuilder;
+import com.jgoodies.forms.layout.FormLayout;
+
+/**
+ * The Preferences panel for key generation.
+ */
+class BibtexKeyPatternPrefTab extends BibtexKeyPatternPanel implements PrefsTab {
+
+    private final JabRefPreferences prefs;
+
+<span class="nc" id="L29">    private final JCheckBox dontOverwrite = new JCheckBox(Localization.lang(&quot;Do not overwrite existing keys&quot;));</span>
+<span class="nc" id="L30">    private final JCheckBox warnBeforeOverwriting = new JCheckBox(Localization.lang(&quot;Warn before overwriting existing keys&quot;));</span>
+<span class="nc" id="L31">    private final JCheckBox generateOnSave = new JCheckBox(Localization.lang(&quot;Generate keys before saving (for entries without a key)&quot;));</span>
+<span class="nc" id="L32">    private final JCheckBox autoGenerateOnImport = new JCheckBox(Localization.lang(&quot;Generate keys for imported entries&quot;));</span>
+
+<span class="nc" id="L34">    private final JRadioButton letterStartA = new JRadioButton(Localization.lang(&quot;Ensure unique keys using letters (a, b, ...)&quot;));</span>
+<span class="nc" id="L35">    private final JRadioButton letterStartB = new JRadioButton(Localization.lang(&quot;Ensure unique keys using letters (b, c, ...)&quot;));</span>
+<span class="nc" id="L36">    private final JRadioButton alwaysAddLetter = new JRadioButton(Localization.lang(&quot;Always add letter (a, b, ...) to generated keys&quot;));</span>
+
+<span class="nc" id="L38">    private final JTextField keyPatternRegex = new JTextField(20);</span>
+<span class="nc" id="L39">    private final JTextField keyPatternReplacement = new JTextField(20);</span>
+
+
+    public BibtexKeyPatternPrefTab(JabRefPreferences prefs, BasePanel panel) {
+<span class="nc" id="L43">        super(panel);</span>
+<span class="nc" id="L44">        this.prefs = prefs;</span>
+<span class="nc" id="L45">        appendKeyGeneratorSettings();</span>
+<span class="nc" id="L46">    }</span>
+
+    /**
+     * Store changes to table preferences. This method is called when the user clicks Ok.
+     *
+     */
+    @Override
+    public void storeSettings() {
+
+        // Set the default value:
+<span class="nc" id="L56">        Globals.prefs.put(JabRefPreferences.DEFAULT_BIBTEX_KEY_PATTERN, defaultPat.getText());</span>
+
+<span class="nc" id="L58">        Globals.prefs.putBoolean(JabRefPreferences.WARN_BEFORE_OVERWRITING_KEY, warnBeforeOverwriting.isSelected());</span>
+<span class="nc" id="L59">        Globals.prefs.putBoolean(JabRefPreferences.AVOID_OVERWRITING_KEY, dontOverwrite.isSelected());</span>
+
+<span class="nc" id="L61">        Globals.prefs.put(JabRefPreferences.KEY_PATTERN_REGEX, keyPatternRegex.getText());</span>
+<span class="nc" id="L62">        Globals.prefs.put(JabRefPreferences.KEY_PATTERN_REPLACEMENT, keyPatternReplacement.getText());</span>
+<span class="nc" id="L63">        Globals.prefs.putBoolean(JabRefPreferences.GENERATE_KEYS_AFTER_INSPECTION, autoGenerateOnImport.isSelected());</span>
+<span class="nc" id="L64">        Globals.prefs.putBoolean(JabRefPreferences.GENERATE_KEYS_BEFORE_SAVING, generateOnSave.isSelected());</span>
+
+<span class="nc bnc" id="L66" title="All 2 branches missed.">        if (alwaysAddLetter.isSelected()) {</span>
+<span class="nc" id="L67">            Globals.prefs.putBoolean(JabRefPreferences.KEY_GEN_ALWAYS_ADD_LETTER, true);</span>
+<span class="nc bnc" id="L68" title="All 2 branches missed.">        } else if (letterStartA.isSelected()) {</span>
+<span class="nc" id="L69">            Globals.prefs.putBoolean(JabRefPreferences.KEY_GEN_FIRST_LETTER_A, true);</span>
+<span class="nc" id="L70">            Globals.prefs.putBoolean(JabRefPreferences.KEY_GEN_ALWAYS_ADD_LETTER, false);</span>
+<span class="nc" id="L71">        }</span>
+        else {
+<span class="nc" id="L73">            Globals.prefs.putBoolean(JabRefPreferences.KEY_GEN_FIRST_LETTER_A, false);</span>
+<span class="nc" id="L74">            Globals.prefs.putBoolean(JabRefPreferences.KEY_GEN_ALWAYS_ADD_LETTER, false);</span>
+        }
+
+        // fetch entries from GUI
+<span class="nc" id="L78">        GlobalBibtexKeyPattern keypatterns = getKeyPatternAsGlobalBibtexKeyPattern();</span>
+        // store new patterns globally
+<span class="nc" id="L80">        prefs.putKeyPattern(keypatterns);</span>
+<span class="nc" id="L81">    }</span>
+
+    private void appendKeyGeneratorSettings() {
+<span class="nc" id="L84">        ButtonGroup bg = new ButtonGroup();</span>
+<span class="nc" id="L85">        bg.add(letterStartA);</span>
+<span class="nc" id="L86">        bg.add(letterStartB);</span>
+<span class="nc" id="L87">        bg.add(alwaysAddLetter);</span>
+
+        // Build a panel for checkbox settings:
+<span class="nc" id="L90">        FormLayout layout = new FormLayout</span>
+<span class="nc" id="L91">                (&quot;1dlu, 8dlu, left:pref, 8dlu, left:pref&quot;, &quot;&quot;);</span>
+<span class="nc" id="L92">        JPanel pan = new JPanel();</span>
+<span class="nc" id="L93">        DefaultFormBuilder builder = new DefaultFormBuilder(layout);</span>
+<span class="nc" id="L94">        builder.appendSeparator(Localization.lang(&quot;Key generator settings&quot;));</span>
+
+<span class="nc" id="L96">        builder.nextLine();</span>
+<span class="nc" id="L97">        builder.append(pan);</span>
+<span class="nc" id="L98">        builder.append(autoGenerateOnImport);</span>
+<span class="nc" id="L99">        builder.append(letterStartA);</span>
+<span class="nc" id="L100">        builder.nextLine();</span>
+<span class="nc" id="L101">        builder.append(pan);</span>
+<span class="nc" id="L102">        builder.append(warnBeforeOverwriting);</span>
+<span class="nc" id="L103">        builder.append(letterStartB);</span>
+<span class="nc" id="L104">        builder.nextLine();</span>
+<span class="nc" id="L105">        builder.append(pan);</span>
+<span class="nc" id="L106">        builder.append(dontOverwrite);</span>
+<span class="nc" id="L107">        builder.append(alwaysAddLetter);</span>
+<span class="nc" id="L108">        builder.nextLine();</span>
+<span class="nc" id="L109">        builder.append(pan);</span>
+<span class="nc" id="L110">        builder.append(generateOnSave);</span>
+<span class="nc" id="L111">        builder.nextLine();</span>
+<span class="nc" id="L112">        builder.append(pan);</span>
+<span class="nc" id="L113">        builder.append(Localization.lang(&quot;Replace (regular expression)&quot;) + ':');</span>
+<span class="nc" id="L114">        builder.append(Localization.lang(&quot;by&quot;) + ':');</span>
+
+<span class="nc" id="L116">        builder.nextLine();</span>
+<span class="nc" id="L117">        builder.append(pan);</span>
+<span class="nc" id="L118">        builder.append(keyPatternRegex);</span>
+<span class="nc" id="L119">        builder.append(keyPatternReplacement);</span>
+
+<span class="nc" id="L121">        builder.getPanel().setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));</span>
+<span class="nc" id="L122">        con.gridx = 1;</span>
+<span class="nc" id="L123">        con.gridy = 3;</span>
+<span class="nc" id="L124">        con.gridwidth = GridBagConstraints.REMAINDER;</span>
+<span class="nc" id="L125">        con.weightx = 1;</span>
+<span class="nc" id="L126">        con.fill = GridBagConstraints.BOTH;</span>
+<span class="nc" id="L127">        gbl.setConstraints(builder.getPanel(), con);</span>
+<span class="nc" id="L128">        add(builder.getPanel());</span>
+
+<span class="nc" id="L130">        dontOverwrite.addChangeListener(e -&gt;</span>
+        // Warning before overwriting is only relevant if overwriting can happen:
+<span class="nc bnc" id="L132" title="All 2 branches missed.">        warnBeforeOverwriting.setEnabled(!dontOverwrite.isSelected()));</span>
+<span class="nc" id="L133">    }</span>
+
+    @Override
+    public boolean validateSettings() {
+<span class="nc" id="L137">        return true;</span>
+    }
+
+    @Override
+    public void setValues() {
+<span class="nc" id="L142">        super.setValues(Globals.prefs.getKeyPattern());</span>
+<span class="nc" id="L143">        defaultPat.setText(Globals.prefs.get(JabRefPreferences.DEFAULT_BIBTEX_KEY_PATTERN));</span>
+<span class="nc" id="L144">        dontOverwrite.setSelected(Globals.prefs.getBoolean(JabRefPreferences.AVOID_OVERWRITING_KEY));</span>
+<span class="nc" id="L145">        generateOnSave.setSelected(Globals.prefs.getBoolean(JabRefPreferences.GENERATE_KEYS_BEFORE_SAVING));</span>
+<span class="nc" id="L146">        autoGenerateOnImport.setSelected(Globals.prefs.getBoolean(JabRefPreferences.GENERATE_KEYS_AFTER_INSPECTION));</span>
+<span class="nc" id="L147">        warnBeforeOverwriting.setSelected(Globals.prefs.getBoolean(JabRefPreferences.WARN_BEFORE_OVERWRITING_KEY));</span>
+
+<span class="nc" id="L149">        boolean prefAlwaysAddLetter = Globals.prefs.getBoolean(JabRefPreferences.KEY_GEN_ALWAYS_ADD_LETTER);</span>
+<span class="nc" id="L150">        boolean firstLetterA = Globals.prefs.getBoolean(JabRefPreferences.KEY_GEN_FIRST_LETTER_A);</span>
+<span class="nc bnc" id="L151" title="All 2 branches missed.">        if (prefAlwaysAddLetter) {</span>
+<span class="nc" id="L152">            this.alwaysAddLetter.setSelected(true);</span>
+<span class="nc bnc" id="L153" title="All 2 branches missed.">        } else if (firstLetterA) {</span>
+<span class="nc" id="L154">            this.letterStartA.setSelected(true);</span>
+<span class="nc" id="L155">        } else {</span>
+<span class="nc" id="L156">            this.letterStartB.setSelected(true);</span>
+        }
+
+        // Warning before overwriting is only relevant if overwriting can happen:
+<span class="nc bnc" id="L160" title="All 2 branches missed.">        warnBeforeOverwriting.setEnabled(!dontOverwrite.isSelected());</span>
+
+<span class="nc" id="L162">        keyPatternRegex.setText(Globals.prefs.get(JabRefPreferences.KEY_PATTERN_REGEX));</span>
+<span class="nc" id="L163">        keyPatternReplacement.setText(Globals.prefs.get(JabRefPreferences.KEY_PATTERN_REPLACEMENT));</span>
+
+<span class="nc" id="L165">    }</span>
+
+    @Override
+    public String getTabName() {
+<span class="nc" id="L169">        return Localization.lang(&quot;BibTeX key generator&quot;);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

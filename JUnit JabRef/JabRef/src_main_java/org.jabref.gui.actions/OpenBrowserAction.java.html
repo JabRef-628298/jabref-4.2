@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>OpenBrowserAction.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.actions</a> &gt; <span class="el_source">OpenBrowserAction.java</span></div><h1>OpenBrowserAction.java</h1><pre class="source lang-java linenums">package org.jabref.gui.actions;
+
+import java.awt.event.ActionEvent;
+
+import javax.swing.AbstractAction;
+import javax.swing.Action;
+import javax.swing.Icon;
+
+import org.jabref.gui.desktop.JabRefDesktop;
+
+public class OpenBrowserAction extends AbstractAction {
+
+    private final String urlToOpen;
+
+    /**
+     * OpenBrowserAction without icons - only to be used for menus
+     *
+     * @param urlToOpen URL string of an URL to be shown in the default web browser
+     * @param menuTitle title of the menu entry; should already be localized
+     * @param description description shown in a tooltip hovering over the menu/icon bar entry; should already be localized
+     */
+    public OpenBrowserAction(String urlToOpen, String menuTitle, String description) {
+<span class="fc" id="L23">        super(menuTitle);</span>
+<span class="fc" id="L24">        this.urlToOpen = urlToOpen;</span>
+<span class="fc" id="L25">        putValue(Action.SHORT_DESCRIPTION, description);</span>
+<span class="fc" id="L26">    }</span>
+
+    /**
+     * OpenBrowserAction with icons
+     *
+     * @param urlToOpen URL string of an URL to be shown in the default web browser
+     * @param menuTitle title of the menu entry; should already be localized
+     * @param description description shown in a tooltip hovering over the menu/icon bar entry; should already be localized
+     * @param smallIcon smallIcon to be shown in the menus
+     * @param largeIcon larger icon to be shown in the icon bar
+     */
+    public OpenBrowserAction(String urlToOpen, String menuTitle, String description, Icon smallIcon, Icon largeIcon) {
+<span class="fc" id="L38">        super(menuTitle, smallIcon);</span>
+<span class="fc" id="L39">        this.urlToOpen = urlToOpen;</span>
+<span class="fc" id="L40">        putValue(Action.SHORT_DESCRIPTION, description);</span>
+<span class="fc" id="L41">        putValue(Action.LARGE_ICON_KEY, largeIcon);</span>
+<span class="fc" id="L42">    }</span>
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L46">        JabRefDesktop.openBrowserShowPopup(urlToOpen);</span>
+<span class="nc" id="L47">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

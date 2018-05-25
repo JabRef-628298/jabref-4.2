@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>ExportToClipboardAction.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.exporter</a> &gt; <span class="el_source">ExportToClipboardAction.java</span></div><h1>ExportToClipboardAction.java</h1><pre class="source lang-java linenums">package org.jabref.gui.exporter;
+
+import java.awt.Toolkit;
+import java.awt.datatransfer.ClipboardOwner;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+import javax.swing.BorderFactory;
+import javax.swing.JList;
+import javax.swing.JOptionPane;
+import javax.swing.ListSelectionModel;
+
+import org.jabref.Globals;
+import org.jabref.gui.BasePanel;
+import org.jabref.gui.JabRefFrame;
+import org.jabref.gui.worker.AbstractWorker;
+import org.jabref.logic.exporter.Exporter;
+import org.jabref.logic.l10n.Localization;
+import org.jabref.model.entry.BibEntry;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class ExportToClipboardAction extends AbstractWorker {
+
+<span class="nc" id="L32">    private static final Logger LOGGER = LoggerFactory.getLogger(ExportToClipboardAction.class);</span>
+
+    private final JabRefFrame frame;
+
+    /**
+     * written by run() and read by update()
+     */
+    private String message;
+
+
+<span class="nc" id="L42">    public ExportToClipboardAction(JabRefFrame frame) {</span>
+<span class="nc" id="L43">        this.frame = Objects.requireNonNull(frame);</span>
+<span class="nc" id="L44">    }</span>
+
+    @Override
+    public void run() {
+<span class="nc" id="L48">        BasePanel panel = frame.getCurrentBasePanel();</span>
+<span class="nc bnc" id="L49" title="All 2 branches missed.">        if (panel == null) {</span>
+<span class="nc" id="L50">            return;</span>
+        }
+<span class="nc bnc" id="L52" title="All 2 branches missed.">        if (panel.getSelectedEntries().isEmpty()) {</span>
+<span class="nc" id="L53">            message = Localization.lang(&quot;This operation requires one or more entries to be selected.&quot;);</span>
+<span class="nc" id="L54">            getCallBack().update();</span>
+<span class="nc" id="L55">            return;</span>
+        }
+
+<span class="nc" id="L58">        List&lt;Exporter&gt; exporters = Globals.exportFactory.getExporters();</span>
+<span class="nc" id="L59">        exporters.sort(Comparator.comparing(Exporter::getDisplayName));</span>
+<span class="nc" id="L60">        List&lt;String&gt; exportFormatDisplayNames = exporters.stream().map(Exporter::getDisplayName).collect(Collectors.toList());</span>
+
+<span class="nc" id="L62">        JList&lt;String&gt; list = new JList&lt;&gt;(exportFormatDisplayNames.toArray(new String[exportFormatDisplayNames.size()]));</span>
+<span class="nc" id="L63">        list.setBorder(BorderFactory.createEtchedBorder());</span>
+<span class="nc" id="L64">        list.setSelectionInterval(0, 0);</span>
+<span class="nc" id="L65">        list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);</span>
+<span class="nc" id="L66">        int answer = JOptionPane.showOptionDialog(frame, list, Localization.lang(&quot;Select export format&quot;),</span>
+<span class="nc" id="L67">                JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null,</span>
+<span class="nc" id="L68">                new String[] {Localization.lang(&quot;Export&quot;),</span>
+<span class="nc" id="L69">                        Localization.lang(&quot;Cancel&quot;)},</span>
+<span class="nc" id="L70">                Localization.lang(&quot;Export&quot;));</span>
+<span class="nc bnc" id="L71" title="All 2 branches missed.">        if (answer == JOptionPane.NO_OPTION) {</span>
+<span class="nc" id="L72">            return;</span>
+        }
+
+<span class="nc" id="L75">        Exporter exporter = exporters.get(list.getSelectedIndex());</span>
+
+        // Set the global variable for this database's file directory before exporting,
+        // so formatters can resolve linked files correctly.
+        // (This is an ugly hack!)
+<span class="nc" id="L80">        Globals.prefs.fileDirForDatabase = frame.getCurrentBasePanel().getBibDatabaseContext()</span>
+<span class="nc" id="L81">                .getFileDirectories(Globals.prefs.getFileDirectoryPreferences());</span>
+
+<span class="nc" id="L83">        File tmp = null;</span>
+        try {
+            // To simplify the exporter API we simply do a normal export to a temporary
+            // file, and read the contents afterwards:
+<span class="nc" id="L87">            tmp = File.createTempFile(&quot;jabrefCb&quot;, &quot;.tmp&quot;);</span>
+<span class="nc" id="L88">            tmp.deleteOnExit();</span>
+<span class="nc" id="L89">            List&lt;BibEntry&gt; entries = panel.getSelectedEntries();</span>
+
+            // Write to file:
+<span class="nc" id="L92">            exporter.export(panel.getBibDatabaseContext(), tmp.toPath(),</span>
+<span class="nc" id="L93">                    panel.getBibDatabaseContext().getMetaData().getEncoding()</span>
+<span class="nc" id="L94">                            .orElse(Globals.prefs.getDefaultEncoding()),</span>
+<span class="nc" id="L95">                    entries);</span>
+            // Read the file and put the contents on the clipboard:
+<span class="nc" id="L97">            StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L98">            try (Reader reader = new InputStreamReader(new FileInputStream(tmp),</span>
+<span class="nc" id="L99">                    panel.getBibDatabaseContext().getMetaData().getEncoding()</span>
+<span class="nc" id="L100">                            .orElse(Globals.prefs.getDefaultEncoding()))) {</span>
+                int s;
+<span class="nc bnc" id="L102" title="All 2 branches missed.">                while ((s = reader.read()) != -1) {</span>
+<span class="nc" id="L103">                    sb.append((char) s);</span>
+                }
+<span class="nc bnc" id="L105" title="All 8 branches missed.">            }</span>
+<span class="nc" id="L106">            ClipboardOwner owner = (clipboard, content) -&gt; {</span>
+                // Do nothing
+<span class="nc" id="L108">            };</span>
+<span class="nc" id="L109">            RtfTransferable rs = new RtfTransferable(sb.toString());</span>
+<span class="nc" id="L110">            Toolkit.getDefaultToolkit().getSystemClipboard()</span>
+<span class="nc" id="L111">                    .setContents(rs, owner);</span>
+<span class="nc" id="L112">            message = Localization.lang(&quot;Entries exported to clipboard&quot;) + &quot;: &quot; + entries.size();</span>
+
+<span class="nc" id="L114">        } catch (Exception e) {</span>
+<span class="nc" id="L115">            LOGGER.error(&quot;Error exporting to clipboard&quot;, e); //To change body of catch statement use File | Settings | File Templates.</span>
+<span class="nc" id="L116">            message = Localization.lang(&quot;Error exporting to clipboard&quot;);</span>
+<span class="nc" id="L117">        } finally {</span>
+            // Clean up:
+<span class="nc bnc" id="L119" title="All 12 branches missed.">            if ((tmp != null) &amp;&amp; !tmp.delete()) {</span>
+<span class="nc" id="L120">                LOGGER.info(&quot;Cannot delete temporary clipboard file&quot;);</span>
+            }
+<span class="nc" id="L122">        }</span>
+<span class="nc" id="L123">    }</span>
+
+    @Override
+    public void update() {
+<span class="nc" id="L127">        frame.output(message);</span>
+<span class="nc" id="L128">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

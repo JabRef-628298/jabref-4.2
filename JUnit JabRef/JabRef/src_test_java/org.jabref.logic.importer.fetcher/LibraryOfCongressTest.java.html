@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>LibraryOfCongressTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.importer.fetcher</a> &gt; <span class="el_source">LibraryOfCongressTest.java</span></div><h1>LibraryOfCongressTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.importer.fetcher;
+
+import java.util.Optional;
+
+import org.jabref.logic.importer.ImportFormatPreferences;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.testutils.category.FetcherTest;
+
+import org.junit.jupiter.api.Test;
+import org.mockito.Answers;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+
+@FetcherTest
+<span class="fc" id="L16">public class LibraryOfCongressTest {</span>
+
+<span class="fc" id="L18">    private final LibraryOfCongress fetcher = new LibraryOfCongress(mock(ImportFormatPreferences.class, Answers.RETURNS_DEEP_STUBS));</span>
+
+    @Test
+    public void performSearchById() throws Exception {
+<span class="fc" id="L22">        BibEntry expected = new BibEntry();</span>
+<span class="fc" id="L23">        expected.setField(&quot;address&quot;, &quot;Burlington, MA&quot;);</span>
+<span class="fc" id="L24">        expected.setField(&quot;author&quot;, &quot;West, Matthew&quot;);</span>
+<span class="fc" id="L25">        expected.setField(&quot;isbn&quot;, &quot;0123751063 (pbk.)&quot;);</span>
+<span class="fc" id="L26">        expected.setField(&quot;issuance&quot;, &quot;monographic&quot;);</span>
+<span class="fc" id="L27">        expected.setField(&quot;keywords&quot;, &quot;Database design Data structures (Computer science)&quot;);</span>
+<span class="fc" id="L28">        expected.setField(&quot;language&quot;, &quot;eng&quot;);</span>
+<span class="fc" id="L29">        expected.setField(&quot;lccn&quot;, &quot;2010045158&quot;);</span>
+<span class="fc" id="L30">        expected.setField(&quot;note&quot;, &quot;Matthew West., Includes index.&quot;);</span>
+<span class="fc" id="L31">        expected.setField(&quot;oclc&quot;, &quot;ocn665135773&quot;);</span>
+<span class="fc" id="L32">        expected.setField(&quot;publisher&quot;, &quot;Morgan Kaufmann&quot;);</span>
+<span class="fc" id="L33">        expected.setField(&quot;source&quot;, &quot;DLC&quot;);</span>
+<span class="fc" id="L34">        expected.setField(&quot;title&quot;, &quot;Developing high quality data models&quot;);</span>
+<span class="fc" id="L35">        expected.setField(&quot;year&quot;, &quot;2011&quot;);</span>
+
+<span class="nc" id="L37">        assertEquals(Optional.of(expected), fetcher.performSearchById(&quot;2010045158&quot;));</span>
+<span class="nc" id="L38">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

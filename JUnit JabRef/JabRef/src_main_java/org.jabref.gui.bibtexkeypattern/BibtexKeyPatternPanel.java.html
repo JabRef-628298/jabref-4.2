@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>BibtexKeyPatternPanel.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.bibtexkeypattern</a> &gt; <span class="el_source">BibtexKeyPatternPanel.java</span></div><h1>BibtexKeyPatternPanel.java</h1><pre class="source lang-java linenums">package org.jabref.gui.bibtexkeypattern;
+
+import java.awt.Container;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextField;
+
+import org.jabref.Globals;
+import org.jabref.gui.BasePanel;
+import org.jabref.gui.IconTheme;
+import org.jabref.gui.help.HelpAction;
+import org.jabref.logic.help.HelpFile;
+import org.jabref.logic.l10n.Localization;
+import org.jabref.model.EntryTypes;
+import org.jabref.model.bibtexkeypattern.AbstractBibtexKeyPattern;
+import org.jabref.model.bibtexkeypattern.DatabaseBibtexKeyPattern;
+import org.jabref.model.bibtexkeypattern.GlobalBibtexKeyPattern;
+import org.jabref.model.database.BibDatabaseMode;
+import org.jabref.model.entry.EntryType;
+import org.jabref.preferences.JabRefPreferences;
+
+public class BibtexKeyPatternPanel extends JPanel {
+
+    // used by both BibtexKeyPatternPanel and TabLabelPAttern
+<span class="nc" id="L37">    protected final GridBagLayout gbl = new GridBagLayout();</span>
+<span class="nc" id="L38">    protected final GridBagConstraints con = new GridBagConstraints();</span>
+
+    // default pattern
+<span class="nc" id="L41">    protected final JTextField defaultPat = new JTextField();</span>
+
+    private final HelpAction help;
+
+    // one field for each type
+<span class="nc" id="L46">    private final Map&lt;String, JTextField&gt; textFields = new HashMap&lt;&gt;();</span>
+    private final BasePanel panel;
+
+
+<span class="nc" id="L50">    public BibtexKeyPatternPanel(BasePanel panel) {</span>
+<span class="nc" id="L51">        this.panel = panel;</span>
+<span class="nc" id="L52">        help = new HelpAction(Localization.lang(&quot;Help on key patterns&quot;), HelpFile.BIBTEX_KEY_PATTERN);</span>
+<span class="nc" id="L53">        buildGUI();</span>
+<span class="nc" id="L54">    }</span>
+
+    private void buildGUI() {
+<span class="nc" id="L57">        JPanel pan = new JPanel();</span>
+<span class="nc" id="L58">        JScrollPane sp = new JScrollPane(pan);</span>
+<span class="nc" id="L59">        sp.setPreferredSize(new Dimension(100, 100));</span>
+<span class="nc" id="L60">        sp.setBorder(BorderFactory.createEmptyBorder());</span>
+<span class="nc" id="L61">        pan.setLayout(gbl);</span>
+<span class="nc" id="L62">        setLayout(gbl);</span>
+        // The header - can be removed
+<span class="nc" id="L64">        JLabel lblEntryType = new JLabel(Localization.lang(&quot;Entry type&quot;));</span>
+<span class="nc" id="L65">        Font f = new Font(&quot;plain&quot;, Font.BOLD, 12);</span>
+<span class="nc" id="L66">        lblEntryType.setFont(f);</span>
+<span class="nc" id="L67">        con.gridx = 0;</span>
+<span class="nc" id="L68">        con.gridy = 0;</span>
+<span class="nc" id="L69">        con.gridwidth = 1;</span>
+<span class="nc" id="L70">        con.gridheight = 1;</span>
+<span class="nc" id="L71">        con.fill = GridBagConstraints.VERTICAL;</span>
+<span class="nc" id="L72">        con.anchor = GridBagConstraints.WEST;</span>
+<span class="nc" id="L73">        con.insets = new Insets(5, 5, 10, 0);</span>
+<span class="nc" id="L74">        gbl.setConstraints(lblEntryType, con);</span>
+<span class="nc" id="L75">        pan.add(lblEntryType);</span>
+
+<span class="nc" id="L77">        JLabel lblKeyPattern = new JLabel(Localization.lang(&quot;Key pattern&quot;));</span>
+<span class="nc" id="L78">        lblKeyPattern.setFont(f);</span>
+<span class="nc" id="L79">        con.gridx = 1;</span>
+<span class="nc" id="L80">        con.gridy = 0;</span>
+<span class="nc" id="L81">        con.gridheight = 1;</span>
+<span class="nc" id="L82">        con.fill = GridBagConstraints.HORIZONTAL;</span>
+<span class="nc" id="L83">        con.anchor = GridBagConstraints.WEST;</span>
+<span class="nc" id="L84">        con.insets = new Insets(5, 5, 10, 5);</span>
+<span class="nc" id="L85">        gbl.setConstraints(lblKeyPattern, con);</span>
+<span class="nc" id="L86">        pan.add(lblKeyPattern);</span>
+
+<span class="nc" id="L88">        con.gridy = 1;</span>
+<span class="nc" id="L89">        con.gridx = 0;</span>
+<span class="nc" id="L90">        JLabel lab = new JLabel(Localization.lang(&quot;Default pattern&quot;));</span>
+<span class="nc" id="L91">        gbl.setConstraints(lab, con);</span>
+<span class="nc" id="L92">        pan.add(lab);</span>
+<span class="nc" id="L93">        con.gridx = 1;</span>
+<span class="nc" id="L94">        gbl.setConstraints(defaultPat, con);</span>
+<span class="nc" id="L95">        pan.add(defaultPat);</span>
+<span class="nc" id="L96">        con.insets = new Insets(5, 5, 10, 5);</span>
+<span class="nc" id="L97">        JButton btnDefault = new JButton(Localization.lang(&quot;Default&quot;));</span>
+<span class="nc" id="L98">        btnDefault.addActionListener(</span>
+<span class="nc" id="L99">                e -&gt; defaultPat.setText((String) Globals.prefs.defaults.get(JabRefPreferences.DEFAULT_BIBTEX_KEY_PATTERN)));</span>
+<span class="nc" id="L100">        con.gridx = 2;</span>
+<span class="nc" id="L101">        int y = 2;</span>
+<span class="nc" id="L102">        gbl.setConstraints(btnDefault, con);</span>
+<span class="nc" id="L103">        pan.add(btnDefault);</span>
+
+        BibDatabaseMode mode;
+        // check mode of currently used DB
+<span class="nc bnc" id="L107" title="All 2 branches missed.">        if (panel != null) {</span>
+<span class="nc" id="L108">            mode = panel.getBibDatabaseContext().getMode();</span>
+<span class="nc" id="L109">        } else {</span>
+            // use preferences value if no DB is open
+<span class="nc" id="L111">            mode = Globals.prefs.getDefaultBibDatabaseMode();</span>
+        }
+
+<span class="nc bnc" id="L114" title="All 2 branches missed.">        for (EntryType type : EntryTypes.getAllValues(mode)) {</span>
+<span class="nc" id="L115">            textFields.put(type.getName().toLowerCase(Locale.ROOT), addEntryType(pan, type, y));</span>
+<span class="nc" id="L116">            y++;</span>
+        }
+
+<span class="nc" id="L119">        con.fill = GridBagConstraints.BOTH;</span>
+<span class="nc" id="L120">        con.gridx = 0;</span>
+<span class="nc" id="L121">        con.gridy = 1;</span>
+<span class="nc" id="L122">        con.gridwidth = 3;</span>
+<span class="nc" id="L123">        con.weightx = 1;</span>
+<span class="nc" id="L124">        con.weighty = 1;</span>
+<span class="nc" id="L125">        gbl.setConstraints(sp, con);</span>
+<span class="nc" id="L126">        add(sp);</span>
+
+        // A help button
+<span class="nc" id="L129">        con.gridwidth = 1;</span>
+<span class="nc" id="L130">        con.gridx = 1;</span>
+<span class="nc" id="L131">        con.gridy = 2;</span>
+<span class="nc" id="L132">        con.fill = GridBagConstraints.HORIZONTAL;</span>
+        //
+<span class="nc" id="L134">        con.weightx = 0;</span>
+<span class="nc" id="L135">        con.weighty = 0;</span>
+<span class="nc" id="L136">        con.anchor = GridBagConstraints.SOUTHEAST;</span>
+<span class="nc" id="L137">        con.insets = new Insets(0, 5, 0, 5);</span>
+<span class="nc" id="L138">        JButton hlb = new JButton(IconTheme.JabRefIcon.HELP.getSmallIcon());</span>
+<span class="nc" id="L139">        hlb.setToolTipText(Localization.lang(&quot;Help on key patterns&quot;));</span>
+<span class="nc" id="L140">        gbl.setConstraints(hlb, con);</span>
+<span class="nc" id="L141">        add(hlb);</span>
+<span class="nc" id="L142">        hlb.addActionListener(help);</span>
+
+        // And finally a button to reset everything
+<span class="nc" id="L145">        JButton btnDefaultAll = new JButton(Localization.lang(&quot;Reset all&quot;));</span>
+<span class="nc" id="L146">        con.gridx = 2;</span>
+<span class="nc" id="L147">        con.gridy = 2;</span>
+
+<span class="nc" id="L149">        con.weightx = 1;</span>
+<span class="nc" id="L150">        con.weighty = 0;</span>
+<span class="nc" id="L151">        con.anchor = GridBagConstraints.SOUTHEAST;</span>
+<span class="nc" id="L152">        con.insets = new Insets(20, 5, 0, 5);</span>
+<span class="nc" id="L153">        gbl.setConstraints(btnDefaultAll, con);</span>
+<span class="nc" id="L154">        btnDefaultAll.addActionListener(e -&gt; {</span>
+            // reset all fields
+<span class="nc bnc" id="L156" title="All 2 branches missed.">            for (JTextField field : textFields.values()) {</span>
+<span class="nc" id="L157">                field.setText(&quot;&quot;);</span>
+            }
+
+            // also reset the default pattern
+<span class="nc" id="L161">            defaultPat.setText((String) Globals.prefs.defaults.get(JabRefPreferences.DEFAULT_BIBTEX_KEY_PATTERN));</span>
+<span class="nc" id="L162">        });</span>
+<span class="nc" id="L163">        add(btnDefaultAll);</span>
+<span class="nc" id="L164">    }</span>
+
+    private JTextField addEntryType(Container c, EntryType type, int y) {
+
+<span class="nc" id="L168">        JLabel lab = new JLabel(type.getName());</span>
+<span class="nc" id="L169">        con.gridx = 0;</span>
+<span class="nc" id="L170">        con.gridy = y;</span>
+<span class="nc" id="L171">        con.fill = GridBagConstraints.BOTH;</span>
+<span class="nc" id="L172">        con.weightx = 0;</span>
+<span class="nc" id="L173">        con.weighty = 0;</span>
+<span class="nc" id="L174">        con.anchor = GridBagConstraints.WEST;</span>
+<span class="nc" id="L175">        con.insets = new Insets(0, 5, 0, 5);</span>
+<span class="nc" id="L176">        gbl.setConstraints(lab, con);</span>
+<span class="nc" id="L177">        c.add(lab);</span>
+
+<span class="nc" id="L179">        JTextField tf = new JTextField();</span>
+<span class="nc" id="L180">        tf.setColumns(15);</span>
+<span class="nc" id="L181">        con.gridx = 1;</span>
+<span class="nc" id="L182">        con.fill = GridBagConstraints.HORIZONTAL;</span>
+<span class="nc" id="L183">        con.weightx = 1;</span>
+<span class="nc" id="L184">        con.weighty = 0;</span>
+<span class="nc" id="L185">        con.anchor = GridBagConstraints.CENTER;</span>
+<span class="nc" id="L186">        con.insets = new Insets(0, 5, 0, 5);</span>
+<span class="nc" id="L187">        gbl.setConstraints(tf, con);</span>
+<span class="nc" id="L188">        c.add(tf);</span>
+
+<span class="nc" id="L190">        JButton but = new JButton(Localization.lang(&quot;Default&quot;));</span>
+<span class="nc" id="L191">        con.gridx = 2;</span>
+<span class="nc" id="L192">        con.fill = GridBagConstraints.BOTH;</span>
+<span class="nc" id="L193">        con.weightx = 0;</span>
+<span class="nc" id="L194">        con.weighty = 0;</span>
+<span class="nc" id="L195">        con.anchor = GridBagConstraints.CENTER;</span>
+<span class="nc" id="L196">        con.insets = new Insets(0, 5, 0, 5);</span>
+<span class="nc" id="L197">        gbl.setConstraints(but, con);</span>
+<span class="nc" id="L198">        but.setActionCommand(type.getName().toLowerCase(Locale.ROOT));</span>
+<span class="nc" id="L199">        but.addActionListener(e -&gt; {</span>
+<span class="nc" id="L200">            JTextField tField = textFields.get(e.getActionCommand());</span>
+<span class="nc" id="L201">            tField.setText(&quot;&quot;);</span>
+<span class="nc" id="L202">        });</span>
+<span class="nc" id="L203">        c.add(but);</span>
+
+<span class="nc" id="L205">        return tf;</span>
+    }
+
+    /**
+     * fill the given LabelPattern by values generated from the text fields
+     */
+    private void fillPatternUsingPanelData(AbstractBibtexKeyPattern keypatterns) {
+        // each entry type
+<span class="nc bnc" id="L213" title="All 2 branches missed.">        for (Map.Entry&lt;String, JTextField&gt; entry : textFields.entrySet()) {</span>
+<span class="nc" id="L214">            String text = entry.getValue().getText();</span>
+<span class="nc bnc" id="L215" title="All 2 branches missed.">            if (!text.trim().isEmpty()) {</span>
+<span class="nc" id="L216">                keypatterns.addBibtexKeyPattern(entry.getKey(), text);</span>
+            }
+        }
+
+        // default value
+<span class="nc" id="L221">        String text = defaultPat.getText();</span>
+<span class="nc bnc" id="L222" title="All 2 branches missed.">        if (!text.trim().isEmpty()) { // we do not trim the value at the assignment to enable users to have spaces at the beginning and at the end of the pattern</span>
+<span class="nc" id="L223">            keypatterns.setDefaultValue(text);</span>
+        }
+<span class="nc" id="L225">    }</span>
+
+    protected GlobalBibtexKeyPattern getKeyPatternAsGlobalBibtexKeyPattern() {
+<span class="nc" id="L228">        GlobalBibtexKeyPattern res = GlobalBibtexKeyPattern.fromPattern(</span>
+<span class="nc" id="L229">                JabRefPreferences.getInstance().get(JabRefPreferences.DEFAULT_BIBTEX_KEY_PATTERN)</span>
+        );
+<span class="nc" id="L231">        fillPatternUsingPanelData(res);</span>
+<span class="nc" id="L232">        return res;</span>
+    }
+
+    public DatabaseBibtexKeyPattern getKeyPatternAsDatabaseBibtexKeyPattern() {
+<span class="nc" id="L236">        DatabaseBibtexKeyPattern res = new DatabaseBibtexKeyPattern(Globals.prefs.getKeyPattern());</span>
+<span class="nc" id="L237">        fillPatternUsingPanelData(res);</span>
+<span class="nc" id="L238">        return res;</span>
+    }
+
+    /**
+     * Fills the current values to the text fields
+     *
+     * @param keyPattern the BibtexKeyPattern to use as initial value
+     */
+    public void setValues(AbstractBibtexKeyPattern keyPattern) {
+<span class="nc bnc" id="L247" title="All 2 branches missed.">        for (Map.Entry&lt;String, JTextField&gt; entry : textFields.entrySet()) {</span>
+<span class="nc" id="L248">            setValue(entry.getValue(), entry.getKey(), keyPattern);</span>
+        }
+
+<span class="nc bnc" id="L251" title="All 4 branches missed.">        if (keyPattern.getDefaultValue() == null || keyPattern.getDefaultValue().isEmpty()) {</span>
+<span class="nc" id="L252">            defaultPat.setText(&quot;&quot;);</span>
+<span class="nc" id="L253">        } else {</span>
+<span class="nc" id="L254">            defaultPat.setText(keyPattern.getDefaultValue().get(0));</span>
+        }
+<span class="nc" id="L256">    }</span>
+
+    private static void setValue(JTextField tf, String fieldName, AbstractBibtexKeyPattern keyPattern) {
+<span class="nc bnc" id="L259" title="All 2 branches missed.">        if (keyPattern.isDefaultValue(fieldName)) {</span>
+<span class="nc" id="L260">            tf.setText(&quot;&quot;);</span>
+<span class="nc" id="L261">        } else {</span>
+<span class="nc" id="L262">            tf.setText(keyPattern.getValue(fieldName).get(0));</span>
+        }
+<span class="nc" id="L264">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

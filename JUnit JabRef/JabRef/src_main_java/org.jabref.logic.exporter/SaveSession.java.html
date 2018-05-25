@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>SaveSession.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.exporter</a> &gt; <span class="el_source">SaveSession.java</span></div><h1>SaveSession.java</h1><pre class="source lang-java linenums">package org.jabref.logic.exporter;
+
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
+import org.jabref.model.FieldChange;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public abstract class SaveSession {
+
+<span class="fc" id="L18">    private static final Logger LOGGER = LoggerFactory.getLogger(SaveSession.class);</span>
+
+    protected boolean backup;
+    protected final Charset encoding;
+    protected final VerifyingWriter writer;
+<span class="fc" id="L23">    private final List&lt;FieldChange&gt; undoableFieldChanges = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L25">    protected SaveSession(Charset encoding, boolean backup, VerifyingWriter writer) {</span>
+<span class="fc" id="L26">        this.encoding = Objects.requireNonNull(encoding);</span>
+<span class="fc" id="L27">        this.backup = backup;</span>
+<span class="fc" id="L28">        this.writer = Objects.requireNonNull(writer);</span>
+<span class="fc" id="L29">    }</span>
+
+    public VerifyingWriter getWriter() {
+<span class="fc" id="L32">        return writer;</span>
+    }
+
+    public Charset getEncoding() {
+<span class="nc" id="L36">        return encoding;</span>
+    }
+
+    public void setUseBackup(boolean useBackup) {
+<span class="nc" id="L40">        this.backup = useBackup;</span>
+<span class="nc" id="L41">    }</span>
+
+    public abstract void commit(Path file) throws SaveException;
+
+    public void commit(String path) throws SaveException {
+<span class="nc" id="L46">        commit(Paths.get(path));</span>
+<span class="nc" id="L47">    }</span>
+
+    public abstract void cancel();
+
+    public List&lt;FieldChange&gt; getFieldChanges() {
+<span class="nc" id="L52">        return undoableFieldChanges;</span>
+    }
+
+    public void addFieldChanges(List&lt;FieldChange&gt; newUndoableFieldChanges) {
+<span class="fc" id="L56">        this.undoableFieldChanges.addAll(newUndoableFieldChanges);</span>
+<span class="fc" id="L57">    }</span>
+
+    public void finalize(Path file) throws SaveException, IOException {
+<span class="fc" id="L60">        getWriter().flush();</span>
+<span class="fc" id="L61">        getWriter().close();</span>
+
+<span class="pc bpc" id="L63" title="1 of 2 branches missed.">        if (!getWriter().couldEncodeAll()) {</span>
+<span class="nc" id="L64">            LOGGER.warn(&quot;Could not encode...&quot;);</span>
+        }
+<span class="fc" id="L66">        commit(file);</span>
+<span class="fc" id="L67">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

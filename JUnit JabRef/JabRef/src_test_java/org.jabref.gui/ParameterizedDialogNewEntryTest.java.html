@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>ParameterizedDialogNewEntryTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui</a> &gt; <span class="el_source">ParameterizedDialogNewEntryTest.java</span></div><h1>ParameterizedDialogNewEntryTest.java</h1><pre class="source lang-java linenums"><span class="nc" id="L1">package org.jabref.gui;</span>
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Locale;
+
+import javax.swing.JButton;
+import javax.swing.JDialog;
+
+import org.jabref.testutils.category.GUITest;
+
+import org.assertj.swing.core.GenericTypeMatcher;
+import org.assertj.swing.dependency.jsr305.Nonnull;
+import org.assertj.swing.fixture.JTableFixture;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
+import static org.assertj.swing.finder.WindowFinder.findDialog;
+
+@RunWith(Parameterized.class)
+@Category(GUITest.class)
+public class ParameterizedDialogNewEntryTest extends AbstractUITest {
+
+    private final String databaseMode;
+    private final String entryType;
+
+
+<span class="fc" id="L30">    public ParameterizedDialogNewEntryTest(String databaseMode, String entryType) {</span>
+<span class="fc" id="L31">        this.databaseMode = databaseMode;</span>
+<span class="fc" id="L32">        this.entryType = entryType;</span>
+<span class="fc" id="L33">    }</span>
+
+    @Test
+    public void addEntryOfGivenType() {
+<span class="nc" id="L37">        mainFrame.menuItemWithPath(&quot;File&quot;, &quot;New &quot; + databaseMode + &quot; database&quot;).click();</span>
+<span class="nc" id="L38">        JTableFixture entryTable = mainFrame.table();</span>
+
+<span class="nc" id="L40">        entryTable.requireRowCount(0);</span>
+<span class="nc" id="L41">        mainFrame.menuItemWithPath(&quot;BibTeX&quot;, &quot;New entry...&quot;).click();</span>
+
+<span class="nc" id="L43">        selectEntryType();</span>
+
+<span class="nc" id="L45">        entryTable.requireRowCount(1);</span>
+<span class="nc" id="L46">    }</span>
+
+    private void selectEntryType() {
+<span class="nc" id="L49">        GenericTypeMatcher&lt;JDialog&gt; matcher = new GenericTypeMatcher&lt;JDialog&gt;(JDialog.class) {</span>
+
+            @Override
+            protected boolean isMatching(JDialog dialog) {
+<span class="nc" id="L53">                return &quot;Select entry type&quot;.equals(dialog.getTitle());</span>
+            }
+        };
+
+<span class="nc" id="L57">        findDialog(matcher).withTimeout(10_000).using(robot()).button(new GenericTypeMatcher&lt;JButton&gt;(JButton.class) {</span>
+
+            @Override
+            protected boolean isMatching(@Nonnull JButton jButton) {
+<span class="nc" id="L61">                return entryType.equals(jButton.getText());</span>
+            }
+<span class="nc" id="L63">        }).click();</span>
+<span class="nc" id="L64">    }</span>
+
+    @Test
+    public void addEntryPlainTextOfGivenType() {
+<span class="nc" id="L68">        mainFrame.menuItemWithPath(&quot;File&quot;, &quot;New &quot; + databaseMode + &quot; database&quot;).click();</span>
+<span class="nc" id="L69">        JTableFixture entryTable = mainFrame.table();</span>
+
+<span class="nc" id="L71">        entryTable.requireRowCount(0);</span>
+<span class="nc" id="L72">        mainFrame.menuItemWithPath(&quot;BibTeX&quot;, &quot;New entry from plain text...&quot;).click();</span>
+
+<span class="nc" id="L74">        selectEntryType();</span>
+
+<span class="nc" id="L76">        GenericTypeMatcher&lt;JDialog&gt; matcher2 = plainTextMatcher();</span>
+
+<span class="nc" id="L78">        findDialog(matcher2).withTimeout(10_000).using(robot()).button(new GenericTypeMatcher&lt;JButton&gt;(JButton.class) {</span>
+
+            @Override
+            protected boolean isMatching(@Nonnull JButton jButton) {
+<span class="nc" id="L82">                return &quot;Accept&quot;.equals(jButton.getText());</span>
+            }
+<span class="nc" id="L84">        }).click();</span>
+
+<span class="nc" id="L86">        entryTable.requireRowCount(1);</span>
+<span class="nc" id="L87">    }</span>
+
+    @Test
+    public void closeAddingEntryPlainTextOfGivenType() {
+<span class="nc" id="L91">        mainFrame.menuItemWithPath(&quot;File&quot;, &quot;New &quot; + databaseMode + &quot; database&quot;).click();</span>
+<span class="nc" id="L92">        JTableFixture entryTable = mainFrame.table();</span>
+
+<span class="nc" id="L94">        entryTable.requireRowCount(0);</span>
+<span class="nc" id="L95">        mainFrame.menuItemWithPath(&quot;BibTeX&quot;, &quot;New entry from plain text...&quot;).click();</span>
+
+<span class="nc" id="L97">        selectEntryType();</span>
+
+<span class="nc" id="L99">        GenericTypeMatcher&lt;JDialog&gt; matcher2 = plainTextMatcher();</span>
+
+<span class="nc" id="L101">        findDialog(matcher2).withTimeout(10_000).using(robot()).close();</span>
+<span class="nc" id="L102">        entryTable.requireRowCount(0);</span>
+<span class="nc" id="L103">    }</span>
+
+    @Test
+    public void cancelAddingEntryPlainTextOfGivenType() {
+<span class="nc" id="L107">        mainFrame.menuItemWithPath(&quot;File&quot;, &quot;New &quot; + databaseMode + &quot; database&quot;).click();</span>
+<span class="nc" id="L108">        JTableFixture entryTable = mainFrame.table();</span>
+
+<span class="nc" id="L110">        entryTable.requireRowCount(0);</span>
+<span class="nc" id="L111">        mainFrame.menuItemWithPath(&quot;BibTeX&quot;, &quot;New entry from plain text...&quot;).click();</span>
+
+<span class="nc" id="L113">        selectEntryType();</span>
+
+<span class="nc" id="L115">        GenericTypeMatcher&lt;JDialog&gt; matcher2 = plainTextMatcher();</span>
+
+<span class="nc" id="L117">        findDialog(matcher2).withTimeout(10_000).using(robot()).button(new GenericTypeMatcher&lt;JButton&gt;(JButton.class) {</span>
+
+            @Override
+            protected boolean isMatching(@Nonnull JButton jButton) {
+<span class="nc" id="L121">                return &quot;Cancel&quot;.equals(jButton.getText());</span>
+            }
+<span class="nc" id="L123">        }).click();</span>
+
+<span class="nc" id="L125">        entryTable.requireRowCount(0);</span>
+<span class="nc" id="L126">    }</span>
+
+    private GenericTypeMatcher&lt;JDialog&gt; plainTextMatcher() {
+<span class="nc" id="L129">        GenericTypeMatcher&lt;JDialog&gt; matcher2 = new GenericTypeMatcher&lt;JDialog&gt;(JDialog.class) {</span>
+
+            @Override
+            protected boolean isMatching(JDialog dialog) {
+<span class="nc" id="L133">                return (&quot;Plain text import for &quot; + entryType.toLowerCase(Locale.ENGLISH)).equals(dialog.getTitle());</span>
+            }
+        };
+<span class="nc" id="L136">        return matcher2;</span>
+    }
+
+    @Parameterized.Parameters(name = &quot;{index}: {0} : {1}&quot;)
+    public static Collection&lt;Object[]&gt; instancesToTest() {
+        // Create entry from menu
+        // Structure:
+        // {&quot;BibTeX&quot;/&quot;biblatex&quot;, &quot;type&quot;}
+        // @formatter:off
+<span class="fc" id="L145">        return Arrays.asList(</span>
+<span class="fc" id="L146">                new Object[]{&quot;BibTeX&quot;, &quot;Article&quot;},</span>
+/*                new Object[]{&quot;BibTeX&quot;, &quot;InBook&quot;},
+                new Object[]{&quot;BibTeX&quot;, &quot;Book&quot;},
+                new Object[]{&quot;BibTeX&quot;, &quot;Booklet&quot;},
+                new Object[]{&quot;BibTeX&quot;, &quot;InCollection&quot;},
+                new Object[]{&quot;BibTeX&quot;, &quot;Conference&quot;},
+                new Object[]{&quot;BibTeX&quot;, &quot;InProceedings&quot;},
+                new Object[]{&quot;BibTeX&quot;, &quot;Proceedings&quot;},
+                new Object[]{&quot;BibTeX&quot;, &quot;Manual&quot;},
+                new Object[]{&quot;BibTeX&quot;, &quot;MastersThesis&quot;},
+                new Object[]{&quot;BibTeX&quot;, &quot;PhdThesis&quot;},
+                new Object[]{&quot;BibTeX&quot;, &quot;TechReport&quot;},
+                new Object[]{&quot;BibTeX&quot;, &quot;Unpublished&quot;},
+                new Object[]{&quot;BibTeX&quot;, &quot;Misc&quot;},
+                new Object[]{&quot;BibTeX&quot;, &quot;Electronic&quot;},
+                new Object[]{&quot;BibTeX&quot;, &quot;IEEEtranBSTCTL&quot;},
+                new Object[]{&quot;BibTeX&quot;, &quot;Periodical&quot;},
+                new Object[]{&quot;BibTeX&quot;, &quot;Patent&quot;},
+                new Object[]{&quot;BibTeX&quot;, &quot;Standard&quot;},
+                new Object[]{&quot;biblatex&quot;, &quot;Article&quot;},
+                new Object[]{&quot;biblatex&quot;, &quot;Book&quot;},
+                new Object[]{&quot;biblatex&quot;, &quot;BookInBook&quot;},
+                new Object[]{&quot;biblatex&quot;, &quot;Booklet&quot;},
+                new Object[]{&quot;biblatex&quot;, &quot;Collection&quot;},
+                new Object[]{&quot;biblatex&quot;, &quot;Conference&quot;},
+                new Object[]{&quot;biblatex&quot;, &quot;Electronic&quot;},
+                new Object[]{&quot;biblatex&quot;, &quot;IEEEtranBSTCTL&quot;},
+                new Object[]{&quot;biblatex&quot;, &quot;InBook&quot;},
+                new Object[]{&quot;biblatex&quot;, &quot;InCollection&quot;},
+                new Object[]{&quot;biblatex&quot;, &quot;InProceedings&quot;},
+                new Object[]{&quot;biblatex&quot;, &quot;InReference&quot;},
+                new Object[]{&quot;biblatex&quot;, &quot;Manual&quot;},
+                new Object[]{&quot;biblatex&quot;, &quot;MastersThesis&quot;},
+                new Object[]{&quot;biblatex&quot;, &quot;Misc&quot;},
+                new Object[]{&quot;biblatex&quot;, &quot;MvBook&quot;},
+                new Object[]{&quot;biblatex&quot;, &quot;MvCollection&quot;},
+                new Object[]{&quot;biblatex&quot;, &quot;MvProceedings&quot;},
+                new Object[]{&quot;biblatex&quot;, &quot;MvReference&quot;},
+                new Object[]{&quot;biblatex&quot;, &quot;Online&quot;},
+                new Object[]{&quot;biblatex&quot;, &quot;Patent&quot;},
+                new Object[]{&quot;biblatex&quot;, &quot;Periodical&quot;},
+                new Object[]{&quot;biblatex&quot;, &quot;PhdThesis&quot;},
+                new Object[]{&quot;biblatex&quot;, &quot;Proceedings&quot;},
+                new Object[]{&quot;biblatex&quot;, &quot;Reference&quot;},
+                new Object[]{&quot;biblatex&quot;, &quot;Report&quot;},
+                new Object[]{&quot;biblatex&quot;, &quot;Set&quot;},
+                new Object[]{&quot;biblatex&quot;, &quot;SuppBook&quot;},
+                new Object[]{&quot;biblatex&quot;, &quot;SuppCollection&quot;},
+                new Object[]{&quot;biblatex&quot;, &quot;SuppPeriodical&quot;},
+                new Object[]{&quot;biblatex&quot;, &quot;TechReport&quot;},
+                new Object[]{&quot;biblatex&quot;, &quot;Thesis&quot;},
+                new Object[]{&quot;biblatex&quot;, &quot;Unpublished&quot;},*/
+<span class="fc" id="L198">                new Object[]{&quot;biblatex&quot;, &quot;WWW&quot;}</span>
+        );
+        // @formatter:on
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

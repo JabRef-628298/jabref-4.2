@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MacAdapter.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">osx.macadapter</a> &gt; <span class="el_source">MacAdapter.java</span></div><h1>MacAdapter.java</h1><pre class="source lang-java linenums">package osx.macadapter;
+
+import java.io.File;
+import java.util.List;
+
+import org.jabref.gui.JabRefFrame;
+
+import com.apple.eawt.AboutHandler;
+import com.apple.eawt.AppEvent;
+import com.apple.eawt.AppEvent.AboutEvent;
+import com.apple.eawt.AppEvent.OpenFilesEvent;
+import com.apple.eawt.AppEvent.PreferencesEvent;
+import com.apple.eawt.AppEvent.QuitEvent;
+import com.apple.eawt.AppReOpenedListener;
+import com.apple.eawt.Application;
+import com.apple.eawt.FullScreenUtilities;
+import com.apple.eawt.OpenFilesHandler;
+import com.apple.eawt.PreferencesHandler;
+import com.apple.eawt.QuitHandler;
+import com.apple.eawt.QuitResponse;
+
+<span class="nc" id="L22">public class MacAdapter implements PreferencesHandler, AboutHandler, QuitHandler, OpenFilesHandler, AppReOpenedListener {</span>
+
+    private JabRefFrame parentFrame;
+
+    public void registerMacEvents(JabRefFrame inputFrame) {
+<span class="nc" id="L27">        parentFrame = inputFrame;</span>
+<span class="nc" id="L28">        Application.getApplication().setOpenFileHandler(this);</span>
+<span class="nc" id="L29">        Application.getApplication().setAboutHandler(this);</span>
+<span class="nc" id="L30">        Application.getApplication().setPreferencesHandler(this);</span>
+<span class="nc" id="L31">        Application.getApplication().setQuitHandler(this);</span>
+<span class="nc" id="L32">        Application.getApplication().addAppEventListener(this);</span>
+<span class="nc" id="L33">        FullScreenUtilities.setWindowCanFullScreen(parentFrame, true);</span>
+<span class="nc" id="L34">    }</span>
+
+    @Override
+    // The OSXAdapter calls this method when a &quot;.bib&quot; file has been double-clicked from the Finder.
+    public void openFiles(OpenFilesEvent event) {
+<span class="nc bnc" id="L39" title="All 2 branches missed.">        if (parentFrame == null) {</span>
+<span class="nc" id="L40">            return;</span>
+        }
+
+<span class="nc" id="L43">        List&lt;File&gt; files = event.getFiles();</span>
+
+<span class="nc bnc" id="L45" title="All 2 branches missed.">        for (File file : files) {</span>
+<span class="nc" id="L46">            parentFrame.openAction(file.getAbsolutePath());</span>
+        }
+<span class="nc" id="L48">    }</span>
+
+    @Override
+    public void handleQuitRequestWith(QuitEvent evt, QuitResponse resp) {
+<span class="nc bnc" id="L52" title="All 2 branches missed.">        if (parentFrame == null) {</span>
+<span class="nc" id="L53">            return;</span>
+        }
+
+<span class="nc bnc" id="L56" title="All 2 branches missed.">        if (parentFrame.quit()) {</span>
+<span class="nc" id="L57">            resp.performQuit();</span>
+<span class="nc" id="L58">        } else {</span>
+<span class="nc" id="L59">            resp.cancelQuit();</span>
+        }
+<span class="nc" id="L61">    }</span>
+
+    @Override
+    public void handleAbout(AboutEvent arg0) {
+<span class="nc bnc" id="L65" title="All 2 branches missed.">        if (parentFrame == null) {</span>
+<span class="nc" id="L66">            return;</span>
+        }
+
+<span class="nc" id="L69">        parentFrame.about();</span>
+<span class="nc" id="L70">    }</span>
+
+    @Override
+    public void handlePreferences(PreferencesEvent arg0) {
+<span class="nc bnc" id="L74" title="All 2 branches missed.">        if (parentFrame == null) {</span>
+<span class="nc" id="L75">            return;</span>
+        }
+
+<span class="nc" id="L78">        parentFrame.showPreferencesDialog();</span>
+<span class="nc" id="L79">    }</span>
+
+    @Override
+    public void appReOpened(AppEvent.AppReOpenedEvent appReOpenedEvent) {
+<span class="nc" id="L83">        parentFrame.setVisible(true);</span>
+<span class="nc" id="L84">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>GroupSidePane.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.groups</a> &gt; <span class="el_source">GroupSidePane.java</span></div><h1>GroupSidePane.java</h1><pre class="source lang-java linenums">package org.jabref.gui.groups;
+
+import java.util.Collections;
+import java.util.List;
+
+import javafx.application.Platform;
+import javafx.embed.swing.JFXPanel;
+import javafx.scene.Scene;
+import javafx.scene.layout.StackPane;
+
+import org.jabref.Globals;
+import org.jabref.gui.BasePanel;
+import org.jabref.gui.IconTheme;
+import org.jabref.gui.JabRefFrame;
+import org.jabref.gui.SidePaneComponent;
+import org.jabref.gui.SidePaneManager;
+import org.jabref.gui.customjfx.CustomJFXPanel;
+import org.jabref.gui.keyboard.KeyBinding;
+import org.jabref.gui.maintable.MainTableDataModel;
+import org.jabref.logic.groups.DefaultGroupsFactory;
+import org.jabref.logic.l10n.Localization;
+import org.jabref.model.entry.FieldName;
+import org.jabref.model.entry.event.FieldChangedEvent;
+import org.jabref.model.groups.GroupTreeNode;
+import org.jabref.model.search.matchers.MatcherSet;
+import org.jabref.model.search.matchers.MatcherSets;
+import org.jabref.preferences.JabRefPreferences;
+
+import com.google.common.eventbus.Subscribe;
+
+/**
+ * The groups side pane.
+ * This class is just a Swing wrapper around the JavaFX implementation {@link GroupTreeView}.
+ */
+public class GroupSidePane extends SidePaneComponent {
+
+    protected final JabRefFrame frame;
+    private final ToggleAction toggleAction;
+
+    /**
+     * The first element for each group defines which field to use for the quicksearch. The next two define the name and
+     * regexp for the group.
+     */
+    public GroupSidePane(JabRefFrame frame, SidePaneManager manager) {
+<span class="fc" id="L45">        super(manager, IconTheme.JabRefIcon.TOGGLE_GROUPS.getIcon(), Localization.lang(&quot;Groups&quot;));</span>
+
+<span class="fc" id="L47">        Globals.stateManager.activeGroupProperty()</span>
+<span class="pc" id="L48">                .addListener((observable, oldValue, newValue) -&gt; updateShownEntriesAccordingToSelectedGroups(newValue));</span>
+
+        // register the panel the current active context
+<span class="fc" id="L51">        Globals.stateManager.activeDatabaseProperty()</span>
+<span class="fc" id="L52">                .addListener((observable, oldValue, newValue) -&gt; {</span>
+<span class="nc" id="L53">            newValue.ifPresent(databaseContext -&gt;</span>
+<span class="nc" id="L54">                    databaseContext.getDatabase().registerListener(this));</span>
+<span class="nc" id="L55">            oldValue.ifPresent(databaseContext -&gt;</span>
+<span class="nc" id="L56">                    databaseContext.getDatabase().unregisterListener(this));</span>
+<span class="nc" id="L57">        });</span>
+
+<span class="fc" id="L59">        toggleAction = new ToggleAction(Localization.menuTitle(&quot;Toggle groups interface&quot;),</span>
+<span class="fc" id="L60">                Localization.lang(&quot;Toggle groups interface&quot;),</span>
+<span class="fc" id="L61">                Globals.getKeyPrefs().getKey(KeyBinding.TOGGLE_GROUPS_INTERFACE),</span>
+<span class="fc" id="L62">                IconTheme.JabRefIcon.TOGGLE_GROUPS);</span>
+
+<span class="fc" id="L64">        this.frame = frame;</span>
+
+<span class="fc" id="L66">        JFXPanel groupsPane = CustomJFXPanel.create();</span>
+
+<span class="fc" id="L68">        add(groupsPane);</span>
+        // Execute on JavaFX Application Thread
+<span class="fc" id="L70">        Platform.runLater(() -&gt; {</span>
+<span class="fc" id="L71">            StackPane root = new StackPane();</span>
+<span class="fc" id="L72">            root.getChildren().addAll(new GroupTreeView().getView());</span>
+<span class="fc" id="L73">            Scene scene = new Scene(root);</span>
+<span class="fc" id="L74">            groupsPane.setScene(scene);</span>
+<span class="fc" id="L75">        });</span>
+<span class="fc" id="L76">    }</span>
+
+    @Subscribe
+    public synchronized void listen(FieldChangedEvent event) {
+<span class="nc bnc" id="L80" title="All 2 branches missed.">        if (FieldName.GROUPS.equals(event.getFieldName())) {</span>
+<span class="nc" id="L81">            updateShownEntriesAccordingToSelectedGroups(Globals.stateManager.activeGroupProperty());</span>
+        }
+<span class="nc" id="L83">    }</span>
+
+    private void updateShownEntriesAccordingToSelectedGroups(List&lt;GroupTreeNode&gt; selectedGroups) {
+<span class="nc bnc" id="L86" title="All 4 branches missed.">        if ((selectedGroups == null) || selectedGroups.isEmpty()) {</span>
+            // No selected group, show all entries
+<span class="nc" id="L88">            selectedGroups = Collections.singletonList(new GroupTreeNode(DefaultGroupsFactory.getAllEntriesGroup()));</span>
+        }
+
+<span class="nc" id="L91">        final MatcherSet searchRules = MatcherSets.build(</span>
+<span class="nc bnc" id="L92" title="All 2 branches missed.">                Globals.prefs.getBoolean(JabRefPreferences.GROUP_INTERSECT_SELECTIONS) ? MatcherSets.MatcherType.AND : MatcherSets.MatcherType.OR);</span>
+
+<span class="nc bnc" id="L94" title="All 2 branches missed.">        for (GroupTreeNode node : selectedGroups) {</span>
+<span class="nc" id="L95">            searchRules.addRule(node.getSearchMatcher());</span>
+        }
+
+<span class="nc" id="L98">        GroupingWorker worker = new GroupingWorker(frame, panel);</span>
+<span class="nc" id="L99">        worker.run(searchRules);</span>
+<span class="nc" id="L100">        worker.update();</span>
+<span class="nc" id="L101">    }</span>
+
+    @Override
+    public void componentOpening() {
+<span class="nc" id="L105">        Globals.prefs.putBoolean(JabRefPreferences.GROUP_SIDEPANE_VISIBLE, Boolean.TRUE);</span>
+<span class="nc" id="L106">    }</span>
+
+    @Override
+    public int getRescalingWeight() {
+<span class="nc" id="L110">        return 1;</span>
+    }
+
+    @Override
+    public void componentClosing() {
+<span class="nc bnc" id="L115" title="All 2 branches missed.">        if (panel != null) { // panel may be null if no file is open any more</span>
+<span class="nc" id="L116">            panel.getMainTable().getTableModel().updateGroupingState(MainTableDataModel.DisplayOption.DISABLED);</span>
+        }
+<span class="nc" id="L118">        getToggleAction().setSelected(false);</span>
+<span class="nc" id="L119">        Globals.prefs.putBoolean(JabRefPreferences.GROUP_SIDEPANE_VISIBLE, Boolean.FALSE);</span>
+<span class="nc" id="L120">    }</span>
+
+    @Override
+    public void setActiveBasePanel(BasePanel panel) {
+<span class="nc" id="L124">        super.setActiveBasePanel(panel);</span>
+<span class="nc bnc" id="L125" title="All 2 branches missed.">        if (panel == null) { // hide groups</span>
+<span class="nc" id="L126">            frame.getSidePaneManager().hide(GroupSidePane.class);</span>
+<span class="nc" id="L127">            return;</span>
+        }
+
+<span class="nc" id="L130">        synchronized (getTreeLock()) {</span>
+<span class="nc" id="L131">            validateTree();</span>
+        }
+<span class="nc" id="L133">    }</span>
+
+    @Override
+    public void grabFocus() {
+
+<span class="nc" id="L138">    }</span>
+
+    @Override
+    public ToggleAction getToggleAction() {
+<span class="fc" id="L142">        return toggleAction;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

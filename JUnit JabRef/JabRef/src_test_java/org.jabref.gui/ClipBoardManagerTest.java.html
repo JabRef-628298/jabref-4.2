@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>ClipBoardManagerTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui</a> &gt; <span class="el_source">ClipBoardManagerTest.java</span></div><h1>ClipBoardManagerTest.java</h1><pre class="source lang-java linenums">package org.jabref.gui;
+
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.Transferable;
+import java.util.Arrays;
+import java.util.List;
+
+import org.jabref.logic.importer.ImportException;
+import org.jabref.logic.importer.ImportFormatReader;
+import org.jabref.logic.importer.ImportFormatReader.UnknownFormatImport;
+import org.jabref.logic.importer.ParserResult;
+import org.jabref.model.entry.BibEntry;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
+
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+<span class="fc" id="L23">public class ClipBoardManagerTest {</span>
+
+    private ClipBoardManager clipBoardManager;
+    private Transferable content;
+    private ImportFormatReader importFormatReader;
+
+    @BeforeEach
+    public void setUp() throws Exception {
+<span class="fc" id="L31">        importFormatReader = mock(ImportFormatReader.class);</span>
+
+<span class="fc" id="L33">        Clipboard clipboard = mock(Clipboard.class);</span>
+<span class="fc" id="L34">        clipBoardManager = new ClipBoardManager(clipboard, importFormatReader);</span>
+<span class="fc" id="L35">        content = mock(Transferable.class);</span>
+<span class="fc" id="L36">        when(clipboard.getContents(ArgumentMatchers.any())).thenReturn(content);</span>
+<span class="fc" id="L37">    }</span>
+
+    @Test
+    public void extractBibEntriesFromClipboardParsesStringFlavor() throws Exception {
+<span class="fc" id="L41">        BibEntry expected = new BibEntry();</span>
+<span class="fc" id="L42">        expected.setType(&quot;article&quot;);</span>
+<span class="fc" id="L43">        expected.setCiteKey(&quot;canh05&quot;);</span>
+<span class="fc" id="L44">        expected.setField(&quot;author&quot;, &quot;Crowston, K. and Annabi, H.&quot;);</span>
+<span class="fc" id="L45">        expected.setField(&quot;title&quot;, &quot;Title A&quot;);</span>
+
+<span class="fc" id="L47">        when(content.isDataFlavorSupported(TransferableBibtexEntry.ENTRY_FLAVOR)).thenReturn(false);</span>
+<span class="fc" id="L48">        when(content.isDataFlavorSupported(DataFlavor.stringFlavor)).thenReturn(true);</span>
+<span class="fc" id="L49">        String data = &quot;@article{canh05,  author = {Crowston, K. and Annabi, H.},\n&quot; + &quot;  title = {Title A}}\n&quot;;</span>
+<span class="fc" id="L50">        when(content.getTransferData(DataFlavor.stringFlavor)).thenReturn(data);</span>
+<span class="fc" id="L51">        when(importFormatReader.importUnknownFormat(data)).thenReturn(new UnknownFormatImport(&quot;abc&quot;, new ParserResult(Arrays.asList(expected))));</span>
+
+<span class="fc" id="L53">        List&lt;BibEntry&gt; actual = clipBoardManager.extractBibEntriesFromClipboard();</span>
+
+<span class="fc" id="L55">        assertEquals(Arrays.asList(expected), actual);</span>
+<span class="fc" id="L56">    }</span>
+
+    @Test
+    public void extractBibEntriesFromClipboardReturnsEmptyIfStringparsingFailed() throws Exception {
+<span class="fc" id="L60">        when(content.isDataFlavorSupported(TransferableBibtexEntry.ENTRY_FLAVOR)).thenReturn(false);</span>
+<span class="fc" id="L61">        when(content.isDataFlavorSupported(DataFlavor.stringFlavor)).thenReturn(true);</span>
+<span class="fc" id="L62">        when(content.getTransferData(DataFlavor.stringFlavor)).thenReturn(&quot;testData&quot;);</span>
+<span class="fc" id="L63">        when(importFormatReader.importUnknownFormat(&quot;testData&quot;)).thenThrow(new ImportException(&quot;&quot;));</span>
+
+<span class="fc" id="L65">        List&lt;BibEntry&gt; actual = clipBoardManager.extractBibEntriesFromClipboard();</span>
+
+<span class="fc" id="L67">        assertEquals(Arrays.asList(), actual);</span>
+<span class="fc" id="L68">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

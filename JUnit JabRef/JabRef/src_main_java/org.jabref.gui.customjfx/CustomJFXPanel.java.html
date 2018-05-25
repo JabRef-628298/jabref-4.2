@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>CustomJFXPanel.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.customjfx</a> &gt; <span class="el_source">CustomJFXPanel.java</span></div><h1>CustomJFXPanel.java</h1><pre class="source lang-java linenums">package org.jabref.gui.customjfx;
+
+import java.awt.event.InputMethodEvent;
+import java.lang.reflect.Field;
+
+import javafx.embed.swing.JFXPanel;
+import javafx.scene.Scene;
+
+import org.jabref.gui.customjfx.support.InputMethodSupport;
+import org.jabref.gui.util.DefaultTaskExecutor;
+import org.jabref.logic.util.OS;
+
+import com.sun.javafx.embed.EmbeddedSceneInterface;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/***
+ * WARNING: THIS IS A CUSTOM HACK TO PREVENT A BUG WITH ACCENTED CHARACTERS PRODUCING AN NPE IN LINUX &lt;/br&gt;
+ * So far the bug has only been resolved in openjfx10: &lt;a href=&quot;https://bugs.openjdk.java.net/browse/JDK-8185792&quot;&gt;https://bugs.openjdk.java.net/browse/JDK-8185792&lt;/a&gt;
+ *
+ */
+public class CustomJFXPanel extends JFXPanel {
+
+<span class="fc" id="L24">    private static final Logger LOGGER = LoggerFactory.getLogger(CustomJFXPanel.class);</span>
+<span class="fc" id="L25">    private Field scenePeerField = null;</span>
+
+    private CustomJFXPanel() {
+<span class="fc" id="L28">        super();</span>
+        try {
+<span class="fc" id="L30">            scenePeerField = this.getClass().getSuperclass().getDeclaredField(&quot;scenePeer&quot;);</span>
+<span class="fc" id="L31">            scenePeerField.setAccessible(true);</span>
+<span class="pc" id="L32">        } catch (NoSuchFieldException | SecurityException e) {</span>
+<span class="nc" id="L33">            LOGGER.error(&quot;Could not access scenePeer Field&quot;, e);</span>
+
+        }
+<span class="fc" id="L36">    }</span>
+
+    public static JFXPanel create() {
+<span class="pc bpc" id="L39" title="1 of 2 branches missed.">        return OS.LINUX ? new CustomJFXPanel() : new JFXPanel();</span>
+    }
+
+    public static JFXPanel wrap(Scene scene) {
+<span class="nc bnc" id="L43" title="All 2 branches missed.">        JFXPanel container = OS.LINUX ? new CustomJFXPanel() : new JFXPanel();</span>
+<span class="nc" id="L44">        DefaultTaskExecutor.runInJavaFXThread(() -&gt; container.setScene(scene));</span>
+<span class="nc" id="L45">        return container;</span>
+    }
+
+    @Override
+    protected void processInputMethodEvent(InputMethodEvent e) {
+<span class="nc bnc" id="L50" title="All 2 branches missed.">        if (e.getID() == InputMethodEvent.INPUT_METHOD_TEXT_CHANGED) {</span>
+<span class="nc" id="L51">            sendInputMethodEventToFX(e);</span>
+        }
+
+<span class="nc" id="L54">    }</span>
+
+    private void sendInputMethodEventToFX(InputMethodEvent e) {
+<span class="nc" id="L57">        String t = InputMethodSupport.getTextForEvent(e);</span>
+
+<span class="nc" id="L59">        int insertionIndex = 0;</span>
+<span class="nc bnc" id="L60" title="All 2 branches missed.">        if (e.getCaret() != null) {</span>
+<span class="nc" id="L61">            insertionIndex = e.getCaret().getInsertionIndex();</span>
+        }
+
+<span class="nc" id="L64">        EmbeddedSceneInterface myScencePeer = null;</span>
+        try {
+            //the variable must be named different to the original, otherwise reflection does not find the right ones
+<span class="nc" id="L67">            myScencePeer = (EmbeddedSceneInterface) scenePeerField.get(this);</span>
+<span class="nc" id="L68">        } catch (IllegalArgumentException | IllegalAccessException ex) {</span>
+<span class="nc" id="L69">            LOGGER.error(&quot;Could not access scenePeer Field&quot;, ex);</span>
+        }
+
+<span class="nc" id="L72">        myScencePeer.inputMethodEvent(</span>
+<span class="nc" id="L73">                javafx.scene.input.InputMethodEvent.INPUT_METHOD_TEXT_CHANGED,</span>
+<span class="nc" id="L74">                InputMethodSupport.inputMethodEventComposed(t, e.getCommittedCharacterCount()),</span>
+<span class="nc" id="L75">                t.substring(0, e.getCommittedCharacterCount()),</span>
+<span class="nc" id="L76">                insertionIndex);</span>
+<span class="nc" id="L77">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

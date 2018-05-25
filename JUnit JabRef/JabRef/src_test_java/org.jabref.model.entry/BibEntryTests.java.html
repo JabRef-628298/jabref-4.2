@@ -1,0 +1,429 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>BibEntryTests.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.model.entry</a> &gt; <span class="el_source">BibEntryTests.java</span></div><h1>BibEntryTests.java</h1><pre class="source lang-java linenums">package org.jabref.model.entry;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+
+import org.jabref.model.FieldChange;
+import org.jabref.model.entry.specialfields.SpecialField;
+
+import com.google.common.collect.Sets;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+<span class="fc" id="L22">public class BibEntryTests {</span>
+
+    private BibEntry keywordEntry;
+    private BibEntry emptyEntry;
+
+    @BeforeEach
+    public void setUp() {
+        // Default entry for most keyword and some type tests
+<span class="fc" id="L30">        keywordEntry = new BibEntry();</span>
+<span class="fc" id="L31">        keywordEntry.setType(BibtexEntryTypes.ARTICLE);</span>
+<span class="fc" id="L32">        keywordEntry.setField(&quot;keywords&quot;, &quot;Foo, Bar&quot;);</span>
+<span class="fc" id="L33">        keywordEntry.setChanged(false);</span>
+
+        // Empty entry for some tests
+<span class="fc" id="L36">        emptyEntry = new BibEntry();</span>
+<span class="fc" id="L37">        emptyEntry.setType(&quot;article&quot;);</span>
+<span class="fc" id="L38">        emptyEntry.setChanged(false);</span>
+
+<span class="fc" id="L40">    }</span>
+
+    @Test
+    public void testDefaultConstructor() {
+<span class="fc" id="L44">        BibEntry entry = new BibEntry();</span>
+        // we have to use `getType(&quot;misc&quot;)` in the case of biblatex mode
+<span class="fc" id="L46">        assertEquals(&quot;misc&quot;, entry.getType());</span>
+<span class="fc" id="L47">        assertNotNull(entry.getId());</span>
+<span class="fc" id="L48">        assertFalse(entry.getField(&quot;author&quot;).isPresent());</span>
+<span class="fc" id="L49">    }</span>
+
+    @Test
+    public void allFieldsPresentDefault() {
+<span class="fc" id="L53">        BibEntry e = new BibEntry(BibtexEntryTypes.ARTICLE.getName());</span>
+<span class="fc" id="L54">        e.setField(&quot;author&quot;, &quot;abc&quot;);</span>
+<span class="fc" id="L55">        e.setField(&quot;title&quot;, &quot;abc&quot;);</span>
+<span class="fc" id="L56">        e.setField(&quot;journal&quot;, &quot;abc&quot;);</span>
+<span class="fc" id="L57">        List&lt;String&gt; requiredFields = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L59">        requiredFields.add(&quot;author&quot;);</span>
+<span class="fc" id="L60">        requiredFields.add(&quot;title&quot;);</span>
+<span class="fc" id="L61">        assertTrue(e.allFieldsPresent(requiredFields, null));</span>
+
+<span class="fc" id="L63">        requiredFields.add(&quot;year&quot;);</span>
+<span class="fc" id="L64">        assertFalse(e.allFieldsPresent(requiredFields, null));</span>
+<span class="fc" id="L65">    }</span>
+
+    @Test
+    public void allFieldsPresentOr() {
+<span class="fc" id="L69">        BibEntry e = new BibEntry(BibtexEntryTypes.ARTICLE.getName());</span>
+<span class="fc" id="L70">        e.setField(&quot;author&quot;, &quot;abc&quot;);</span>
+<span class="fc" id="L71">        e.setField(&quot;title&quot;, &quot;abc&quot;);</span>
+<span class="fc" id="L72">        e.setField(&quot;journal&quot;, &quot;abc&quot;);</span>
+<span class="fc" id="L73">        List&lt;String&gt; requiredFields = new ArrayList&lt;&gt;();</span>
+
+        // XOR required
+<span class="fc" id="L76">        requiredFields.add(&quot;journal/year&quot;);</span>
+<span class="fc" id="L77">        assertTrue(e.allFieldsPresent(requiredFields, null));</span>
+
+<span class="fc" id="L79">        requiredFields.add(&quot;year/address&quot;);</span>
+<span class="fc" id="L80">        assertFalse(e.allFieldsPresent(requiredFields, null));</span>
+<span class="fc" id="L81">    }</span>
+
+    @Test
+    public void isNullCiteKeyThrowsNPE() {
+<span class="fc" id="L85">        BibEntry e = new BibEntry(BibtexEntryTypes.ARTICLE.getName());</span>
+<span class="pc" id="L86">        assertThrows(NullPointerException.class, () -&gt; e.setCiteKey(null));</span>
+<span class="fc" id="L87">    }</span>
+
+    @Test
+    public void isEmptyCiteKey() {
+<span class="fc" id="L91">        BibEntry e = new BibEntry(BibtexEntryTypes.ARTICLE.getName());</span>
+<span class="fc" id="L92">        assertFalse(e.hasCiteKey());</span>
+
+<span class="fc" id="L94">        e.setCiteKey(&quot;&quot;);</span>
+<span class="fc" id="L95">        assertFalse(e.hasCiteKey());</span>
+
+<span class="fc" id="L97">        e.setCiteKey(&quot;key&quot;);</span>
+<span class="fc" id="L98">        assertTrue(e.hasCiteKey());</span>
+
+<span class="fc" id="L100">        e.clearField(BibEntry.KEY_FIELD);</span>
+<span class="fc" id="L101">        assertFalse(e.hasCiteKey());</span>
+<span class="fc" id="L102">    }</span>
+
+    @Test
+    public void typeOfBibEntryIsMiscAfterSettingToNullString() {
+<span class="fc" id="L106">        assertEquals(&quot;article&quot;, keywordEntry.getType());</span>
+<span class="fc" id="L107">        keywordEntry.setType((String) null);</span>
+<span class="fc" id="L108">        assertEquals(&quot;misc&quot;, keywordEntry.getType());</span>
+<span class="fc" id="L109">    }</span>
+
+    @Test
+    public void typeOfBibEntryIsMiscAfterSettingToEmptyString() {
+<span class="fc" id="L113">        assertEquals(&quot;article&quot;, keywordEntry.getType());</span>
+<span class="fc" id="L114">        keywordEntry.setType(&quot;&quot;);</span>
+<span class="fc" id="L115">        assertEquals(&quot;misc&quot;, keywordEntry.getType());</span>
+<span class="fc" id="L116">    }</span>
+
+    @Test
+    public void getFieldOrAliasDateWithYearNumericalMonthString() {
+<span class="fc" id="L120">        emptyEntry.setField(&quot;year&quot;, &quot;2003&quot;);</span>
+<span class="fc" id="L121">        emptyEntry.setField(&quot;month&quot;, &quot;3&quot;);</span>
+<span class="fc" id="L122">        assertEquals(Optional.of(&quot;2003-03&quot;), emptyEntry.getFieldOrAlias(&quot;date&quot;));</span>
+<span class="fc" id="L123">    }</span>
+
+    @Test
+    public void getFieldOrAliasDateWithYearAbbreviatedMonth() {
+<span class="fc" id="L127">        emptyEntry.setField(&quot;year&quot;, &quot;2003&quot;);</span>
+<span class="fc" id="L128">        emptyEntry.setField(&quot;month&quot;, &quot;#mar#&quot;);</span>
+<span class="fc" id="L129">        assertEquals(Optional.of(&quot;2003-03&quot;), emptyEntry.getFieldOrAlias(&quot;date&quot;));</span>
+<span class="fc" id="L130">    }</span>
+
+    @Test
+    public void getFieldOrAliasDateWithYearAbbreviatedMonthString() {
+<span class="fc" id="L134">        emptyEntry.setField(&quot;year&quot;, &quot;2003&quot;);</span>
+<span class="fc" id="L135">        emptyEntry.setField(&quot;month&quot;, &quot;mar&quot;);</span>
+<span class="fc" id="L136">        assertEquals(Optional.of(&quot;2003-03&quot;), emptyEntry.getFieldOrAlias(&quot;date&quot;));</span>
+<span class="fc" id="L137">    }</span>
+
+    @Test
+    public void getFieldOrAliasDateWithOnlyYear() {
+<span class="fc" id="L141">        emptyEntry.setField(&quot;year&quot;, &quot;2003&quot;);</span>
+<span class="fc" id="L142">        assertEquals(Optional.of(&quot;2003&quot;), emptyEntry.getFieldOrAlias(&quot;date&quot;));</span>
+<span class="fc" id="L143">    }</span>
+
+    @Test
+    public void getFieldOrAliasYearWithDateYYYY() {
+<span class="fc" id="L147">        emptyEntry.setField(&quot;date&quot;, &quot;2003&quot;);</span>
+<span class="fc" id="L148">        assertEquals(Optional.of(&quot;2003&quot;), emptyEntry.getFieldOrAlias(&quot;year&quot;));</span>
+<span class="fc" id="L149">    }</span>
+
+    @Test
+    public void getFieldOrAliasYearWithDateYYYYMM() {
+<span class="fc" id="L153">        emptyEntry.setField(&quot;date&quot;, &quot;2003-03&quot;);</span>
+<span class="fc" id="L154">        assertEquals(Optional.of(&quot;2003&quot;), emptyEntry.getFieldOrAlias(&quot;year&quot;));</span>
+<span class="fc" id="L155">    }</span>
+
+    @Test
+    public void getFieldOrAliasYearWithDateYYYYMMDD() {
+<span class="fc" id="L159">        emptyEntry.setField(&quot;date&quot;, &quot;2003-03-30&quot;);</span>
+<span class="fc" id="L160">        assertEquals(Optional.of(&quot;2003&quot;), emptyEntry.getFieldOrAlias(&quot;year&quot;));</span>
+<span class="fc" id="L161">    }</span>
+
+    @Test
+    public void getFieldOrAliasMonthWithDateYYYYReturnsNull() {
+<span class="fc" id="L165">        emptyEntry.setField(&quot;date&quot;, &quot;2003&quot;);</span>
+<span class="fc" id="L166">        assertEquals(Optional.empty(), emptyEntry.getFieldOrAlias(&quot;month&quot;));</span>
+<span class="fc" id="L167">    }</span>
+
+    @Test
+    public void getFieldOrAliasMonthWithDateYYYYMM() {
+<span class="fc" id="L171">        emptyEntry.setField(&quot;date&quot;, &quot;2003-03&quot;);</span>
+<span class="fc" id="L172">        assertEquals(Optional.of(&quot;#mar#&quot;), emptyEntry.getFieldOrAlias(&quot;month&quot;));</span>
+<span class="fc" id="L173">    }</span>
+
+    @Test
+    public void getFieldOrAliasMonthWithDateYYYYMMDD() {
+<span class="fc" id="L177">        emptyEntry.setField(&quot;date&quot;, &quot;2003-03-30&quot;);</span>
+<span class="fc" id="L178">        assertEquals(Optional.of(&quot;#mar#&quot;), emptyEntry.getFieldOrAlias(&quot;month&quot;));</span>
+<span class="fc" id="L179">    }</span>
+
+    @Test
+    public void getFieldOrAliasLatexFreeAlreadyFreeValueIsUnchanged() {
+<span class="fc" id="L183">        emptyEntry.setField(&quot;title&quot;, &quot;A Title Without any LaTeX commands&quot;);</span>
+<span class="fc" id="L184">        assertEquals(Optional.of(&quot;A Title Without any LaTeX commands&quot;), emptyEntry.getFieldOrAliasLatexFree(&quot;title&quot;));</span>
+<span class="fc" id="L185">    }</span>
+
+    @Test
+    public void getFieldOrAliasLatexFreeAlreadyFreeAliasValueIsUnchanged() {
+<span class="fc" id="L189">        emptyEntry.setField(&quot;journal&quot;, &quot;A Title Without any LaTeX commands&quot;);</span>
+<span class="fc" id="L190">        assertEquals(Optional.of(&quot;A Title Without any LaTeX commands&quot;), emptyEntry.getFieldOrAliasLatexFree(&quot;journaltitle&quot;));</span>
+<span class="fc" id="L191">    }</span>
+
+    @Test
+    public void getFieldOrAliasLatexFreeBracesAreRemoved() {
+<span class="fc" id="L195">        emptyEntry.setField(&quot;title&quot;, &quot;{A Title with some {B}ra{C}es}&quot;);</span>
+<span class="fc" id="L196">        assertEquals(Optional.of(&quot;A Title with some BraCes&quot;), emptyEntry.getFieldOrAliasLatexFree(&quot;title&quot;));</span>
+<span class="fc" id="L197">    }</span>
+
+    @Test
+    public void getFieldOrAliasLatexFreeBracesAreRemovedFromAlias() {
+<span class="fc" id="L201">        emptyEntry.setField(&quot;journal&quot;, &quot;{A Title with some {B}ra{C}es}&quot;);</span>
+<span class="fc" id="L202">        assertEquals(Optional.of(&quot;A Title with some BraCes&quot;), emptyEntry.getFieldOrAliasLatexFree(&quot;journaltitle&quot;));</span>
+<span class="fc" id="L203">    }</span>
+
+    @Test
+    public void getFieldOrAliasLatexFreeComplexConversionInAlias() {
+<span class="fc" id="L207">        emptyEntry.setField(&quot;journal&quot;, &quot;A 32~{mA} {$\\Sigma\\Delta$}-modulator&quot;);</span>
+<span class="fc" id="L208">        assertEquals(Optional.of(&quot;A 32 mA ΣΔ-modulator&quot;), emptyEntry.getFieldOrAliasLatexFree(&quot;journaltitle&quot;));</span>
+<span class="fc" id="L209">    }</span>
+
+    @Test
+    public void setNullField() {
+<span class="pc" id="L213">        assertThrows(NullPointerException.class, () -&gt; emptyEntry.setField(null));</span>
+
+<span class="fc" id="L215">    }</span>
+
+    @Test
+    public void addNullKeywordThrowsNPE() {
+<span class="pc" id="L219">        assertThrows(NullPointerException.class, () -&gt; keywordEntry.addKeyword((Keyword) null, ','));</span>
+<span class="fc" id="L220">    }</span>
+
+    @Test
+    public void putNullKeywordListThrowsNPE() {
+<span class="pc" id="L224">        assertThrows(NullPointerException.class, () -&gt; keywordEntry.putKeywords((KeywordList) null, ','));</span>
+
+<span class="fc" id="L226">    }</span>
+
+    @Test
+    public void putNullKeywordSeparatorThrowsNPE() {
+<span class="pc" id="L230">        assertThrows(NullPointerException.class, () -&gt; keywordEntry.putKeywords(Arrays.asList(&quot;A&quot;, &quot;B&quot;), null));</span>
+<span class="fc" id="L231">    }</span>
+
+    @Test
+    public void testGetSeparatedKeywordsAreCorrect() {
+<span class="fc" id="L235">        assertEquals(new KeywordList(&quot;Foo&quot;, &quot;Bar&quot;), keywordEntry.getKeywords(','));</span>
+<span class="fc" id="L236">    }</span>
+
+    @Test
+    public void testAddKeywordIsCorrect() {
+<span class="fc" id="L240">        keywordEntry.addKeyword(&quot;FooBar&quot;, ',');</span>
+<span class="fc" id="L241">        assertEquals(new KeywordList(&quot;Foo&quot;, &quot;Bar&quot;, &quot;FooBar&quot;), keywordEntry.getKeywords(','));</span>
+<span class="fc" id="L242">    }</span>
+
+    @Test
+    public void testAddKeywordHasChanged() {
+<span class="fc" id="L246">        keywordEntry.addKeyword(&quot;FooBar&quot;, ',');</span>
+<span class="fc" id="L247">        assertTrue(keywordEntry.hasChanged());</span>
+<span class="fc" id="L248">    }</span>
+
+    @Test
+    public void testAddKeywordTwiceYiedsOnlyOne() {
+<span class="fc" id="L252">        keywordEntry.addKeyword(&quot;FooBar&quot;, ',');</span>
+<span class="fc" id="L253">        keywordEntry.addKeyword(&quot;FooBar&quot;, ',');</span>
+<span class="fc" id="L254">        assertEquals(new KeywordList(&quot;Foo&quot;, &quot;Bar&quot;, &quot;FooBar&quot;), keywordEntry.getKeywords(','));</span>
+<span class="fc" id="L255">    }</span>
+
+    @Test
+    public void addKeywordIsCaseSensitive() {
+<span class="fc" id="L259">        keywordEntry.addKeyword(&quot;FOO&quot;, ',');</span>
+<span class="fc" id="L260">        assertEquals(new KeywordList(&quot;Foo&quot;, &quot;Bar&quot;, &quot;FOO&quot;), keywordEntry.getKeywords(','));</span>
+<span class="fc" id="L261">    }</span>
+
+    @Test
+    public void testAddKeywordWithDifferentCapitalizationChanges() {
+<span class="fc" id="L265">        keywordEntry.addKeyword(&quot;FOO&quot;, ',');</span>
+<span class="fc" id="L266">        assertTrue(keywordEntry.hasChanged());</span>
+<span class="fc" id="L267">    }</span>
+
+    @Test
+    public void testAddKeywordEmptyKeywordIsNotAdded() {
+<span class="fc" id="L271">        keywordEntry.addKeyword(&quot;&quot;, ',');</span>
+<span class="fc" id="L272">        assertEquals(new KeywordList(&quot;Foo&quot;, &quot;Bar&quot;), keywordEntry.getKeywords(','));</span>
+<span class="fc" id="L273">    }</span>
+
+    @Test
+    public void testAddKeywordEmptyKeywordNotChanged() {
+<span class="fc" id="L277">        keywordEntry.addKeyword(&quot;&quot;, ',');</span>
+<span class="fc" id="L278">        assertFalse(keywordEntry.hasChanged());</span>
+<span class="fc" id="L279">    }</span>
+
+    @Test
+    public void texNewBibEntryHasNoKeywords() {
+<span class="fc" id="L283">        assertTrue(emptyEntry.getKeywords(',').isEmpty());</span>
+<span class="fc" id="L284">    }</span>
+
+    @Test
+    public void texNewBibEntryHasNoKeywordsEvenAfterAddingEmptyKeyword() {
+<span class="fc" id="L288">        emptyEntry.addKeyword(&quot;&quot;, ',');</span>
+<span class="fc" id="L289">        assertTrue(emptyEntry.getKeywords(',').isEmpty());</span>
+<span class="fc" id="L290">    }</span>
+
+    @Test
+    public void texNewBibEntryAfterAddingEmptyKeywordNotChanged() {
+<span class="fc" id="L294">        emptyEntry.addKeyword(&quot;&quot;, ',');</span>
+<span class="fc" id="L295">        assertFalse(emptyEntry.hasChanged());</span>
+<span class="fc" id="L296">    }</span>
+
+    @Test
+    public void testAddKeywordsWorksAsExpected() {
+<span class="fc" id="L300">        emptyEntry.addKeywords(Arrays.asList(&quot;Foo&quot;, &quot;Bar&quot;), ',');</span>
+<span class="fc" id="L301">        assertEquals(new KeywordList(&quot;Foo&quot;, &quot;Bar&quot;), emptyEntry.getKeywords(','));</span>
+<span class="fc" id="L302">    }</span>
+
+    @Test
+    public void testPutKeywordsOverwritesOldKeywords() {
+<span class="fc" id="L306">        keywordEntry.putKeywords(Arrays.asList(&quot;Yin&quot;, &quot;Yang&quot;), ',');</span>
+<span class="fc" id="L307">        assertEquals(new KeywordList(&quot;Yin&quot;, &quot;Yang&quot;), keywordEntry.getKeywords(','));</span>
+<span class="fc" id="L308">    }</span>
+
+    @Test
+    public void testPutKeywordsHasChanged() {
+<span class="fc" id="L312">        keywordEntry.putKeywords(Arrays.asList(&quot;Yin&quot;, &quot;Yang&quot;), ',');</span>
+<span class="fc" id="L313">        assertTrue(keywordEntry.hasChanged());</span>
+<span class="fc" id="L314">    }</span>
+
+    @Test
+    public void testPutKeywordsPutEmpyListErasesPreviousKeywords() {
+<span class="fc" id="L318">        keywordEntry.putKeywords(Collections.emptyList(), ',');</span>
+<span class="fc" id="L319">        assertTrue(keywordEntry.getKeywords(',').isEmpty());</span>
+<span class="fc" id="L320">    }</span>
+
+    @Test
+    public void testPutKeywordsPutEmpyListHasChanged() {
+<span class="fc" id="L324">        keywordEntry.putKeywords(Collections.emptyList(), ',');</span>
+<span class="fc" id="L325">        assertTrue(keywordEntry.hasChanged());</span>
+<span class="fc" id="L326">    }</span>
+
+    @Test
+    public void testPutKeywordsPutEmpyListToEmptyBibentry() {
+<span class="fc" id="L330">        emptyEntry.putKeywords(Collections.emptyList(), ',');</span>
+<span class="fc" id="L331">        assertTrue(emptyEntry.getKeywords(',').isEmpty());</span>
+<span class="fc" id="L332">    }</span>
+
+    @Test
+    public void testPutKeywordsPutEmpyListToEmptyBibentryNotChanged() {
+<span class="fc" id="L336">        emptyEntry.putKeywords(Collections.emptyList(), ',');</span>
+<span class="fc" id="L337">        assertFalse(emptyEntry.hasChanged());</span>
+<span class="fc" id="L338">    }</span>
+
+    @Test
+    public void putKeywordsToEmptyReturnsNoChange() {
+<span class="fc" id="L342">        Optional&lt;FieldChange&gt; change = emptyEntry.putKeywords(Collections.emptyList(), ',');</span>
+<span class="fc" id="L343">        assertEquals(Optional.empty(), change);</span>
+<span class="fc" id="L344">    }</span>
+
+    @Test
+    public void clearKeywordsReturnsChange() {
+<span class="fc" id="L348">        Optional&lt;FieldChange&gt; change = keywordEntry.putKeywords(Collections.emptyList(), ',');</span>
+<span class="fc" id="L349">        assertEquals(Optional.of(new FieldChange(keywordEntry, &quot;keywords&quot;, &quot;Foo, Bar&quot;, null)), change);</span>
+<span class="fc" id="L350">    }</span>
+
+    @Test
+    public void changeKeywordsReturnsChange() {
+<span class="fc" id="L354">        Optional&lt;FieldChange&gt; change = keywordEntry.putKeywords(Arrays.asList(&quot;Test&quot;, &quot;FooTest&quot;), ',');</span>
+<span class="fc" id="L355">        assertEquals(Optional.of(new FieldChange(keywordEntry, &quot;keywords&quot;, &quot;Foo, Bar&quot;, &quot;Test, FooTest&quot;)),</span>
+<span class="fc" id="L356">                change);</span>
+<span class="fc" id="L357">    }</span>
+
+    @Test
+    public void putKeywordsToSameReturnsNoChange() {
+<span class="fc" id="L361">        Optional&lt;FieldChange&gt; change = keywordEntry.putKeywords(Arrays.asList(&quot;Foo&quot;, &quot;Bar&quot;), ',');</span>
+<span class="fc" id="L362">        assertEquals(Optional.empty(), change);</span>
+<span class="fc" id="L363">    }</span>
+
+    @Test
+    public void getKeywordsReturnsParsedKeywordListFromKeywordsField() {
+<span class="fc" id="L367">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L368">        entry.setField(FieldName.KEYWORDS, &quot;w1, w2a w2b, w3&quot;);</span>
+<span class="fc" id="L369">        assertEquals(new KeywordList(&quot;w1&quot;, &quot;w2a w2b&quot;, &quot;w3&quot;), entry.getKeywords(','));</span>
+<span class="fc" id="L370">    }</span>
+
+    @Test
+    public void removeKeywordsOnEntryWithoutKeywordsDoesNothing() {
+<span class="fc" id="L374">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L375">        Optional&lt;FieldChange&gt; change = entry.removeKeywords(SpecialField.RANKING.getKeyWords(), ',');</span>
+<span class="fc" id="L376">        assertEquals(Optional.empty(), change);</span>
+<span class="fc" id="L377">    }</span>
+
+    @Test
+    public void removeKeywordsWithEmptyListDoesNothing() {
+<span class="fc" id="L381">        keywordEntry.putKeywords(Arrays.asList(&quot;kw1&quot;, &quot;kw2&quot;), ',');</span>
+<span class="fc" id="L382">        Optional&lt;FieldChange&gt; change = keywordEntry.removeKeywords(new KeywordList(), ',');</span>
+<span class="fc" id="L383">        assertEquals(Optional.empty(), change);</span>
+<span class="fc" id="L384">    }</span>
+
+    @Test
+    public void removeKeywordsWithNonExistingKeywordsDoesNothing() {
+<span class="fc" id="L388">        keywordEntry.putKeywords(Arrays.asList(&quot;kw1&quot;, &quot;kw2&quot;), ',');</span>
+<span class="fc" id="L389">        Optional&lt;FieldChange&gt; change = keywordEntry.removeKeywords(KeywordList.parse(&quot;kw3, kw4&quot;, ','), ',');</span>
+<span class="fc" id="L390">        assertEquals(Optional.empty(), change);</span>
+<span class="fc" id="L391">        assertEquals(Sets.newHashSet(&quot;kw1&quot;, &quot;kw2&quot;), keywordEntry.getKeywords(',').toStringList());</span>
+<span class="fc" id="L392">    }</span>
+
+    @Test
+    public void removeKeywordsWithExistingKeywordsRemovesThem() {
+<span class="fc" id="L396">        keywordEntry.putKeywords(Arrays.asList(&quot;kw1&quot;, &quot;kw2&quot;, &quot;kw3&quot;), ',');</span>
+<span class="fc" id="L397">        Optional&lt;FieldChange&gt; change = keywordEntry.removeKeywords(KeywordList.parse(&quot;kw1, kw2&quot;, ','), ',');</span>
+<span class="fc" id="L398">        assertTrue(change.isPresent());</span>
+<span class="fc" id="L399">        assertEquals(KeywordList.parse(&quot;kw3&quot;, ','), keywordEntry.getKeywords(','));</span>
+<span class="fc" id="L400">    }</span>
+
+    @Test
+    public void testGroupAndSearchHits() {
+<span class="fc" id="L404">        BibEntry be = new BibEntry();</span>
+<span class="fc" id="L405">        be.setGroupHit(true);</span>
+<span class="fc" id="L406">        assertTrue(be.isGroupHit());</span>
+<span class="fc" id="L407">        be.setGroupHit(false);</span>
+<span class="fc" id="L408">        assertFalse(be.isGroupHit());</span>
+<span class="fc" id="L409">        be.setSearchHit(true);</span>
+<span class="fc" id="L410">        assertTrue(be.isSearchHit());</span>
+<span class="fc" id="L411">        be.setSearchHit(false);</span>
+<span class="fc" id="L412">        assertFalse(be.isSearchHit());</span>
+
+<span class="fc" id="L414">    }</span>
+
+    @Test
+    public void setCiteKey() {
+<span class="fc" id="L418">        BibEntry be = new BibEntry();</span>
+<span class="fc" id="L419">        assertFalse(be.hasCiteKey());</span>
+<span class="fc" id="L420">        be.setField(&quot;author&quot;, &quot;Albert Einstein&quot;);</span>
+<span class="fc" id="L421">        be.setCiteKey(&quot;Einstein1931&quot;);</span>
+<span class="fc" id="L422">        assertTrue(be.hasCiteKey());</span>
+<span class="fc" id="L423">        assertEquals(Optional.of(&quot;Einstein1931&quot;), be.getCiteKeyOptional());</span>
+<span class="fc" id="L424">        assertEquals(Optional.of(&quot;Albert Einstein&quot;), be.getField(&quot;author&quot;));</span>
+<span class="fc" id="L425">        be.clearField(&quot;author&quot;);</span>
+<span class="fc" id="L426">        assertEquals(Optional.empty(), be.getField(&quot;author&quot;));</span>
+<span class="fc" id="L427">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

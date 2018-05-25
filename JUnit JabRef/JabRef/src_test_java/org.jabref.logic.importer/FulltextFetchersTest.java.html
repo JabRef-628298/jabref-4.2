@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>FulltextFetchersTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.importer</a> &gt; <span class="el_source">FulltextFetchersTest.java</span></div><h1>FulltextFetchersTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.importer;
+
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.Arrays;
+import java.util.Optional;
+
+import org.jabref.logic.importer.fetcher.TrustLevel;
+import org.jabref.model.entry.BibEntry;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+<span class="fc" id="L20">public class FulltextFetchersTest {</span>
+    private BibEntry entry;
+
+    @BeforeEach
+    public void setUp() {
+<span class="fc" id="L25">        entry = new BibEntry();</span>
+<span class="fc" id="L26">    }</span>
+
+    @AfterEach
+    public void tearDown() {
+<span class="fc" id="L30">        entry = null;</span>
+<span class="fc" id="L31">    }</span>
+
+    @Test
+    public void acceptPdfUrls() throws MalformedURLException {
+<span class="fc" id="L35">        URL pdfUrl = new URL(&quot;http://docs.oasis-open.org/wsbpel/2.0/OS/wsbpel-v2.0-OS.pdf&quot;);</span>
+<span class="pc" id="L36">        FulltextFetcher finder = (e) -&gt; Optional.of(pdfUrl);</span>
+<span class="fc" id="L37">        FulltextFetchers fetcher = new FulltextFetchers(Arrays.asList(finder));</span>
+
+<span class="nc" id="L39">        assertEquals(Optional.of(pdfUrl), fetcher.findFullTextPDF(entry));</span>
+<span class="nc" id="L40">    }</span>
+
+    @Test
+    public void rejectNonPdfUrls() throws MalformedURLException {
+<span class="fc" id="L44">        URL pdfUrl = new URL(&quot;https://github.com/JabRef/jabref/blob/master/README.md&quot;);</span>
+<span class="pc" id="L45">        FulltextFetcher finder = (e) -&gt; Optional.of(pdfUrl);</span>
+<span class="fc" id="L46">        FulltextFetchers fetcher = new FulltextFetchers(Arrays.asList(finder));</span>
+
+<span class="nc" id="L48">        assertEquals(Optional.empty(), fetcher.findFullTextPDF(entry));</span>
+<span class="nc" id="L49">    }</span>
+
+    @Test
+    public void noTrustLevel() throws MalformedURLException {
+<span class="fc" id="L53">        URL pdfUrl = new URL(&quot;http://docs.oasis-open.org/wsbpel/2.0/OS/wsbpel-v2.0-OS.pdf&quot;);</span>
+<span class="pc" id="L54">        FulltextFetcher finder = (e) -&gt; Optional.of(pdfUrl);</span>
+<span class="fc" id="L55">        FulltextFetchers fetcher = new FulltextFetchers(Arrays.asList(finder));</span>
+
+<span class="nc" id="L57">        assertEquals(Optional.of(pdfUrl), fetcher.findFullTextPDF(entry));</span>
+<span class="nc" id="L58">    }</span>
+
+    @Test
+    public void higherTrustLevelWins() throws MalformedURLException, IOException, FetcherException {
+<span class="fc" id="L62">        final URL lowUrl = new URL(&quot;http://docs.oasis-open.org/opencsa/sca-bpel/sca-bpel-1.1-spec-cd-01.pdf&quot;);</span>
+<span class="fc" id="L63">        final URL highUrl = new URL(&quot;http://docs.oasis-open.org/wsbpel/2.0/OS/wsbpel-v2.0-OS.pdf&quot;);</span>
+
+<span class="fc" id="L65">        FulltextFetcher finderHigh = mock(FulltextFetcher.class);</span>
+<span class="fc" id="L66">        FulltextFetcher finderLow = mock(FulltextFetcher.class);</span>
+<span class="fc" id="L67">        when(finderHigh.getTrustLevel()).thenReturn(TrustLevel.SOURCE);</span>
+<span class="fc" id="L68">        when(finderLow.getTrustLevel()).thenReturn(TrustLevel.UNKNOWN);</span>
+<span class="fc" id="L69">        when(finderHigh.findFullText(entry)).thenReturn(Optional.of(highUrl));</span>
+<span class="fc" id="L70">        when(finderLow.findFullText(entry)).thenReturn(Optional.of(lowUrl));</span>
+
+<span class="fc" id="L72">        FulltextFetchers fetcher = new FulltextFetchers(Arrays.asList(finderLow, finderHigh));</span>
+
+<span class="nc" id="L74">        assertEquals(Optional.of(highUrl), fetcher.findFullTextPDF(entry));</span>
+<span class="nc" id="L75">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

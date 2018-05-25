@@ -1,0 +1,494 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MainTableSelectionListener.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.maintable</a> &gt; <span class="el_source">MainTableSelectionListener.java</span></div><h1>MainTableSelectionListener.java</h1><pre class="source lang-java linenums">package org.jabref.gui.maintable;
+
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.io.IOException;
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
+
+import javax.swing.Icon;
+import javax.swing.JLabel;
+import javax.swing.JPopupMenu;
+import javax.swing.SwingUtilities;
+import javax.swing.Timer;
+
+import org.jabref.Globals;
+import org.jabref.JabRefExecutorService;
+import org.jabref.JabRefGUI;
+import org.jabref.gui.BasePanel;
+import org.jabref.gui.BasePanelMode;
+import org.jabref.gui.GUIGlobals;
+import org.jabref.gui.IconTheme;
+import org.jabref.gui.PreviewPanel;
+import org.jabref.gui.actions.CopyDoiUrlAction;
+import org.jabref.gui.desktop.JabRefDesktop;
+import org.jabref.gui.entryeditor.EntryEditor;
+import org.jabref.gui.externalfiletype.ExternalFileMenuItem;
+import org.jabref.gui.externalfiletype.ExternalFileType;
+import org.jabref.gui.externalfiletype.UnknownExternalFileType;
+import org.jabref.gui.filelist.FileListEntry;
+import org.jabref.gui.filelist.FileListTableModel;
+import org.jabref.gui.menus.RightClickMenu;
+import org.jabref.gui.specialfields.SpecialFieldMenuAction;
+import org.jabref.gui.specialfields.SpecialFieldValueViewModel;
+import org.jabref.gui.specialfields.SpecialFieldViewModel;
+import org.jabref.logic.l10n.Localization;
+import org.jabref.logic.util.OS;
+import org.jabref.logic.util.io.FileUtil;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.FieldName;
+import org.jabref.model.entry.specialfields.SpecialField;
+import org.jabref.model.entry.specialfields.SpecialFieldValue;
+
+import ca.odell.glazedlists.EventList;
+import ca.odell.glazedlists.event.ListEvent;
+import ca.odell.glazedlists.event.ListEventListener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * List event, mouse, key and focus listener for the main table that makes up the
+ * most part of the BasePanel for a single BIB database.
+ */
+public class MainTableSelectionListener implements ListEventListener&lt;BibEntry&gt;, MouseListener, KeyListener, FocusListener {
+<span class="nc" id="L59">    private static final Logger LOGGER = LoggerFactory.getLogger(MainTableSelectionListener.class);</span>
+
+    private final MainTable table;
+    private final BasePanel panel;
+
+    private final EventList&lt;BibEntry&gt; tableRows;
+    // Register the last character pressed to quick jump in the table. Together
+    // with storing the last row number jumped to, this is used to let multiple
+    // key strokes cycle between all entries starting with the same letter:
+<span class="nc" id="L68">    private final int[] lastPressed = new int[20];</span>
+    private PreviewPanel preview;
+    private boolean workingOnPreview;
+<span class="nc" id="L71">    private boolean enabled = true;</span>
+    private int lastPressedCount;
+
+    private long lastPressedTime;
+
+<span class="nc" id="L76">    public MainTableSelectionListener(BasePanel panel, MainTable table) {</span>
+<span class="nc" id="L77">        this.table = table;</span>
+<span class="nc" id="L78">        this.panel = panel;</span>
+<span class="nc" id="L79">        this.tableRows = table.getTableModel().getTableRows();</span>
+<span class="nc" id="L80">        preview = panel.getPreviewPanel();</span>
+<span class="nc" id="L81">    }</span>
+
+    public void setEnabled(boolean enabled) {
+<span class="nc" id="L84">        this.enabled = enabled;</span>
+<span class="nc" id="L85">    }</span>
+
+    @Override
+    public void listChanged(ListEvent&lt;BibEntry&gt; e) {
+<span class="nc bnc" id="L89" title="All 2 branches missed.">        if (!enabled) {</span>
+<span class="nc" id="L90">            return;</span>
+        }
+
+<span class="nc" id="L93">        EventList&lt;BibEntry&gt; selected = e.getSourceList();</span>
+<span class="nc bnc" id="L94" title="All 2 branches missed.">        if (selected.isEmpty()) {</span>
+<span class="nc" id="L95">            return;</span>
+        }
+
+<span class="nc" id="L98">        final BibEntry newSelected = selected.get(0);</span>
+<span class="nc bnc" id="L99" title="All 4 branches missed.">        if ((panel.getMode() == BasePanelMode.SHOWING_EDITOR || panel.getMode() == BasePanelMode.WILL_SHOW_EDITOR)</span>
+<span class="nc bnc" id="L100" title="All 4 branches missed.">                &amp;&amp; panel.getEntryEditor() != null &amp;&amp; newSelected == panel.getEntryEditor().getEntry()) {</span>
+            // entry already selected and currently editing it, do not steal the focus from the selected textfield
+<span class="nc" id="L102">            return;</span>
+        }
+
+<span class="nc bnc" id="L105" title="All 2 branches missed.">        if (newSelected != null) {</span>
+<span class="nc" id="L106">            final BasePanelMode mode = panel.getMode(); // What is the panel already showing?</span>
+<span class="nc bnc" id="L107" title="All 4 branches missed.">            if ((mode == BasePanelMode.WILL_SHOW_EDITOR) || (mode == BasePanelMode.SHOWING_EDITOR)) {</span>
+<span class="nc" id="L108">                panel.showAndEdit(newSelected);</span>
+<span class="nc" id="L109">                SwingUtilities.invokeLater(() -&gt; table.ensureVisible(table.getSelectedRow()));</span>
+<span class="nc bnc" id="L110" title="All 4 branches missed.">            } else if (panel.getMode() == BasePanelMode.SHOWING_NOTHING || panel.getMode() == BasePanelMode.SHOWING_PREVIEW) {</span>
+                // Either nothing or a preview was shown. Update the preview.
+<span class="nc" id="L112">                updatePreview(newSelected);</span>
+            }
+        }
+<span class="nc" id="L115">    }</span>
+
+    private void updatePreview(final BibEntry toShow) {
+<span class="nc" id="L118">        updatePreview(toShow, 0);</span>
+<span class="nc" id="L119">    }</span>
+
+    private void updatePreview(final BibEntry toShow, int repeats) {
+<span class="nc bnc" id="L122" title="All 2 branches missed.">        if (workingOnPreview) {</span>
+<span class="nc bnc" id="L123" title="All 2 branches missed.">            if (repeats &gt; 0) {</span>
+<span class="nc" id="L124">                return; // We've already waited once. Give up on this selection.</span>
+            }
+<span class="nc" id="L126">            Timer t = new Timer(50, actionEvent -&gt; updatePreview(toShow, 1));</span>
+<span class="nc" id="L127">            t.setRepeats(false);</span>
+<span class="nc" id="L128">            t.start();</span>
+<span class="nc" id="L129">            return;</span>
+        }
+<span class="nc" id="L131">        EventList&lt;BibEntry&gt; list = table.getSelected();</span>
+        // Check if the entry to preview is still selected:
+<span class="nc bnc" id="L133" title="All 4 branches missed.">        if ((list.size() != 1) || (list.get(0) != toShow)) {</span>
+<span class="nc" id="L134">            return;</span>
+        }
+<span class="nc" id="L136">        workingOnPreview = true;</span>
+<span class="nc" id="L137">        SwingUtilities.invokeLater(() -&gt; {</span>
+<span class="nc" id="L138">            panel.showPreview(toShow);</span>
+<span class="nc" id="L139">            workingOnPreview = false;</span>
+<span class="nc" id="L140">        });</span>
+<span class="nc" id="L141">    }</span>
+
+    public void editSignalled() {
+<span class="nc bnc" id="L144" title="All 2 branches missed.">        if (table.getSelected().size() == 1) {</span>
+<span class="nc" id="L145">            editSignalled(table.getSelected().get(0));</span>
+        }
+<span class="nc" id="L147">    }</span>
+
+    public void editSignalled(BibEntry entry) {
+<span class="nc" id="L150">        panel.showAndEdit(entry);</span>
+<span class="nc" id="L151">    }</span>
+
+    @Override
+    public void mouseReleased(MouseEvent e) {
+        // First find the column and row on which the user has clicked.
+<span class="nc" id="L156">        final int col = table.columnAtPoint(e.getPoint());</span>
+<span class="nc" id="L157">        final int row = table.rowAtPoint(e.getPoint());</span>
+
+        // get the MainTableColumn which is currently visible at col
+<span class="nc" id="L160">        int modelIndex = table.getColumnModel().getColumn(col).getModelIndex();</span>
+<span class="nc" id="L161">        MainTableColumn modelColumn = table.getMainTableColumn(modelIndex);</span>
+
+        // Check if the user has right-clicked. If so, open the right-click menu.
+<span class="nc bnc" id="L164" title="All 4 branches missed.">        if (e.isPopupTrigger() || (e.getButton() == MouseEvent.BUTTON3)) {</span>
+<span class="nc bnc" id="L165" title="All 4 branches missed.">            if ((modelColumn == null) || !modelColumn.isIconColumn()) {</span>
+                // show normal right click menu
+<span class="nc" id="L167">                processPopupTrigger(e, row);</span>
+<span class="nc" id="L168">            } else {</span>
+                // show right click menu for icon columns
+<span class="nc" id="L170">                showIconRightClickMenu(e, row, modelColumn);</span>
+            }
+        }
+<span class="nc" id="L173">    }</span>
+
+    @Override
+    public void mousePressed(MouseEvent e) {
+        // all handling is done in &quot;mouseReleased&quot;
+<span class="nc" id="L178">    }</span>
+
+    @Override
+    public void mouseClicked(MouseEvent e) {
+
+        // First find the column on which the user has clicked.
+<span class="nc" id="L184">        final int row = table.rowAtPoint(e.getPoint());</span>
+
+        // A double click on an entry should open the entry's editor.
+<span class="nc bnc" id="L187" title="All 2 branches missed.">        if (e.getClickCount() == 2) {</span>
+<span class="nc" id="L188">            BibEntry toShow = tableRows.get(row);</span>
+<span class="nc" id="L189">            editSignalled(toShow);</span>
+<span class="nc" id="L190">            return;</span>
+        }
+
+<span class="nc" id="L193">        final int col = table.columnAtPoint(e.getPoint());</span>
+        // get the MainTableColumn which is currently visible at col
+<span class="nc" id="L195">        int modelIndex = table.getColumnModel().getColumn(col).getModelIndex();</span>
+<span class="nc" id="L196">        MainTableColumn modelColumn = table.getMainTableColumn(modelIndex);</span>
+
+        // Workaround for Windows. Right-click is not popup trigger on mousePressed, but
+        // on mouseReleased. Therefore we need to avoid taking action at this point, because
+        // action will be taken when the button is released:
+<span class="nc bnc" id="L201" title="All 6 branches missed.">        if (OS.WINDOWS &amp;&amp; (modelColumn.isIconColumn()) &amp;&amp; (e.getButton() != MouseEvent.BUTTON1)) {</span>
+<span class="nc" id="L202">            return;</span>
+        }
+
+        // Check if the clicked colum is a specialfield column
+<span class="nc bnc" id="L206" title="All 4 branches missed.">        if (modelColumn.isIconColumn() &amp;&amp; (SpecialField.isSpecialField(modelColumn.getColumnName()))) {</span>
+            // handle specialfield
+<span class="nc" id="L208">            handleSpecialFieldLeftClick(e, modelColumn.getColumnName());</span>
+<span class="nc bnc" id="L209" title="All 2 branches missed.">        } else if (modelColumn.isIconColumn()) { // left click on icon field</span>
+
+<span class="nc" id="L211">            Object value = table.getValueAt(row, col);</span>
+<span class="nc bnc" id="L212" title="All 2 branches missed.">            if (value == null) {</span>
+<span class="nc" id="L213">                return; // No icon here, so we do nothing.</span>
+            }
+
+<span class="nc" id="L216">            final BibEntry entry = tableRows.get(row);</span>
+
+<span class="nc" id="L218">            final List&lt;String&gt; fieldNames = modelColumn.getBibtexFields();</span>
+
+            // Open it now. We do this in a thread, so the program won't freeze during the wait.
+<span class="nc" id="L221">            JabRefExecutorService.INSTANCE.execute(() -&gt; {</span>
+<span class="nc" id="L222">                panel.output(Localization.lang(&quot;External viewer called&quot;) + '.');</span>
+                // check for all field names whether a link is present
+                // (is relevant for combinations such as &quot;url/doi&quot;)
+<span class="nc bnc" id="L225" title="All 2 branches missed.">                for (String fieldName : fieldNames) {</span>
+                    // Check if field is present, if not skip this field
+<span class="nc bnc" id="L227" title="All 2 branches missed.">                    if (entry.hasField(fieldName)) {</span>
+<span class="nc" id="L228">                        String link = entry.getField(fieldName).get();</span>
+
+                        // See if this is a simple file link field, or if it is a file-list
+                        // field that can specify a list of links:
+<span class="nc bnc" id="L232" title="All 2 branches missed.">                        if (fieldName.equals(FieldName.FILE)) {</span>
+
+                            // We use a FileListTableModel to parse the field content:
+<span class="nc" id="L235">                            FileListTableModel fileList = new FileListTableModel();</span>
+<span class="nc" id="L236">                            fileList.setContent(link);</span>
+
+<span class="nc" id="L238">                            FileListEntry flEntry = null;</span>
+                            // If there are one or more links of the correct type, open the first one:
+<span class="nc bnc" id="L240" title="All 2 branches missed.">                            if (modelColumn.isFileFilter()) {</span>
+<span class="nc bnc" id="L241" title="All 2 branches missed.">                                for (int i = 0; i &lt; fileList.getRowCount(); i++) {</span>
+<span class="nc bnc" id="L242" title="All 2 branches missed.">                                    if (fileList.getEntry(i).getType().toString().equals(modelColumn.getColumnName())) {</span>
+<span class="nc" id="L243">                                        flEntry = fileList.getEntry(i);</span>
+<span class="nc" id="L244">                                        break;</span>
+                                    }
+                                }
+<span class="nc bnc" id="L247" title="All 2 branches missed.">                            } else if (fileList.getRowCount() &gt; 0) {</span>
+                                //If there are no file types specified open the first file
+<span class="nc" id="L249">                                flEntry = fileList.getEntry(0);</span>
+                            }
+<span class="nc bnc" id="L251" title="All 2 branches missed.">                            if (flEntry != null) {</span>
+<span class="nc" id="L252">                                ExternalFileMenuItem item = new ExternalFileMenuItem(panel.frame(), entry, &quot;&quot;,</span>
+<span class="nc" id="L253">                                        flEntry.getLink(), flEntry.getType().map(ExternalFileType::getIcon).orElse(null),</span>
+<span class="nc" id="L254">                                        panel.getBibDatabaseContext(), flEntry.getType());</span>
+<span class="nc" id="L255">                                item.doClick();</span>
+                            }
+<span class="nc" id="L257">                        } else {</span>
+                            try {
+<span class="nc" id="L259">                                JabRefDesktop.openExternalViewer(panel.getBibDatabaseContext(), link, fieldName);</span>
+<span class="nc" id="L260">                            } catch (IOException ex) {</span>
+<span class="nc" id="L261">                                panel.output(Localization.lang(&quot;Unable to open link.&quot;));</span>
+<span class="nc" id="L262">                                LOGGER.info(&quot;Unable to open link&quot;, ex);</span>
+                            }
+                        }
+<span class="nc" id="L265">                        break; // only open the first link</span>
+                    }
+                }
+<span class="nc" id="L268">            });</span>
+<span class="nc bnc" id="L269" title="All 2 branches missed.">        } else if (modelColumn.getBibtexFields().contains(FieldName.CROSSREF)) { // Clicking on crossref column</span>
+<span class="nc" id="L270">            tableRows.get(row).getField(FieldName.CROSSREF)</span>
+<span class="nc" id="L271">                    .ifPresent(crossref -&gt; panel.getDatabase().getEntryByKey(crossref).ifPresent(entry -&gt; panel.highlightEntry(entry)));</span>
+        }
+<span class="nc" id="L273">        panel.frame().updateEnabledState();</span>
+<span class="nc" id="L274">    }</span>
+
+    /**
+     * Method to handle a single left click on one the special fields (e.g., ranking, quality, ...)
+     * Shows either a popup to select/clear a value or simply toggles the functionality to set/unset the special field
+     *
+     * @param e MouseEvent used to determine the position of the popups
+     * @param columnName the name of the specialfield column
+     */
+    private void handleSpecialFieldLeftClick(MouseEvent e, String columnName) {
+<span class="nc bnc" id="L284" title="All 2 branches missed.">        if ((e.getClickCount() == 1)) {</span>
+<span class="nc" id="L285">            SpecialField.getSpecialFieldInstanceFromFieldName(columnName).ifPresent(field -&gt; {</span>
+                // special field found
+<span class="nc bnc" id="L287" title="All 2 branches missed.">                if (field.isSingleValueField()) {</span>
+                    // directly execute toggle action instead of showing a menu with one action
+<span class="nc" id="L289">                    new SpecialFieldViewModel(field).getSpecialFieldAction(field.getValues().get(0), panel.frame()).action();</span>
+<span class="nc" id="L290">                } else {</span>
+<span class="nc" id="L291">                    JPopupMenu menu = new JPopupMenu();</span>
+<span class="nc bnc" id="L292" title="All 2 branches missed.">                    for (SpecialFieldValue val : field.getValues()) {</span>
+<span class="nc" id="L293">                        menu.add(new SpecialFieldMenuAction(new SpecialFieldValueViewModel(val), panel.frame()));</span>
+                    }
+<span class="nc" id="L295">                    menu.show(table, e.getX(), e.getY());</span>
+                }
+<span class="nc" id="L297">            });</span>
+        }
+<span class="nc" id="L299">    }</span>
+
+    /**
+     * Process general right-click events on the table. Show the table context menu at
+     * the position where the user right-clicked.
+     * @param e The mouse event defining the popup trigger.
+     * @param row The row where the event occurred.
+     */
+    private void processPopupTrigger(MouseEvent e, int row) {
+<span class="nc" id="L308">        int selRow = table.getSelectedRow();</span>
+<span class="nc bnc" id="L309" title="All 4 branches missed.">        if ((selRow == -1) || !table.isRowSelected(table.rowAtPoint(e.getPoint()))) {</span>
+<span class="nc" id="L310">            table.setRowSelectionInterval(row, row);</span>
+        }
+<span class="nc" id="L312">        RightClickMenu rightClickMenu = new RightClickMenu(JabRefGUI.getMainFrame(), panel);</span>
+<span class="nc" id="L313">        rightClickMenu.show(table, e.getX(), e.getY());</span>
+<span class="nc" id="L314">    }</span>
+
+    /**
+     * Process popup trigger events occurring on an icon cell in the table. Show a menu where the user can choose which
+     * external resource to open for the entry. If no relevant external resources exist, let the normal popup trigger
+     * handler do its thing instead.
+     *
+     * @param e The mouse event defining this popup trigger.
+     * @param row The row where the event occurred.
+     * @param column the MainTableColumn associated with this table cell.
+     */
+    private void showIconRightClickMenu(MouseEvent e, int row, MainTableColumn column) {
+<span class="nc" id="L326">        BibEntry entry = tableRows.get(row);</span>
+<span class="nc" id="L327">        JPopupMenu menu = new JPopupMenu();</span>
+<span class="nc" id="L328">        boolean showDefaultPopup = true;</span>
+
+        // See if this is a simple file link field, or if it is a file-list
+        // field that can specify a list of links:
+<span class="nc bnc" id="L332" title="All 2 branches missed.">        if (!column.getBibtexFields().isEmpty()) {</span>
+<span class="nc bnc" id="L333" title="All 2 branches missed.">            for (String field : column.getBibtexFields()) {</span>
+<span class="nc bnc" id="L334" title="All 2 branches missed.">                if (FieldName.FILE.equals(field)) {</span>
+                    // We use a FileListTableModel to parse the field content:
+<span class="nc" id="L336">                    FileListTableModel fileList = new FileListTableModel();</span>
+<span class="nc" id="L337">                    entry.getField(field).ifPresent(fileList::setContent);</span>
+<span class="nc bnc" id="L338" title="All 2 branches missed.">                    for (int i = 0; i &lt; fileList.getRowCount(); i++) {</span>
+<span class="nc" id="L339">                        FileListEntry flEntry = fileList.getEntry(i);</span>
+<span class="nc bnc" id="L340" title="All 2 branches missed.">                        if (column.isFileFilter()</span>
+<span class="nc bnc" id="L341" title="All 2 branches missed.">                                &amp;&amp; (!flEntry.getType().get().getName().equalsIgnoreCase(column.getColumnName()))) {</span>
+<span class="nc" id="L342">                            continue;</span>
+                        }
+<span class="nc" id="L344">                        String description = flEntry.getDescription();</span>
+<span class="nc bnc" id="L345" title="All 4 branches missed.">                        if ((description == null) || (description.trim().isEmpty())) {</span>
+<span class="nc" id="L346">                            description = flEntry.getLink();</span>
+                        }
+
+<span class="nc" id="L349">                        Optional&lt;ExternalFileType&gt; fileType = flEntry.getType();</span>
+
+                        // file type might be unknown
+<span class="nc bnc" id="L352" title="All 2 branches missed.">                        if (!fileType.isPresent()) {</span>
+<span class="nc" id="L353">                            String fileExtension = FileUtil.getFileExtension(flEntry.getLink()).orElse(&quot;&quot;);</span>
+<span class="nc" id="L354">                            fileType = Optional.of(new UnknownExternalFileType(fileExtension.toUpperCase(), fileExtension));</span>
+                        }
+<span class="nc" id="L356">                        menu.add(new ExternalFileMenuItem(panel.frame(), entry, description, flEntry.getLink(),</span>
+<span class="nc" id="L357">                                fileType.get().getIcon(), panel.getBibDatabaseContext(), fileType));</span>
+<span class="nc" id="L358">                        showDefaultPopup = false;</span>
+                    }
+<span class="nc" id="L360">                } else {</span>
+<span class="nc bnc" id="L361" title="All 2 branches missed.">                    if (SpecialField.isSpecialField(column.getColumnName())) {</span>
+                        // full pop should be shown as left click already shows short popup
+<span class="nc" id="L363">                        showDefaultPopup = true;</span>
+<span class="nc" id="L364">                    } else {</span>
+<span class="nc" id="L365">                        Optional&lt;String&gt; content = entry.getField(field);</span>
+<span class="nc bnc" id="L366" title="All 2 branches missed.">                        if (content.isPresent()) {</span>
+                            Icon icon;
+<span class="nc" id="L368">                            JLabel iconLabel = GUIGlobals.getTableIcon(field);</span>
+<span class="nc bnc" id="L369" title="All 2 branches missed.">                            if (iconLabel == null) {</span>
+<span class="nc" id="L370">                                icon = IconTheme.JabRefIcon.FILE.getIcon();</span>
+<span class="nc" id="L371">                            } else {</span>
+<span class="nc" id="L372">                                icon = iconLabel.getIcon();</span>
+                            }
+<span class="nc" id="L374">                            menu.add(new ExternalFileMenuItem(panel.frame(), entry, content.get(), content.get(), icon,</span>
+<span class="nc" id="L375">                                    panel.getBibDatabaseContext(), field));</span>
+<span class="nc bnc" id="L376" title="All 2 branches missed.">                            if (field.equals(FieldName.DOI)) {</span>
+<span class="nc" id="L377">                                menu.add(new CopyDoiUrlAction(content.get()));</span>
+                            }
+<span class="nc" id="L379">                            showDefaultPopup = false;</span>
+                        }
+                    }
+                }
+            }
+<span class="nc bnc" id="L384" title="All 2 branches missed.">            if (showDefaultPopup) {</span>
+<span class="nc" id="L385">                processPopupTrigger(e, row);</span>
+<span class="nc" id="L386">            } else {</span>
+<span class="nc" id="L387">                menu.show(table, e.getX(), e.getY());</span>
+            }
+        }
+<span class="nc" id="L390">    }</span>
+
+    public void entryEditorClosing(EntryEditor editor) {
+<span class="nc bnc" id="L393" title="All 2 branches missed.">        if (Globals.prefs.getPreviewPreferences().isPreviewPanelEnabled()) {</span>
+<span class="nc" id="L394">            panel.showPreview(editor.getEntry());</span>
+<span class="nc" id="L395">        } else {</span>
+<span class="nc" id="L396">            panel.hideBottomComponent();</span>
+<span class="nc" id="L397">            panel.adjustSplitter();</span>
+        }
+<span class="nc" id="L399">        table.requestFocus();</span>
+<span class="nc" id="L400">    }</span>
+
+    @Override
+    public void mouseEntered(MouseEvent e) {
+        // Do nothing
+<span class="nc" id="L405">    }</span>
+
+    @Override
+    public void mouseExited(MouseEvent e) {
+        // Do nothing
+<span class="nc" id="L410">    }</span>
+
+    /**
+     * Receive key event on the main table. If the key is a letter or a digit,
+     * we should select the first entry in the table which starts with the given
+     * letter in the column by which the table is sorted.
+     * @param e The KeyEvent
+     */
+    @Override
+    public void keyTyped(KeyEvent e) {
+<span class="nc bnc" id="L420" title="All 4 branches missed.">        if ((!e.isActionKey()) &amp;&amp; Character.isLetterOrDigit(e.getKeyChar())</span>
+<span class="nc bnc" id="L421" title="All 2 branches missed.">                &amp;&amp; (e.getModifiers() == 0)) {</span>
+<span class="nc" id="L422">            long time = System.currentTimeMillis();</span>
+<span class="nc" id="L423">            final long QUICK_JUMP_TIMEOUT = 2000;</span>
+<span class="nc bnc" id="L424" title="All 2 branches missed.">            if ((time - lastPressedTime) &gt; QUICK_JUMP_TIMEOUT) {</span>
+<span class="nc" id="L425">                lastPressedCount = 0; // Reset last pressed character</span>
+            }
+            // Update timestamp:
+<span class="nc" id="L428">            lastPressedTime = time;</span>
+            // Add the new char to the search array:
+<span class="nc" id="L430">            int c = e.getKeyChar();</span>
+<span class="nc bnc" id="L431" title="All 2 branches missed.">            if (lastPressedCount &lt; lastPressed.length) {</span>
+<span class="nc" id="L432">                lastPressed[lastPressedCount] = c;</span>
+<span class="nc" id="L433">                lastPressedCount++;</span>
+            }
+
+<span class="nc" id="L436">            int sortingColumn = table.getSortingColumn(0);</span>
+<span class="nc bnc" id="L437" title="All 2 branches missed.">            if (sortingColumn == -1) {</span>
+<span class="nc" id="L438">                return; // No sorting? TODO: look up by author, etc.?</span>
+            }
+            // TODO: the following lookup should be done by a faster algorithm,
+            // such as binary search. But the table may not be sorted properly,
+            // due to marked entries, search etc., which rules out the binary search.
+
+<span class="nc bnc" id="L444" title="All 2 branches missed.">            for (int i = 0; i &lt; table.getRowCount(); i++) {</span>
+<span class="nc" id="L445">                Object o = table.getValueAt(i, sortingColumn);</span>
+<span class="nc bnc" id="L446" title="All 2 branches missed.">                if (o == null) {</span>
+<span class="nc" id="L447">                    continue;</span>
+                }
+<span class="nc" id="L449">                String s = o.toString().toLowerCase(Locale.ROOT);</span>
+<span class="nc bnc" id="L450" title="All 2 branches missed.">                if (s.length() &gt;= lastPressedCount) {</span>
+<span class="nc bnc" id="L451" title="All 2 branches missed.">                    for (int j = 0; j &lt; lastPressedCount; j++) {</span>
+<span class="nc bnc" id="L452" title="All 2 branches missed.">                        if (s.charAt(j) != lastPressed[j]) {</span>
+<span class="nc" id="L453">                            break; // Escape the loop immediately when we find a mismatch</span>
+<span class="nc bnc" id="L454" title="All 2 branches missed.">                        } else if (j == (lastPressedCount - 1)) {</span>
+                            // We found a match:
+<span class="nc" id="L456">                            table.setRowSelectionInterval(i, i);</span>
+<span class="nc" id="L457">                            table.ensureVisible(i);</span>
+<span class="nc" id="L458">                            return;</span>
+                        }
+                    }
+                }
+            }
+
+<span class="nc bnc" id="L464" title="All 2 branches missed.">        } else if (e.getKeyChar() == KeyEvent.VK_ESCAPE) {</span>
+<span class="nc" id="L465">            lastPressedCount = 0;</span>
+        }
+<span class="nc" id="L467">        panel.frame().updateEnabledState();</span>
+<span class="nc" id="L468">    }</span>
+
+    @Override
+    public void keyReleased(KeyEvent e) {
+        // Do nothing
+<span class="nc" id="L473">    }</span>
+
+    @Override
+    public void keyPressed(KeyEvent e) {
+        // Do nothing
+<span class="nc" id="L478">    }</span>
+
+    @Override
+    public void focusGained(FocusEvent e) {
+        // Do nothing
+<span class="nc" id="L483">    }</span>
+
+    @Override
+    public void focusLost(FocusEvent e) {
+<span class="nc" id="L487">        lastPressedCount = 0; // Reset quick jump when focus is lost.</span>
+<span class="nc" id="L488">    }</span>
+
+    public PreviewPanel getPreview() {
+<span class="nc" id="L491">        return preview;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

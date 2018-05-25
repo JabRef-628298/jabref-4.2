@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>DBMSSynchronizerTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.shared</a> &gt; <span class="el_source">DBMSSynchronizerTest.java</span></div><h1>DBMSSynchronizerTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.shared;
+
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
+import org.jabref.logic.exporter.MetaDataSerializer;
+import org.jabref.logic.formatter.casechanger.LowerCaseFormatter;
+import org.jabref.logic.shared.exception.InvalidDBMSConnectionPropertiesException;
+import org.jabref.logic.shared.exception.OfflineLockException;
+import org.jabref.model.bibtexkeypattern.GlobalBibtexKeyPattern;
+import org.jabref.model.cleanup.FieldFormatterCleanup;
+import org.jabref.model.cleanup.FieldFormatterCleanups;
+import org.jabref.model.database.BibDatabase;
+import org.jabref.model.database.BibDatabaseContext;
+import org.jabref.model.database.BibDatabaseMode;
+import org.jabref.model.database.shared.DBMSType;
+import org.jabref.model.database.shared.DatabaseNotSupportedException;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.event.EntryEventSource;
+import org.jabref.model.metadata.MetaData;
+import org.jabref.model.util.DummyFileUpdateMonitor;
+import org.jabref.testutils.category.DatabaseTest;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+@DatabaseTest
+<span class="fc" id="L39">public class DBMSSynchronizerTest {</span>
+
+    private DBMSSynchronizer dbmsSynchronizer;
+    private DBMSConnection dbmsConnection;
+    private DBMSProcessor dbmsProcessor;
+    private BibDatabase bibDatabase;
+    private GlobalBibtexKeyPattern pattern;
+
+    @Parameter
+    public DBMSType dbmsType;
+
+    @BeforeEach
+    public void setUp() throws SQLException, DatabaseNotSupportedException, InvalidDBMSConnectionPropertiesException {
+
+<span class="nc" id="L53">        dbmsConnection = TestConnector.getTestDBMSConnection(dbmsType);</span>
+
+<span class="nc" id="L55">        bibDatabase = new BibDatabase();</span>
+<span class="nc" id="L56">        BibDatabaseContext context = new BibDatabaseContext(bibDatabase);</span>
+
+<span class="nc" id="L58">        pattern = GlobalBibtexKeyPattern.fromPattern(&quot;[auth][year]&quot;);</span>
+
+<span class="nc" id="L60">        dbmsSynchronizer = new DBMSSynchronizer(context, ',', pattern, new DummyFileUpdateMonitor());</span>
+<span class="nc" id="L61">        dbmsProcessor = DBMSProcessor.getProcessorInstance(dbmsConnection);</span>
+
+<span class="nc" id="L63">        bibDatabase.registerListener(dbmsSynchronizer);</span>
+
+<span class="nc" id="L65">        dbmsSynchronizer.openSharedDatabase(dbmsConnection);</span>
+
+<span class="nc" id="L67">    }</span>
+
+    @Parameters(name = &quot;Test with {0} database system&quot;)
+    public static Collection&lt;DBMSType&gt; getTestingDatabaseSystems() {
+<span class="nc" id="L71">        return TestManager.getDBMSTypeTestParameter();</span>
+    }
+
+    @Test
+    public void testEntryAddedEventListener() {
+<span class="nc" id="L76">        BibEntry expectedEntry = getBibEntryExample(1);</span>
+<span class="nc" id="L77">        BibEntry furtherEntry = getBibEntryExample(1);</span>
+
+<span class="nc" id="L79">        bibDatabase.insertEntry(expectedEntry);</span>
+        // should not add into shared database.
+<span class="nc" id="L81">        bibDatabase.insertEntry(furtherEntry, EntryEventSource.SHARED);</span>
+
+<span class="nc" id="L83">        List&lt;BibEntry&gt; actualEntries = dbmsProcessor.getSharedEntries();</span>
+
+<span class="nc" id="L85">        assertEquals(1, actualEntries.size());</span>
+<span class="nc" id="L86">        assertEquals(expectedEntry, actualEntries.get(0));</span>
+<span class="nc" id="L87">    }</span>
+
+    @Test
+    public void testFieldChangedEventListener() {
+<span class="nc" id="L91">        BibEntry expectedEntry = getBibEntryExample(1);</span>
+<span class="nc" id="L92">        expectedEntry.registerListener(dbmsSynchronizer);</span>
+
+<span class="nc" id="L94">        bibDatabase.insertEntry(expectedEntry);</span>
+<span class="nc" id="L95">        expectedEntry.setField(&quot;author&quot;, &quot;Brad L and Gilson&quot;);</span>
+<span class="nc" id="L96">        expectedEntry.setField(&quot;title&quot;, &quot;The micro multiplexer&quot;, EntryEventSource.SHARED);</span>
+
+<span class="nc" id="L98">        List&lt;BibEntry&gt; actualEntries = dbmsProcessor.getSharedEntries();</span>
+<span class="nc" id="L99">        assertEquals(1, actualEntries.size());</span>
+<span class="nc" id="L100">        assertEquals(expectedEntry.getField(&quot;author&quot;), actualEntries.get(0).getField(&quot;author&quot;));</span>
+<span class="nc" id="L101">        assertEquals(&quot;The nano processor1&quot;, actualEntries.get(0).getField(&quot;title&quot;).get());</span>
+
+<span class="nc" id="L103">    }</span>
+
+    @Test
+    public void testEntryRemovedEventListener() {
+<span class="nc" id="L107">        BibEntry bibEntry = getBibEntryExample(1);</span>
+<span class="nc" id="L108">        bibDatabase.insertEntry(bibEntry);</span>
+
+<span class="nc" id="L110">        List&lt;BibEntry&gt; actualEntries = dbmsProcessor.getSharedEntries();</span>
+<span class="nc" id="L111">        assertEquals(1, actualEntries.size());</span>
+<span class="nc" id="L112">        assertEquals(bibEntry, actualEntries.get(0));</span>
+
+<span class="nc" id="L114">        bibDatabase.removeEntry(bibEntry);</span>
+<span class="nc" id="L115">        actualEntries = dbmsProcessor.getSharedEntries();</span>
+
+<span class="nc" id="L117">        assertEquals(0, actualEntries.size());</span>
+
+<span class="nc" id="L119">        bibDatabase.insertEntry(bibEntry);</span>
+<span class="nc" id="L120">        bibDatabase.removeEntry(bibEntry, EntryEventSource.SHARED);</span>
+
+<span class="nc" id="L122">        actualEntries = dbmsProcessor.getSharedEntries();</span>
+<span class="nc" id="L123">        assertEquals(1, actualEntries.size());</span>
+<span class="nc" id="L124">        assertEquals(bibEntry, actualEntries.get(0));</span>
+<span class="nc" id="L125">    }</span>
+
+    @Test
+    public void testMetaDataChangedEventListener() {
+<span class="nc" id="L129">        MetaData testMetaData = new MetaData();</span>
+<span class="nc" id="L130">        testMetaData.registerListener(dbmsSynchronizer);</span>
+<span class="nc" id="L131">        dbmsSynchronizer.setMetaData(testMetaData);</span>
+<span class="nc" id="L132">        testMetaData.setMode(BibDatabaseMode.BIBTEX);</span>
+
+<span class="nc" id="L134">        Map&lt;String, String&gt; expectedMap = MetaDataSerializer.getSerializedStringMap(testMetaData, pattern);</span>
+<span class="nc" id="L135">        Map&lt;String, String&gt; actualMap = dbmsProcessor.getSharedMetaData();</span>
+
+<span class="nc" id="L137">        assertEquals(expectedMap, actualMap);</span>
+<span class="nc" id="L138">    }</span>
+
+    @Test
+    public void testInitializeDatabases() throws SQLException, DatabaseNotSupportedException {
+<span class="nc" id="L142">        clear();</span>
+<span class="nc" id="L143">        dbmsSynchronizer.initializeDatabases();</span>
+<span class="nc" id="L144">        assertTrue(dbmsProcessor.checkBaseIntegrity());</span>
+<span class="nc" id="L145">        dbmsSynchronizer.initializeDatabases();</span>
+<span class="nc" id="L146">        assertTrue(dbmsProcessor.checkBaseIntegrity());</span>
+<span class="nc" id="L147">    }</span>
+
+    @Test
+    public void testSynchronizeLocalDatabaseWithEntryRemoval() {
+<span class="nc" id="L151">        List&lt;BibEntry&gt; expectedBibEntries = Arrays.asList(getBibEntryExample(1), getBibEntryExample(2));</span>
+
+<span class="nc" id="L153">        dbmsProcessor.insertEntry(expectedBibEntries.get(0));</span>
+<span class="nc" id="L154">        dbmsProcessor.insertEntry(expectedBibEntries.get(1));</span>
+
+<span class="nc" id="L156">        assertTrue(bibDatabase.getEntries().isEmpty());</span>
+
+<span class="nc" id="L158">        dbmsSynchronizer.synchronizeLocalDatabase();</span>
+
+<span class="nc" id="L160">        assertEquals(expectedBibEntries, bibDatabase.getEntries());</span>
+
+<span class="nc" id="L162">        dbmsProcessor.removeEntry(expectedBibEntries.get(0));</span>
+<span class="nc" id="L163">        dbmsProcessor.removeEntry(expectedBibEntries.get(1));</span>
+
+<span class="nc" id="L165">        expectedBibEntries = new ArrayList&lt;&gt;();</span>
+
+<span class="nc" id="L167">        dbmsSynchronizer.synchronizeLocalDatabase();</span>
+
+<span class="nc" id="L169">        assertEquals(expectedBibEntries, bibDatabase.getEntries());</span>
+<span class="nc" id="L170">    }</span>
+
+    @Test
+    public void testSynchronizeLocalDatabaseWithEntryUpdate() throws OfflineLockException, SQLException {
+<span class="nc" id="L174">        BibEntry bibEntry = getBibEntryExample(1);</span>
+<span class="nc" id="L175">        bibDatabase.insertEntry(bibEntry);</span>
+<span class="nc" id="L176">        assertEquals(1, bibDatabase.getEntries().size());</span>
+
+<span class="nc" id="L178">        BibEntry modifiedBibEntry = getBibEntryExample(1);</span>
+<span class="nc" id="L179">        modifiedBibEntry.setField(&quot;custom&quot;, &quot;custom value&quot;);</span>
+<span class="nc" id="L180">        modifiedBibEntry.clearField(&quot;title&quot;);</span>
+<span class="nc" id="L181">        modifiedBibEntry.setType(&quot;article&quot;);</span>
+
+<span class="nc" id="L183">        dbmsProcessor.updateEntry(modifiedBibEntry);</span>
+        //testing point
+<span class="nc" id="L185">        dbmsSynchronizer.synchronizeLocalDatabase();</span>
+
+<span class="nc" id="L187">        assertEquals(bibDatabase.getEntries(), dbmsProcessor.getSharedEntries());</span>
+<span class="nc" id="L188">    }</span>
+
+    @Test
+    public void testApplyMetaData() {
+<span class="nc" id="L192">        BibEntry bibEntry = getBibEntryExample(1);</span>
+<span class="nc" id="L193">        bibDatabase.insertEntry(bibEntry);</span>
+
+<span class="nc" id="L195">        MetaData testMetaData = new MetaData();</span>
+<span class="nc" id="L196">        testMetaData.setSaveActions(new FieldFormatterCleanups(true,</span>
+<span class="nc" id="L197">                Collections.singletonList(new FieldFormatterCleanup(&quot;author&quot;, new LowerCaseFormatter()))));</span>
+<span class="nc" id="L198">        dbmsSynchronizer.setMetaData(testMetaData);</span>
+
+<span class="nc" id="L200">        dbmsSynchronizer.applyMetaData();</span>
+
+<span class="nc" id="L202">        assertEquals(&quot;wirthlin, michael j1&quot;, bibEntry.getField(&quot;author&quot;).get());</span>
+
+<span class="nc" id="L204">    }</span>
+
+    private BibEntry getBibEntryExample(int index) {
+<span class="nc" id="L207">        BibEntry bibEntry = new BibEntry();</span>
+<span class="nc" id="L208">        bibEntry.setType(&quot;book&quot;);</span>
+<span class="nc" id="L209">        bibEntry.setField(&quot;author&quot;, &quot;Wirthlin, Michael J&quot; + index);</span>
+<span class="nc" id="L210">        bibEntry.setField(&quot;title&quot;, &quot;The nano processor&quot; + index);</span>
+<span class="nc" id="L211">        bibEntry.getSharedBibEntryData().setSharedID(index);</span>
+<span class="nc" id="L212">        return bibEntry;</span>
+    }
+
+    @AfterEach
+    public void clear() throws SQLException {
+<span class="nc" id="L217">        TestManager.clearTables(dbmsConnection);</span>
+<span class="nc" id="L218">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

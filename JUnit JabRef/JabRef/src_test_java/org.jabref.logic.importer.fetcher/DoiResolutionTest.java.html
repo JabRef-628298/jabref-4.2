@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>DoiResolutionTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.importer.fetcher</a> &gt; <span class="el_source">DoiResolutionTest.java</span></div><h1>DoiResolutionTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.importer.fetcher;
+
+import java.io.IOException;
+import java.net.URL;
+import java.util.Optional;
+
+import org.jabref.model.entry.BibEntry;
+import org.jabref.support.DisabledOnCIServer;
+import org.jabref.testutils.category.FetcherTest;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+@FetcherTest
+<span class="fc" id="L17">class DoiResolutionTest {</span>
+
+    private DoiResolution finder;
+    private BibEntry entry;
+
+    @BeforeEach
+    void setUp() {
+<span class="fc" id="L24">        finder = new DoiResolution();</span>
+<span class="fc" id="L25">        entry = new BibEntry();</span>
+<span class="fc" id="L26">    }</span>
+
+    @Test
+    @DisabledOnCIServer(&quot;CI server is blocked&quot;)
+    void findByDOI() throws IOException {
+<span class="fc" id="L31">        entry.setField(&quot;doi&quot;, &quot;10.1051/0004-6361/201527330&quot;);</span>
+
+<span class="fc" id="L33">        assertEquals(</span>
+<span class="fc" id="L34">                Optional.of(new URL(&quot;https://www.aanda.org/articles/aa/pdf/2016/01/aa27330-15.pdf&quot;)),</span>
+<span class="fc" id="L35">                finder.findFullText(entry)</span>
+        );
+<span class="fc" id="L37">    }</span>
+
+    @Test
+    void notReturnAnythingWhenMultipleLinksAreFound() throws IOException {
+<span class="fc" id="L41">        entry.setField(&quot;doi&quot;, &quot;10.1051/0004-6361/201527330; 10.1051/0004-6361/20152711233&quot;);</span>
+<span class="fc" id="L42">        assertEquals(Optional.empty(), finder.findFullText(entry));</span>
+<span class="fc" id="L43">    }</span>
+
+    @Test
+    @DisabledOnCIServer(&quot;CI server is blocked&quot;)
+    void notFoundByDOI() throws IOException {
+<span class="fc" id="L48">        entry.setField(&quot;doi&quot;, &quot;10.1186/unknown-doi&quot;);</span>
+
+<span class="fc" id="L50">        assertEquals(Optional.empty(), finder.findFullText(entry));</span>
+<span class="fc" id="L51">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

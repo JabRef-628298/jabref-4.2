@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>JournalAbbreviationRepositoryTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.journals</a> &gt; <span class="el_source">JournalAbbreviationRepositoryTest.java</span></div><h1>JournalAbbreviationRepositoryTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.journals;
+
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+<span class="fc" id="L9">public class JournalAbbreviationRepositoryTest {</span>
+
+    @Test
+    public void empty() {
+<span class="fc" id="L13">        JournalAbbreviationRepository repository = new JournalAbbreviationRepository();</span>
+<span class="fc" id="L14">        assertTrue(repository.getAbbreviations().isEmpty());</span>
+<span class="fc" id="L15">    }</span>
+
+    @Test
+    public void oneElement() {
+<span class="fc" id="L19">        JournalAbbreviationRepository repository = new JournalAbbreviationRepository();</span>
+<span class="fc" id="L20">        repository.addEntry(new Abbreviation(&quot;Long Name&quot;, &quot;L. N.&quot;));</span>
+<span class="fc" id="L21">        assertEquals(1, repository.size());</span>
+<span class="fc" id="L22">        assertFalse(repository.getAbbreviations().isEmpty());</span>
+
+<span class="fc" id="L24">        assertEquals(&quot;L. N.&quot;, repository.getIsoAbbreviation(&quot;Long Name&quot;).orElse(&quot;WRONG&quot;));</span>
+<span class="fc" id="L25">        assertEquals(&quot;UNKNOWN&quot;, repository.getIsoAbbreviation(&quot;?&quot;).orElse(&quot;UNKNOWN&quot;));</span>
+
+<span class="fc" id="L27">        assertEquals(&quot;L N&quot;, repository.getMedlineAbbreviation(&quot;Long Name&quot;).orElse(&quot;WRONG&quot;));</span>
+<span class="fc" id="L28">        assertEquals(&quot;UNKNOWN&quot;, repository.getMedlineAbbreviation(&quot;?&quot;).orElse(&quot;UNKNOWN&quot;));</span>
+
+<span class="fc" id="L30">        assertEquals(&quot;L. N.&quot;, repository.getNextAbbreviation(&quot;Long Name&quot;).orElse(&quot;WRONG&quot;));</span>
+<span class="fc" id="L31">        assertEquals(&quot;L N&quot;, repository.getNextAbbreviation(&quot;L. N.&quot;).orElse(&quot;WRONG&quot;));</span>
+<span class="fc" id="L32">        assertEquals(&quot;Long Name&quot;, repository.getNextAbbreviation(&quot;L N&quot;).orElse(&quot;WRONG&quot;));</span>
+<span class="fc" id="L33">        assertEquals(&quot;UNKNOWN&quot;, repository.getNextAbbreviation(&quot;?&quot;).orElse(&quot;UNKNOWN&quot;));</span>
+
+<span class="fc" id="L35">        assertTrue(repository.isKnownName(&quot;Long Name&quot;));</span>
+<span class="fc" id="L36">        assertTrue(repository.isKnownName(&quot;L. N.&quot;));</span>
+<span class="fc" id="L37">        assertTrue(repository.isKnownName(&quot;L N&quot;));</span>
+<span class="fc" id="L38">        assertFalse(repository.isKnownName(&quot;?&quot;));</span>
+
+<span class="fc" id="L40">    }</span>
+
+    @Test
+    public void testDuplicates() {
+<span class="fc" id="L44">        JournalAbbreviationRepository repository = new JournalAbbreviationRepository();</span>
+<span class="fc" id="L45">        repository.addEntry(new Abbreviation(&quot;Long Name&quot;, &quot;L. N.&quot;));</span>
+<span class="fc" id="L46">        repository.addEntry(new Abbreviation(&quot;Long Name&quot;, &quot;L. N.&quot;));</span>
+<span class="fc" id="L47">        assertEquals(1, repository.size());</span>
+<span class="fc" id="L48">    }</span>
+
+    @Test
+    public void testDuplicatesIsoOnly() {
+<span class="fc" id="L52">        JournalAbbreviationRepository repository = new JournalAbbreviationRepository();</span>
+<span class="fc" id="L53">        repository.addEntry(new Abbreviation(&quot;Old Long Name&quot;, &quot;L. N.&quot;));</span>
+<span class="fc" id="L54">        repository.addEntry(new Abbreviation(&quot;New Long Name&quot;, &quot;L. N.&quot;));</span>
+<span class="fc" id="L55">        assertEquals(2, repository.size());</span>
+<span class="fc" id="L56">    }</span>
+
+    @Test
+    public void testDuplicateKeys() {
+<span class="fc" id="L60">        JournalAbbreviationRepository repository = new JournalAbbreviationRepository();</span>
+<span class="fc" id="L61">        repository.addEntry(new Abbreviation(&quot;Long Name&quot;, &quot;L. N.&quot;));</span>
+<span class="fc" id="L62">        assertEquals(1, repository.size());</span>
+<span class="fc" id="L63">        assertEquals(&quot;L. N.&quot;, repository.getIsoAbbreviation(&quot;Long Name&quot;).orElse(&quot;WRONG&quot;));</span>
+
+<span class="fc" id="L65">        repository.addEntry(new Abbreviation(&quot;Long Name&quot;, &quot;LA. N.&quot;));</span>
+<span class="fc" id="L66">        assertEquals(1, repository.size());</span>
+<span class="fc" id="L67">        assertEquals(&quot;LA. N.&quot;, repository.getIsoAbbreviation(&quot;Long Name&quot;).orElse(&quot;WRONG&quot;));</span>
+
+<span class="fc" id="L69">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

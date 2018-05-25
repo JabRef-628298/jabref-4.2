@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>TitleFetcherTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.importer.fetcher</a> &gt; <span class="el_source">TitleFetcherTest.java</span></div><h1>TitleFetcherTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.importer.fetcher;
+
+import java.util.Optional;
+
+import org.jabref.logic.importer.FetcherException;
+import org.jabref.logic.importer.ImportFormatPreferences;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.BiblatexEntryTypes;
+import org.jabref.testutils.category.FetcherTest;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Answers;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+
+@FetcherTest
+<span class="fc" id="L19">public class TitleFetcherTest {</span>
+
+    private TitleFetcher fetcher;
+    private BibEntry bibEntryBischof2009;
+
+    @BeforeEach
+    public void setUp() {
+<span class="fc" id="L26">        fetcher = new TitleFetcher(mock(ImportFormatPreferences.class, Answers.RETURNS_DEEP_STUBS));</span>
+
+<span class="fc" id="L28">        bibEntryBischof2009 = new BibEntry();</span>
+<span class="fc" id="L29">        bibEntryBischof2009.setType(BiblatexEntryTypes.INPROCEEDINGS);</span>
+<span class="fc" id="L30">        bibEntryBischof2009.setField(&quot;bibtexkey&quot;, &quot;Bischof_2009&quot;);</span>
+<span class="fc" id="L31">        bibEntryBischof2009.setField(&quot;author&quot;, &quot;Marc Bischof and Oliver Kopp and Tammo van Lessen and Frank Leymann&quot;);</span>
+<span class="fc" id="L32">        bibEntryBischof2009.setField(&quot;booktitle&quot;, &quot;2009 35th Euromicro Conference on Software Engineering and Advanced Applications&quot;);</span>
+<span class="fc" id="L33">        bibEntryBischof2009.setField(&quot;publisher&quot;, &quot;{IEEE}&quot;);</span>
+<span class="fc" id="L34">        bibEntryBischof2009.setField(&quot;title&quot;, &quot;{BPELscript}: A Simplified Script Syntax for {WS}-{BPEL} 2.0&quot;);</span>
+<span class="fc" id="L35">        bibEntryBischof2009.setField(&quot;year&quot;, &quot;2009&quot;);</span>
+<span class="fc" id="L36">        bibEntryBischof2009.setField(&quot;doi&quot;, &quot;10.1109/seaa.2009.21&quot;);</span>
+<span class="fc" id="L37">    }</span>
+
+    @Test
+    public void testGetName() {
+<span class="fc" id="L41">        assertEquals(&quot;Title&quot;, fetcher.getName());</span>
+<span class="fc" id="L42">    }</span>
+
+    @Test
+    public void testGetHelpPage() {
+<span class="fc" id="L46">        assertEquals(&quot;TitleToBibTeX&quot;, fetcher.getHelpPage().getPageName());</span>
+<span class="fc" id="L47">    }</span>
+
+    @Test
+    public void testPerformSearchKopp2007() throws FetcherException {
+<span class="fc" id="L51">        Optional&lt;BibEntry&gt; fetchedEntry = fetcher.performSearchById(&quot;BPELscript: A simplified script syntax for WS-BPEL 2.0&quot;);</span>
+<span class="fc" id="L52">        assertEquals(Optional.of(bibEntryBischof2009), fetchedEntry);</span>
+<span class="fc" id="L53">    }</span>
+
+    @Test
+    public void testPerformSearchEmptyTitle() throws FetcherException {
+<span class="fc" id="L57">        Optional&lt;BibEntry&gt; fetchedEntry = fetcher.performSearchById(&quot;&quot;);</span>
+<span class="fc" id="L58">        assertEquals(Optional.empty(), fetchedEntry);</span>
+<span class="fc" id="L59">    }</span>
+
+    @Test
+    public void testPerformSearchInvalidTitle() throws FetcherException {
+<span class="fc" id="L63">        Optional&lt;BibEntry&gt; fetchedEntry = fetcher.performSearchById(&quot;An unknown title where noi DOI can be determined&quot;);</span>
+<span class="fc" id="L64">        assertEquals(Optional.empty(), fetchedEntry);</span>
+<span class="fc" id="L65">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

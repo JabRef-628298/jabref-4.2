@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>DoiFetcher.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.importer.fetcher</a> &gt; <span class="el_source">DoiFetcher.java</span></div><h1>DoiFetcher.java</h1><pre class="source lang-java linenums">package org.jabref.logic.importer.fetcher;
+
+import java.io.IOException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+import org.jabref.logic.formatter.bibtexfields.ClearFormatter;
+import org.jabref.logic.formatter.bibtexfields.NormalizePagesFormatter;
+import org.jabref.logic.help.HelpFile;
+import org.jabref.logic.importer.EntryBasedFetcher;
+import org.jabref.logic.importer.FetcherException;
+import org.jabref.logic.importer.IdBasedFetcher;
+import org.jabref.logic.importer.ImportFormatPreferences;
+import org.jabref.logic.importer.ParseException;
+import org.jabref.logic.importer.fileformat.BibtexParser;
+import org.jabref.logic.l10n.Localization;
+import org.jabref.logic.net.URLDownload;
+import org.jabref.model.cleanup.FieldFormatterCleanup;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.FieldName;
+import org.jabref.model.entry.identifier.DOI;
+import org.jabref.model.util.DummyFileUpdateMonitor;
+
+public class DoiFetcher implements IdBasedFetcher, EntryBasedFetcher {
+    public static final String NAME = &quot;DOI&quot;;
+
+    private final ImportFormatPreferences preferences;
+
+<span class="fc" id="L31">    public DoiFetcher(ImportFormatPreferences preferences) {</span>
+<span class="fc" id="L32">        this.preferences = preferences;</span>
+<span class="fc" id="L33">    }</span>
+
+    @Override
+    public String getName() {
+<span class="fc" id="L37">        return DoiFetcher.NAME;</span>
+    }
+
+    @Override
+    public HelpFile getHelpPage() {
+<span class="fc" id="L42">        return HelpFile.FETCHER_DOI;</span>
+    }
+
+    @Override
+    public Optional&lt;BibEntry&gt; performSearchById(String identifier) throws FetcherException {
+<span class="fc" id="L47">        Optional&lt;DOI&gt; doi = DOI.parse(identifier);</span>
+
+        try {
+<span class="fc bfc" id="L50" title="All 2 branches covered.">            if (doi.isPresent()) {</span>
+<span class="fc" id="L51">                URL doiURL = new URL(doi.get().getURIAsASCIIString());</span>
+
+                // BibTeX data
+<span class="fc" id="L54">                URLDownload download = new URLDownload(doiURL);</span>
+<span class="fc" id="L55">                download.addHeader(&quot;Accept&quot;, &quot;application/x-bibtex&quot;);</span>
+<span class="fc" id="L56">                String bibtexString = download.asString();</span>
+
+                // BibTeX entry
+<span class="fc" id="L59">                Optional&lt;BibEntry&gt; fetchedEntry = BibtexParser.singleFromString(bibtexString, preferences, new DummyFileUpdateMonitor());</span>
+<span class="fc" id="L60">                fetchedEntry.ifPresent(this::doPostCleanup);</span>
+<span class="fc" id="L61">                return fetchedEntry;</span>
+            } else {
+<span class="fc" id="L63">                throw new FetcherException(Localization.lang(&quot;Invalid DOI: '%0'.&quot;, identifier));</span>
+            }
+<span class="fc" id="L65">        } catch (IOException e) {</span>
+<span class="fc" id="L66">            throw new FetcherException(Localization.lang(&quot;Connection error&quot;), e);</span>
+<span class="nc" id="L67">        } catch (ParseException e) {</span>
+<span class="nc" id="L68">            throw new FetcherException(&quot;Could not parse BibTeX entry&quot;, e);</span>
+        }
+    }
+
+    private void doPostCleanup(BibEntry entry) {
+<span class="fc" id="L73">        new FieldFormatterCleanup(FieldName.PAGES, new NormalizePagesFormatter()).cleanup(entry);</span>
+<span class="fc" id="L74">        new FieldFormatterCleanup(FieldName.URL, new ClearFormatter()).cleanup(entry);</span>
+<span class="fc" id="L75">    }</span>
+
+    @Override
+    public List&lt;BibEntry&gt; performSearch(BibEntry entry) throws FetcherException {
+<span class="nc" id="L79">        Optional&lt;BibEntry&gt; bibEntry = performSearchById(entry.getField(FieldName.DOI).orElse(&quot;&quot;));</span>
+<span class="nc" id="L80">        List&lt;BibEntry&gt; list = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L81">        bibEntry.ifPresent(list::add);</span>
+<span class="nc" id="L82">        return list;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

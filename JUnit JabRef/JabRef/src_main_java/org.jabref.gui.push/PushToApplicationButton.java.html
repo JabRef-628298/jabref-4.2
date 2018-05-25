@@ -1,0 +1,312 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>PushToApplicationButton.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.push</a> &gt; <span class="el_source">PushToApplicationButton.java</span></div><h1>PushToApplicationButton.java</h1><pre class="source lang-java linenums"><span class="nc" id="L1">package org.jabref.gui.push;</span>
+
+import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.Insets;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.swing.AbstractAction;
+import javax.swing.Action;
+import javax.swing.ActionMap;
+import javax.swing.BorderFactory;
+import javax.swing.Icon;
+import javax.swing.InputMap;
+import javax.swing.JButton;
+import javax.swing.JComponent;
+import javax.swing.JDialog;
+import javax.swing.JFrame;
+import javax.swing.JMenuItem;
+import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+
+import org.jabref.Globals;
+import org.jabref.gui.IconTheme;
+import org.jabref.gui.JabRefFrame;
+import org.jabref.gui.actions.MnemonicAwareAction;
+import org.jabref.gui.keyboard.KeyBinding;
+import org.jabref.logic.l10n.Localization;
+import org.jabref.logic.util.OS;
+import org.jabref.preferences.JabRefPreferences;
+
+import com.jgoodies.forms.builder.ButtonBarBuilder;
+
+/**
+ * Customized UI component for pushing to external applications. Has a selection popup menu to change the selected
+ * external application. This class implements the ActionListener interface. When actionPerformed() is invoked, the
+ * currently selected PushToApplication is activated. The actionPerformed() method can be called with a null argument.
+ */
+public class PushToApplicationButton implements ActionListener {
+
+<span class="fc" id="L47">    private static final Icon ARROW_ICON = IconTheme.JabRefIcon.DOWN.getSmallIcon();</span>
+    private final JabRefFrame frame;
+    private final List&lt;PushToApplication&gt; pushActions;
+    private JPanel comp;
+    private JButton pushButton;
+    private PushToApplication toApp;
+    private JPopupMenu popup;
+<span class="fc" id="L54">    private final Map&lt;PushToApplication, PushToApplicationAction&gt; actions = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L55">    private final Dimension buttonDim = new Dimension(23, 23);</span>
+<span class="fc" id="L56">    private final MenuAction mAction = new MenuAction();</span>
+<span class="fc" id="L57">    private final JPopupMenu optPopup = new JPopupMenu();</span>
+<span class="fc" id="L58">    private final JMenuItem settings = new JMenuItem(Localization.lang(&quot;Settings&quot;));</span>
+
+
+<span class="fc" id="L61">    public PushToApplicationButton(JabRefFrame frame, List&lt;PushToApplication&gt; pushActions) {</span>
+<span class="fc" id="L62">        this.frame = frame;</span>
+<span class="fc" id="L63">        this.pushActions = pushActions;</span>
+<span class="fc" id="L64">        init();</span>
+<span class="fc" id="L65">    }</span>
+
+    private void init() {
+<span class="fc" id="L68">        comp = new JPanel();</span>
+<span class="fc" id="L69">        comp.setLayout(new BorderLayout());</span>
+
+<span class="fc" id="L71">        JButton menuButton = new JButton(PushToApplicationButton.ARROW_ICON);</span>
+<span class="fc" id="L72">        menuButton.setMargin(new Insets(0, 0, 0, 0));</span>
+<span class="fc" id="L73">        menuButton.setPreferredSize(</span>
+<span class="fc" id="L74">                new Dimension(menuButton.getIcon().getIconWidth(), menuButton.getIcon().getIconHeight()));</span>
+<span class="fc" id="L75">        menuButton.addActionListener(e -&gt; {</span>
+<span class="nc bnc" id="L76" title="All 2 branches missed.">            if (popup == null) {</span>
+<span class="nc" id="L77">                buildPopupMenu();</span>
+            }
+<span class="nc" id="L79">            popup.show(comp, 0, menuButton.getHeight());</span>
+<span class="nc" id="L80">        });</span>
+
+<span class="fc" id="L82">        menuButton.setToolTipText(Localization.lang(&quot;Select external application&quot;));</span>
+
+<span class="fc" id="L84">        pushButton = new JButton();</span>
+<span class="pc bpc" id="L85" title="1 of 2 branches missed.">        if (OS.OS_X) {</span>
+<span class="nc" id="L86">            menuButton.putClientProperty(&quot;JButton.buttonType&quot;, &quot;toolbar&quot;);</span>
+<span class="nc" id="L87">            pushButton.putClientProperty(&quot;JButton.buttonType&quot;, &quot;toolbar&quot;);</span>
+        }
+
+        // Set the last used external application
+<span class="fc" id="L91">        String appSelected = Globals.prefs.get(JabRefPreferences.PUSH_TO_APPLICATION);</span>
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">        for (PushToApplication application : pushActions) {</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">            if (application.getApplicationName().equals(appSelected)) {</span>
+<span class="fc" id="L94">                toApp = application;</span>
+<span class="fc" id="L95">                break;</span>
+            }
+        }
+
+<span class="pc bpc" id="L99" title="1 of 2 branches missed.">        if (toApp == null) {</span>
+            // Nothing found, pick first
+<span class="nc" id="L101">            toApp = pushActions.get(0);</span>
+        }
+
+<span class="fc" id="L104">        setSelected();</span>
+<span class="fc" id="L105">        pushButton.addActionListener(this);</span>
+<span class="fc" id="L106">        pushButton.addMouseListener(new PushButtonMouseListener());</span>
+<span class="fc" id="L107">        pushButton.setOpaque(false);</span>
+<span class="fc" id="L108">        menuButton.setOpaque(false);</span>
+<span class="fc" id="L109">        comp.setOpaque(false);</span>
+<span class="fc" id="L110">        comp.add(pushButton, BorderLayout.CENTER);</span>
+<span class="fc" id="L111">        comp.add(menuButton, BorderLayout.EAST);</span>
+<span class="fc" id="L112">        comp.setMaximumSize(comp.getPreferredSize());</span>
+
+<span class="fc" id="L114">        optPopup.add(settings);</span>
+<span class="fc" id="L115">        settings.addActionListener(event -&gt; {</span>
+<span class="nc" id="L116">            JPanel options = toApp.getSettingsPanel();</span>
+<span class="nc bnc" id="L117" title="All 2 branches missed.">            if (options != null) {</span>
+<span class="nc" id="L118">                PushToApplicationButton.showSettingsDialog(frame, toApp, options);</span>
+            }
+<span class="nc" id="L120">        });</span>
+
+<span class="fc" id="L122">        buildPopupMenu();</span>
+<span class="fc" id="L123">    }</span>
+
+    /**
+     * Create a selection menu for the available &quot;Push&quot; options.
+     */
+    private void buildPopupMenu() {
+<span class="fc" id="L129">        popup = new JPopupMenu();</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">        for (PushToApplication application : pushActions) {</span>
+<span class="fc" id="L131">            JMenuItem item = new JMenuItem(application.getApplicationName(), application.getIcon());</span>
+<span class="fc" id="L132">            item.setToolTipText(application.getTooltip());</span>
+<span class="fc" id="L133">            item.addActionListener(new PopupItemActionListener(application));</span>
+<span class="fc" id="L134">            popup.add(item);</span>
+        }
+<span class="fc" id="L136">    }</span>
+
+    /**
+     * Update the PushButton to default to the given application.
+     *
+     * @param i The List index of the application to default to.
+     */
+    private void setSelected(PushToApplication newApplication) {
+<span class="nc" id="L144">        toApp = newApplication;</span>
+<span class="nc" id="L145">        setSelected();</span>
+<span class="nc" id="L146">    }</span>
+
+    private void setSelected() {
+<span class="fc" id="L149">        pushButton.setIcon(toApp.getIcon());</span>
+<span class="fc" id="L150">        pushButton.setToolTipText(toApp.getTooltip());</span>
+<span class="fc" id="L151">        pushButton.setPreferredSize(buttonDim);</span>
+
+        // Store the last used application
+<span class="fc" id="L154">        Globals.prefs.put(JabRefPreferences.PUSH_TO_APPLICATION, toApp.getApplicationName());</span>
+
+<span class="fc" id="L156">        mAction.setTitle(toApp.getApplicationName());</span>
+<span class="fc" id="L157">        mAction.setIcon(toApp.getIcon());</span>
+<span class="fc" id="L158">    }</span>
+
+    /**
+     * Get the toolbar component for the push button.
+     *
+     * @return The component.
+     */
+    public Component getComponent() {
+<span class="fc" id="L166">        return comp;</span>
+    }
+
+    public Action getMenuAction() {
+<span class="fc" id="L170">        return mAction;</span>
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        // Lazy initialization of the push action:
+<span class="nc" id="L176">        PushToApplicationAction action = actions.get(toApp);</span>
+<span class="nc bnc" id="L177" title="All 2 branches missed.">        if (action == null) {</span>
+<span class="nc" id="L178">            action = new PushToApplicationAction(frame, toApp);</span>
+<span class="nc" id="L179">            actions.put(toApp, action);</span>
+        }
+<span class="nc" id="L181">        action.actionPerformed(new ActionEvent(toApp, 0, &quot;push&quot;));</span>
+<span class="nc" id="L182">    }</span>
+
+    private static class BooleanHolder {
+
+        public boolean value;
+
+
+<span class="nc" id="L189">        public BooleanHolder(boolean value) {</span>
+<span class="nc" id="L190">            this.value = value;</span>
+<span class="nc" id="L191">        }</span>
+    }
+
+    public static void showSettingsDialog(JFrame parent, PushToApplication toApp, JPanel options) {
+
+<span class="nc" id="L196">        final BooleanHolder okPressed = new BooleanHolder(false);</span>
+<span class="nc" id="L197">        final JDialog diag = new JDialog(parent, Localization.lang(&quot;Settings&quot;), true);</span>
+<span class="nc" id="L198">        options.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));</span>
+<span class="nc" id="L199">        diag.getContentPane().add(options, BorderLayout.CENTER);</span>
+<span class="nc" id="L200">        ButtonBarBuilder bb = new ButtonBarBuilder();</span>
+<span class="nc" id="L201">        JButton ok = new JButton(Localization.lang(&quot;OK&quot;));</span>
+<span class="nc" id="L202">        JButton cancel = new JButton(Localization.lang(&quot;Cancel&quot;));</span>
+<span class="nc" id="L203">        bb.addGlue();</span>
+<span class="nc" id="L204">        bb.addButton(ok);</span>
+<span class="nc" id="L205">        bb.addButton(cancel);</span>
+<span class="nc" id="L206">        bb.addGlue();</span>
+<span class="nc" id="L207">        bb.getPanel().setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));</span>
+<span class="nc" id="L208">        diag.getContentPane().add(bb.getPanel(), BorderLayout.SOUTH);</span>
+<span class="nc" id="L209">        ok.addActionListener(e -&gt; {</span>
+<span class="nc" id="L210">            okPressed.value = true;</span>
+<span class="nc" id="L211">            diag.dispose();</span>
+<span class="nc" id="L212">        });</span>
+<span class="nc" id="L213">        cancel.addActionListener(e -&gt; diag.dispose());</span>
+
+        // Key bindings:
+<span class="nc" id="L216">        ActionMap am = bb.getPanel().getActionMap();</span>
+<span class="nc" id="L217">        InputMap im = bb.getPanel().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);</span>
+<span class="nc" id="L218">        im.put(Globals.getKeyPrefs().getKey(KeyBinding.CLOSE_DIALOG), &quot;close&quot;);</span>
+<span class="nc" id="L219">        am.put(&quot;close&quot;, new AbstractAction() {</span>
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L223">                diag.dispose();</span>
+<span class="nc" id="L224">            }</span>
+        });
+<span class="nc" id="L226">        diag.pack();</span>
+<span class="nc" id="L227">        diag.setLocationRelativeTo(parent);</span>
+
+        // Show the dialog:
+<span class="nc" id="L230">        diag.setVisible(true);</span>
+        // If the user pressed Ok, ask the PushToApplication implementation
+        // to store its settings:
+<span class="nc bnc" id="L233" title="All 2 branches missed.">        if (okPressed.value) {</span>
+<span class="nc" id="L234">            toApp.storeSettings();</span>
+        }
+<span class="nc" id="L236">    }</span>
+
+    class PopupItemActionListener implements ActionListener {
+
+        private final PushToApplication application;
+
+
+<span class="fc" id="L243">        public PopupItemActionListener(PushToApplication application) {</span>
+<span class="fc" id="L244">            this.application = application;</span>
+<span class="fc" id="L245">        }</span>
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            // Change the selection:
+<span class="nc" id="L250">            setSelected(application);</span>
+            // Invoke the selected operation (is that expected behaviour?):
+            //PushToApplicationButton.this.actionPerformed(null);
+            // It makes sense to transfer focus to the push button after the
+            // menu closes:
+<span class="nc" id="L255">            pushButton.requestFocus();</span>
+<span class="nc" id="L256">        }</span>
+    }
+
+    class MenuAction extends MnemonicAwareAction {
+
+<span class="fc" id="L261">        public MenuAction() {</span>
+<span class="fc" id="L262">            putValue(Action.ACCELERATOR_KEY, Globals.getKeyPrefs().getKey(KeyBinding.PUSH_TO_APPLICATION));</span>
+<span class="fc" id="L263">        }</span>
+
+        public void setTitle(String appName) {
+<span class="fc" id="L266">            putValue(Action.NAME, Localization.menuTitle(&quot;Push entries to external application (%0)&quot;, appName));</span>
+<span class="fc" id="L267">        }</span>
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L271">            PushToApplicationButton.this.actionPerformed(null);</span>
+<span class="nc" id="L272">        }</span>
+
+        public void setIcon(Icon icon) {
+<span class="fc" id="L275">            putValue(Action.SMALL_ICON, icon);</span>
+<span class="fc" id="L276">        }</span>
+    }
+
+<span class="fc" id="L279">    class PushButtonMouseListener extends MouseAdapter {</span>
+
+        @Override
+        public void mousePressed(MouseEvent event) {
+<span class="nc bnc" id="L283" title="All 2 branches missed.">            if (event.isPopupTrigger()) {</span>
+<span class="nc" id="L284">                processPopupTrigger(event);</span>
+            }
+<span class="nc" id="L286">        }</span>
+
+        @Override
+        public void mouseClicked(MouseEvent event) {
+<span class="nc bnc" id="L290" title="All 2 branches missed.">            if (event.isPopupTrigger()) {</span>
+<span class="nc" id="L291">                processPopupTrigger(event);</span>
+            }
+<span class="nc" id="L293">        }</span>
+
+        @Override
+        public void mouseReleased(MouseEvent event) {
+<span class="nc bnc" id="L297" title="All 2 branches missed.">            if (event.isPopupTrigger()) {</span>
+<span class="nc" id="L298">                processPopupTrigger(event);</span>
+            }
+<span class="nc" id="L300">        }</span>
+
+        private void processPopupTrigger(MouseEvent e) {
+            // We only want to show the popup if a settings panel exists for the selected
+            // item:
+<span class="nc bnc" id="L305" title="All 2 branches missed.">            if (toApp.getSettingsPanel() != null) {</span>
+<span class="nc" id="L306">                optPopup.show(pushButton, e.getX(), e.getY());</span>
+            }
+
+<span class="nc" id="L309">        }</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

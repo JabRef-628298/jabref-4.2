@@ -1,0 +1,324 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>BibDatabaseTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.model.database</a> &gt; <span class="el_source">BibDatabaseTest.java</span></div><h1>BibDatabaseTest.java</h1><pre class="source lang-java linenums">package org.jabref.model.database;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.BibtexString;
+import org.jabref.model.entry.IdGenerator;
+import org.jabref.model.event.TestEventListener;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+<span class="fc" id="L27">public class BibDatabaseTest {</span>
+
+    private BibDatabase database;
+
+    @BeforeEach
+    public void setUp() {
+<span class="fc" id="L33">        database = new BibDatabase();</span>
+<span class="fc" id="L34">    }</span>
+
+    @Test
+    public void insertEntryAddsEntryToEntriesList() {
+<span class="fc" id="L38">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L39">        database.insertEntry(entry);</span>
+<span class="fc" id="L40">        assertEquals(1, database.getEntries().size());</span>
+<span class="fc" id="L41">        assertEquals(1, database.getEntryCount());</span>
+<span class="fc" id="L42">        assertEquals(entry, database.getEntries().get(0));</span>
+<span class="fc" id="L43">    }</span>
+
+    @Test
+    public void containsEntryIdFindsEntry() {
+<span class="fc" id="L47">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L48">        assertFalse(database.containsEntryWithId(entry.getId()));</span>
+<span class="fc" id="L49">        database.insertEntry(entry);</span>
+<span class="fc" id="L50">        assertTrue(database.containsEntryWithId(entry.getId()));</span>
+<span class="fc" id="L51">    }</span>
+
+    @Test
+    public void insertEntryWithSameIdThrowsException() {
+<span class="fc" id="L55">        BibEntry entry0 = new BibEntry();</span>
+<span class="fc" id="L56">        database.insertEntry(entry0);</span>
+
+<span class="fc" id="L58">        BibEntry entry1 = new BibEntry();</span>
+<span class="fc" id="L59">        entry1.setId(entry0.getId());</span>
+<span class="pc" id="L60">        assertThrows(KeyCollisionException.class, () -&gt; database.insertEntry(entry1));</span>
+
+<span class="fc" id="L62">    }</span>
+
+    @Test
+    public void removeEntryRemovesEntryFromEntriesList() {
+<span class="fc" id="L66">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L67">        database.insertEntry(entry);</span>
+
+<span class="fc" id="L69">        database.removeEntry(entry);</span>
+<span class="fc" id="L70">        assertEquals(Collections.emptyList(), database.getEntries());</span>
+<span class="fc" id="L71">        assertFalse(database.containsEntryWithId(entry.getId()));</span>
+<span class="fc" id="L72">    }</span>
+
+    @Test
+    public void insertNullEntryThrowsException() {
+<span class="pc" id="L76">        assertThrows(NullPointerException.class, () -&gt; database.insertEntry(null));</span>
+<span class="fc" id="L77">    }</span>
+
+    @Test
+    public void removeNullEntryThrowsException() {
+<span class="pc" id="L81">        assertThrows(NullPointerException.class, () -&gt; database.removeEntry(null));</span>
+<span class="fc" id="L82">    }</span>
+
+    @Test
+    public void emptyDatabaseHasNoStrings() {
+<span class="fc" id="L86">        assertEquals(Collections.emptySet(), database.getStringKeySet());</span>
+<span class="fc" id="L87">        assertTrue(database.hasNoStrings());</span>
+<span class="fc" id="L88">    }</span>
+
+    @Test
+    public void insertStringUpdatesStringList() {
+<span class="fc" id="L92">        BibtexString string = new BibtexString(&quot;DSP&quot;, &quot;Digital Signal Processing&quot;);</span>
+<span class="fc" id="L93">        database.addString(string);</span>
+<span class="fc" id="L94">        assertFalse(database.hasNoStrings());</span>
+<span class="fc" id="L95">        assertEquals(1, database.getStringKeySet().size());</span>
+<span class="fc" id="L96">        assertEquals(1, database.getStringCount());</span>
+<span class="fc" id="L97">        assertTrue(database.getStringValues().contains(string));</span>
+<span class="fc" id="L98">        assertTrue(database.getStringKeySet().contains(string.getId()));</span>
+<span class="fc" id="L99">        assertEquals(string, database.getString(string.getId()));</span>
+<span class="fc" id="L100">    }</span>
+
+    @Test
+    public void removeStringUpdatesStringList() {
+<span class="fc" id="L104">        BibtexString string = new BibtexString(&quot;DSP&quot;, &quot;Digital Signal Processing&quot;);</span>
+<span class="fc" id="L105">        database.addString(string);</span>
+<span class="fc" id="L106">        database.removeString(string.getId());</span>
+<span class="fc" id="L107">        assertTrue(database.hasNoStrings());</span>
+<span class="fc" id="L108">        assertEquals(0, database.getStringKeySet().size());</span>
+<span class="fc" id="L109">        assertEquals(0, database.getStringCount());</span>
+<span class="fc" id="L110">        assertFalse(database.getStringValues().contains(string));</span>
+<span class="fc" id="L111">        assertFalse(database.getStringKeySet().contains(string.getId()));</span>
+<span class="fc" id="L112">        assertNull(database.getString(string.getId()));</span>
+<span class="fc" id="L113">    }</span>
+
+    @Test
+    public void hasStringLabelFindsString() {
+<span class="fc" id="L117">        BibtexString string = new BibtexString(&quot;DSP&quot;, &quot;Digital Signal Processing&quot;);</span>
+<span class="fc" id="L118">        database.addString(string);</span>
+<span class="fc" id="L119">        assertTrue(database.hasStringLabel(&quot;DSP&quot;));</span>
+<span class="fc" id="L120">        assertFalse(database.hasStringLabel(&quot;VLSI&quot;));</span>
+<span class="fc" id="L121">    }</span>
+
+    @Test
+    public void addSameStringLabelTwiceThrowsKeyCollisionException() {
+<span class="fc" id="L125">        BibtexString string = new BibtexString(&quot;DSP&quot;, &quot;Digital Signal Processing&quot;);</span>
+<span class="fc" id="L126">        database.addString(string);</span>
+<span class="fc" id="L127">        final BibtexString finalString = new BibtexString(&quot;DSP&quot;, &quot;Digital Signal Processor&quot;);</span>
+
+<span class="pc" id="L129">        assertThrows(KeyCollisionException.class, () -&gt; database.addString(finalString));</span>
+
+<span class="fc" id="L131">    }</span>
+
+    @Test
+    public void addSameStringIdTwiceThrowsKeyCollisionException() {
+<span class="fc" id="L135">        BibtexString string = new BibtexString(&quot;DSP&quot;, &quot;Digital Signal Processing&quot;);</span>
+<span class="fc" id="L136">        string.setId(&quot;duplicateid&quot;);</span>
+<span class="fc" id="L137">        database.addString(string);</span>
+<span class="fc" id="L138">        final BibtexString finalString = new BibtexString(&quot;VLSI&quot;, &quot;Very Large Scale Integration&quot;);</span>
+<span class="fc" id="L139">        finalString.setId(&quot;duplicateid&quot;);</span>
+
+<span class="pc" id="L141">        assertThrows(KeyCollisionException.class, () -&gt; database.addString(finalString));</span>
+
+<span class="fc" id="L143">    }</span>
+
+    @Test
+    public void insertEntryPostsAddedEntryEvent() {
+<span class="fc" id="L147">        BibEntry expectedEntry = new BibEntry();</span>
+<span class="fc" id="L148">        TestEventListener tel = new TestEventListener();</span>
+<span class="fc" id="L149">        database.registerListener(tel);</span>
+<span class="fc" id="L150">        database.insertEntry(expectedEntry);</span>
+<span class="fc" id="L151">        BibEntry actualEntry = tel.getBibEntry();</span>
+<span class="fc" id="L152">        assertEquals(expectedEntry, actualEntry);</span>
+<span class="fc" id="L153">    }</span>
+
+    @Test
+    public void removeEntryPostsRemovedEntryEvent() {
+<span class="fc" id="L157">        BibEntry expectedEntry = new BibEntry();</span>
+<span class="fc" id="L158">        TestEventListener tel = new TestEventListener();</span>
+<span class="fc" id="L159">        database.insertEntry(expectedEntry);</span>
+<span class="fc" id="L160">        database.registerListener(tel);</span>
+<span class="fc" id="L161">        database.removeEntry(expectedEntry);</span>
+<span class="fc" id="L162">        BibEntry actualEntry = tel.getBibEntry();</span>
+<span class="fc" id="L163">        assertEquals(expectedEntry, actualEntry);</span>
+<span class="fc" id="L164">    }</span>
+
+    @Test
+    public void changingEntryPostsChangeEntryEvent() {
+<span class="fc" id="L168">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L169">        TestEventListener tel = new TestEventListener();</span>
+<span class="fc" id="L170">        database.insertEntry(entry);</span>
+<span class="fc" id="L171">        database.registerListener(tel);</span>
+
+<span class="fc" id="L173">        entry.setField(&quot;test&quot;, &quot;some value&quot;);</span>
+
+<span class="fc" id="L175">        assertEquals(entry, tel.getBibEntry());</span>
+<span class="fc" id="L176">    }</span>
+
+    @Test
+    public void correctKeyCountOne() {
+<span class="fc" id="L180">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L181">        entry.setCiteKey(&quot;AAA&quot;);</span>
+<span class="fc" id="L182">        database.insertEntry(entry);</span>
+<span class="fc" id="L183">        assertEquals(1, database.getDuplicationChecker().getNumberOfKeyOccurrences(&quot;AAA&quot;));</span>
+<span class="fc" id="L184">    }</span>
+
+    @Test
+    public void correctKeyCountTwo() {
+<span class="fc" id="L188">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L189">        entry.setCiteKey(&quot;AAA&quot;);</span>
+<span class="fc" id="L190">        database.insertEntry(entry);</span>
+<span class="fc" id="L191">        entry = new BibEntry();</span>
+<span class="fc" id="L192">        entry.setCiteKey(&quot;AAA&quot;);</span>
+<span class="fc" id="L193">        database.insertEntry(entry);</span>
+<span class="fc" id="L194">        assertEquals(2, database.getDuplicationChecker().getNumberOfKeyOccurrences(&quot;AAA&quot;));</span>
+<span class="fc" id="L195">    }</span>
+
+    @Test
+    public void correctKeyCountAfterRemoving() {
+<span class="fc" id="L199">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L200">        entry.setCiteKey(&quot;AAA&quot;);</span>
+<span class="fc" id="L201">        database.insertEntry(entry);</span>
+<span class="fc" id="L202">        entry = new BibEntry();</span>
+<span class="fc" id="L203">        entry.setCiteKey(&quot;AAA&quot;);</span>
+<span class="fc" id="L204">        database.insertEntry(entry);</span>
+<span class="fc" id="L205">        database.removeEntry(entry);</span>
+<span class="fc" id="L206">        assertEquals(1, database.getDuplicationChecker().getNumberOfKeyOccurrences(&quot;AAA&quot;));</span>
+<span class="fc" id="L207">    }</span>
+
+    @Test
+    public void circularStringResolving() {
+<span class="fc" id="L211">        BibtexString string = new BibtexString(&quot;AAA&quot;, &quot;#BBB#&quot;);</span>
+<span class="fc" id="L212">        database.addString(string);</span>
+<span class="fc" id="L213">        string = new BibtexString(&quot;BBB&quot;, &quot;#AAA#&quot;);</span>
+<span class="fc" id="L214">        database.addString(string);</span>
+<span class="fc" id="L215">        assertEquals(&quot;AAA&quot;, database.resolveForStrings(&quot;#AAA#&quot;));</span>
+<span class="fc" id="L216">        assertEquals(&quot;BBB&quot;, database.resolveForStrings(&quot;#BBB#&quot;));</span>
+<span class="fc" id="L217">    }</span>
+
+    @Test
+    public void circularStringResolvingLongerCycle() {
+<span class="fc" id="L221">        BibtexString string = new BibtexString(&quot;AAA&quot;, &quot;#BBB#&quot;);</span>
+<span class="fc" id="L222">        database.addString(string);</span>
+<span class="fc" id="L223">        string = new BibtexString(&quot;BBB&quot;, &quot;#CCC#&quot;);</span>
+<span class="fc" id="L224">        database.addString(string);</span>
+<span class="fc" id="L225">        string = new BibtexString(&quot;CCC&quot;, &quot;#DDD#&quot;);</span>
+<span class="fc" id="L226">        database.addString(string);</span>
+<span class="fc" id="L227">        string = new BibtexString(&quot;DDD&quot;, &quot;#AAA#&quot;);</span>
+<span class="fc" id="L228">        database.addString(string);</span>
+<span class="fc" id="L229">        assertEquals(&quot;AAA&quot;, database.resolveForStrings(&quot;#AAA#&quot;));</span>
+<span class="fc" id="L230">        assertEquals(&quot;BBB&quot;, database.resolveForStrings(&quot;#BBB#&quot;));</span>
+<span class="fc" id="L231">        assertEquals(&quot;CCC&quot;, database.resolveForStrings(&quot;#CCC#&quot;));</span>
+<span class="fc" id="L232">        assertEquals(&quot;DDD&quot;, database.resolveForStrings(&quot;#DDD#&quot;));</span>
+<span class="fc" id="L233">    }</span>
+
+    @Test
+    public void resolveForStringsMonth() {
+<span class="fc" id="L237">        assertEquals(&quot;January&quot;, database.resolveForStrings(&quot;#jan#&quot;));</span>
+<span class="fc" id="L238">    }</span>
+
+    @Test
+    public void resolveForStringsSurroundingContent() {
+<span class="fc" id="L242">        BibtexString string = new BibtexString(&quot;AAA&quot;, &quot;aaa&quot;);</span>
+<span class="fc" id="L243">        database.addString(string);</span>
+<span class="fc" id="L244">        assertEquals(&quot;aaaaaAAA&quot;, database.resolveForStrings(&quot;aa#AAA#AAA&quot;));</span>
+<span class="fc" id="L245">    }</span>
+
+    @Test
+    public void resolveForStringsOddHashMarkAtTheEnd() {
+<span class="fc" id="L249">        BibtexString string = new BibtexString(&quot;AAA&quot;, &quot;aaa&quot;);</span>
+<span class="fc" id="L250">        database.addString(string);</span>
+<span class="fc" id="L251">        assertEquals(&quot;AAAaaaAAA#&quot;, database.resolveForStrings(&quot;AAA#AAA#AAA#&quot;));</span>
+<span class="fc" id="L252">    }</span>
+
+    @Test
+    public void getUsedStrings() {
+<span class="fc" id="L256">        BibEntry entry = new BibEntry(IdGenerator.next());</span>
+<span class="fc" id="L257">        entry.setField(&quot;author&quot;, &quot;#AAA#&quot;);</span>
+<span class="fc" id="L258">        BibtexString tripleA = new BibtexString(&quot;AAA&quot;, &quot;Some other #BBB#&quot;);</span>
+<span class="fc" id="L259">        BibtexString tripleB = new BibtexString(&quot;BBB&quot;, &quot;Some more text&quot;);</span>
+<span class="fc" id="L260">        BibtexString tripleC = new BibtexString(&quot;CCC&quot;, &quot;Even more text&quot;);</span>
+<span class="fc" id="L261">        Set&lt;BibtexString&gt; stringSet = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L262">        stringSet.add(tripleA);</span>
+<span class="fc" id="L263">        stringSet.add(tripleB);</span>
+
+<span class="fc" id="L265">        database.addString(tripleA);</span>
+<span class="fc" id="L266">        database.addString(tripleB);</span>
+<span class="fc" id="L267">        database.addString(tripleC);</span>
+<span class="fc" id="L268">        database.insertEntry(entry);</span>
+
+<span class="fc" id="L270">        Set&lt;BibtexString&gt; usedStrings = new HashSet&lt;&gt;(database.getUsedStrings(Arrays.asList(entry)));</span>
+<span class="fc" id="L271">        assertEquals(stringSet, usedStrings);</span>
+<span class="fc" id="L272">    }</span>
+
+    @Test
+    public void getUsedStringsSingleString() {
+<span class="fc" id="L276">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L277">        entry.setField(&quot;author&quot;, &quot;#AAA#&quot;);</span>
+<span class="fc" id="L278">        BibtexString tripleA = new BibtexString(&quot;AAA&quot;, &quot;Some other text&quot;);</span>
+<span class="fc" id="L279">        BibtexString tripleB = new BibtexString(&quot;BBB&quot;, &quot;Some more text&quot;);</span>
+<span class="fc" id="L280">        List&lt;BibtexString&gt; strings = new ArrayList&lt;&gt;(1);</span>
+<span class="fc" id="L281">        strings.add(tripleA);</span>
+
+<span class="fc" id="L283">        database.addString(tripleA);</span>
+<span class="fc" id="L284">        database.addString(tripleB);</span>
+<span class="fc" id="L285">        database.insertEntry(entry);</span>
+
+<span class="fc" id="L287">        List&lt;BibtexString&gt; usedStrings = (List&lt;BibtexString&gt;) database.getUsedStrings(Arrays.asList(entry));</span>
+<span class="fc" id="L288">        assertEquals(strings, usedStrings);</span>
+<span class="fc" id="L289">    }</span>
+
+    @Test
+    public void getUsedStringsNoString() {
+<span class="fc" id="L293">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L294">        entry.setField(&quot;author&quot;, &quot;Oscar Gustafsson&quot;);</span>
+<span class="fc" id="L295">        BibtexString string = new BibtexString(&quot;AAA&quot;, &quot;Some other text&quot;);</span>
+<span class="fc" id="L296">        database.addString(string);</span>
+<span class="fc" id="L297">        database.insertEntry(entry);</span>
+<span class="fc" id="L298">        Collection&lt;BibtexString&gt; usedStrings = database.getUsedStrings(Arrays.asList(entry));</span>
+<span class="fc" id="L299">        assertEquals(Collections.emptyList(), usedStrings);</span>
+<span class="fc" id="L300">    }</span>
+
+    @Test
+    public void getEntriesSortedWithTwoEntries() {
+<span class="fc" id="L304">        BibEntry entryB = new BibEntry(&quot;article&quot;);</span>
+<span class="fc" id="L305">        entryB.setId(&quot;2&quot;);</span>
+<span class="fc" id="L306">        BibEntry entryA = new BibEntry(&quot;article&quot;);</span>
+<span class="fc" id="L307">        entryB.setId(&quot;1&quot;);</span>
+<span class="fc" id="L308">        database.insertEntries(entryB, entryA);</span>
+<span class="fc" id="L309">        assertEquals(Arrays.asList(entryA, entryB), database.getEntriesSorted(Comparator.comparing(BibEntry::getId)));</span>
+<span class="fc" id="L310">    }</span>
+
+    @Test
+    public void preambleIsEmptyIfNotSet() {
+<span class="fc" id="L314">        assertEquals(Optional.empty(), database.getPreamble());</span>
+<span class="fc" id="L315">    }</span>
+
+    @Test
+    public void setPreambleWorks() {
+<span class="fc" id="L319">        database.setPreamble(&quot;Oh yeah!&quot;);</span>
+<span class="fc" id="L320">        assertEquals(Optional.of(&quot;Oh yeah!&quot;), database.getPreamble());</span>
+<span class="fc" id="L321">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

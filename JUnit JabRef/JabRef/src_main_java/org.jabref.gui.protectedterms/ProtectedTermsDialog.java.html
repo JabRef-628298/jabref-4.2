@@ -1,0 +1,500 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>ProtectedTermsDialog.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.protectedterms</a> &gt; <span class="el_source">ProtectedTermsDialog.java</span></div><h1>ProtectedTermsDialog.java</h1><pre class="source lang-java linenums"><span class="nc" id="L1">package org.jabref.gui.protectedterms;</span>
+
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Objects;
+import java.util.Optional;
+
+import javax.swing.AbstractAction;
+import javax.swing.Action;
+import javax.swing.ActionMap;
+import javax.swing.BorderFactory;
+import javax.swing.InputMap;
+import javax.swing.JButton;
+import javax.swing.JCheckBoxMenuItem;
+import javax.swing.JComponent;
+import javax.swing.JDialog;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
+import javax.swing.JPopupMenu;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
+import javax.swing.KeyStroke;
+import javax.swing.ListSelectionModel;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableColumnModel;
+
+import org.jabref.Globals;
+import org.jabref.gui.DialogService;
+import org.jabref.gui.FXDialogService;
+import org.jabref.gui.IconTheme;
+import org.jabref.gui.JabRefDialog;
+import org.jabref.gui.JabRefFrame;
+import org.jabref.gui.desktop.JabRefDesktop;
+import org.jabref.gui.externalfiletype.ExternalFileType;
+import org.jabref.gui.externalfiletype.ExternalFileTypes;
+import org.jabref.gui.externalfiletype.UnknownExternalFileType;
+import org.jabref.gui.keyboard.KeyBinding;
+import org.jabref.gui.util.DefaultTaskExecutor;
+import org.jabref.gui.util.FileDialogConfiguration;
+import org.jabref.gui.util.WindowLocation;
+import org.jabref.logic.l10n.Localization;
+import org.jabref.logic.protectedterms.ProtectedTermsList;
+import org.jabref.logic.protectedterms.ProtectedTermsLoader;
+import org.jabref.logic.util.FileType;
+import org.jabref.model.database.BibDatabaseContext;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.preferences.JabRefPreferences;
+
+import com.jgoodies.forms.builder.ButtonBarBuilder;
+import com.jgoodies.forms.builder.FormBuilder;
+import com.jgoodies.forms.layout.FormLayout;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * This class produces a dialog box for managing term list files.
+ */
+public class ProtectedTermsDialog {
+
+<span class="nc" id="L70">    private static final Logger LOGGER = LoggerFactory.getLogger(ProtectedTermsDialog.class);</span>
+
+    private final JabRefFrame frame;
+    private JDialog diag;
+    private JTable table;
+    private DefaultTableModel tableModel;
+<span class="nc" id="L76">    private final JPopupMenu popup = new JPopupMenu();</span>
+<span class="nc" id="L77">    private final JMenuItem edit = new JMenuItem(Localization.lang(&quot;Edit&quot;));</span>
+<span class="nc" id="L78">    private final JMenuItem show = new JMenuItem(Localization.lang(&quot;View&quot;));</span>
+<span class="nc" id="L79">    private final JMenuItem remove = new JMenuItem(Localization.lang(&quot;Remove&quot;));</span>
+<span class="nc" id="L80">    private final JMenuItem reload = new JMenuItem(Localization.lang(&quot;Reload&quot;));</span>
+<span class="nc" id="L81">    private final JMenuItem enabled = new JCheckBoxMenuItem(Localization.lang(&quot;Enabled&quot;));</span>
+<span class="nc" id="L82">    private final JButton loadButton = new JButton(IconTheme.JabRefIcon.OPEN.getIcon());</span>
+<span class="nc" id="L83">    private final JButton removeButton = new JButton(IconTheme.JabRefIcon.DELETE_ENTRY.getIcon());</span>
+<span class="nc" id="L84">    private final JButton newButton = new JButton(IconTheme.JabRefIcon.NEW.getIcon());</span>
+    private ActionListener removeAction;
+
+<span class="nc" id="L87">    private final JButton ok = new JButton(Localization.lang(&quot;OK&quot;));</span>
+<span class="nc" id="L88">    private final JButton cancel = new JButton(Localization.lang(&quot;Cancel&quot;));</span>
+
+    private boolean okPressed;
+    private final ProtectedTermsLoader loader;
+
+<span class="nc" id="L93">    public ProtectedTermsDialog(JabRefFrame frame) {</span>
+
+<span class="nc" id="L95">        this.frame = Objects.requireNonNull(frame);</span>
+<span class="nc" id="L96">        this.loader = Globals.protectedTermsLoader;</span>
+<span class="nc" id="L97">        init();</span>
+
+<span class="nc" id="L99">    }</span>
+
+    private void init() {
+<span class="nc" id="L102">        setupPopupMenu();</span>
+
+<span class="nc" id="L104">        loadButton.addActionListener(actionEvent -&gt; {</span>
+<span class="nc" id="L105">            AddFileDialog addDialog = new AddFileDialog();</span>
+<span class="nc" id="L106">            addDialog.setVisible(true);</span>
+<span class="nc" id="L107">            addDialog.getFileName().ifPresent(fileName -&gt; loader.addProtectedTermsListFromFile(fileName, true));</span>
+<span class="nc" id="L108">            tableModel.fireTableDataChanged();</span>
+<span class="nc" id="L109">        });</span>
+<span class="nc" id="L110">        loadButton.setToolTipText(Localization.lang(&quot;Add protected terms file&quot;));</span>
+
+<span class="nc" id="L112">        removeButton.addActionListener(removeAction);</span>
+<span class="nc" id="L113">        removeButton.setToolTipText(Localization.lang(&quot;Remove protected terms file&quot;));</span>
+
+<span class="nc" id="L115">        newButton.addActionListener(actionEvent -&gt; {</span>
+<span class="nc" id="L116">            NewProtectedTermsFileDialog newDialog = new NewProtectedTermsFileDialog(diag, loader);</span>
+<span class="nc" id="L117">            newDialog.setVisible(true);</span>
+<span class="nc" id="L118">            tableModel.fireTableDataChanged();</span>
+<span class="nc" id="L119">        });</span>
+<span class="nc" id="L120">        newButton.setToolTipText(Localization.lang(&quot;New protected terms file&quot;));</span>
+
+<span class="nc" id="L122">        setupTable();</span>
+
+        // Build dialog
+<span class="nc" id="L125">        diag = new JDialog(frame, Localization.lang(&quot;Manage protected terms files&quot;), true);</span>
+
+<span class="nc" id="L127">        FormBuilder builder = FormBuilder.create();</span>
+<span class="nc" id="L128">        builder.layout(new FormLayout(&quot;fill:pref:grow, 4dlu, left:pref, 4dlu, left:pref, 4dlu, left:pref&quot;,</span>
+<span class="nc" id="L129">                &quot;100dlu:grow, 4dlu, pref&quot;));</span>
+<span class="nc" id="L130">        builder.add(new JScrollPane(table)).xyw(1, 1, 7);</span>
+<span class="nc" id="L131">        builder.add(newButton).xy(3, 3);</span>
+<span class="nc" id="L132">        builder.add(loadButton).xy(5, 3);</span>
+<span class="nc" id="L133">        builder.add(removeButton).xy(7, 3);</span>
+<span class="nc" id="L134">        builder.padding(&quot;5dlu, 5dlu, 5dlu, 5dlu&quot;);</span>
+
+<span class="nc" id="L136">        diag.add(builder.getPanel(), BorderLayout.CENTER);</span>
+
+<span class="nc" id="L138">        AbstractAction okListener = new AbstractAction() {</span>
+
+            @Override
+            public void actionPerformed(ActionEvent event) {
+                // Write changes to preferences
+<span class="nc" id="L143">                storePreferences();</span>
+<span class="nc" id="L144">                diag.dispose();</span>
+<span class="nc" id="L145">            }</span>
+        };
+<span class="nc" id="L147">        ok.addActionListener(okListener);</span>
+
+<span class="nc" id="L149">        Action cancelListener = new AbstractAction() {</span>
+
+            @Override
+            public void actionPerformed(ActionEvent event) {
+                // Restore from preferences
+<span class="nc" id="L154">                loader.update(Globals.prefs.getProtectedTermsPreferences());</span>
+<span class="nc" id="L155">                diag.dispose();</span>
+<span class="nc" id="L156">            }</span>
+        };
+<span class="nc" id="L158">        cancel.addActionListener(cancelListener);</span>
+
+<span class="nc" id="L160">        ButtonBarBuilder bb = new ButtonBarBuilder();</span>
+<span class="nc" id="L161">        bb.addGlue();</span>
+<span class="nc" id="L162">        bb.addButton(ok);</span>
+<span class="nc" id="L163">        bb.addButton(cancel);</span>
+<span class="nc" id="L164">        bb.addGlue();</span>
+<span class="nc" id="L165">        bb.getPanel().setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));</span>
+<span class="nc" id="L166">        diag.add(bb.getPanel(), BorderLayout.SOUTH);</span>
+
+<span class="nc" id="L168">        ActionMap am = bb.getPanel().getActionMap();</span>
+<span class="nc" id="L169">        InputMap im = bb.getPanel().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);</span>
+<span class="nc" id="L170">        im.put(Globals.getKeyPrefs().getKey(KeyBinding.CLOSE_DIALOG), &quot;close&quot;);</span>
+<span class="nc" id="L171">        am.put(&quot;close&quot;, cancelListener);</span>
+<span class="nc" id="L172">        im.put(KeyStroke.getKeyStroke(&quot;ENTER&quot;), &quot;enterOk&quot;);</span>
+<span class="nc" id="L173">        am.put(&quot;enterOk&quot;, okListener);</span>
+
+<span class="nc" id="L175">        diag.pack();</span>
+
+<span class="nc" id="L177">        WindowLocation pw = new WindowLocation(diag, JabRefPreferences.TERMS_POS_X, JabRefPreferences.TERMS_POS_Y,</span>
+<span class="nc" id="L178">                JabRefPreferences.TERMS_SIZE_X, JabRefPreferences.TERMS_SIZE_Y);</span>
+<span class="nc" id="L179">        pw.displayWindowAtStoredLocation();</span>
+<span class="nc" id="L180">    }</span>
+
+    private void setupTable() {
+<span class="nc" id="L183">        tableModel = new TermTableModel();</span>
+<span class="nc" id="L184">        table = new JTable(tableModel);</span>
+<span class="nc" id="L185">        TableColumnModel cm = table.getColumnModel();</span>
+<span class="nc" id="L186">        cm.getColumn(0).setMinWidth((cm.getColumn(0).getPreferredWidth() * 11) / 10);</span>
+<span class="nc" id="L187">        cm.getColumn(0).setMaxWidth((cm.getColumn(0).getPreferredWidth() * 11) / 10);</span>
+<span class="nc" id="L188">        cm.getColumn(1).setPreferredWidth(100);</span>
+<span class="nc" id="L189">        cm.getColumn(2).setPreferredWidth(100);</span>
+
+<span class="nc" id="L191">        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);</span>
+<span class="nc" id="L192">        table.addMouseListener(new MouseAdapter() {</span>
+
+            @Override
+            public void mousePressed(MouseEvent mouseEvent) {
+<span class="nc bnc" id="L196" title="All 2 branches missed.">                if (mouseEvent.isPopupTrigger()) {</span>
+<span class="nc" id="L197">                    tablePopup(mouseEvent);</span>
+                }
+<span class="nc" id="L199">            }</span>
+
+            @Override
+            public void mouseReleased(MouseEvent mouseEvent) {
+<span class="nc bnc" id="L203" title="All 2 branches missed.">                if (mouseEvent.isPopupTrigger()) {</span>
+<span class="nc" id="L204">                    tablePopup(mouseEvent);</span>
+                }
+<span class="nc" id="L206">            }</span>
+
+            @Override
+            public void mouseClicked(MouseEvent mouseEvent) {
+<span class="nc bnc" id="L210" title="All 2 branches missed.">                if (mouseEvent.getClickCount() == 2) {</span>
+<span class="nc bnc" id="L211" title="All 2 branches missed.">                    getSelectedTermsList().ifPresent(list -&gt; list.setEnabled(!list.isEnabled()));</span>
+<span class="nc" id="L212">                    tableModel.fireTableDataChanged();</span>
+                }
+<span class="nc" id="L214">            }</span>
+        });
+
+<span class="nc" id="L217">        table.getSelectionModel().addListSelectionListener(new EntrySelectionListener());</span>
+<span class="nc" id="L218">    }</span>
+
+    private void setupPopupMenu() {
+<span class="nc" id="L221">        popup.add(edit);</span>
+<span class="nc" id="L222">        popup.add(show);</span>
+<span class="nc" id="L223">        popup.add(remove);</span>
+<span class="nc" id="L224">        popup.add(reload);</span>
+<span class="nc" id="L225">        popup.addSeparator();</span>
+<span class="nc" id="L226">        popup.add(enabled);</span>
+
+        // Add action listener to &quot;Edit&quot; menu item, which is supposed to open the term file in an external editor:
+<span class="nc" id="L229">        edit.addActionListener(actionEvent -&gt; getSelectedTermsList().ifPresent(term -&gt; {</span>
+<span class="nc" id="L230">            Optional&lt;ExternalFileType&gt; type = ExternalFileTypes.getInstance().getExternalFileTypeByExt(&quot;terms&quot;);</span>
+<span class="nc" id="L231">            String fileName = term.getLocation();</span>
+            try {
+<span class="nc bnc" id="L233" title="All 2 branches missed.">                if (type.isPresent()) {</span>
+<span class="nc" id="L234">                    JabRefDesktop.openExternalFileAnyFormat(new BibDatabaseContext(), fileName, type);</span>
+<span class="nc" id="L235">                } else {</span>
+                    // Fall back to &quot;.txt&quot;
+<span class="nc" id="L237">                    Optional&lt;ExternalFileType&gt; txtType = ExternalFileTypes.getInstance()</span>
+<span class="nc" id="L238">                            .getExternalFileTypeByExt(&quot;txt&quot;);</span>
+<span class="nc bnc" id="L239" title="All 2 branches missed.">                    if (txtType.isPresent()) {</span>
+<span class="nc" id="L240">                        JabRefDesktop.openExternalFileAnyFormat(new BibDatabaseContext(), fileName, txtType);</span>
+<span class="nc" id="L241">                    } else {</span>
+<span class="nc" id="L242">                        JabRefDesktop.openExternalFileUnknown(frame, new BibEntry(), new BibDatabaseContext(), fileName,</span>
+<span class="nc" id="L243">                                new UnknownExternalFileType(&quot;terms&quot;));</span>
+                    }
+                }
+<span class="nc" id="L246">            } catch (IOException e) {</span>
+<span class="nc" id="L247">                LOGGER.warn(&quot;Problem open protected terms file editor&quot;, e);</span>
+            }
+<span class="nc" id="L249">        }));</span>
+
+        // Add action listener to &quot;Show&quot; menu item, which is supposed to open the term file in a dialog:
+<span class="nc" id="L252">        show.addActionListener(actionEvent -&gt; getSelectedTermsList().ifPresent(this::displayTerms));</span>
+
+        // Create action listener for removing a term file, also used for the remove button
+<span class="nc" id="L255">        removeAction = actionEvent -&gt; getSelectedTermsList().ifPresent(list -&gt; {</span>
+
+<span class="nc bnc" id="L257" title="All 4 branches missed.">            if (!list.isInternalList() &amp;&amp; (JOptionPane.showConfirmDialog(diag,</span>
+<span class="nc" id="L258">                    Localization.lang(&quot;Are you sure you want to remove the protected terms file?&quot;),</span>
+<span class="nc" id="L259">                    Localization.lang(&quot;Remove protected terms file&quot;),</span>
+<span class="nc" id="L260">                    JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION)) {</span>
+<span class="nc bnc" id="L261" title="All 2 branches missed.">                if (!loader.removeProtectedTermsList(list)) {</span>
+<span class="nc" id="L262">                    LOGGER.info(&quot;Problem removing protected terms file&quot;);</span>
+                }
+<span class="nc" id="L264">                tableModel.fireTableDataChanged();</span>
+            }
+<span class="nc" id="L266">        });</span>
+        // Add it to the remove menu item
+<span class="nc" id="L268">        remove.addActionListener(removeAction);</span>
+
+        // Add action listener to the &quot;Reload&quot; menu item, which is supposed to reload an external term file
+<span class="nc" id="L271">        reload.addActionListener(actionEvent -&gt; {</span>
+<span class="nc" id="L272">            getSelectedTermsList().ifPresent(loader::reloadProtectedTermsList);</span>
+<span class="nc" id="L273">        });</span>
+
+<span class="nc" id="L275">        enabled.addActionListener(actionEvent -&gt; getSelectedTermsList().ifPresent(list -&gt; {</span>
+<span class="nc" id="L276">            list.setEnabled(enabled.isSelected());</span>
+<span class="nc" id="L277">        }));</span>
+
+<span class="nc" id="L279">    }</span>
+
+    public void setVisible(boolean visible) {
+<span class="nc" id="L282">        okPressed = false;</span>
+<span class="nc" id="L283">        diag.setVisible(visible);</span>
+<span class="nc" id="L284">    }</span>
+
+    /**
+     * Get the currently selected term list.
+     * @return the selected term list, or empty if no term list is selected.
+     */
+    private Optional&lt;ProtectedTermsList&gt; getSelectedTermsList() {
+<span class="nc bnc" id="L291" title="All 2 branches missed.">        if (table.getSelectedRow() != -1) {</span>
+<span class="nc" id="L292">            return Optional.of(loader.getProtectedTermsLists().get(table.getSelectedRow()));</span>
+        }
+<span class="nc" id="L294">        return Optional.empty();</span>
+    }
+
+<span class="nc" id="L297">    class TermTableModel extends DefaultTableModel {</span>
+
+        @Override
+        public int getColumnCount() {
+<span class="nc" id="L301">            return 3;</span>
+        }
+
+        @Override
+        public int getRowCount() {
+<span class="nc" id="L306">            return loader.getProtectedTermsLists().size();</span>
+        }
+
+        @Override
+        public String getColumnName(int i) {
+<span class="nc bnc" id="L311" title="All 4 branches missed.">            switch (i) {</span>
+            case 0:
+<span class="nc" id="L313">                return Localization.lang(&quot;Enabled&quot;);</span>
+            case 1:
+<span class="nc" id="L315">                return Localization.lang(&quot;Description&quot;);</span>
+            case 2:
+<span class="nc" id="L317">                return Localization.lang(&quot;File&quot;);</span>
+            default:
+<span class="nc" id="L319">                return &quot;&quot;;</span>
+            }
+        }
+
+        @Override
+        public Object getValueAt(int row, int column) {
+<span class="nc bnc" id="L325" title="All 4 branches missed.">            switch (column) {</span>
+            case 0:
+<span class="nc" id="L327">                return loader.getProtectedTermsLists().get(row).isEnabled();</span>
+            case 1:
+<span class="nc" id="L329">                return loader.getProtectedTermsLists().get(row).getDescription();</span>
+            case 2:
+<span class="nc" id="L331">                ProtectedTermsList list = loader.getProtectedTermsLists().get(row);</span>
+<span class="nc bnc" id="L332" title="All 2 branches missed.">                return list.isInternalList() ? Localization.lang(&quot;Internal list&quot;) + &quot; - &quot; + list.getLocation() : list</span>
+<span class="nc" id="L333">                        .getLocation();</span>
+            default:
+<span class="nc" id="L335">                return &quot;&quot;;</span>
+            }
+        }
+
+        @Override
+        public boolean isCellEditable(int row, int column) {
+<span class="nc bnc" id="L341" title="All 2 branches missed.">            return column == 0;</span>
+        }
+
+        @Override
+        public Class&lt;?&gt; getColumnClass(int column) {
+<span class="nc bnc" id="L346" title="All 4 branches missed.">            switch (column) {</span>
+            case 0:
+<span class="nc" id="L348">                return Boolean.class;</span>
+            case 1:
+<span class="nc" id="L350">                return String.class;</span>
+            case 2:
+<span class="nc" id="L352">                return String.class;</span>
+            default:
+<span class="nc" id="L354">                return String.class;</span>
+            }
+        }
+
+        @Override
+        public void setValueAt(Object cell, int row, int column) {
+<span class="nc bnc" id="L360" title="All 2 branches missed.">            if (column == 0) {</span>
+<span class="nc" id="L361">                ProtectedTermsList list = loader.getProtectedTermsLists().get(row);</span>
+<span class="nc bnc" id="L362" title="All 2 branches missed.">                list.setEnabled(!list.isEnabled());</span>
+<span class="nc" id="L363">                this.fireTableCellUpdated(row, column);</span>
+            }
+<span class="nc" id="L365">        }</span>
+
+    }
+
+    public boolean isOkPressed() {
+<span class="nc" id="L370">        return okPressed;</span>
+    }
+
+    private void tablePopup(MouseEvent e) {
+<span class="nc" id="L374">        popup.show(e.getComponent(), e.getX(), e.getY());</span>
+<span class="nc" id="L375">    }</span>
+
+    private void displayTerms(ProtectedTermsList list) {
+        // Make a dialog box to display the contents:
+<span class="nc" id="L379">        final JDialog dd = new JDialog(diag, list.getDescription() + &quot; - &quot; + list.getLocation(), true);</span>
+
+<span class="nc" id="L381">        JTextArea ta = new JTextArea(list.getTermListing());</span>
+<span class="nc" id="L382">        ta.setEditable(false);</span>
+<span class="nc" id="L383">        JScrollPane sp = new JScrollPane(ta);</span>
+<span class="nc" id="L384">        sp.setPreferredSize(new Dimension(700, 500));</span>
+<span class="nc" id="L385">        dd.getContentPane().add(sp, BorderLayout.CENTER);</span>
+<span class="nc" id="L386">        JButton okButton = new JButton(Localization.lang(&quot;OK&quot;));</span>
+<span class="nc" id="L387">        ButtonBarBuilder bb = new ButtonBarBuilder();</span>
+<span class="nc" id="L388">        bb.addGlue();</span>
+<span class="nc" id="L389">        bb.addButton(okButton);</span>
+<span class="nc" id="L390">        bb.addGlue();</span>
+<span class="nc" id="L391">        bb.getPanel().setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));</span>
+<span class="nc" id="L392">        dd.getContentPane().add(bb.getPanel(), BorderLayout.SOUTH);</span>
+<span class="nc" id="L393">        okButton.addActionListener(actionEvent -&gt; dd.dispose());</span>
+<span class="nc" id="L394">        dd.pack();</span>
+<span class="nc" id="L395">        dd.setLocationRelativeTo(diag);</span>
+<span class="nc" id="L396">        dd.setVisible(true);</span>
+<span class="nc" id="L397">    }</span>
+
+    /**
+     * The listener for the table monitoring the current selection.
+     */
+<span class="nc" id="L402">    private class EntrySelectionListener implements ListSelectionListener {</span>
+
+        @Override
+        public void valueChanged(ListSelectionEvent listEvent) {
+<span class="nc" id="L406">            getSelectedTermsList().ifPresent(list -&gt; {</span>
+                // Enable/disable popup menu items and buttons
+<span class="nc bnc" id="L408" title="All 2 branches missed.">                if (list.isInternalList()) {</span>
+<span class="nc" id="L409">                    remove.setEnabled(false);</span>
+<span class="nc" id="L410">                    edit.setEnabled(false);</span>
+<span class="nc" id="L411">                    reload.setEnabled(false);</span>
+<span class="nc" id="L412">                    removeButton.setEnabled(false);</span>
+<span class="nc" id="L413">                } else {</span>
+<span class="nc" id="L414">                    remove.setEnabled(true);</span>
+<span class="nc" id="L415">                    edit.setEnabled(true);</span>
+<span class="nc" id="L416">                    reload.setEnabled(true);</span>
+<span class="nc" id="L417">                    removeButton.setEnabled(true);</span>
+                }
+<span class="nc" id="L419">                enabled.setSelected(list.isEnabled());</span>
+<span class="nc" id="L420">            });</span>
+<span class="nc" id="L421">        }</span>
+    }
+
+    private class AddFileDialog extends JabRefDialog {
+
+<span class="nc" id="L426">        private final JTextField newFile = new JTextField();</span>
+        private boolean addOKPressed;
+
+<span class="nc" id="L429">        public AddFileDialog() {</span>
+<span class="nc" id="L430">            super(diag, Localization.lang(&quot;Add protected terms file&quot;), true, AddFileDialog.class);</span>
+
+<span class="nc" id="L432">            JButton browse = new JButton(Localization.lang(&quot;Browse&quot;));</span>
+<span class="nc" id="L433">            FileDialogConfiguration fileDialogConfiguration = new FileDialogConfiguration.Builder()</span>
+<span class="nc" id="L434">                    .addExtensionFilter(FileType.TERMS)</span>
+<span class="nc" id="L435">                    .withDefaultExtension(FileType.TERMS)</span>
+<span class="nc" id="L436">                    .withInitialDirectory(Globals.prefs.get(JabRefPreferences.WORKING_DIRECTORY)).build();</span>
+<span class="nc" id="L437">            DialogService ds = new FXDialogService();</span>
+
+<span class="nc" id="L439">            browse.addActionListener(e -&gt; {</span>
+<span class="nc" id="L440">                Optional&lt;Path&gt; file = DefaultTaskExecutor</span>
+<span class="nc" id="L441">                        .runInJavaFXThread(() -&gt; ds.showFileOpenDialog(fileDialogConfiguration));</span>
+<span class="nc" id="L442">                file.ifPresent(f -&gt; newFile.setText(f.toAbsolutePath().toString()));</span>
+<span class="nc" id="L443">            });</span>
+
+            // Build content panel
+<span class="nc" id="L446">            FormBuilder builder = FormBuilder.create();</span>
+<span class="nc" id="L447">            builder.layout(new FormLayout(&quot;left:pref, 4dlu, fill:100dlu:grow, 4dlu, pref&quot;, &quot;p&quot;));</span>
+<span class="nc" id="L448">            builder.add(Localization.lang(&quot;File&quot;)).xy(1, 1);</span>
+<span class="nc" id="L449">            builder.add(newFile).xy(3, 1);</span>
+<span class="nc" id="L450">            builder.add(browse).xy(5, 1);</span>
+<span class="nc" id="L451">            builder.padding(&quot;10dlu, 10dlu, 10dlu, 10dlu&quot;);</span>
+<span class="nc" id="L452">            getContentPane().add(builder.build(), BorderLayout.CENTER);</span>
+
+            // Buttons
+<span class="nc" id="L455">            ButtonBarBuilder bb = new ButtonBarBuilder();</span>
+<span class="nc" id="L456">            JButton addOKButton = new JButton(Localization.lang(&quot;OK&quot;));</span>
+<span class="nc" id="L457">            JButton addCancelButton = new JButton(Localization.lang(&quot;Cancel&quot;));</span>
+<span class="nc" id="L458">            bb.addGlue();</span>
+<span class="nc" id="L459">            bb.addButton(addOKButton);</span>
+<span class="nc" id="L460">            bb.addButton(addCancelButton);</span>
+<span class="nc" id="L461">            bb.addGlue();</span>
+<span class="nc" id="L462">            bb.getPanel().setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));</span>
+<span class="nc" id="L463">            getContentPane().add(bb.getPanel(), BorderLayout.SOUTH);</span>
+<span class="nc" id="L464">            addOKButton.addActionListener(e -&gt; {</span>
+<span class="nc" id="L465">                addOKPressed = true;</span>
+<span class="nc" id="L466">                dispose();</span>
+<span class="nc" id="L467">            });</span>
+
+<span class="nc" id="L469">            Action cancelAction = new AbstractAction() {</span>
+
+                @Override
+                public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L473">                    addOKPressed = false;</span>
+<span class="nc" id="L474">                    dispose();</span>
+<span class="nc" id="L475">                }</span>
+            };
+<span class="nc" id="L477">            addCancelButton.addActionListener(cancelAction);</span>
+
+            // Key bindings:
+<span class="nc" id="L480">            bb.getPanel().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)</span>
+<span class="nc" id="L481">                    .put(Globals.getKeyPrefs().getKey(KeyBinding.CLOSE_DIALOG), &quot;close&quot;);</span>
+<span class="nc" id="L482">            bb.getPanel().getActionMap().put(&quot;close&quot;, cancelAction);</span>
+<span class="nc" id="L483">            pack();</span>
+<span class="nc" id="L484">            setLocationRelativeTo(diag);</span>
+<span class="nc" id="L485">        }</span>
+
+        public Optional&lt;String&gt; getFileName() {
+<span class="nc bnc" id="L488" title="All 6 branches missed.">            if (addOKPressed &amp;&amp; (newFile.getText() != null) &amp;&amp; !newFile.getText().isEmpty()) {</span>
+<span class="nc" id="L489">                return Optional.of(newFile.getText());</span>
+            }
+<span class="nc" id="L491">            return Optional.empty();</span>
+        }
+
+    }
+
+    private void storePreferences() {
+<span class="nc" id="L497">        Globals.prefs.setProtectedTermsPreferences(loader);</span>
+<span class="nc" id="L498">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

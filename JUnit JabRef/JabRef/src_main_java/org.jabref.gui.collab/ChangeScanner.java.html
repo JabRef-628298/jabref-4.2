@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>ChangeScanner.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.collab</a> &gt; <span class="el_source">ChangeScanner.java</span></div><h1>ChangeScanner.java</h1><pre class="source lang-java linenums">package org.jabref.gui.collab;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
+
+import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
+import javax.swing.tree.DefaultMutableTreeNode;
+
+import org.jabref.Globals;
+import org.jabref.JabRefExecutorService;
+import org.jabref.gui.BasePanel;
+import org.jabref.gui.JabRefFrame;
+import org.jabref.logic.bibtex.DuplicateCheck;
+import org.jabref.logic.bibtex.comparator.BibDatabaseDiff;
+import org.jabref.logic.bibtex.comparator.BibEntryDiff;
+import org.jabref.logic.bibtex.comparator.BibStringDiff;
+import org.jabref.logic.exporter.BibDatabaseWriter;
+import org.jabref.logic.exporter.BibtexDatabaseWriter;
+import org.jabref.logic.exporter.FileSaveSession;
+import org.jabref.logic.exporter.SaveException;
+import org.jabref.logic.exporter.SavePreferences;
+import org.jabref.logic.exporter.SaveSession;
+import org.jabref.logic.importer.ImportFormatPreferences;
+import org.jabref.logic.importer.OpenDatabase;
+import org.jabref.logic.importer.ParserResult;
+import org.jabref.logic.l10n.Localization;
+import org.jabref.model.database.BibDatabaseContext;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.BibtexString;
+import org.jabref.model.metadata.MetaData;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class ChangeScanner implements Runnable {
+<span class="nc" id="L41">    private static final Logger LOGGER = LoggerFactory.getLogger(ChangeScanner.class);</span>
+
+    private final File file;
+    private final Path tempFile;
+    private final BibDatabaseContext databaseInMemory;
+    private final MetaData metadataInMemory;
+
+    private final BasePanel panel;
+    private final JabRefFrame frame;
+    private BibDatabaseContext databaseInTemp;
+
+    /**
+     * We create an ArrayList to hold the changes we find. These will be added in the form
+     * of UndoEdit objects. We instantiate these so that the changes found in the file on disk
+     * can be reproduced in memory by calling redo() on them. REDO, not UNDO!
+     */
+<span class="nc" id="L57">    private final DefaultMutableTreeNode changes = new DefaultMutableTreeNode(Localization.lang(&quot;External changes&quot;));</span>
+
+    //  NamedCompound edit = new NamedCompound(&quot;Merged external changes&quot;)
+
+<span class="nc" id="L61">    public ChangeScanner(JabRefFrame frame, BasePanel bp, File file, Path tempFile) {</span>
+<span class="nc" id="L62">        this.panel = bp;</span>
+<span class="nc" id="L63">        this.frame = frame;</span>
+<span class="nc" id="L64">        this.databaseInMemory = bp.getBibDatabaseContext();</span>
+<span class="nc" id="L65">        this.metadataInMemory = bp.getBibDatabaseContext().getMetaData();</span>
+<span class="nc" id="L66">        this.file = file;</span>
+<span class="nc" id="L67">        this.tempFile = tempFile;</span>
+<span class="nc" id="L68">    }</span>
+
+    public boolean changesFound() {
+<span class="nc bnc" id="L71" title="All 2 branches missed.">        return changes.getChildCount() &gt; 0;</span>
+    }
+
+    /**
+     * Finds the entry in the list best fitting the specified entry. Even if no entries get a score above zero, an entry
+     * is still returned.
+     */
+    private static BibEntry bestFit(BibEntry targetEntry, List&lt;BibEntry&gt; entries) {
+<span class="nc" id="L79">        return entries.stream()</span>
+<span class="nc" id="L80">                .max(Comparator.comparingDouble(candidate -&gt; DuplicateCheck.compareEntriesStrictly(targetEntry, candidate)))</span>
+<span class="nc" id="L81">                .orElse(null);</span>
+    }
+
+    public void displayResult(final DisplayResultCallback fup) {
+<span class="nc bnc" id="L85" title="All 2 branches missed.">        if (changes.getChildCount() &gt; 0) {</span>
+<span class="nc" id="L86">            SwingUtilities.invokeLater(() -&gt; {</span>
+<span class="nc" id="L87">                ChangeDisplayDialog changeDialog = new ChangeDisplayDialog(frame, panel, databaseInTemp.getDatabase(), changes);</span>
+<span class="nc" id="L88">                changeDialog.setLocationRelativeTo(frame);</span>
+<span class="nc" id="L89">                changeDialog.setVisible(true);</span>
+<span class="nc" id="L90">                fup.scanResultsResolved(changeDialog.isOkPressed());</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">                if (changeDialog.isOkPressed()) {</span>
+                    // Overwrite the temp database:
+<span class="nc" id="L93">                    storeTempDatabase();</span>
+                }
+<span class="nc" id="L95">            });</span>
+<span class="nc" id="L96">        } else {</span>
+<span class="nc" id="L97">            JOptionPane.showMessageDialog(frame, Localization.lang(&quot;No actual changes found.&quot;),</span>
+<span class="nc" id="L98">                    Localization.lang(&quot;External changes&quot;), JOptionPane.INFORMATION_MESSAGE);</span>
+<span class="nc" id="L99">            fup.scanResultsResolved(true);</span>
+        }
+<span class="nc" id="L101">    }</span>
+
+    private void storeTempDatabase() {
+<span class="nc" id="L104">        JabRefExecutorService.INSTANCE.execute(() -&gt; {</span>
+            try {
+<span class="nc" id="L106">                SavePreferences prefs = Globals.prefs.loadForSaveFromPreferences().withMakeBackup(false)</span>
+<span class="nc" id="L107">                        .withEncoding(panel.getBibDatabaseContext().getMetaData().getEncoding()</span>
+<span class="nc" id="L108">                                .orElse(Globals.prefs.getDefaultEncoding()));</span>
+
+<span class="nc" id="L110">                BibDatabaseWriter&lt;SaveSession&gt; databaseWriter = new BibtexDatabaseWriter&lt;&gt;(FileSaveSession::new);</span>
+<span class="nc" id="L111">                SaveSession ss = databaseWriter.saveDatabase(databaseInTemp, prefs);</span>
+<span class="nc" id="L112">                ss.commit(tempFile);</span>
+<span class="nc" id="L113">            } catch (SaveException ex) {</span>
+<span class="nc" id="L114">                LOGGER.warn(&quot;Problem updating tmp file after accepting external changes&quot;, ex);</span>
+            }
+<span class="nc" id="L116">        });</span>
+<span class="nc" id="L117">    }</span>
+
+    @Override
+    public void run() {
+        try {
+
+            // Parse the temporary file.
+<span class="nc" id="L124">            ImportFormatPreferences importFormatPreferences = Globals.prefs.getImportFormatPreferences();</span>
+<span class="nc" id="L125">            ParserResult result = OpenDatabase.loadDatabase(tempFile.toFile(), importFormatPreferences, Globals.getFileUpdateMonitor());</span>
+<span class="nc" id="L126">            databaseInTemp = result.getDatabaseContext();</span>
+
+            // Parse the modified file.
+<span class="nc" id="L129">            result = OpenDatabase.loadDatabase(file, importFormatPreferences, Globals.getFileUpdateMonitor());</span>
+<span class="nc" id="L130">            BibDatabaseContext databaseOnDisk = result.getDatabaseContext();</span>
+
+            // Start looking at changes.
+<span class="nc" id="L133">            BibDatabaseDiff differences = BibDatabaseDiff.compare(databaseInTemp, databaseOnDisk);</span>
+<span class="nc" id="L134">            differences.getMetaDataDifferences().ifPresent(diff -&gt; {</span>
+<span class="nc" id="L135">                changes.add(new MetaDataChangeViewModel(metadataInMemory, diff));</span>
+<span class="nc" id="L136">                diff.getGroupDifferences().ifPresent(groupDiff -&gt; changes.add(new GroupChangeViewModel(groupDiff)));</span>
+<span class="nc" id="L137">            });</span>
+<span class="nc" id="L138">            differences.getPreambleDifferences().ifPresent(diff -&gt; changes.add(new PreambleChangeViewModel(databaseInMemory.getDatabase().getPreamble().orElse(&quot;&quot;), diff)));</span>
+<span class="nc" id="L139">            differences.getBibStringDifferences().forEach(diff -&gt; changes.add(createBibStringDiff(diff)));</span>
+<span class="nc" id="L140">            differences.getEntryDifferences().forEach(diff -&gt; changes.add(createBibEntryDiff(diff)));</span>
+<span class="nc" id="L141">        } catch (IOException ex) {</span>
+<span class="nc" id="L142">            LOGGER.warn(&quot;Problem running&quot;, ex);</span>
+        }
+<span class="nc" id="L144">    }</span>
+
+    private ChangeViewModel createBibStringDiff(BibStringDiff diff) {
+<span class="nc bnc" id="L147" title="All 2 branches missed.">        if (diff.getOriginalString() == null) {</span>
+<span class="nc" id="L148">            return new StringAddChangeViewModel(diff.getNewString());</span>
+        }
+
+<span class="nc bnc" id="L151" title="All 2 branches missed.">        if (diff.getNewString() == null) {</span>
+<span class="nc" id="L152">            Optional&lt;BibtexString&gt; current = databaseInMemory.getDatabase().getStringByName(diff.getOriginalString().getName());</span>
+<span class="nc" id="L153">            return new StringRemoveChangeViewModel(diff.getOriginalString(), current.orElse(null));</span>
+        }
+
+<span class="nc bnc" id="L156" title="All 2 branches missed.">        if (diff.getOriginalString().getName().equals(diff.getNewString().getName())) {</span>
+<span class="nc" id="L157">            Optional&lt;BibtexString&gt; current = databaseInMemory.getDatabase().getStringByName(diff.getOriginalString().getName());</span>
+<span class="nc" id="L158">            return new StringChangeViewModel(current.orElse(null), diff.getOriginalString(), diff.getNewString().getContent());</span>
+        }
+
+<span class="nc" id="L161">        Optional&lt;BibtexString&gt; current = databaseInMemory.getDatabase().getStringByName(diff.getOriginalString().getName());</span>
+<span class="nc" id="L162">        return new StringNameChangeViewModel(current.orElse(null), diff.getOriginalString(), current.map(BibtexString::getName).orElse(&quot;&quot;), diff.getNewString().getName());</span>
+    }
+
+    private ChangeViewModel createBibEntryDiff(BibEntryDiff diff) {
+<span class="nc bnc" id="L166" title="All 2 branches missed.">        if (diff.getOriginalEntry() == null) {</span>
+<span class="nc" id="L167">            return new EntryAddChangeViewModel(diff.getNewEntry());</span>
+        }
+
+<span class="nc bnc" id="L170" title="All 2 branches missed.">        if (diff.getNewEntry() == null) {</span>
+<span class="nc" id="L171">            return new EntryDeleteChangeViewModel(bestFit(diff.getOriginalEntry(), databaseInMemory.getEntries()), diff.getOriginalEntry());</span>
+        }
+
+<span class="nc" id="L174">        return new EntryChangeViewModel(bestFit(diff.getOriginalEntry(), databaseInMemory.getEntries()), diff.getOriginalEntry(), diff.getNewEntry());</span>
+    }
+
+    @FunctionalInterface
+    public interface DisplayResultCallback {
+        void scanResultsResolved(boolean resolved);
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

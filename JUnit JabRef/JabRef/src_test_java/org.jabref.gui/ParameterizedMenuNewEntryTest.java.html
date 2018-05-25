@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>ParameterizedMenuNewEntryTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui</a> &gt; <span class="el_source">ParameterizedMenuNewEntryTest.java</span></div><h1>ParameterizedMenuNewEntryTest.java</h1><pre class="source lang-java linenums">package org.jabref.gui;
+
+import java.util.Arrays;
+import java.util.Collection;
+
+import org.jabref.model.strings.StringUtil;
+import org.jabref.testutils.category.GUITest;
+
+import org.assertj.swing.fixture.JTableFixture;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
+@RunWith(Parameterized.class)
+@Category(GUITest.class)
+public class ParameterizedMenuNewEntryTest extends AbstractUITest {
+
+    private final String databaseMode;
+    private final String entryType;
+
+
+<span class="fc" id="L23">    public ParameterizedMenuNewEntryTest(String databaseMode, String entryType) {</span>
+<span class="fc" id="L24">        this.databaseMode = databaseMode;</span>
+<span class="fc" id="L25">        this.entryType = entryType;</span>
+<span class="fc" id="L26">    }</span>
+
+    // Not working on Travis
+    @Test
+    public void addEntryOfGivenType() {
+<span class="nc" id="L31">        mainFrame.menuItemWithPath(&quot;File&quot;, &quot;New &quot; + databaseMode + &quot; database&quot;).click();</span>
+<span class="nc" id="L32">        JTableFixture entryTable = mainFrame.table();</span>
+
+<span class="nc" id="L34">        entryTable.requireRowCount(0);</span>
+<span class="nc" id="L35">        mainFrame.menuItemWithPath(&quot;BibTeX&quot;, &quot;New entry by type...&quot;, StringUtil.capitalizeFirst(entryType)).click();</span>
+<span class="nc" id="L36">        entryTable.requireRowCount(1);</span>
+<span class="nc" id="L37">    }</span>
+
+    @Parameterized.Parameters(name = &quot;{index}: {0} : {1}&quot;)
+    public static Collection&lt;Object[]&gt; instancesToTest() {
+        // Create entry from menu
+        // Structure:
+        // {&quot;BibTeX&quot;/&quot;biblatex&quot;, &quot;type&quot;}
+        // @formatter:off
+<span class="fc" id="L45">        return Arrays.asList(</span>
+<span class="fc" id="L46">                new Object[]{&quot;BibTeX&quot;, &quot;article&quot;},</span>
+<span class="fc" id="L47">                new Object[]{&quot;BibTeX&quot;, &quot;inbook&quot;},</span>
+<span class="fc" id="L48">                new Object[]{&quot;BibTeX&quot;, &quot;book&quot;},</span>
+<span class="fc" id="L49">                new Object[]{&quot;BibTeX&quot;, &quot;booklet&quot;},</span>
+<span class="fc" id="L50">                new Object[]{&quot;BibTeX&quot;, &quot;incollection&quot;},</span>
+<span class="fc" id="L51">                new Object[]{&quot;BibTeX&quot;, &quot;conference&quot;},</span>
+<span class="fc" id="L52">                new Object[]{&quot;BibTeX&quot;, &quot;inproceedings&quot;},</span>
+<span class="fc" id="L53">                new Object[]{&quot;BibTeX&quot;, &quot;proceedings&quot;},</span>
+<span class="fc" id="L54">                new Object[]{&quot;BibTeX&quot;, &quot;manual&quot;},</span>
+<span class="fc" id="L55">                new Object[]{&quot;BibTeX&quot;, &quot;mastersthesis&quot;},</span>
+<span class="fc" id="L56">                new Object[]{&quot;BibTeX&quot;, &quot;phdthesis&quot;},</span>
+<span class="fc" id="L57">                new Object[]{&quot;BibTeX&quot;, &quot;techreport&quot;},</span>
+<span class="fc" id="L58">                new Object[]{&quot;BibTeX&quot;, &quot;unpublished&quot;},</span>
+<span class="fc" id="L59">                new Object[]{&quot;BibTeX&quot;, &quot;misc&quot;},</span>
+<span class="fc" id="L60">                new Object[]{&quot;biblatex&quot;, &quot;article&quot;},</span>
+<span class="fc" id="L61">                new Object[]{&quot;biblatex&quot;, &quot;inbook&quot;},</span>
+<span class="fc" id="L62">                new Object[]{&quot;biblatex&quot;, &quot;book&quot;},</span>
+<span class="fc" id="L63">                new Object[]{&quot;biblatex&quot;, &quot;booklet&quot;},</span>
+<span class="fc" id="L64">                new Object[]{&quot;biblatex&quot;, &quot;incollection&quot;},</span>
+<span class="fc" id="L65">                new Object[]{&quot;biblatex&quot;, &quot;conference&quot;},</span>
+<span class="fc" id="L66">                new Object[]{&quot;biblatex&quot;, &quot;inproceedings&quot;},</span>
+<span class="fc" id="L67">                new Object[]{&quot;biblatex&quot;, &quot;proceedings&quot;},</span>
+<span class="fc" id="L68">                new Object[]{&quot;biblatex&quot;, &quot;manual&quot;},</span>
+<span class="fc" id="L69">                new Object[]{&quot;biblatex&quot;, &quot;mastersthesis&quot;},</span>
+<span class="fc" id="L70">                new Object[]{&quot;biblatex&quot;, &quot;phdthesis&quot;},</span>
+<span class="fc" id="L71">                new Object[]{&quot;biblatex&quot;, &quot;techreport&quot;},</span>
+<span class="fc" id="L72">                new Object[]{&quot;biblatex&quot;, &quot;unpublished&quot;},</span>
+<span class="fc" id="L73">                new Object[]{&quot;biblatex&quot;, &quot;misc&quot;}</span>
+        );
+        // @formatter:on
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

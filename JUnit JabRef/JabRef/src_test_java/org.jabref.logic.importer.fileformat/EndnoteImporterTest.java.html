@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>EndnoteImporterTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.importer.fileformat</a> &gt; <span class="el_source">EndnoteImporterTest.java</span></div><h1>EndnoteImporterTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.importer.fileformat;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.StringReader;
+import java.net.URISyntaxException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+
+import org.jabref.logic.importer.ImportFormatPreferences;
+import org.jabref.logic.util.FileType;
+import org.jabref.model.entry.BibEntry;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Answers;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+
+<span class="fc" id="L28">public class EndnoteImporterTest {</span>
+
+    private EndnoteImporter importer;
+
+    @BeforeEach
+    public void setUp() {
+<span class="fc" id="L34">        importer = new EndnoteImporter(mock(ImportFormatPreferences.class, Answers.RETURNS_DEEP_STUBS));</span>
+<span class="fc" id="L35">    }</span>
+
+    @Test
+    public void testGetFormatName() {
+<span class="fc" id="L39">        assertEquals(&quot;Refer/Endnote&quot;, importer.getName());</span>
+<span class="fc" id="L40">    }</span>
+
+    @Test
+    public void testGetCLIId() {
+<span class="fc" id="L44">        assertEquals(&quot;refer&quot;, importer.getId());</span>
+<span class="fc" id="L45">    }</span>
+
+    @Test
+    public void testsGetExtensions() {
+<span class="fc" id="L49">        assertEquals(FileType.ENDNOTE, importer.getFileType());</span>
+<span class="fc" id="L50">    }</span>
+
+    @Test
+    public void testGetDescription() {
+<span class="fc" id="L54">        assertEquals(&quot;Importer for the Refer/Endnote format.&quot;</span>
+<span class="fc" id="L55">                + &quot; Modified to use article number for pages if pages are missing.&quot;, importer.getDescription());</span>
+<span class="fc" id="L56">    }</span>
+
+    @Test
+    public void testIsRecognizedFormat() throws IOException, URISyntaxException {
+<span class="fc" id="L60">        List&lt;String&gt; list = Arrays.asList(&quot;Endnote.pattern.A.enw&quot;, &quot;Endnote.pattern.E.enw&quot;, &quot;Endnote.book.example.enw&quot;);</span>
+
+<span class="fc bfc" id="L62" title="All 2 branches covered.">        for (String string : list) {</span>
+<span class="fc" id="L63">            Path file = Paths.get(EndnoteImporterTest.class.getResource(string).toURI());</span>
+<span class="fc" id="L64">            assertTrue(importer.isRecognizedFormat(file, StandardCharsets.UTF_8));</span>
+        }
+<span class="fc" id="L66">    }</span>
+
+    @Test
+    public void testIsRecognizedFormatReject() throws IOException, URISyntaxException {
+<span class="fc" id="L70">        List&lt;String&gt; list = Arrays.asList(&quot;IEEEImport1.txt&quot;, &quot;IsiImporterTest1.isi&quot;, &quot;IsiImporterTestInspec.isi&quot;,</span>
+<span class="fc" id="L71">                &quot;IsiImporterTestWOS.isi&quot;, &quot;IsiImporterTestMedline.isi&quot;, &quot;RisImporterTest1.ris&quot;,</span>
+<span class="fc" id="L72">                &quot;Endnote.pattern.no_enw&quot;, &quot;empty.pdf&quot;, &quot;annotated.pdf&quot;);</span>
+
+<span class="fc bfc" id="L74" title="All 2 branches covered.">        for (String string : list) {</span>
+<span class="fc" id="L75">            Path file = Paths.get(EndnoteImporterTest.class.getResource(string).toURI());</span>
+<span class="fc" id="L76">            assertFalse(importer.isRecognizedFormat(file, Charset.defaultCharset()));</span>
+        }
+<span class="fc" id="L78">    }</span>
+
+    @Test
+    public void testImportEntries0() throws IOException, URISyntaxException {
+<span class="fc" id="L82">        Path file = Paths.get(EndnoteImporterTest.class.getResource(&quot;Endnote.entries.enw&quot;).toURI());</span>
+<span class="fc" id="L83">        List&lt;BibEntry&gt; bibEntries = importer.importDatabase(file, StandardCharsets.UTF_8).getDatabase().getEntries();</span>
+
+<span class="fc" id="L85">        assertEquals(5, bibEntries.size());</span>
+
+<span class="fc" id="L87">        BibEntry first = bibEntries.get(0);</span>
+<span class="fc" id="L88">        assertEquals(&quot;misc&quot;, first.getType());</span>
+<span class="fc" id="L89">        assertEquals(Optional.of(&quot;testA0 and testA1&quot;), first.getField(&quot;author&quot;));</span>
+<span class="fc" id="L90">        assertEquals(Optional.of(&quot;testE0 and testE1&quot;), first.getField(&quot;editor&quot;));</span>
+<span class="fc" id="L91">        assertEquals(Optional.of(&quot;testT&quot;), first.getField(&quot;title&quot;));</span>
+
+<span class="fc" id="L93">        BibEntry second = bibEntries.get(1);</span>
+<span class="fc" id="L94">        assertEquals(&quot;misc&quot;, second.getType());</span>
+<span class="fc" id="L95">        assertEquals(Optional.of(&quot;testC&quot;), second.getField(&quot;address&quot;));</span>
+<span class="fc" id="L96">        assertEquals(Optional.of(&quot;testB2&quot;), second.getField(&quot;booktitle&quot;));</span>
+<span class="fc" id="L97">        assertEquals(Optional.of(&quot;test8&quot;), second.getField(&quot;date&quot;));</span>
+<span class="fc" id="L98">        assertEquals(Optional.of(&quot;test7&quot;), second.getField(&quot;edition&quot;));</span>
+<span class="fc" id="L99">        assertEquals(Optional.of(&quot;testJ&quot;), second.getField(&quot;journal&quot;));</span>
+<span class="fc" id="L100">        assertEquals(Optional.of(&quot;testD&quot;), second.getField(&quot;year&quot;));</span>
+
+<span class="fc" id="L102">        BibEntry third = bibEntries.get(2);</span>
+<span class="fc" id="L103">        assertEquals(&quot;article&quot;, third.getType());</span>
+<span class="fc" id="L104">        assertEquals(Optional.of(&quot;testB0&quot;), third.getField(&quot;journal&quot;));</span>
+
+<span class="fc" id="L106">        BibEntry fourth = bibEntries.get(3);</span>
+<span class="fc" id="L107">        assertEquals(&quot;book&quot;, fourth.getType());</span>
+<span class="fc" id="L108">        assertEquals(Optional.of(&quot;testI0&quot;), fourth.getField(&quot;publisher&quot;));</span>
+<span class="fc" id="L109">        assertEquals(Optional.of(&quot;testB1&quot;), fourth.getField(&quot;series&quot;));</span>
+
+<span class="fc" id="L111">        BibEntry fifth = bibEntries.get(4);</span>
+<span class="fc" id="L112">        assertEquals(&quot;mastersthesis&quot;, fifth.getType());</span>
+<span class="fc" id="L113">        assertEquals(Optional.of(&quot;testX&quot;), fifth.getField(&quot;abstract&quot;));</span>
+<span class="fc" id="L114">        assertEquals(Optional.of(&quot;testF&quot;), fifth.getField(&quot;bibtexkey&quot;));</span>
+<span class="fc" id="L115">        assertEquals(Optional.of(&quot;testR&quot;), fifth.getField(&quot;doi&quot;));</span>
+<span class="fc" id="L116">        assertEquals(Optional.of(&quot;testK&quot;), fifth.getField(&quot;keywords&quot;));</span>
+<span class="fc" id="L117">        assertEquals(Optional.of(&quot;testO1&quot;), fifth.getField(&quot;note&quot;));</span>
+<span class="fc" id="L118">        assertEquals(Optional.of(&quot;testN&quot;), fifth.getField(&quot;number&quot;));</span>
+<span class="fc" id="L119">        assertEquals(Optional.of(&quot;testP&quot;), fifth.getField(&quot;pages&quot;));</span>
+<span class="fc" id="L120">        assertEquals(Optional.of(&quot;testI1&quot;), fifth.getField(&quot;school&quot;));</span>
+<span class="fc" id="L121">        assertEquals(Optional.of(&quot;testU&quot;), fifth.getField(&quot;url&quot;));</span>
+<span class="fc" id="L122">        assertEquals(Optional.of(&quot;testV&quot;), fifth.getField(&quot;volume&quot;));</span>
+<span class="fc" id="L123">    }</span>
+
+    @Test
+    public void testImportEntries1() throws IOException {
+<span class="fc" id="L127">        String medlineString = &quot;%O Artn\\\\s testO\n%A testA,\n%E testE0, testE1&quot;;</span>
+<span class="fc" id="L128">        List&lt;BibEntry&gt; bibEntries = importer.importDatabase(new BufferedReader(new StringReader(medlineString))).getDatabase()</span>
+<span class="fc" id="L129">                .getEntries();</span>
+
+<span class="fc" id="L131">        BibEntry entry = bibEntries.get(0);</span>
+
+<span class="fc" id="L133">        assertEquals(1, bibEntries.size());</span>
+<span class="fc" id="L134">        assertEquals(&quot;misc&quot;, entry.getType());</span>
+<span class="fc" id="L135">        assertEquals(Optional.of(&quot;testA&quot;), entry.getField(&quot;author&quot;));</span>
+<span class="fc" id="L136">        assertEquals(Optional.of(&quot;testE0, testE1&quot;), entry.getField(&quot;editor&quot;));</span>
+<span class="fc" id="L137">        assertEquals(Optional.of(&quot;testO&quot;), entry.getField(&quot;pages&quot;));</span>
+<span class="fc" id="L138">    }</span>
+
+    @Test
+    public void testImportEntriesBookExample() throws IOException, URISyntaxException {
+<span class="fc" id="L142">        Path file = Paths.get(EndnoteImporterTest.class.getResource(&quot;Endnote.book.example.enw&quot;).toURI());</span>
+<span class="fc" id="L143">        List&lt;BibEntry&gt; bibEntries = importer.importDatabase(file, StandardCharsets.UTF_8).getDatabase().getEntries();</span>
+
+<span class="fc" id="L145">        BibEntry entry = bibEntries.get(0);</span>
+
+<span class="fc" id="L147">        assertEquals(1, bibEntries.size());</span>
+<span class="fc" id="L148">        assertEquals(&quot;book&quot;, entry.getType());</span>
+<span class="fc" id="L149">        assertEquals(Optional.of(&quot;Heidelberg&quot;), entry.getField(&quot;address&quot;));</span>
+<span class="fc" id="L150">        assertEquals(Optional.of(&quot;Preißel, René and Stachmann, Bjørn&quot;), entry.getField(&quot;author&quot;));</span>
+<span class="fc" id="L151">        assertEquals(Optional.of(&quot;3., aktualisierte und erweiterte Auflage&quot;), entry.getField(&quot;edition&quot;));</span>
+<span class="fc" id="L152">        assertEquals(Optional.of(&quot;Versionsverwaltung&quot;), entry.getField(&quot;keywords&quot;));</span>
+<span class="fc" id="L153">        assertEquals(Optional.of(&quot;XX, 327&quot;), entry.getField(&quot;pages&quot;));</span>
+<span class="fc" id="L154">        assertEquals(Optional.of(&quot;dpunkt.verlag&quot;), entry.getField(&quot;publisher&quot;));</span>
+<span class="fc" id="L155">        assertEquals(Optional.of(&quot;Git : dezentrale Versionsverwaltung im Team : Grundlagen und Workflows&quot;),</span>
+<span class="fc" id="L156">                entry.getField(&quot;title&quot;));</span>
+<span class="fc" id="L157">        assertEquals(Optional.of(&quot;http://d-nb.info/107601965X&quot;), entry.getField(&quot;url&quot;));</span>
+<span class="fc" id="L158">        assertEquals(Optional.of(&quot;2016&quot;), entry.getField(&quot;year&quot;));</span>
+<span class="fc" id="L159">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

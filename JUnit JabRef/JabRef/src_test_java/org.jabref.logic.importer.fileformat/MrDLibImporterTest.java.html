@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MrDLibImporterTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.importer.fileformat</a> &gt; <span class="el_source">MrDLibImporterTest.java</span></div><h1>MrDLibImporterTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.importer.fileformat;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.List;
+
+import org.jabref.logic.importer.ParserResult;
+import org.jabref.logic.util.FileType;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.FieldName;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+
+<span class="fc" id="L19">public class MrDLibImporterTest {</span>
+
+    private MrDLibImporter importer;
+    private BufferedReader inputMin;
+    private BufferedReader inputMax;
+
+    @BeforeEach
+    public void setUp() {
+<span class="fc" id="L27">        importer = new MrDLibImporter();</span>
+
+<span class="fc" id="L29">        String testMin = &quot;&lt;?xml version=\&quot;1.0\&quot; encoding=\&quot;UTF-8\&quot; standalone=\&quot;yes\&quot;?&gt;&lt;mr-dlib&gt;&lt;/mr-dlib&gt;&quot;;</span>
+<span class="fc" id="L30">        String testMax = &quot;&lt;?xml version=\&quot;1.0\&quot; encoding=\&quot;UTF-8\&quot; standalone=\&quot;yes\&quot;?&gt;&lt;mr-dlib&gt;&lt;related_articles set_id=\&quot;28184\&quot; suggested_label=\&quot;Related Articles\&quot;&gt;&lt;related_article document_id=\&quot;2250539\&quot; original_document_id=\&quot;gesis-solis-00538797\&quot; recommendation_id=\&quot;204944\&quot;&gt;&lt;authors/&gt;&lt;click_url&gt;https://api-dev.mr-dlib.org/v1/recommendations/204944/original_url?access_key=99ab2fc64f3228ab839e9e3525ac37f8&amp;format=direct_url_forward&lt;/click_url&gt;&lt;debug_details&gt;&lt;bibDocId&gt;0&lt;/bibDocId&gt;&lt;bibScore&gt;2.0&lt;/bibScore&gt;&lt;finalScore&gt;2.0&lt;/finalScore&gt;&lt;rankAfterAlgorithm&gt;3&lt;/rankAfterAlgorithm&gt;&lt;rankAfterReRanking&gt;3&lt;/rankAfterReRanking&gt;&lt;rankAfterShuffling&gt;2&lt;/rankAfterShuffling&gt;&lt;rankDelivered&gt;2&lt;/rankDelivered&gt;&lt;relevanceScoreFromAlgorithm&gt;1.0&lt;/relevanceScoreFromAlgorithm&gt;&lt;/debug_details&gt;&lt;fallback_url&gt;http://sowiport.gesis.org/search/id/gesis-solis-00538797&lt;/fallback_url&gt;&lt;published_in&gt;Fachhochschulverl.&lt;/published_in&gt;&lt;snippet format=\&quot;html_plain\&quot;&gt;&lt;![CDATA[&lt;a href='https://api-dev.mr-dlib.org/v1/recommendations/204944/original_url?access_key=99ab2fc64f3228ab839e9e3525ac37f8&amp;format=direct_url_forward'&gt;Gesundheit von Arbeitslosen fördern!: ein Handbuch für Wissenschaft und Praxis&lt;/a&gt;. . Fachhochschulverl.. 2009.]]&gt;&lt;/snippet&gt;&lt;snippet format=\&quot;html_fully_formatted\&quot;&gt;&lt;![CDATA[&lt;a href='https://api-dev.mr-dlib.org/v1/recommendations/204944/original_url?access_key=99ab2fc64f3228ab839e9e3525ac37f8&amp;format=direct_url_forward'&gt;&lt;font color='#000000' size='5' face='Arial, Helvetica, sans-serif'&gt;Gesundheit von Arbeitslosen fördern!: ein Handbuch für Wissenschaft und Praxis.&lt;/font&gt;&lt;/a&gt;&lt;font color='#000000' size='5' face='Arial, Helvetica, sans-serif'&gt;. &lt;i&gt;Fachhochschulverl.&lt;/i&gt;. 2009.&lt;/font&gt;]]&gt;&lt;/snippet&gt;&lt;snippet format=\&quot;html_and_css\&quot;&gt;&lt;![CDATA[&lt;span class='mdl-title'&gt;Gesundheit von Arbeitslosen fördern!: ein Handbuch für Wissenschaft und Praxis&lt;/span&gt;. &lt;span class='mdl-authors'&gt;&lt;/span&gt;. &lt;span class='mdl-journal'&gt;Fachhochschulverl.&lt;/span&gt;. &lt;span class='mdl-year'&gt;2009&lt;/span&gt;]]&gt;&lt;/snippet&gt;&lt;suggested_rank&gt;2&lt;/suggested_rank&gt;&lt;title&gt;Gesundheit von Arbeitslosen fördern!: ein Handbuch für Wissenschaft und Praxis&lt;/title&gt;&lt;year&gt;2009&lt;/year&gt;&lt;/related_article&gt;&lt;/related_articles&gt;&lt;/mr-dlib&gt;&quot;;</span>
+<span class="fc" id="L31">        testMax = testMax.replaceAll(&quot;&amp;&quot;, &quot;&quot;);</span>
+<span class="fc" id="L32">        inputMin = new BufferedReader(new StringReader(testMin));</span>
+<span class="fc" id="L33">        inputMax = new BufferedReader(new StringReader(testMax));</span>
+<span class="fc" id="L34">    }</span>
+
+    @Test
+    public void testGetDescription() {
+<span class="fc" id="L38">        assertEquals(&quot;Takes valid xml documents. Parses from MrDLib API a BibEntry&quot;, importer.getDescription());</span>
+<span class="fc" id="L39">    }</span>
+
+    @Test
+    public void testGetName() {
+<span class="fc" id="L43">        assertEquals(&quot;MrDLibImporter&quot;, importer.getName());</span>
+<span class="fc" id="L44">    }</span>
+
+    @Test
+    public void testGetFileExtention() {
+<span class="fc" id="L48">        assertEquals(FileType.XML, importer.getFileType());</span>
+<span class="fc" id="L49">    }</span>
+
+    @Test
+    public void testImportDatabaseIsHtmlSetCorrectly() throws IOException {
+<span class="fc" id="L53">        ParserResult parserResult = importer.importDatabase(inputMax);</span>
+
+<span class="fc" id="L55">        List&lt;BibEntry&gt; resultList = parserResult.getDatabase().getEntries();</span>
+
+<span class="fc" id="L57">        assertEquals(</span>
+<span class="fc" id="L58">                &quot;&lt;a href='https://api-dev.mr-dlib.org/v1/recommendations/204944/original_url?access_key=99ab2fc64f3228ab839e9e3525ac37f8format=direct_url_forward'&gt;&lt;font color='#000000' size='5' face='Arial, Helvetica, sans-serif'&gt;Gesundheit von Arbeitslosen fördern!: ein Handbuch für Wissenschaft und Praxis.&lt;/font&gt;&lt;/a&gt;&lt;font color='#000000' size='5' face='Arial, Helvetica, sans-serif'&gt;. &lt;i&gt;Fachhochschulverl.&lt;/i&gt;. 2009.&lt;/font&gt;&quot;,</span>
+<span class="fc" id="L59">                resultList.get(0).getField(&quot;html_representation&quot;).get());</span>
+<span class="fc" id="L60">    }</span>
+
+    @Test
+    public void testImportDatabaseIsYearSetCorrectly() throws IOException {
+<span class="fc" id="L64">        ParserResult parserResult = importer.importDatabase(inputMax);</span>
+
+<span class="fc" id="L66">        List&lt;BibEntry&gt; resultList = parserResult.getDatabase().getEntries();</span>
+
+<span class="fc" id="L68">        assertEquals(&quot;2009&quot;,</span>
+<span class="fc" id="L69">                resultList.get(0).getLatexFreeField(FieldName.YEAR).get());</span>
+<span class="fc" id="L70">    }</span>
+
+    @Test
+    public void testImportDatabaseIsTitleSetCorrectly() throws IOException {
+<span class="fc" id="L74">        ParserResult parserResult = importer.importDatabase(inputMax);</span>
+
+<span class="fc" id="L76">        List&lt;BibEntry&gt; resultList = parserResult.getDatabase().getEntries();</span>
+
+<span class="fc" id="L78">        assertEquals(&quot;Gesundheit von Arbeitslosen fördern!: ein Handbuch für Wissenschaft und Praxis&quot;,</span>
+<span class="fc" id="L79">                resultList.get(0).getLatexFreeField(FieldName.TITLE).get());</span>
+<span class="fc" id="L80">    }</span>
+
+    @Test
+    public void testImportDatabaseMin() throws IOException {
+<span class="fc" id="L84">        ParserResult parserResult = importer.importDatabase(inputMin);</span>
+
+<span class="fc" id="L86">        List&lt;BibEntry&gt; resultList = parserResult.getDatabase().getEntries();</span>
+
+<span class="fc" id="L88">        assertSame(0, resultList.size());</span>
+<span class="fc" id="L89">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

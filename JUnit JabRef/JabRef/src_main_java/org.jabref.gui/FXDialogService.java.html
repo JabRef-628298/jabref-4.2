@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>FXDialogService.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui</a> &gt; <span class="el_source">FXDialogService.java</span></div><h1>FXDialogService.java</h1><pre class="source lang-java linenums">package org.jabref.gui;
+
+import java.io.File;
+import java.nio.file.Path;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import javafx.concurrent.Task;
+import javafx.print.PrinterJob;
+import javafx.scene.control.Alert.AlertType;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.DialogPane;
+import javafx.scene.control.TextInputDialog;
+import javafx.scene.layout.Region;
+import javafx.stage.DirectoryChooser;
+import javafx.stage.FileChooser;
+
+import org.jabref.JabRefGUI;
+import org.jabref.gui.util.DirectoryDialogConfiguration;
+import org.jabref.gui.util.FileDialogConfiguration;
+import org.jabref.logic.l10n.Localization;
+
+import org.controlsfx.dialog.ExceptionDialog;
+import org.controlsfx.dialog.ProgressDialog;
+
+/**
+ * This class provides methods to create default
+ * JavaFX dialogs which will also work on top of Swing
+ * windows. The created dialogs are instances of the
+ * {@link FXDialog} class. The available dialogs in this class
+ * are useful for displaying small information graphic dialogs
+ * rather than complex windows. For more complex dialogs it is
+ * advised to rather create a new sub class of {@link FXDialog}.
+ */
+<span class="fc" id="L39">public class FXDialogService implements DialogService {</span>
+
+    private static FXDialog createDialog(AlertType type, String title, String content) {
+<span class="nc" id="L42">        FXDialog alert = new FXDialog(type, title, true);</span>
+<span class="nc" id="L43">        alert.setHeaderText(null);</span>
+<span class="nc" id="L44">        alert.setContentText(content);</span>
+<span class="nc" id="L45">        alert.getDialogPane().setMinHeight(Region.USE_PREF_SIZE);</span>
+<span class="nc" id="L46">        return alert;</span>
+    }
+
+    @Override
+    public Optional&lt;String&gt; showInputDialogAndWait(String title, String content) {
+<span class="nc" id="L51">        TextInputDialog inputDialog = new TextInputDialog();</span>
+<span class="nc" id="L52">        inputDialog.setHeaderText(title);</span>
+<span class="nc" id="L53">        inputDialog.setContentText(content);</span>
+<span class="nc" id="L54">        return inputDialog.showAndWait();</span>
+    }
+
+    @Override
+    public void showInformationDialogAndWait(String title, String content) {
+<span class="nc" id="L59">        FXDialog alert = createDialog(AlertType.INFORMATION, title, content);</span>
+<span class="nc" id="L60">        alert.showAndWait();</span>
+<span class="nc" id="L61">    }</span>
+
+    @Override
+    public void showWarningDialogAndWait(String title, String content) {
+<span class="nc" id="L65">        FXDialog alert = createDialog(AlertType.WARNING, title, content);</span>
+<span class="nc" id="L66">        alert.showAndWait();</span>
+<span class="nc" id="L67">    }</span>
+
+    @Override
+    public void showErrorDialogAndWait(String title, String content) {
+<span class="nc" id="L71">        FXDialog alert = createDialog(AlertType.ERROR, title, content);</span>
+<span class="nc" id="L72">        alert.showAndWait();</span>
+<span class="nc" id="L73">    }</span>
+
+    @Override
+    public void showErrorDialogAndWait(String message, Throwable exception) {
+<span class="nc" id="L77">        ExceptionDialog exceptionDialog = new ExceptionDialog(exception);</span>
+<span class="nc" id="L78">        exceptionDialog.setHeaderText(message);</span>
+<span class="nc" id="L79">        exceptionDialog.showAndWait();</span>
+<span class="nc" id="L80">    }</span>
+
+    @Override
+    public void showErrorDialogAndWait(String message) {
+<span class="nc" id="L84">        FXDialog alert = createDialog(AlertType.ERROR, Localization.lang(&quot;Error Occurred&quot;), message);</span>
+<span class="nc" id="L85">        alert.showAndWait();</span>
+<span class="nc" id="L86">    }</span>
+
+    @Override
+    public boolean showConfirmationDialogAndWait(String title, String content) {
+<span class="nc" id="L90">        FXDialog alert = createDialog(AlertType.CONFIRMATION, title, content);</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">        return alert.showAndWait().filter(buttonType -&gt; buttonType == ButtonType.OK).isPresent();</span>
+    }
+
+    @Override
+    public boolean showConfirmationDialogAndWait(String title, String content, String okButtonLabel) {
+<span class="nc" id="L96">        FXDialog alert = createDialog(AlertType.CONFIRMATION, title, content);</span>
+<span class="nc" id="L97">        ButtonType okButtonType = new ButtonType(okButtonLabel, ButtonBar.ButtonData.OK_DONE);</span>
+<span class="nc" id="L98">        alert.getButtonTypes().setAll(ButtonType.CANCEL, okButtonType);</span>
+<span class="nc bnc" id="L99" title="All 2 branches missed.">        return alert.showAndWait().filter(buttonType -&gt; buttonType == okButtonType).isPresent();</span>
+    }
+
+    @Override
+    public boolean showConfirmationDialogAndWait(String title, String content, String okButtonLabel,
+            String cancelButtonLabel) {
+<span class="nc" id="L105">        FXDialog alert = createDialog(AlertType.CONFIRMATION, title, content);</span>
+<span class="nc" id="L106">        ButtonType okButtonType = new ButtonType(okButtonLabel, ButtonBar.ButtonData.OK_DONE);</span>
+<span class="nc" id="L107">        ButtonType cancelButtonType = new ButtonType(cancelButtonLabel, ButtonBar.ButtonData.NO);</span>
+<span class="nc" id="L108">        alert.getButtonTypes().setAll(okButtonType, cancelButtonType);</span>
+<span class="nc bnc" id="L109" title="All 2 branches missed.">        return alert.showAndWait().filter(buttonType -&gt; buttonType == okButtonType).isPresent();</span>
+    }
+
+    @Override
+    public Optional&lt;ButtonType&gt; showCustomButtonDialogAndWait(AlertType type, String title, String content,
+            ButtonType... buttonTypes) {
+<span class="nc" id="L115">        FXDialog alert = createDialog(type, title, content);</span>
+<span class="nc" id="L116">        alert.getButtonTypes().setAll(buttonTypes);</span>
+<span class="nc" id="L117">        return alert.showAndWait();</span>
+    }
+
+    @Override
+    public Optional&lt;ButtonType&gt; showCustomDialogAndWait(String title, DialogPane contentPane,
+            ButtonType... buttonTypes) {
+<span class="nc" id="L123">        FXDialog alert = new FXDialog(AlertType.NONE, title);</span>
+<span class="nc" id="L124">        alert.setDialogPane(contentPane);</span>
+<span class="nc" id="L125">        alert.getButtonTypes().setAll(buttonTypes);</span>
+<span class="nc" id="L126">        return alert.showAndWait();</span>
+    }
+
+    @Override
+    public &lt;R&gt; Optional&lt;R&gt; showCustomDialogAndWait(Dialog&lt;R&gt; dialog) {
+<span class="nc" id="L131">        return dialog.showAndWait();</span>
+    }
+
+    @Override
+    public &lt;V&gt; void showCanceableProgressDialogAndWait(Task&lt;V&gt; task) {
+<span class="nc" id="L136">        ProgressDialog progressDialog = new ProgressDialog(task);</span>
+<span class="nc" id="L137">        progressDialog.setOnCloseRequest(evt -&gt; task.cancel());</span>
+<span class="nc" id="L138">        DialogPane dialogPane = progressDialog.getDialogPane();</span>
+<span class="nc" id="L139">        dialogPane.getButtonTypes().add(ButtonType.CANCEL);</span>
+<span class="nc" id="L140">        Button cancelButton = (Button) dialogPane.lookupButton(ButtonType.CANCEL);</span>
+<span class="nc" id="L141">        cancelButton.setOnAction(evt -&gt; {</span>
+<span class="nc" id="L142">            task.cancel();</span>
+<span class="nc" id="L143">            progressDialog.close();</span>
+<span class="nc" id="L144">        });</span>
+<span class="nc" id="L145">        progressDialog.show();</span>
+<span class="nc" id="L146">    }</span>
+
+    @Override
+    public void notify(String message) {
+<span class="nc" id="L150">        JabRefGUI.getMainFrame().output(message);</span>
+<span class="nc" id="L151">    }</span>
+
+    @Override
+    public Optional&lt;Path&gt; showFileSaveDialog(FileDialogConfiguration fileDialogConfiguration) {
+<span class="nc" id="L155">        FileChooser chooser = getConfiguredFileChooser(fileDialogConfiguration);</span>
+<span class="nc" id="L156">        File file = chooser.showSaveDialog(null);</span>
+<span class="nc" id="L157">        Optional.ofNullable(chooser.getSelectedExtensionFilter()).ifPresent(fileDialogConfiguration::setSelectedExtensionFilter);</span>
+<span class="nc" id="L158">        return Optional.ofNullable(file).map(File::toPath);</span>
+    }
+
+    @Override
+    public Optional&lt;Path&gt; showFileOpenDialog(FileDialogConfiguration fileDialogConfiguration) {
+<span class="nc" id="L163">        FileChooser chooser = getConfiguredFileChooser(fileDialogConfiguration);</span>
+<span class="nc" id="L164">        File file = chooser.showOpenDialog(null);</span>
+<span class="nc" id="L165">        Optional.ofNullable(chooser.getSelectedExtensionFilter()).ifPresent(fileDialogConfiguration::setSelectedExtensionFilter);</span>
+<span class="nc" id="L166">        return Optional.ofNullable(file).map(File::toPath);</span>
+    }
+
+    @Override
+    public Optional&lt;Path&gt; showDirectorySelectionDialog(DirectoryDialogConfiguration directoryDialogConfiguration) {
+<span class="nc" id="L171">        DirectoryChooser chooser = getConfiguredDirectoryChooser(directoryDialogConfiguration);</span>
+<span class="nc" id="L172">        File file = chooser.showDialog(null);</span>
+<span class="nc" id="L173">        return Optional.ofNullable(file).map(File::toPath);</span>
+    }
+
+    @Override
+    public List&lt;Path&gt; showFileOpenDialogAndGetMultipleFiles(FileDialogConfiguration fileDialogConfiguration) {
+<span class="nc" id="L178">        FileChooser chooser = getConfiguredFileChooser(fileDialogConfiguration);</span>
+<span class="nc" id="L179">        List&lt;File&gt; files = chooser.showOpenMultipleDialog(null);</span>
+<span class="nc bnc" id="L180" title="All 2 branches missed.">        return files != null ? files.stream().map(File::toPath).collect(Collectors.toList()) : Collections.emptyList();</span>
+    }
+
+    private DirectoryChooser getConfiguredDirectoryChooser(DirectoryDialogConfiguration directoryDialogConfiguration) {
+<span class="nc" id="L184">        DirectoryChooser chooser = new DirectoryChooser();</span>
+<span class="nc" id="L185">        directoryDialogConfiguration.getInitialDirectory().map(Path::toFile).ifPresent(chooser::setInitialDirectory);</span>
+<span class="nc" id="L186">        return chooser;</span>
+    }
+
+    private FileChooser getConfiguredFileChooser(FileDialogConfiguration fileDialogConfiguration) {
+<span class="nc" id="L190">        FileChooser chooser = new FileChooser();</span>
+<span class="nc" id="L191">        chooser.getExtensionFilters().addAll(fileDialogConfiguration.getExtensionFilters());</span>
+<span class="nc" id="L192">        chooser.setSelectedExtensionFilter(fileDialogConfiguration.getDefaultExtension());</span>
+<span class="nc" id="L193">        chooser.setInitialFileName(fileDialogConfiguration.getInitialFileName());</span>
+<span class="nc" id="L194">        fileDialogConfiguration.getInitialDirectory().map(Path::toFile).ifPresent(chooser::setInitialDirectory);</span>
+<span class="nc" id="L195">        return chooser;</span>
+    }
+
+    @Override
+    public boolean showPrintDialog(PrinterJob job) {
+<span class="nc" id="L200">        return job.showPrintDialog(null);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

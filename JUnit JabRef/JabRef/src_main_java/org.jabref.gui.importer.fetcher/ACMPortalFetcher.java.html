@@ -1,0 +1,415 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>ACMPortalFetcher.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.importer.fetcher</a> &gt; <span class="el_source">ACMPortalFetcher.java</span></div><h1>ACMPortalFetcher.java</h1><pre class="source lang-java linenums">package org.jabref.gui.importer.fetcher;
+
+import java.awt.Dimension;
+import java.awt.GridLayout;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
+import java.nio.charset.StandardCharsets;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+import javax.swing.ButtonGroup;
+import javax.swing.JCheckBox;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JRadioButton;
+
+import org.jabref.Globals;
+import org.jabref.gui.importer.FetcherPreviewDialog;
+import org.jabref.logic.formatter.bibtexfields.HtmlToLatexFormatter;
+import org.jabref.logic.formatter.bibtexfields.UnitsToLatexFormatter;
+import org.jabref.logic.formatter.casechanger.ProtectTermsFormatter;
+import org.jabref.logic.help.HelpFile;
+import org.jabref.logic.importer.ImportInspector;
+import org.jabref.logic.importer.OutputPrinter;
+import org.jabref.logic.importer.ParseException;
+import org.jabref.logic.importer.fileformat.BibtexParser;
+import org.jabref.logic.l10n.Localization;
+import org.jabref.logic.net.URLDownload;
+import org.jabref.model.cleanup.Formatter;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.FieldName;
+import org.jabref.preferences.JabRefPreferences;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+<span class="fc" id="L48">public class ACMPortalFetcher implements PreviewEntryFetcher {</span>
+
+<span class="fc" id="L50">    private static final Logger LOGGER = LoggerFactory.getLogger(ACMPortalFetcher.class);</span>
+
+    private static final String START_URL = &quot;https://portal.acm.org/&quot;;
+    private static final String SEARCH_URL_PART = &quot;results.cfm?query=&quot;;
+    private static final String SEARCH_URL_PART_II = &quot;&amp;dl=&quot;;
+    private static final String END_URL = &quot;&amp;coll=Portal&amp;short=0&quot;;//&amp;start=&quot;;
+
+    private static final String BIBTEX_URL = &quot;exportformats.cfm?id=&quot;;
+    private static final String BIBTEX_URL_END = &quot;&amp;expformat=bibtex&quot;;
+    private static final String ABSTRACT_URL = &quot;tab_abstract.cfm?id=&quot;;
+
+    private static final String NEXT_ENTRY_PATTERN = &quot;&lt;div class=\&quot;numbering\&quot;&gt;&quot;;
+    private static final String AUTHOR_MARKER = &quot;&lt;div class=\&quot;authors\&quot;&gt;&quot;;
+    private static final String SOURCE_MARKER = &quot;&lt;div class=\&quot;source\&quot;&gt;&quot;;
+    private static final String END_ENTRY_PATTERN = &quot;&lt;br clear=\&quot;all\&quot; /&gt;&quot;;
+
+    private static final String RESULTS_FOUND_PATTERN = &quot;&lt;div id=\&quot;resfound\&quot;&gt;&quot;;
+    private static final String PAGE_RANGE_PATTERN = &quot;&lt;div class=\&quot;pagerange\&quot;&gt;&quot;;
+
+    private static final String START_BIBTEX_ENTRY = &quot;@&quot;;
+    private static final String END_BIBTEX_ENTRY_HTML = &quot;&lt;/pre&gt;&quot;;
+
+    private static final int PER_PAGE = 20; // Fetch only one page. Otherwise, the user will get blocked by ACM. 100 has been the old setting. See Bug 3532752 - https://sourceforge.net/tracker/index.php?func=detail&amp;aid=3532752&amp;group_id=92314&amp;atid=600306
+    private static final int WAIT_TIME = 200;
+
+<span class="fc" id="L75">    private static final Pattern HITS_PATTERN = Pattern.compile(&quot;&lt;strong&gt;(\\d+,*\\d*)&lt;/strong&gt; results found&quot;);</span>
+<span class="fc" id="L76">    private static final Pattern MAX_HITS_PATTERN = Pattern</span>
+<span class="fc" id="L77">            .compile(&quot;Result \\d+,*\\d* &amp;ndash; \\d+,*\\d* of (\\d+,*\\d*)&quot;);</span>
+
+<span class="fc" id="L79">    private static final Pattern FULL_CITATION_PATTERN = Pattern.compile(&quot;&lt;a href=\&quot;(citation.cfm.*)\&quot; target.*&quot;);</span>
+
+<span class="fc" id="L81">    private static final Pattern ID_PATTERN = Pattern.compile(&quot;citation.cfm\\?id=(\\d+)&amp;.*&quot;);</span>
+
+    // Patterns used to extract information for the preview:
+<span class="fc" id="L84">    private static final Pattern TITLE_PATTERN = Pattern.compile(&quot;&lt;a href=.*?\&quot;&gt;([^&lt;]*)&lt;/a&gt;&quot;);</span>
+<span class="fc" id="L85">    private static final Pattern ABSTRACT_PATTERN = Pattern.compile(&quot;&lt;div .*?&gt;(.*?)&lt;/div&gt;&quot;);</span>
+<span class="fc" id="L86">    private static final Pattern SOURCE_PATTERN = Pattern.compile(&quot;&lt;span style=\&quot;padding-left:10px\&quot;&gt;([^&lt;]*)&lt;/span&gt;&quot;);</span>
+
+<span class="fc" id="L88">    private final HtmlToLatexFormatter htmlToLatexFormatter = new HtmlToLatexFormatter();</span>
+
+<span class="fc" id="L90">    private final Formatter protectTermsFormatter = new ProtectTermsFormatter(Globals.protectedTermsLoader);</span>
+
+<span class="fc" id="L92">    private final UnitsToLatexFormatter unitsToLatexFormatter = new UnitsToLatexFormatter();</span>
+    private String terms;
+<span class="fc" id="L94">    private final JRadioButton acmButton = new JRadioButton(Localization.lang(&quot;The ACM Digital Library&quot;));</span>
+
+<span class="fc" id="L96">    private final JRadioButton guideButton = new JRadioButton(Localization.lang(&quot;The Guide to Computing Literature&quot;));</span>
+<span class="fc" id="L97">    private final JCheckBox absCheckBox = new JCheckBox(Localization.lang(&quot;Include abstracts&quot;), false);</span>
+
+    private boolean shouldContinue;
+    // user settings
+    private boolean fetchAbstract;
+
+    private boolean acmOrGuide;
+
+    private int piv;
+
+    @Override
+    public JPanel getOptionsPanel() {
+<span class="fc" id="L109">        JPanel pan = new JPanel();</span>
+<span class="fc" id="L110">        pan.setLayout(new GridLayout(0, 1));</span>
+
+<span class="fc" id="L112">        guideButton.setSelected(true);</span>
+
+<span class="fc" id="L114">        ButtonGroup group = new ButtonGroup();</span>
+<span class="fc" id="L115">        group.add(acmButton);</span>
+<span class="fc" id="L116">        group.add(guideButton);</span>
+
+<span class="fc" id="L118">        pan.add(absCheckBox);</span>
+<span class="fc" id="L119">        pan.add(acmButton);</span>
+<span class="fc" id="L120">        pan.add(guideButton);</span>
+
+<span class="fc" id="L122">        return pan;</span>
+    }
+
+    @Override
+    public boolean processQueryGetPreview(String query, FetcherPreviewDialog preview, OutputPrinter status) {
+<span class="nc" id="L127">        this.terms = query;</span>
+<span class="nc" id="L128">        piv = 0;</span>
+<span class="nc" id="L129">        shouldContinue = true;</span>
+<span class="nc" id="L130">        acmOrGuide = acmButton.isSelected();</span>
+<span class="nc" id="L131">        fetchAbstract = absCheckBox.isSelected();</span>
+<span class="nc" id="L132">        String address = makeUrl();</span>
+<span class="nc" id="L133">        LinkedHashMap&lt;String, JLabel&gt; previews = new LinkedHashMap&lt;&gt;();</span>
+
+        try {
+<span class="nc" id="L136">            URLDownload dl = new URLDownload(address);</span>
+
+<span class="nc" id="L138">            String page = dl.asString(Globals.prefs.getDefaultEncoding());</span>
+
+<span class="nc" id="L140">            int hits = getNumberOfHits(page, RESULTS_FOUND_PATTERN, ACMPortalFetcher.HITS_PATTERN);</span>
+
+<span class="nc" id="L142">            int index = page.indexOf(RESULTS_FOUND_PATTERN);</span>
+<span class="nc bnc" id="L143" title="All 2 branches missed.">            if (index &gt;= 0) {</span>
+<span class="nc" id="L144">                page = page.substring(index + RESULTS_FOUND_PATTERN.length());</span>
+            }
+
+<span class="nc bnc" id="L147" title="All 2 branches missed.">            if (hits == 0) {</span>
+<span class="nc" id="L148">                status.showMessage(Localization.lang(&quot;No entries found for the search string '%0'&quot;, terms),</span>
+<span class="nc" id="L149">                        Localization.lang(&quot;Search %0&quot;, getTitle()), JOptionPane.INFORMATION_MESSAGE);</span>
+<span class="nc" id="L150">                return false;</span>
+<span class="nc bnc" id="L151" title="All 2 branches missed.">            } else if (hits &gt; 20) {</span>
+<span class="nc" id="L152">                status.showMessage(</span>
+<span class="nc" id="L153">                        Localization.lang(&quot;%0 entries found. To reduce server load, only %1 will be downloaded.&quot;,</span>
+<span class="nc" id="L154">                                String.valueOf(hits), String.valueOf(PER_PAGE)),</span>
+<span class="nc" id="L155">                        Localization.lang(&quot;Search %0&quot;, getTitle()), JOptionPane.INFORMATION_MESSAGE);</span>
+            }
+
+<span class="nc" id="L158">            hits = getNumberOfHits(page, PAGE_RANGE_PATTERN, ACMPortalFetcher.MAX_HITS_PATTERN);</span>
+<span class="nc" id="L159">            parse(page, Math.min(hits, PER_PAGE), previews);</span>
+<span class="nc bnc" id="L160" title="All 2 branches missed.">            for (Map.Entry&lt;String, JLabel&gt; entry : previews.entrySet()) {</span>
+<span class="nc" id="L161">                preview.addEntry(entry.getKey(), entry.getValue());</span>
+            }
+
+<span class="nc" id="L164">            return true;</span>
+
+<span class="nc" id="L166">        } catch (IOException e) {</span>
+<span class="nc" id="L167">            LOGGER.error(&quot;Error while fetching from &quot; + getTitle(), e);</span>
+<span class="nc" id="L168">            preview.showErrorMessage(this.getTitle(), e.getLocalizedMessage());</span>
+<span class="nc" id="L169">            return false;</span>
+        }
+    }
+
+    @Override
+    public void getEntries(Map&lt;String, Boolean&gt; selection, ImportInspector inspector) {
+<span class="nc bnc" id="L175" title="All 2 branches missed.">        for (Map.Entry&lt;String, Boolean&gt; selentry : selection.entrySet()) {</span>
+<span class="nc bnc" id="L176" title="All 2 branches missed.">            if (!shouldContinue) {</span>
+<span class="nc" id="L177">                break;</span>
+            }
+<span class="nc bnc" id="L179" title="All 2 branches missed.">            if (selentry.getValue()) {</span>
+<span class="nc" id="L180">                downloadEntryBibTeX(selentry.getKey(), fetchAbstract).ifPresent(entry -&gt; {</span>
+                    // Convert from HTML and optionally add curly brackets around key words to keep the case
+<span class="nc" id="L182">                    entry.getField(FieldName.TITLE).ifPresent(title -&gt; {</span>
+<span class="nc" id="L183">                        title = title.replace(&quot;\\&amp;&quot;, &quot;&amp;&quot;).replace(&quot;\\#&quot;, &quot;#&quot;);</span>
+<span class="nc" id="L184">                        title = convertHTMLChars(title);</span>
+
+                        // Unit formatting
+<span class="nc bnc" id="L187" title="All 2 branches missed.">                        if (Globals.prefs.getBoolean(JabRefPreferences.USE_UNIT_FORMATTER_ON_SEARCH)) {</span>
+<span class="nc" id="L188">                            title = unitsToLatexFormatter.format(title);</span>
+                        }
+
+                        // Case keeping
+<span class="nc bnc" id="L192" title="All 2 branches missed.">                        if (Globals.prefs.getBoolean(JabRefPreferences.USE_CASE_KEEPER_ON_SEARCH)) {</span>
+<span class="nc" id="L193">                            title = protectTermsFormatter.format(title);</span>
+                        }
+<span class="nc" id="L195">                        entry.setField(FieldName.TITLE, title);</span>
+<span class="nc" id="L196">                    });</span>
+
+<span class="nc" id="L198">                    entry.getField(FieldName.ABSTRACT)</span>
+<span class="nc" id="L199">                            .ifPresent(abstr -&gt; entry.setField(FieldName.ABSTRACT, convertHTMLChars(abstr)));</span>
+<span class="nc" id="L200">                    inspector.addEntry(entry);</span>
+<span class="nc" id="L201">                });</span>
+            }
+        }
+<span class="nc" id="L204">    }</span>
+
+    @Override
+    public int getWarningLimit() {
+<span class="nc" id="L208">        return 10;</span>
+    }
+
+    @Override
+    public int getPreferredPreviewHeight() {
+<span class="nc" id="L213">        return 75;</span>
+    }
+
+    @Override
+    public boolean processQuery(String query, ImportInspector dialog, OutputPrinter status) {
+<span class="nc" id="L218">        return false;</span>
+    }
+
+    private String makeUrl() {
+<span class="nc" id="L222">        StringBuilder sb = new StringBuilder(ACMPortalFetcher.START_URL).append(ACMPortalFetcher.SEARCH_URL_PART)</span>
+<span class="nc" id="L223">                .append(terms.replace(&quot; &quot;, &quot;%20&quot;)).append(ACMPortalFetcher.SEARCH_URL_PART_II);</span>
+
+<span class="nc bnc" id="L225" title="All 2 branches missed.">        if (acmOrGuide) {</span>
+<span class="nc" id="L226">            sb.append(&quot;ACM&quot;);</span>
+<span class="nc" id="L227">        } else {</span>
+<span class="nc" id="L228">            sb.append(&quot;GUIDE&quot;);</span>
+        }
+<span class="nc" id="L230">        sb.append(ACMPortalFetcher.END_URL);</span>
+<span class="nc" id="L231">        return sb.toString();</span>
+    }
+
+    private void parse(String text, int hits, Map&lt;String, JLabel&gt; entries) {
+<span class="nc" id="L235">        int entryNumber = 1;</span>
+<span class="nc bnc" id="L236" title="All 4 branches missed.">        while (getNextEntryURL(text, entryNumber, entries) &amp;&amp; (entryNumber &lt;= hits)) {</span>
+<span class="nc" id="L237">            entryNumber++;</span>
+        }
+<span class="nc" id="L239">    }</span>
+
+    private static String getEntryBibTeXURL(String fullCitation) {
+        // Get ID
+<span class="nc" id="L243">        Matcher idMatcher = ACMPortalFetcher.ID_PATTERN.matcher(fullCitation);</span>
+<span class="nc bnc" id="L244" title="All 2 branches missed.">        if (idMatcher.find()) {</span>
+<span class="nc" id="L245">            return idMatcher.group(1);</span>
+        }
+<span class="nc" id="L247">        LOGGER.info(&quot;Did not find ID in: &quot; + fullCitation);</span>
+<span class="nc" id="L248">        return null;</span>
+    }
+
+    private boolean getNextEntryURL(String allText, int entryNumber,
+            Map&lt;String, JLabel&gt; entries) {
+<span class="nc" id="L253">        int index = allText.indexOf(NEXT_ENTRY_PATTERN, piv);</span>
+<span class="nc" id="L254">        int endIndex = allText.indexOf(END_ENTRY_PATTERN, index);</span>
+<span class="nc" id="L255">        piv = endIndex;</span>
+
+<span class="nc bnc" id="L257" title="All 2 branches missed.">        if (index &gt;= 0) {</span>
+<span class="nc" id="L258">            String text = allText.substring(index, endIndex);</span>
+            // Always try RIS import first
+<span class="nc" id="L260">            Matcher fullCitation = ACMPortalFetcher.FULL_CITATION_PATTERN.matcher(text);</span>
+            String item;
+<span class="nc bnc" id="L262" title="All 2 branches missed.">            if (fullCitation.find()) {</span>
+<span class="nc" id="L263">                String link = getEntryBibTeXURL(fullCitation.group(1));</span>
+<span class="nc bnc" id="L264" title="All 2 branches missed.">                if (endIndex &gt; 0) {</span>
+<span class="nc" id="L265">                    StringBuilder sb = new StringBuilder();</span>
+
+                    // Find authors:
+<span class="nc" id="L268">                    int authStart = text.indexOf(AUTHOR_MARKER);</span>
+<span class="nc bnc" id="L269" title="All 2 branches missed.">                    if (authStart &gt;= 0) {</span>
+<span class="nc" id="L270">                        int authEnd = text.indexOf(&quot;&lt;/div&gt;&quot;, authStart + AUTHOR_MARKER.length());</span>
+<span class="nc bnc" id="L271" title="All 2 branches missed.">                        if (authEnd &gt;= 0) {</span>
+<span class="nc" id="L272">                            sb.append(&quot;&lt;p&gt;&quot;).append(text.substring(authStart, authEnd)).append(&quot;&lt;/p&gt;&quot;);</span>
+                        }
+
+                    }
+                    // Find title:
+<span class="nc" id="L277">                    Matcher titM = ACMPortalFetcher.TITLE_PATTERN.matcher(text);</span>
+<span class="nc bnc" id="L278" title="All 2 branches missed.">                    if (titM.find()) {</span>
+<span class="nc" id="L279">                        sb.append(&quot;&lt;p&gt;&quot;).append(titM.group(1)).append(&quot;&lt;/p&gt;&quot;);</span>
+                    }
+
+<span class="nc" id="L282">                    int sourceStart = text.indexOf(SOURCE_MARKER);</span>
+<span class="nc bnc" id="L283" title="All 2 branches missed.">                    if (sourceStart &gt;= 0) {</span>
+<span class="nc" id="L284">                        int sourceEnd = text.indexOf(&quot;&lt;/div&gt;&quot;, sourceStart + SOURCE_MARKER.length());</span>
+<span class="nc bnc" id="L285" title="All 2 branches missed.">                        if (sourceEnd &gt;= 0) {</span>
+<span class="nc" id="L286">                            String sourceText = text.substring(sourceStart, sourceEnd);</span>
+                            // Find source:
+<span class="nc" id="L288">                            Matcher source = ACMPortalFetcher.SOURCE_PATTERN.matcher(sourceText);</span>
+<span class="nc bnc" id="L289" title="All 2 branches missed.">                            if (source.find()) {</span>
+<span class="nc" id="L290">                                sb.append(&quot;&lt;p&gt;&quot;).append(source.group(1)).append(&quot;&lt;/p&gt;&quot;);</span>
+                            }
+                        }
+                    }
+
+<span class="nc" id="L295">                    item = sb.toString();</span>
+<span class="nc" id="L296">                } else {</span>
+<span class="nc" id="L297">                    item = link;</span>
+                }
+
+<span class="nc" id="L300">                JLabel preview = new JLabel(&quot;&lt;html&gt;&quot; + item + &quot;&lt;/html&gt;&quot;);</span>
+<span class="nc" id="L301">                preview.setPreferredSize(new Dimension(750, 100));</span>
+<span class="nc" id="L302">                entries.put(link, preview);</span>
+<span class="nc" id="L303">                return true;</span>
+            }
+<span class="nc" id="L305">            LOGGER.warn(&quot;Citation unmatched &quot; + Integer.toString(entryNumber));</span>
+<span class="nc" id="L306">            return false;</span>
+        }
+<span class="nc" id="L308">        return false;</span>
+    }
+
+    private static Optional&lt;BibEntry&gt; downloadEntryBibTeX(String id, boolean downloadAbstract) {
+        try {
+<span class="nc" id="L313">            URL url = new URL(</span>
+<span class="nc" id="L314">                    ACMPortalFetcher.START_URL + ACMPortalFetcher.BIBTEX_URL + id + ACMPortalFetcher.BIBTEX_URL_END);</span>
+<span class="nc" id="L315">            URLConnection connection = url.openConnection();</span>
+
+            // set user-agent to avoid being blocked as a crawler
+<span class="nc" id="L318">            connection.addRequestProperty(&quot;User-Agent&quot;, URLDownload.USER_AGENT);</span>
+<span class="nc" id="L319">            Collection&lt;BibEntry&gt; items = null;</span>
+
+<span class="nc" id="L321">            try (BufferedReader in = new BufferedReader(</span>
+<span class="nc" id="L322">                    new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {</span>
+<span class="nc bnc" id="L323" title="All 2 branches missed.">                String htmlCode = in.lines().filter(s -&gt; !s.isEmpty()).collect(Collectors.joining());</span>
+<span class="nc" id="L324">                String bibtexString = htmlCode.substring(htmlCode.indexOf(START_BIBTEX_ENTRY),</span>
+<span class="nc" id="L325">                        htmlCode.indexOf(END_BIBTEX_ENTRY_HTML));</span>
+<span class="nc" id="L326">                items = new BibtexParser(Globals.prefs.getImportFormatPreferences(), Globals.getFileUpdateMonitor()).parseEntries(bibtexString);</span>
+
+<span class="nc bnc" id="L328" title="All 8 branches missed.">            } catch (IOException | ParseException e) {</span>
+<span class="nc" id="L329">                LOGGER.info(&quot;Download of BibTeX information from ACM Portal failed.&quot;, e);</span>
+            }
+<span class="nc bnc" id="L331" title="All 4 branches missed.">            if ((items == null) || items.isEmpty()) {</span>
+<span class="nc" id="L332">                return Optional.empty();</span>
+            }
+<span class="nc" id="L334">            BibEntry entry = items.iterator().next();</span>
+<span class="nc" id="L335">            Thread.sleep(ACMPortalFetcher.WAIT_TIME);//wait between requests or you will be blocked by ACM</span>
+
+            // get abstract
+<span class="nc bnc" id="L338" title="All 2 branches missed.">            if (downloadAbstract) {</span>
+<span class="nc" id="L339">                URLDownload dl = new URLDownload(ACMPortalFetcher.START_URL + ACMPortalFetcher.ABSTRACT_URL + id);</span>
+<span class="nc" id="L340">                String page = dl.asString(Globals.prefs.getDefaultEncoding());</span>
+
+<span class="nc" id="L342">                Matcher absM = ACMPortalFetcher.ABSTRACT_PATTERN.matcher(page);</span>
+<span class="nc bnc" id="L343" title="All 2 branches missed.">                if (absM.find()) {</span>
+<span class="nc" id="L344">                    entry.setField(FieldName.ABSTRACT, absM.group(1).trim());</span>
+                }
+<span class="nc" id="L346">                Thread.sleep(ACMPortalFetcher.WAIT_TIME);//wait between requests or you will be blocked by ACM</span>
+            }
+
+<span class="nc" id="L349">            return Optional.of(entry);</span>
+<span class="nc" id="L350">        } catch (NoSuchElementException e) {</span>
+<span class="nc" id="L351">            LOGGER.info(</span>
+<span class="nc" id="L352">                    &quot;Bad BibTeX record read at: &quot; + ACMPortalFetcher.BIBTEX_URL + id + ACMPortalFetcher.BIBTEX_URL_END,</span>
+<span class="nc" id="L353">                    e);</span>
+<span class="nc" id="L354">        } catch (MalformedURLException e) {</span>
+<span class="nc" id="L355">            LOGGER.info(&quot;Malformed URL.&quot;, e);</span>
+<span class="nc" id="L356">        } catch (IOException e) {</span>
+<span class="nc" id="L357">            LOGGER.info(&quot;Cannot connect.&quot;, e);</span>
+<span class="nc" id="L358">        } catch (InterruptedException ignored) {</span>
+            // Ignored
+        }
+<span class="nc" id="L361">        return Optional.empty();</span>
+    }
+
+    /**
+     * This method must convert HTML style char sequences to normal characters.
+     * @param text The text to handle.
+     * @return The converted text.
+     */
+    private String convertHTMLChars(String text) {
+
+<span class="nc" id="L371">        return htmlToLatexFormatter.format(text);</span>
+    }
+
+    /**
+     * Find out how many hits were found.
+     * @param page
+     */
+    private static int getNumberOfHits(String page, String marker, Pattern pattern) throws IOException {
+<span class="nc" id="L379">        int ind = page.indexOf(marker);</span>
+<span class="nc bnc" id="L380" title="All 2 branches missed.">        if (ind &gt;= 0) {</span>
+<span class="nc" id="L381">            String substring = page.substring(ind, Math.min(ind + 100, page.length()));</span>
+<span class="nc" id="L382">            Matcher m = pattern.matcher(substring);</span>
+<span class="nc bnc" id="L383" title="All 2 branches missed.">            if (m.find()) {</span>
+                try {
+<span class="nc" id="L385">                    String number = m.group(1);</span>
+<span class="nc" id="L386">                    number = number.replace(&quot;,&quot;, &quot;&quot;); // Remove , as in 1,234</span>
+<span class="nc" id="L387">                    return Integer.parseInt(number);</span>
+<span class="nc" id="L388">                } catch (NumberFormatException ex) {</span>
+<span class="nc" id="L389">                    throw new IOException(&quot;Cannot parse number of hits&quot;);</span>
+                }
+            }
+<span class="nc" id="L392">            LOGGER.info(&quot;Unmatched! &quot; + substring);</span>
+        }
+<span class="nc" id="L394">        throw new IOException(&quot;Cannot parse number of hits&quot;);</span>
+    }
+
+    @Override
+    public String getTitle() {
+<span class="fc" id="L399">        return &quot;ACM Portal&quot;;</span>
+    }
+
+    @Override
+    public HelpFile getHelpPage() {
+<span class="fc" id="L404">        return HelpFile.FETCHER_ACM;</span>
+    }
+
+    // This method is called by the dialog when the user has canceled or
+    //signaled a stop. It is expected that any long-running fetch operations
+    //will stop after this method is called.
+    @Override
+    public void stopFetching() {
+<span class="nc" id="L412">        shouldContinue = false;</span>
+<span class="nc" id="L413">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

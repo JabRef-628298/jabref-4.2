@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>StringSaveSession.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.exporter</a> &gt; <span class="el_source">StringSaveSession.java</span></div><h1>StringSaveSession.java</h1><pre class="source lang-java linenums">package org.jabref.logic.exporter;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class StringSaveSession extends SaveSession {
+
+<span class="fc" id="L15">    private static final Logger LOGGER = LoggerFactory.getLogger(StringSaveSession.class);</span>
+
+    private final ByteArrayOutputStream outputStream;
+
+    public StringSaveSession(Charset encoding, boolean backup) {
+<span class="fc" id="L20">        this(encoding, backup, new ByteArrayOutputStream());</span>
+<span class="fc" id="L21">    }</span>
+
+    private StringSaveSession(Charset encoding, boolean backup, ByteArrayOutputStream outputStream) {
+<span class="fc" id="L24">        super(encoding, backup, new VerifyingWriter(outputStream, encoding));</span>
+<span class="fc" id="L25">        this.outputStream = outputStream;</span>
+<span class="fc" id="L26">    }</span>
+
+    public String getStringValue() {
+        try {
+<span class="fc" id="L30">            return outputStream.toString(encoding.name());</span>
+<span class="nc" id="L31">        } catch (UnsupportedEncodingException e) {</span>
+<span class="nc" id="L32">            LOGGER.warn(&quot;Encoding problem&quot;, e);</span>
+<span class="nc" id="L33">            return &quot;&quot;;</span>
+        }
+    }
+
+    @Override
+    public void commit(Path file) throws SaveException {
+        try {
+<span class="nc" id="L40">            Files.write(file, outputStream.toByteArray());</span>
+<span class="nc" id="L41">        } catch (IOException e) {</span>
+<span class="nc" id="L42">            throw new SaveException(e);</span>
+        }
+<span class="nc" id="L44">    }</span>
+
+    @Override
+    public void cancel() {
+        try {
+<span class="nc" id="L49">            outputStream.close();</span>
+<span class="nc" id="L50">        } catch (IOException e) {</span>
+<span class="nc" id="L51">            LOGGER.warn(&quot;Error while cancel&quot;, e);</span>
+        }
+<span class="nc" id="L53">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

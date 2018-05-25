@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>NameFormatterTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.layout.format</a> &gt; <span class="el_source">NameFormatterTest.java</span></div><h1>NameFormatterTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.layout.format;
+
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
+
+<span class="fc" id="L6">public class NameFormatterTest {</span>
+
+    @Test
+    public void testFormatStringStringBibtexEntry() {
+
+<span class="fc" id="L11">        NameFormatter l = new NameFormatter();</span>
+
+<span class="fc" id="L13">        assertEquals(&quot;Doe&quot;, l.format(&quot;Joe Doe&quot;, &quot;1@*@{ll}&quot;));</span>
+
+<span class="fc" id="L15">        assertEquals(&quot;moremoremoremore&quot;, l.format(&quot;Joe Doe and Mary Jane and Bruce Bar and Arthur Kay&quot;,</span>
+<span class="fc" id="L16">                &quot;1@*@{ll}@@2@1..1@{ff}{ll}@2..2@ and {ff}{last}@@*@*@more&quot;));</span>
+
+<span class="fc" id="L18">        assertEquals(&quot;Doe&quot;, l.format(&quot;Joe Doe&quot;, &quot;1@*@{ll}@@2@1..1@{ff}{ll}@2..2@ and {ff}{last}@@*@*@more&quot;));</span>
+
+<span class="fc" id="L20">        assertEquals(&quot;JoeDoe and MaryJ&quot;,</span>
+<span class="fc" id="L21">                l.format(&quot;Joe Doe and Mary Jane&quot;, &quot;1@*@{ll}@@2@1..1@{ff}{ll}@2..2@ and {ff}{l}@@*@*@more&quot;));</span>
+
+<span class="fc" id="L23">        assertEquals(&quot;Doe, Joe and Jane, M. and Kamp, J.~A.&quot;,</span>
+<span class="fc" id="L24">                l.format(&quot;Joe Doe and Mary Jane and John Arthur van Kamp&quot;,</span>
+<span class="fc" id="L25">                        &quot;1@*@{ll}, {ff}@@*@1@{ll}, {ff}@2..-1@ and {ll}, {f}.&quot;));</span>
+
+<span class="fc" id="L27">        assertEquals(&quot;Doe Joe and Jane, M. and Kamp, J.~A.&quot;,</span>
+<span class="fc" id="L28">                l.format(&quot;Joe Doe and Mary Jane and John Arthur van Kamp&quot;,</span>
+<span class="fc" id="L29">                        &quot;1@*@{ll}, {ff}@@*@1@{ll} {ff}@2..-1@ and {ll}, {f}.&quot;));</span>
+
+<span class="fc" id="L31">    }</span>
+
+    @Test
+    public void testFormat() {
+
+<span class="fc" id="L36">        NameFormatter a = new NameFormatter();</span>
+
+        // Empty case
+<span class="fc" id="L39">        assertEquals(&quot;&quot;, a.format(&quot;&quot;));</span>
+
+<span class="fc" id="L41">        String formatString = &quot;1@1@{vv }{ll}{ ff}@@2@1@{vv }{ll}{ ff}@2@ and {vv }{ll}{, ff}@@*@1@{vv }{ll}{ ff}@2..-2@, {vv }{ll}{, ff}@-1@ and {vv }{ll}{, ff}&quot;;</span>
+
+        // Single Names
+<span class="fc" id="L44">        assertEquals(&quot;Vandekamp Mary~Ann&quot;, a.format(&quot;Mary Ann Vandekamp&quot;, formatString));</span>
+
+        // Two names
+<span class="fc" id="L47">        assertEquals(&quot;von Neumann John and Black~Brown, Peter&quot;,</span>
+<span class="fc" id="L48">                a.format(&quot;John von Neumann and Black Brown, Peter&quot;, formatString));</span>
+
+        // Three names
+<span class="fc" id="L51">        assertEquals(&quot;von Neumann John, Smith, John and Black~Brown, Peter&quot;,</span>
+<span class="fc" id="L52">                a.format(&quot;von Neumann, John and Smith, John and Black Brown, Peter&quot;, formatString));</span>
+
+<span class="fc" id="L54">        assertEquals(&quot;von Neumann John, Smith, John and Black~Brown, Peter&quot;,</span>
+<span class="fc" id="L55">                a.format(&quot;John von Neumann and John Smith and Black Brown, Peter&quot;, formatString));</span>
+
+        // Four names
+<span class="fc" id="L58">        assertEquals(&quot;von Neumann John, Smith, John, Vandekamp, Mary~Ann and Black~Brown, Peter&quot;, a.format(</span>
+<span class="fc" id="L59">                &quot;von Neumann, John and Smith, John and Vandekamp, Mary Ann and Black Brown, Peter&quot;, formatString));</span>
+<span class="fc" id="L60">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

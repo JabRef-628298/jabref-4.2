@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>ExporterFactory.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.exporter</a> &gt; <span class="el_source">ExporterFactory.java</span></div><h1>ExporterFactory.java</h1><pre class="source lang-java linenums">package org.jabref.logic.exporter;
+
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+
+import org.jabref.logic.layout.LayoutFormatterPreferences;
+import org.jabref.logic.util.FileType;
+import org.jabref.logic.xmp.XmpPreferences;
+
+public class ExporterFactory {
+
+    /**
+     * Global variable that is used for counting output entries when exporting:
+     *
+     * @deprecated find a better way to do this
+     */
+    @Deprecated public static int entryNumber;
+
+    private final List&lt;Exporter&gt; exporters;
+
+<span class="fc" id="L26">    private ExporterFactory(List&lt;Exporter&gt; exporters) {</span>
+<span class="fc" id="L27">        this.exporters = Objects.requireNonNull(exporters);</span>
+<span class="fc" id="L28">    }</span>
+
+    public static ExporterFactory create(Map&lt;String, TemplateExporter&gt; customFormats,
+            LayoutFormatterPreferences layoutPreferences, SavePreferences savePreferences, XmpPreferences xmpPreferences) {
+
+<span class="fc" id="L33">        List&lt;Exporter&gt; exporters = new ArrayList&lt;&gt;();</span>
+
+        // Initialize build-in exporters
+<span class="fc" id="L36">        exporters.add(new TemplateExporter(&quot;html&quot;, &quot;html&quot;, null, FileType.HTML, layoutPreferences, savePreferences));</span>
+<span class="fc" id="L37">        exporters.add(new TemplateExporter(&quot;simplehtml&quot;, &quot;simplehtml&quot;, null, FileType.SIMPLE_HTML, layoutPreferences, savePreferences));</span>
+<span class="fc" id="L38">        exporters.add(new TemplateExporter(&quot;docbook&quot;, &quot;docbook&quot;, null, FileType.DOCBOOK, layoutPreferences, savePreferences));</span>
+<span class="fc" id="L39">        exporters.add(new TemplateExporter(&quot;din1505&quot;, &quot;din1505winword&quot;, &quot;din1505&quot;, FileType.DIN_1505, layoutPreferences, savePreferences));</span>
+<span class="fc" id="L40">        exporters.add(new TemplateExporter(&quot;bibordf&quot;, &quot;bibordf&quot;, null, FileType.BIBORDF, layoutPreferences, savePreferences));</span>
+<span class="fc" id="L41">        exporters.add(new TemplateExporter(&quot;tablerefs&quot;, &quot;tablerefs&quot;, &quot;tablerefs&quot;, FileType.HTML_TABLE, layoutPreferences, savePreferences));</span>
+<span class="fc" id="L42">        exporters.add(new TemplateExporter(&quot;listrefs&quot;, &quot;listrefs&quot;, &quot;listrefs&quot;, FileType.HTML_LIST, layoutPreferences, savePreferences));</span>
+<span class="fc" id="L43">        exporters.add(new TemplateExporter(&quot;tablerefsabsbib&quot;, &quot;tablerefsabsbib&quot;, &quot;tablerefsabsbib&quot;, FileType.HTML_TABLE_WITH_ABSTRACT, layoutPreferences, savePreferences));</span>
+<span class="fc" id="L44">        exporters.add(new TemplateExporter(&quot;harvard&quot;, &quot;harvard&quot;, &quot;harvard&quot;, FileType.HARVARD_RTF, layoutPreferences, savePreferences));</span>
+<span class="fc" id="L45">        exporters.add(new TemplateExporter(&quot;iso690rtf&quot;, &quot;iso690RTF&quot;, &quot;iso690rtf&quot;, FileType.ISO_690_RTF, layoutPreferences, savePreferences));</span>
+<span class="fc" id="L46">        exporters.add(new TemplateExporter(&quot;iso690txt&quot;, &quot;iso690&quot;, &quot;iso690txt&quot;, FileType.ISO_690_TXT, layoutPreferences, savePreferences));</span>
+<span class="fc" id="L47">        exporters.add(new TemplateExporter(&quot;endnote&quot;, &quot;EndNote&quot;, &quot;endnote&quot;, FileType.ENDNOTE_TXT, layoutPreferences, savePreferences));</span>
+<span class="fc" id="L48">        exporters.add(new TemplateExporter(&quot;oocsv&quot;, &quot;openoffice-csv&quot;, &quot;openoffice&quot;, FileType.OO_LO, layoutPreferences, savePreferences));</span>
+<span class="fc" id="L49">        exporters.add(new TemplateExporter(&quot;ris&quot;, &quot;ris&quot;, &quot;ris&quot;, FileType.RIS, layoutPreferences, savePreferences, true).withEncoding(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L50">        exporters.add(new TemplateExporter(&quot;misq&quot;, &quot;misq&quot;, &quot;misq&quot;, FileType.MIS_QUARTERLY, layoutPreferences, savePreferences));</span>
+<span class="fc" id="L51">        exporters.add(new BibTeXMLExporter());</span>
+<span class="fc" id="L52">        exporters.add(new OpenOfficeDocumentCreator());</span>
+<span class="fc" id="L53">        exporters.add(new OpenDocumentSpreadsheetCreator());</span>
+<span class="fc" id="L54">        exporters.add(new MSBibExporter());</span>
+<span class="fc" id="L55">        exporters.add(new ModsExporter());</span>
+<span class="fc" id="L56">        exporters.add(new XmpExporter(xmpPreferences));</span>
+<span class="fc" id="L57">        exporters.add(new XmpPdfExporter(xmpPreferences));</span>
+
+        // Now add custom export formats
+<span class="fc" id="L60">        exporters.addAll(customFormats.values());</span>
+
+<span class="fc" id="L62">        return new ExporterFactory(exporters);</span>
+    }
+
+    /**
+     * Build a string listing of all available exporters.
+     *
+     * @param maxLineLength The max line length before a line break must be added.
+     * @param linePrefix    If a line break is added, this prefix will be inserted at the beginning of the next line.
+     * @return The string describing available exporters.
+     */
+    public String getExportersAsString(int maxLineLength, int firstLineSubtraction, String linePrefix) {
+<span class="nc" id="L73">        StringBuilder builder = new StringBuilder();</span>
+<span class="nc" id="L74">        int lastBreak = -firstLineSubtraction;</span>
+
+<span class="nc bnc" id="L76" title="All 2 branches missed.">        for (Exporter exporter : exporters) {</span>
+<span class="nc" id="L77">            String name = exporter.getId();</span>
+<span class="nc bnc" id="L78" title="All 2 branches missed.">            if (((builder.length() + 2 + name.length()) - lastBreak) &gt; maxLineLength) {</span>
+<span class="nc" id="L79">                builder.append(&quot;,\n&quot;);</span>
+<span class="nc" id="L80">                lastBreak = builder.length();</span>
+<span class="nc" id="L81">                builder.append(linePrefix);</span>
+<span class="nc bnc" id="L82" title="All 2 branches missed.">            } else if (builder.length() &gt; 0) {</span>
+<span class="nc" id="L83">                builder.append(&quot;, &quot;);</span>
+            }
+<span class="nc" id="L85">            builder.append(name);</span>
+        }
+
+<span class="nc" id="L88">        return builder.toString();</span>
+    }
+
+    /**
+     * Get a list of all exporters.
+     *
+     * @return A list containing all exporters
+     */
+    public List&lt;Exporter&gt; getExporters() {
+<span class="fc" id="L97">        return Collections.unmodifiableList(exporters);</span>
+    }
+
+    /**
+     * Look up the named exporter (case-insensitive).
+     *
+     * @param consoleName The export name given in the JabRef console help information.
+     * @return The exporter, or an empty option if no exporter with that name is registered.
+     */
+    public Optional&lt;Exporter&gt; getExporterByName(String consoleName) {
+<span class="fc" id="L107">        return exporters.stream().filter(exporter -&gt; exporter.getId().equalsIgnoreCase(consoleName)).findFirst();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

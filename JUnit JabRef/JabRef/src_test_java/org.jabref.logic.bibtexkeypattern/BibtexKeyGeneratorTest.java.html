@@ -1,0 +1,999 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>BibtexKeyGeneratorTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.bibtexkeypattern</a> &gt; <span class="el_source">BibtexKeyGeneratorTest.java</span></div><h1>BibtexKeyGeneratorTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.bibtexkeypattern;
+
+import java.util.Optional;
+
+import org.jabref.logic.importer.ImportFormatPreferences;
+import org.jabref.logic.importer.ParseException;
+import org.jabref.logic.importer.fileformat.BibtexParser;
+import org.jabref.model.database.BibDatabase;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.FieldName;
+import org.jabref.model.util.DummyFileUpdateMonitor;
+import org.jabref.model.util.FileUpdateMonitor;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Answers;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
+
+<span class="fc" id="L22">public class BibtexKeyGeneratorTest {</span>
+
+    private static final String AUTHOR_STRING_FIRSTNAME_FULL_LASTNAME_FULL_COUNT_1 = &quot;Isaac Newton&quot;;
+    private static final String AUTHOR_STRING_FIRSTNAME_FULL_LASTNAME_FULL_COUNT_2 = &quot;Isaac Newton and James Maxwell&quot;;
+    private static final String AUTHOR_STRING_FIRSTNAME_FULL_LASTNAME_FULL_COUNT_3 = &quot;Isaac Newton and James Maxwell and Albert Einstein&quot;;
+
+    private static final String AUTHOR_STRING_FIRSTNAME_FULL_LASTNAME_FULL_WITH_VAN_COUNT_1 = &quot;Wil van der Aalst&quot;;
+    private static final String AUTHOR_STRING_FIRSTNAME_FULL_LASTNAME_FULL_WITH_VAN_COUNT_2 = &quot;Wil van der Aalst and Tammo van Lessen&quot;;
+
+    private static final String AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_1 = &quot;I. Newton&quot;;
+    private static final String AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_2 = &quot;I. Newton and J. Maxwell&quot;;
+    private static final String AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_3 = &quot;I. Newton and J. Maxwell and A. Einstein&quot;;
+    private static final String AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_4 = &quot;I. Newton and J. Maxwell and A. Einstein and N. Bohr&quot;;
+    private static final String AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_5 = &quot;I. Newton and J. Maxwell and A. Einstein and N. Bohr and Harry Unknown&quot;;
+
+    private static final String TITLE_STRING_ALL_LOWER_FOUR_SMALL_WORDS_ONE_EN_DASH = &quot;application migration effort in the cloud - the case of cloud platforms&quot;;
+    private static final String TITLE_STRING_ALL_LOWER_FIRST_WORD_IN_BRACKETS_TWO_SMALL_WORDS_SMALL_WORD_AFTER_COLON = &quot;{BPEL} conformance in open source engines: the case of static analysis&quot;;
+    private static final String TITLE_STRING_CASED = &quot;Process Viewing Patterns&quot;;
+    private static final String TITLE_STRING_CASED_ONE_UPPER_WORD_ONE_SMALL_WORD = &quot;BPMN Conformance in Open Source Engines&quot;;
+    private static final String TITLE_STRING_CASED_TWO_SMALL_WORDS_SMALL_WORD_AT_THE_BEGINNING = &quot;The Difference Between Graph-Based and Block-Structured Business Process Modelling Languages&quot;;
+    private static final String TITLE_STRING_CASED_TWO_SMALL_WORDS_SMALL_WORD_AFTER_COLON = &quot;Cloud Computing: The Next Revolution in IT&quot;;
+    private static final String TITLE_STRING_CASED_TWO_SMALL_WORDS_ONE_CONNECTED_WORD = &quot;Towards Choreography-based Process Distribution in the Cloud&quot;;
+    private static final String TITLE_STRING_CASED_FOUR_SMALL_WORDS_TWO_CONNECTED_WORDS = &quot;On the Measurement of Design-Time Adaptability for Process-Based Systems &quot;;
+
+    private static ImportFormatPreferences importFormatPreferences;
+<span class="fc" id="L47">    private final FileUpdateMonitor fileMonitor = new DummyFileUpdateMonitor();</span>
+
+    @BeforeEach
+    public void setUp() {
+<span class="fc" id="L51">        importFormatPreferences = mock(ImportFormatPreferences.class, Answers.RETURNS_DEEP_STUBS);</span>
+<span class="fc" id="L52">    }</span>
+
+    @Test
+    public void testAndInAuthorName() throws ParseException {
+<span class="fc" id="L56">        Optional&lt;BibEntry&gt; entry0 = BibtexParser.singleFromString(&quot;@ARTICLE{kohn, author={Simon Holland}}&quot;,</span>
+<span class="fc" id="L57">                importFormatPreferences, fileMonitor);</span>
+<span class="fc" id="L58">        assertEquals(&quot;Holland&quot;,</span>
+<span class="fc" id="L59">                BibtexKeyGenerator.cleanKey(BibtexKeyGenerator.generateKey(entry0.get(), &quot;auth&quot;,</span>
+<span class="fc" id="L60">                        new BibDatabase()), true));</span>
+<span class="fc" id="L61">    }</span>
+
+    @Test
+    public void testCrossrefAndInAuthorNames() throws Exception {
+<span class="fc" id="L65">        BibDatabase database = new BibDatabase();</span>
+<span class="fc" id="L66">        BibEntry entry1 = new BibEntry();</span>
+<span class="fc" id="L67">        entry1.setField(FieldName.CROSSREF, &quot;entry2&quot;);</span>
+<span class="fc" id="L68">        BibEntry entry2 = new BibEntry();</span>
+<span class="fc" id="L69">        entry2.setCiteKey(&quot;entry2&quot;);</span>
+<span class="fc" id="L70">        entry2.setField(FieldName.AUTHOR, &quot;Simon Holland&quot;);</span>
+<span class="fc" id="L71">        database.insertEntry(entry1);</span>
+<span class="fc" id="L72">        database.insertEntry(entry2);</span>
+
+<span class="fc" id="L74">        assertEquals(&quot;Holland&quot;,</span>
+<span class="fc" id="L75">                BibtexKeyGenerator.cleanKey(BibtexKeyGenerator.generateKey(entry1, &quot;auth&quot;,</span>
+<span class="fc" id="L76">                        database), true));</span>
+<span class="fc" id="L77">    }</span>
+
+    @Test
+    public void testAndAuthorNames() throws ParseException {
+<span class="fc" id="L81">        String bibtexString = &quot;@ARTICLE{whatevery, author={Mari D. Herland and Mona-Iren Hauge and Ingeborg M. Helgeland}}&quot;;</span>
+<span class="fc" id="L82">        Optional&lt;BibEntry&gt; entry = BibtexParser.singleFromString(bibtexString, importFormatPreferences, fileMonitor);</span>
+<span class="fc" id="L83">        assertEquals(&quot;HerlandHaugeHelgeland&quot;,</span>
+<span class="fc" id="L84">                BibtexKeyGenerator.cleanKey(BibtexKeyGenerator.generateKey(entry.get(), &quot;authors3&quot;,</span>
+<span class="fc" id="L85">                        new BibDatabase()), true));</span>
+<span class="fc" id="L86">    }</span>
+
+    @Test
+    public void testCrossrefAndAuthorNames() throws Exception {
+<span class="fc" id="L90">        BibDatabase database = new BibDatabase();</span>
+<span class="fc" id="L91">        BibEntry entry1 = new BibEntry();</span>
+<span class="fc" id="L92">        entry1.setField(FieldName.CROSSREF, &quot;entry2&quot;);</span>
+<span class="fc" id="L93">        BibEntry entry2 = new BibEntry();</span>
+<span class="fc" id="L94">        entry2.setCiteKey(&quot;entry2&quot;);</span>
+<span class="fc" id="L95">        entry2.setField(FieldName.AUTHOR, &quot;Mari D. Herland and Mona-Iren Hauge and Ingeborg M. Helgeland&quot;);</span>
+<span class="fc" id="L96">        database.insertEntry(entry1);</span>
+<span class="fc" id="L97">        database.insertEntry(entry2);</span>
+
+<span class="fc" id="L99">        assertEquals(&quot;HerlandHaugeHelgeland&quot;,</span>
+<span class="fc" id="L100">                BibtexKeyGenerator.cleanKey(BibtexKeyGenerator.generateKey(entry1, &quot;authors3&quot;,</span>
+<span class="fc" id="L101">                        database), true));</span>
+<span class="fc" id="L102">    }</span>
+
+    @Test
+    public void testSpecialLatexCharacterInAuthorName() throws ParseException {
+<span class="fc" id="L106">        Optional&lt;BibEntry&gt; entry = BibtexParser.singleFromString(</span>
+<span class="fc" id="L107">                &quot;@ARTICLE{kohn, author={Simon Popovi\\v{c}ov\\'{a}}}&quot;, importFormatPreferences, fileMonitor);</span>
+<span class="fc" id="L108">        assertEquals(&quot;Popovicova&quot;,</span>
+<span class="fc" id="L109">                BibtexKeyGenerator.cleanKey(BibtexKeyGenerator.generateKey(entry.get(), &quot;auth&quot;,</span>
+<span class="fc" id="L110">                        new BibDatabase()), true));</span>
+<span class="fc" id="L111">    }</span>
+
+    /**
+     * Test for https://sourceforge.net/forum/message.php?msg_id=4498555 Test the Labelmaker and all kind of accents Á á
+     * Ć ć É é Í í Ĺ ĺ Ń ń Ó ó Ŕ ŕ Ś ś Ú ú Ý ý Ź ź
+     */
+    @Test
+    public void testMakeLabelAndCheckLegalKeys() throws ParseException {
+
+<span class="fc" id="L120">        Optional&lt;BibEntry&gt; entry0 = BibtexParser.singleFromString(</span>
+<span class="fc" id="L121">                &quot;@ARTICLE{kohn, author={Andreas Köning}, year={2000}}&quot;, importFormatPreferences, fileMonitor);</span>
+<span class="fc" id="L122">        assertEquals(&quot;Koen&quot;,</span>
+<span class="fc" id="L123">                BibtexKeyGenerator.cleanKey(BibtexKeyGenerator.generateKey(entry0.get(), &quot;auth3&quot;,</span>
+<span class="fc" id="L124">                        new BibDatabase()), true));</span>
+
+<span class="fc" id="L126">        entry0 = BibtexParser.singleFromString(&quot;@ARTICLE{kohn, author={Andreas Áöning}, year={2000}}&quot;,</span>
+<span class="fc" id="L127">                importFormatPreferences, fileMonitor);</span>
+<span class="fc" id="L128">        assertEquals(&quot;Aoen&quot;,</span>
+<span class="fc" id="L129">                BibtexKeyGenerator.cleanKey(BibtexKeyGenerator.generateKey(entry0.get(), &quot;auth3&quot;,</span>
+<span class="fc" id="L130">                        new BibDatabase()), true));</span>
+
+<span class="fc" id="L132">        entry0 = BibtexParser.singleFromString(&quot;@ARTICLE{kohn, author={Andreas Éöning}, year={2000}}&quot;,</span>
+<span class="fc" id="L133">                importFormatPreferences, fileMonitor);</span>
+<span class="fc" id="L134">        assertEquals(&quot;Eoen&quot;,</span>
+<span class="fc" id="L135">                BibtexKeyGenerator.cleanKey(BibtexKeyGenerator.generateKey(entry0.get(), &quot;auth3&quot;,</span>
+<span class="fc" id="L136">                        new BibDatabase()), true));</span>
+
+<span class="fc" id="L138">        entry0 = BibtexParser.singleFromString(&quot;@ARTICLE{kohn, author={Andreas Íöning}, year={2000}}&quot;,</span>
+<span class="fc" id="L139">                importFormatPreferences, fileMonitor);</span>
+<span class="fc" id="L140">        assertEquals(&quot;Ioen&quot;,</span>
+<span class="fc" id="L141">                BibtexKeyGenerator.cleanKey(BibtexKeyGenerator.generateKey(entry0.get(), &quot;auth3&quot;,</span>
+<span class="fc" id="L142">                        new BibDatabase()), true));</span>
+
+<span class="fc" id="L144">        entry0 = BibtexParser.singleFromString(&quot;@ARTICLE{kohn, author={Andreas Ĺöning}, year={2000}}&quot;,</span>
+<span class="fc" id="L145">                importFormatPreferences, fileMonitor);</span>
+<span class="fc" id="L146">        assertEquals(&quot;Loen&quot;,</span>
+<span class="fc" id="L147">                BibtexKeyGenerator.cleanKey(BibtexKeyGenerator.generateKey(entry0.get(), &quot;auth3&quot;,</span>
+<span class="fc" id="L148">                        new BibDatabase()), true));</span>
+
+<span class="fc" id="L150">        entry0 = BibtexParser.singleFromString(&quot;@ARTICLE{kohn, author={Andreas Ńöning}, year={2000}}&quot;,</span>
+<span class="fc" id="L151">                importFormatPreferences, fileMonitor);</span>
+<span class="fc" id="L152">        assertEquals(&quot;Noen&quot;,</span>
+<span class="fc" id="L153">                BibtexKeyGenerator.cleanKey(BibtexKeyGenerator.generateKey(entry0.get(), &quot;auth3&quot;,</span>
+<span class="fc" id="L154">                        new BibDatabase()), true));</span>
+
+<span class="fc" id="L156">        entry0 = BibtexParser.singleFromString(&quot;@ARTICLE{kohn, author={Andreas Óöning}, year={2000}}&quot;,</span>
+<span class="fc" id="L157">                importFormatPreferences, fileMonitor);</span>
+<span class="fc" id="L158">        assertEquals(&quot;Ooen&quot;,</span>
+<span class="fc" id="L159">                BibtexKeyGenerator.cleanKey(BibtexKeyGenerator.generateKey(entry0.get(), &quot;auth3&quot;,</span>
+<span class="fc" id="L160">                        new BibDatabase()), true));</span>
+
+<span class="fc" id="L162">        entry0 = BibtexParser.singleFromString(&quot;@ARTICLE{kohn, author={Andreas Ŕöning}, year={2000}}&quot;,</span>
+<span class="fc" id="L163">                importFormatPreferences, fileMonitor);</span>
+<span class="fc" id="L164">        assertEquals(&quot;Roen&quot;,</span>
+<span class="fc" id="L165">                BibtexKeyGenerator.cleanKey(BibtexKeyGenerator.generateKey(entry0.get(), &quot;auth3&quot;,</span>
+<span class="fc" id="L166">                        new BibDatabase()), true));</span>
+
+<span class="fc" id="L168">        entry0 = BibtexParser.singleFromString(&quot;@ARTICLE{kohn, author={Andreas Śöning}, year={2000}}&quot;,</span>
+<span class="fc" id="L169">                importFormatPreferences, fileMonitor);</span>
+<span class="fc" id="L170">        assertEquals(&quot;Soen&quot;,</span>
+<span class="fc" id="L171">                BibtexKeyGenerator.cleanKey(BibtexKeyGenerator.generateKey(entry0.get(), &quot;auth3&quot;,</span>
+<span class="fc" id="L172">                        new BibDatabase()), true));</span>
+
+<span class="fc" id="L174">        entry0 = BibtexParser.singleFromString(&quot;@ARTICLE{kohn, author={Andreas Úöning}, year={2000}}&quot;,</span>
+<span class="fc" id="L175">                importFormatPreferences, fileMonitor);</span>
+<span class="fc" id="L176">        assertEquals(&quot;Uoen&quot;,</span>
+<span class="fc" id="L177">                BibtexKeyGenerator.cleanKey(BibtexKeyGenerator.generateKey(entry0.get(), &quot;auth3&quot;,</span>
+<span class="fc" id="L178">                        new BibDatabase()), true));</span>
+
+<span class="fc" id="L180">        entry0 = BibtexParser.singleFromString(&quot;@ARTICLE{kohn, author={Andreas Ýöning}, year={2000}}&quot;,</span>
+<span class="fc" id="L181">                importFormatPreferences, fileMonitor);</span>
+<span class="fc" id="L182">        assertEquals(&quot;Yoen&quot;,</span>
+<span class="fc" id="L183">                BibtexKeyGenerator.cleanKey(BibtexKeyGenerator.generateKey(entry0.get(), &quot;auth3&quot;,</span>
+<span class="fc" id="L184">                        new BibDatabase()), true));</span>
+
+<span class="fc" id="L186">        entry0 = BibtexParser.singleFromString(&quot;@ARTICLE{kohn, author={Andreas Źöning}, year={2000}}&quot;,</span>
+<span class="fc" id="L187">                importFormatPreferences, fileMonitor);</span>
+<span class="fc" id="L188">        assertEquals(&quot;Zoen&quot;,</span>
+<span class="fc" id="L189">                BibtexKeyGenerator.cleanKey(BibtexKeyGenerator.generateKey(entry0.get(), &quot;auth3&quot;,</span>
+<span class="fc" id="L190">                        new BibDatabase()), true));</span>
+<span class="fc" id="L191">    }</span>
+
+    /**
+     * Test the Labelmaker and with accent grave Chars to test: &quot;ÀÈÌÒÙ&quot;;
+     */
+    @Test
+    public void testMakeLabelAndCheckLegalKeysAccentGrave() throws ParseException {
+<span class="fc" id="L198">        Optional&lt;BibEntry&gt; entry0 = BibtexParser.singleFromString(</span>
+<span class="fc" id="L199">                &quot;@ARTICLE{kohn, author={Andreas Àöning}, year={2000}}&quot;, importFormatPreferences, fileMonitor);</span>
+<span class="fc" id="L200">        assertEquals(&quot;Aoen&quot;,</span>
+<span class="fc" id="L201">                BibtexKeyGenerator.cleanKey(BibtexKeyGenerator.generateKey(entry0.get(), &quot;auth3&quot;,</span>
+<span class="fc" id="L202">                        new BibDatabase()), true));</span>
+
+<span class="fc" id="L204">        entry0 = BibtexParser.singleFromString(&quot;@ARTICLE{kohn, author={Andreas Èöning}, year={2000}}&quot;,</span>
+<span class="fc" id="L205">                importFormatPreferences, fileMonitor);</span>
+<span class="fc" id="L206">        assertEquals(&quot;Eoen&quot;,</span>
+<span class="fc" id="L207">                BibtexKeyGenerator.cleanKey(BibtexKeyGenerator.generateKey(entry0.get(), &quot;auth3&quot;,</span>
+<span class="fc" id="L208">                        new BibDatabase()), true));</span>
+
+<span class="fc" id="L210">        entry0 = BibtexParser.singleFromString(&quot;@ARTICLE{kohn, author={Andreas Ìöning}, year={2000}}&quot;,</span>
+<span class="fc" id="L211">                importFormatPreferences, fileMonitor);</span>
+<span class="fc" id="L212">        assertEquals(&quot;Ioen&quot;,</span>
+<span class="fc" id="L213">                BibtexKeyGenerator.cleanKey(BibtexKeyGenerator.generateKey(entry0.get(), &quot;auth3&quot;,</span>
+<span class="fc" id="L214">                        new BibDatabase()), true));</span>
+
+<span class="fc" id="L216">        entry0 = BibtexParser.singleFromString(&quot;@ARTICLE{kohn, author={Andreas Òöning}, year={2000}}&quot;,</span>
+<span class="fc" id="L217">                importFormatPreferences, fileMonitor);</span>
+<span class="fc" id="L218">        assertEquals(&quot;Ooen&quot;,</span>
+<span class="fc" id="L219">                BibtexKeyGenerator.cleanKey(BibtexKeyGenerator.generateKey(entry0.get(), &quot;auth3&quot;,</span>
+<span class="fc" id="L220">                        new BibDatabase()), true));</span>
+
+<span class="fc" id="L222">        entry0 = BibtexParser.singleFromString(&quot;@ARTICLE{kohn, author={Andreas Ùöning}, year={2000}}&quot;,</span>
+<span class="fc" id="L223">                importFormatPreferences, fileMonitor);</span>
+<span class="fc" id="L224">        assertEquals(&quot;Uoen&quot;,</span>
+<span class="fc" id="L225">                BibtexKeyGenerator.cleanKey(BibtexKeyGenerator.generateKey(entry0.get(), &quot;auth3&quot;,</span>
+<span class="fc" id="L226">                        new BibDatabase()), true));</span>
+<span class="fc" id="L227">    }</span>
+
+    /**
+     * Tests if checkLegalKey replaces Non-ASCII chars.
+     * There are quite a few chars that should be replaced. Perhaps there is a better method than the current.
+     *
+     * @see BibtexKeyGenerator#checkLegalKey(String)
+     */
+    @Test
+    public void testCheckLegalKey() {
+        // not tested/ not in hashmap UNICODE_CHARS:
+        // Ł ł   Ő ő Ű ű   Ŀ ŀ   Ħ ħ   Ð ð Þ þ   Œ œ   Æ æ Ø ø Å å   Ə ə Đ đ   Ů ů	Ǣ ǣ ǖ ǘ ǚ ǜ
+        //&quot; Ǣ ǣ ǖ ǘ ǚ ǜ   &quot; +
+        //&quot;Đ đ   Ů ů  &quot; +
+        //&quot;Ł ł   Ő ő Ű ű   Ŀ ŀ   Ħ ħ   Ð ð Þ þ   Œ œ   Æ æ Ø ø Å å   Ə ə
+<span class="fc" id="L242">        String accents = &quot;ÀàÈèÌìÒòÙù Â â Ĉ ĉ Ê ê Ĝ ĝ Ĥ ĥ Î î Ĵ ĵ Ô ô Ŝ ŝ Û û Ŵ ŵ Ŷ ŷ&quot;;</span>
+<span class="fc" id="L243">        String expectedResult = &quot;AaEeIiOoUuAaCcEeGgHhIiJjOoSsUuWwYy&quot;;</span>
+<span class="fc" id="L244">        assertEquals(expectedResult, BibtexKeyGenerator.cleanKey(accents, true));</span>
+
+<span class="fc" id="L246">        accents = &quot;ÄäËëÏïÖöÜüŸÿ&quot;;</span>
+<span class="fc" id="L247">        expectedResult = &quot;AeaeEeIiOeoeUeueYy&quot;;</span>
+<span class="fc" id="L248">        assertEquals(expectedResult, BibtexKeyGenerator.cleanKey(accents, true));</span>
+
+<span class="fc" id="L250">        accents = &quot;Ç ç Ģ ģ Ķ ķ Ļ ļ Ņ ņ Ŗ ŗ Ş ş Ţ ţ&quot;;</span>
+<span class="fc" id="L251">        expectedResult = &quot;CcGgKkLlNnRrSsTt&quot;;</span>
+<span class="fc" id="L252">        assertEquals(expectedResult, BibtexKeyGenerator.cleanKey(accents, true));</span>
+
+<span class="fc" id="L254">        accents = &quot;Ă ă Ĕ ĕ Ğ ğ Ĭ ĭ Ŏ ŏ Ŭ ŭ&quot;;</span>
+<span class="fc" id="L255">        expectedResult = &quot;AaEeGgIiOoUu&quot;;</span>
+<span class="fc" id="L256">        assertEquals(expectedResult, BibtexKeyGenerator.cleanKey(accents, true));</span>
+
+<span class="fc" id="L258">        accents = &quot;Ċ ċ Ė ė Ġ ġ İ ı Ż ż&quot;;</span>
+<span class="fc" id="L259">        expectedResult = &quot;CcEeGgIiZz&quot;;</span>
+<span class="fc" id="L260">        assertEquals(expectedResult, BibtexKeyGenerator.cleanKey(accents, true));</span>
+
+<span class="fc" id="L262">        accents = &quot;Ą ą Ę ę Į į Ǫ ǫ Ų ų&quot;;</span>
+<span class="fc" id="L263">        expectedResult = &quot;AaEeIiOoUu&quot;; // O or Q? o or q?</span>
+<span class="fc" id="L264">        assertEquals(expectedResult, BibtexKeyGenerator.cleanKey(accents, true));</span>
+
+<span class="fc" id="L266">        accents = &quot;Ā ā Ē ē Ī ī Ō ō Ū ū Ȳ ȳ&quot;;</span>
+<span class="fc" id="L267">        expectedResult = &quot;AaEeIiOoUuYy&quot;;</span>
+<span class="fc" id="L268">        assertEquals(expectedResult, BibtexKeyGenerator.cleanKey(accents, true));</span>
+
+<span class="fc" id="L270">        accents = &quot;Ǎ ǎ Č č Ď ď Ě ě Ǐ ǐ Ľ ľ Ň ň Ǒ ǒ Ř ř Š š Ť ť Ǔ ǔ Ž ž&quot;;</span>
+<span class="fc" id="L271">        expectedResult = &quot;AaCcDdEeIiLlNnOoRrSsTtUuZz&quot;;</span>
+<span class="fc" id="L272">        assertEquals(expectedResult, BibtexKeyGenerator.cleanKey(accents, true));</span>
+
+<span class="fc" id="L274">        expectedResult = &quot;AaEeIiNnOoUuYy&quot;;</span>
+<span class="fc" id="L275">        accents = &quot;ÃãẼẽĨĩÑñÕõŨũỸỹ&quot;;</span>
+<span class="fc" id="L276">        assertEquals(expectedResult, BibtexKeyGenerator.cleanKey(accents, true));</span>
+
+<span class="fc" id="L278">        accents = &quot;Ḍ ḍ Ḥ ḥ Ḷ ḷ Ḹ ḹ Ṃ ṃ Ṇ ṇ Ṛ ṛ Ṝ ṝ Ṣ ṣ Ṭ ṭ&quot;;</span>
+<span class="fc" id="L279">        expectedResult = &quot;DdHhLlLlMmNnRrRrSsTt&quot;;</span>
+<span class="fc" id="L280">        assertEquals(expectedResult, BibtexKeyGenerator.cleanKey(accents, true));</span>
+
+<span class="fc" id="L282">        String totest = &quot;À à È è Ì ì Ò ò Ù ù   Â â Ĉ ĉ Ê ê Ĝ ĝ Ĥ ĥ Î î Ĵ ĵ Ô ô Ŝ ŝ Û û Ŵ ŵ Ŷ ŷ  Ä ä Ë ë Ï ï Ö ö Ü ü Ÿ ÿ    &quot;</span>
+                + &quot;Ã ã Ẽ ẽ Ĩ ĩ Ñ ñ Õ õ Ũ ũ Ỹ ỹ   Ç ç Ģ ģ Ķ ķ Ļ ļ Ņ ņ Ŗ ŗ Ş ş Ţ ţ&quot;
+                + &quot; Ǎ ǎ Č č Ď ď Ě ě Ǐ ǐ Ľ ľ Ň ň Ǒ ǒ Ř ř Š š Ť ť Ǔ ǔ Ž ž   &quot; + &quot;Ā ā Ē ē Ī ī Ō ō Ū ū Ȳ ȳ&quot;
+                + &quot;Ă ă Ĕ ĕ Ğ ğ Ĭ ĭ Ŏ ŏ Ŭ ŭ   &quot; + &quot;Ċ ċ Ė ė Ġ ġ İ ı Ż ż   Ą ą Ę ę Į į Ǫ ǫ Ų ų   &quot;
+                + &quot;Ḍ ḍ Ḥ ḥ Ḷ ḷ Ḹ ḹ Ṃ ṃ Ṇ ṇ Ṛ ṛ Ṝ ṝ Ṣ ṣ Ṭ ṭ   &quot;;
+<span class="fc" id="L287">        String expectedResults = &quot;AaEeIiOoUuAaCcEeGgHhIiJjOoSsUuWwYyAeaeEeIiOeoeUeueYy&quot;</span>
+                + &quot;AaEeIiNnOoUuYyCcGgKkLlNnRrSsTt&quot; + &quot;AaCcDdEeIiLlNnOoRrSsTtUuZz&quot; + &quot;AaEeIiOoUuYy&quot; + &quot;AaEeGgIiOoUu&quot;
+                + &quot;CcEeGgIiZzAaEeIiOoUu&quot; + &quot;DdHhLlLlMmNnRrRrSsTt&quot;;
+<span class="fc" id="L290">        assertEquals(expectedResults, BibtexKeyGenerator.cleanKey(totest, true));</span>
+<span class="fc" id="L291">    }</span>
+
+    @Test
+    public void testFirstAuthor() {
+<span class="fc" id="L295">        assertEquals(&quot;Newton&quot;, BibtexKeyGenerator.firstAuthor(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_5));</span>
+<span class="fc" id="L296">        assertEquals(&quot;Newton&quot;, BibtexKeyGenerator.firstAuthor(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_1));</span>
+
+        // https://sourceforge.net/forum/message.php?msg_id=4498555
+<span class="fc" id="L299">        assertEquals(&quot;K{\\\&quot;o}ning&quot;, BibtexKeyGenerator.firstAuthor(&quot;K{\\\&quot;o}ning&quot;));</span>
+
+<span class="fc" id="L301">        assertEquals(&quot;&quot;, BibtexKeyGenerator.firstAuthor(&quot;&quot;));</span>
+<span class="fc" id="L302">    }</span>
+
+    public void testFirstAuthorNull() {
+<span class="nc" id="L305">        assertThrows(NullPointerException.class, () -&gt; BibtexKeyGenerator.firstAuthor(null));</span>
+<span class="nc" id="L306">    }</span>
+
+    @Test
+    public void testUniversity() throws ParseException {
+<span class="fc" id="L310">        Optional&lt;BibEntry&gt; entry = BibtexParser.singleFromString(</span>
+<span class="fc" id="L311">                &quot;@ARTICLE{kohn, author={{Link{\\\&quot;{o}}ping University}}}&quot;, importFormatPreferences, fileMonitor);</span>
+<span class="fc" id="L312">        assertEquals(&quot;UniLinkoeping&quot;,</span>
+<span class="fc" id="L313">                BibtexKeyGenerator.cleanKey(BibtexKeyGenerator.generateKey(entry.get(), &quot;auth&quot;,</span>
+<span class="fc" id="L314">                        new BibDatabase()), true));</span>
+<span class="fc" id="L315">    }</span>
+
+    @Test
+    public void testcrossrefUniversity() throws Exception {
+<span class="fc" id="L319">        BibDatabase database = new BibDatabase();</span>
+<span class="fc" id="L320">        BibEntry entry1 = new BibEntry();</span>
+<span class="fc" id="L321">        entry1.setField(FieldName.CROSSREF, &quot;entry2&quot;);</span>
+<span class="fc" id="L322">        BibEntry entry2 = new BibEntry();</span>
+<span class="fc" id="L323">        entry2.setCiteKey(&quot;entry2&quot;);</span>
+<span class="fc" id="L324">        entry2.setField(FieldName.AUTHOR, &quot;{Link{\\\&quot;{o}}ping University}}&quot;);</span>
+<span class="fc" id="L325">        database.insertEntry(entry1);</span>
+<span class="fc" id="L326">        database.insertEntry(entry2);</span>
+
+<span class="fc" id="L328">        assertEquals(&quot;UniLinkoeping&quot;,</span>
+<span class="fc" id="L329">                BibtexKeyGenerator.cleanKey(BibtexKeyGenerator.generateKey(entry1, &quot;auth&quot;,</span>
+<span class="fc" id="L330">                        database), true));</span>
+<span class="fc" id="L331">    }</span>
+
+    @Test
+    public void testDepartment() throws ParseException {
+<span class="fc" id="L335">        Optional&lt;BibEntry&gt; entry = BibtexParser.singleFromString(</span>
+<span class="fc" id="L336">                &quot;@ARTICLE{kohn, author={{Link{\\\&quot;{o}}ping University, Department of Electrical Engineering}}}&quot;,</span>
+<span class="fc" id="L337">                importFormatPreferences, fileMonitor);</span>
+<span class="fc" id="L338">        assertEquals(&quot;UniLinkoepingEE&quot;,</span>
+<span class="fc" id="L339">                BibtexKeyGenerator.cleanKey(BibtexKeyGenerator.generateKey(entry.get(), &quot;auth&quot;,</span>
+<span class="fc" id="L340">                        new BibDatabase()), true));</span>
+<span class="fc" id="L341">    }</span>
+
+    @Test
+    public void testcrossrefDepartment() throws Exception {
+<span class="fc" id="L345">        BibDatabase database = new BibDatabase();</span>
+<span class="fc" id="L346">        BibEntry entry1 = new BibEntry();</span>
+<span class="fc" id="L347">        entry1.setField(FieldName.CROSSREF, &quot;entry2&quot;);</span>
+<span class="fc" id="L348">        BibEntry entry2 = new BibEntry();</span>
+<span class="fc" id="L349">        entry2.setCiteKey(&quot;entry2&quot;);</span>
+<span class="fc" id="L350">        entry2.setField(FieldName.AUTHOR, &quot;{Link{\\\&quot;{o}}ping University, Department of Electrical Engineering}}&quot;);</span>
+<span class="fc" id="L351">        database.insertEntry(entry1);</span>
+<span class="fc" id="L352">        database.insertEntry(entry2);</span>
+
+<span class="fc" id="L354">        assertEquals(&quot;UniLinkoepingEE&quot;,</span>
+<span class="fc" id="L355">                BibtexKeyGenerator.cleanKey(BibtexKeyGenerator.generateKey(entry1, &quot;auth&quot;,</span>
+<span class="fc" id="L356">                        database), true));</span>
+<span class="fc" id="L357">    }</span>
+
+    @Test
+    public void testSchool() throws ParseException {
+<span class="fc" id="L361">        Optional&lt;BibEntry&gt; entry = BibtexParser.singleFromString(</span>
+<span class="fc" id="L362">                &quot;@ARTICLE{kohn, author={{Link{\\\&quot;{o}}ping University, School of Computer Engineering}}}&quot;,</span>
+<span class="fc" id="L363">                importFormatPreferences, fileMonitor);</span>
+<span class="fc" id="L364">        assertEquals(&quot;UniLinkoepingCE&quot;,</span>
+<span class="fc" id="L365">                BibtexKeyGenerator.cleanKey(BibtexKeyGenerator.generateKey(entry.get(), &quot;auth&quot;,</span>
+<span class="fc" id="L366">                        new BibDatabase()), true));</span>
+<span class="fc" id="L367">    }</span>
+
+    @Test
+    public void testcrossrefSchool() throws Exception {
+<span class="fc" id="L371">        BibDatabase database = new BibDatabase();</span>
+<span class="fc" id="L372">        BibEntry entry1 = new BibEntry();</span>
+<span class="fc" id="L373">        entry1.setField(FieldName.CROSSREF, &quot;entry2&quot;);</span>
+<span class="fc" id="L374">        BibEntry entry2 = new BibEntry();</span>
+<span class="fc" id="L375">        entry2.setCiteKey(&quot;entry2&quot;);</span>
+<span class="fc" id="L376">        entry2.setField(FieldName.AUTHOR, &quot;{Link{\\\&quot;{o}}ping University, School of Computer Engineering}}&quot;);</span>
+<span class="fc" id="L377">        database.insertEntry(entry1);</span>
+<span class="fc" id="L378">        database.insertEntry(entry2);</span>
+
+<span class="fc" id="L380">        assertEquals(&quot;UniLinkoepingCE&quot;,</span>
+<span class="fc" id="L381">                BibtexKeyGenerator.cleanKey(BibtexKeyGenerator.generateKey(entry1, &quot;auth&quot;,</span>
+<span class="fc" id="L382">                        database), true));</span>
+<span class="fc" id="L383">    }</span>
+
+    @Test
+    public void testInstituteOfTechnology() throws ParseException {
+<span class="fc" id="L387">        Optional&lt;BibEntry&gt; entry = BibtexParser.singleFromString(</span>
+<span class="fc" id="L388">                &quot;@ARTICLE{kohn, author={{Massachusetts Institute of Technology}}}&quot;, importFormatPreferences, fileMonitor);</span>
+<span class="fc" id="L389">        assertEquals(&quot;MIT&quot;,</span>
+<span class="fc" id="L390">                BibtexKeyGenerator.cleanKey(BibtexKeyGenerator.generateKey(entry.get(), &quot;auth&quot;,</span>
+<span class="fc" id="L391">                        new BibDatabase()), true));</span>
+<span class="fc" id="L392">    }</span>
+
+    @Test
+    public void testcrossrefInstituteOfTechnology() throws Exception {
+<span class="fc" id="L396">        BibDatabase database = new BibDatabase();</span>
+<span class="fc" id="L397">        BibEntry entry1 = new BibEntry();</span>
+<span class="fc" id="L398">        entry1.setField(FieldName.CROSSREF, &quot;entry2&quot;);</span>
+<span class="fc" id="L399">        BibEntry entry2 = new BibEntry();</span>
+<span class="fc" id="L400">        entry2.setCiteKey(&quot;entry2&quot;);</span>
+<span class="fc" id="L401">        entry2.setField(FieldName.AUTHOR, &quot;{Massachusetts Institute of Technology}&quot;);</span>
+<span class="fc" id="L402">        database.insertEntry(entry1);</span>
+<span class="fc" id="L403">        database.insertEntry(entry2);</span>
+
+<span class="fc" id="L405">        assertEquals(&quot;MIT&quot;,</span>
+<span class="fc" id="L406">                BibtexKeyGenerator.cleanKey(BibtexKeyGenerator.generateKey(entry1, &quot;auth&quot;,</span>
+<span class="fc" id="L407">                        database), true));</span>
+<span class="fc" id="L408">    }</span>
+
+    @Test
+    public void testAuthIniN() {
+<span class="fc" id="L412">        assertEquals(&quot;NMEB&quot;, BibtexKeyGenerator.authIniN(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_5, 4));</span>
+<span class="fc" id="L413">        assertEquals(&quot;NMEB&quot;, BibtexKeyGenerator.authIniN(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_4, 4));</span>
+<span class="fc" id="L414">        assertEquals(&quot;NeME&quot;, BibtexKeyGenerator.authIniN(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_3, 4));</span>
+<span class="fc" id="L415">        assertEquals(&quot;NeMa&quot;, BibtexKeyGenerator.authIniN(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_2, 4));</span>
+<span class="fc" id="L416">        assertEquals(&quot;Newt&quot;, BibtexKeyGenerator.authIniN(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_1, 4));</span>
+<span class="fc" id="L417">        assertEquals(&quot;&quot;, &quot;&quot;);</span>
+
+<span class="fc" id="L419">        assertEquals(&quot;N&quot;, BibtexKeyGenerator.authIniN(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_1, 1));</span>
+<span class="fc" id="L420">        assertEquals(&quot;&quot;, BibtexKeyGenerator.authIniN(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_1, 0));</span>
+<span class="fc" id="L421">        assertEquals(&quot;&quot;, BibtexKeyGenerator.authIniN(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_1, -1));</span>
+
+<span class="fc" id="L423">        assertEquals(&quot;Newton&quot;, BibtexKeyGenerator.authIniN(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_1, 6));</span>
+<span class="fc" id="L424">        assertEquals(&quot;Newton&quot;, BibtexKeyGenerator.authIniN(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_1, 7));</span>
+<span class="fc" id="L425">    }</span>
+
+    public void testAuthIniNNull() {
+<span class="nc" id="L428">        assertThrows(NullPointerException.class, () -&gt; BibtexKeyGenerator.authIniN(null, 3));</span>
+<span class="nc" id="L429">    }</span>
+
+    @Test
+    public void testAuthIniNEmptyReturnsEmpty() {
+<span class="fc" id="L433">        assertEquals(&quot;&quot;, BibtexKeyGenerator.authIniN(&quot;&quot;, 1));</span>
+<span class="fc" id="L434">    }</span>
+
+    /**
+     * Tests  [auth.auth.ea]
+     */
+    @Test
+    public void authAuthEa() {
+<span class="fc" id="L441">        assertEquals(&quot;Newton&quot;, BibtexKeyGenerator.authAuthEa(AUTHOR_STRING_FIRSTNAME_FULL_LASTNAME_FULL_COUNT_1));</span>
+<span class="fc" id="L442">        assertEquals(&quot;Newton.Maxwell&quot;,</span>
+<span class="fc" id="L443">                BibtexKeyGenerator.authAuthEa(AUTHOR_STRING_FIRSTNAME_FULL_LASTNAME_FULL_COUNT_2));</span>
+<span class="fc" id="L444">        assertEquals(&quot;Newton.Maxwell.ea&quot;,</span>
+<span class="fc" id="L445">                BibtexKeyGenerator.authAuthEa(AUTHOR_STRING_FIRSTNAME_FULL_LASTNAME_FULL_COUNT_3));</span>
+<span class="fc" id="L446">    }</span>
+
+    @Test
+    public void testAuthEaEmptyReturnsEmpty() {
+<span class="fc" id="L450">        assertEquals(&quot;&quot;, BibtexKeyGenerator.authAuthEa(&quot;&quot;));</span>
+<span class="fc" id="L451">    }</span>
+
+    /**
+     * Tests the [auth.etal] and [authEtAl] patterns
+     */
+    @Test
+    public void testAuthEtAl() {
+        // tests taken from the comments
+
+        // [auth.etal]
+<span class="fc" id="L461">        String delim = &quot;.&quot;;</span>
+<span class="fc" id="L462">        String append = &quot;.etal&quot;;</span>
+<span class="fc" id="L463">        assertEquals(&quot;Newton.etal&quot;,</span>
+<span class="fc" id="L464">                BibtexKeyGenerator.authEtal(AUTHOR_STRING_FIRSTNAME_FULL_LASTNAME_FULL_COUNT_3, delim, append));</span>
+<span class="fc" id="L465">        assertEquals(&quot;Newton.Maxwell&quot;,</span>
+<span class="fc" id="L466">                BibtexKeyGenerator.authEtal(AUTHOR_STRING_FIRSTNAME_FULL_LASTNAME_FULL_COUNT_2, delim, append));</span>
+
+        // [authEtAl]
+<span class="fc" id="L469">        delim = &quot;&quot;;</span>
+<span class="fc" id="L470">        append = &quot;EtAl&quot;;</span>
+<span class="fc" id="L471">        assertEquals(&quot;NewtonEtAl&quot;,</span>
+<span class="fc" id="L472">                BibtexKeyGenerator.authEtal(AUTHOR_STRING_FIRSTNAME_FULL_LASTNAME_FULL_COUNT_3, delim, append));</span>
+<span class="fc" id="L473">        assertEquals(&quot;NewtonMaxwell&quot;,</span>
+<span class="fc" id="L474">                BibtexKeyGenerator.authEtal(AUTHOR_STRING_FIRSTNAME_FULL_LASTNAME_FULL_COUNT_2, delim, append));</span>
+<span class="fc" id="L475">    }</span>
+
+    /**
+     * Test the [authshort] pattern
+     */
+    @Test
+    public void testAuthShort() {
+        // tests taken from the comments
+<span class="fc" id="L483">        assertEquals(&quot;NME+&quot;, BibtexKeyGenerator.authshort(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_4));</span>
+<span class="fc" id="L484">        assertEquals(&quot;NME&quot;, BibtexKeyGenerator.authshort(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_3));</span>
+<span class="fc" id="L485">        assertEquals(&quot;NM&quot;, BibtexKeyGenerator.authshort(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_2));</span>
+<span class="fc" id="L486">        assertEquals(&quot;Newton&quot;, BibtexKeyGenerator.authshort(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_1));</span>
+<span class="fc" id="L487">    }</span>
+
+    @Test
+    public void testAuthShortEmptyReturnsEmpty() {
+<span class="fc" id="L491">        assertEquals(&quot;&quot;, BibtexKeyGenerator.authshort(&quot;&quot;));</span>
+<span class="fc" id="L492">    }</span>
+
+    /**
+     * Test the [authN_M] pattern
+     */
+    @Test
+    public void authNM() {
+<span class="fc" id="L499">        assertEquals(&quot;N&quot;, BibtexKeyGenerator.authNofMth(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_1, 1, 1));</span>
+<span class="fc" id="L500">        assertEquals(&quot;Max&quot;,</span>
+<span class="fc" id="L501">                BibtexKeyGenerator.authNofMth(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_2, 3, 2));</span>
+<span class="fc" id="L502">        assertEquals(&quot;New&quot;,</span>
+<span class="fc" id="L503">                BibtexKeyGenerator.authNofMth(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_3, 3, 1));</span>
+<span class="fc" id="L504">        assertEquals(&quot;Bo&quot;,</span>
+<span class="fc" id="L505">                BibtexKeyGenerator.authNofMth(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_4, 2, 4));</span>
+<span class="fc" id="L506">        assertEquals(&quot;Bohr&quot;,</span>
+<span class="fc" id="L507">                BibtexKeyGenerator.authNofMth(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_5, 6, 4));</span>
+
+<span class="fc" id="L509">        assertEquals(&quot;Aal&quot;,</span>
+<span class="fc" id="L510">                BibtexKeyGenerator.authNofMth(AUTHOR_STRING_FIRSTNAME_FULL_LASTNAME_FULL_WITH_VAN_COUNT_1, 3, 1));</span>
+<span class="fc" id="L511">        assertEquals(&quot;Less&quot;,</span>
+<span class="fc" id="L512">                BibtexKeyGenerator.authNofMth(AUTHOR_STRING_FIRSTNAME_FULL_LASTNAME_FULL_WITH_VAN_COUNT_2, 4, 2));</span>
+
+<span class="fc" id="L514">        assertEquals(&quot;&quot;, BibtexKeyGenerator.authNofMth(&quot;&quot;, 2, 4));</span>
+<span class="fc" id="L515">    }</span>
+
+    public void authNMThrowsNPE() {
+<span class="nc" id="L518">        assertThrows(NullPointerException.class, () -&gt; BibtexKeyGenerator.authNofMth(null, 2, 4));</span>
+<span class="nc" id="L519">    }</span>
+
+    /**
+     * Tests [authForeIni]
+     */
+    @Test
+    public void firstAuthorForenameInitials() {
+<span class="fc" id="L526">        assertEquals(&quot;I&quot;, BibtexKeyGenerator</span>
+<span class="fc" id="L527">                .firstAuthorForenameInitials(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_1));</span>
+<span class="fc" id="L528">        assertEquals(&quot;I&quot;, BibtexKeyGenerator</span>
+<span class="fc" id="L529">                .firstAuthorForenameInitials(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_2));</span>
+<span class="fc" id="L530">        assertEquals(&quot;I&quot;,</span>
+<span class="fc" id="L531">                BibtexKeyGenerator.firstAuthorForenameInitials(AUTHOR_STRING_FIRSTNAME_FULL_LASTNAME_FULL_COUNT_1));</span>
+<span class="fc" id="L532">        assertEquals(&quot;I&quot;,</span>
+<span class="fc" id="L533">                BibtexKeyGenerator.firstAuthorForenameInitials(AUTHOR_STRING_FIRSTNAME_FULL_LASTNAME_FULL_COUNT_2));</span>
+<span class="fc" id="L534">    }</span>
+
+    /**
+     * Tests [authFirstFull]
+     */
+    @Test
+    public void firstAuthorVonAndLast() {
+<span class="fc" id="L541">        assertEquals(&quot;vanderAalst&quot;, BibtexKeyGenerator</span>
+<span class="fc" id="L542">                .firstAuthorVonAndLast(AUTHOR_STRING_FIRSTNAME_FULL_LASTNAME_FULL_WITH_VAN_COUNT_1));</span>
+<span class="fc" id="L543">        assertEquals(&quot;vanderAalst&quot;, BibtexKeyGenerator</span>
+<span class="fc" id="L544">                .firstAuthorVonAndLast(AUTHOR_STRING_FIRSTNAME_FULL_LASTNAME_FULL_WITH_VAN_COUNT_2));</span>
+<span class="fc" id="L545">    }</span>
+
+    @Test
+    public void firstAuthorVonAndLastNoVonInName() {
+<span class="fc" id="L549">        assertEquals(&quot;Newton&quot;,</span>
+<span class="fc" id="L550">                BibtexKeyGenerator.firstAuthorVonAndLast(AUTHOR_STRING_FIRSTNAME_FULL_LASTNAME_FULL_COUNT_1));</span>
+<span class="fc" id="L551">        assertEquals(&quot;Newton&quot;,</span>
+<span class="fc" id="L552">                BibtexKeyGenerator.firstAuthorVonAndLast(AUTHOR_STRING_FIRSTNAME_FULL_LASTNAME_FULL_COUNT_2));</span>
+<span class="fc" id="L553">    }</span>
+
+    /**
+     * Tests [authors]
+     */
+    @Test
+    public void testAllAuthors() {
+<span class="fc" id="L560">        assertEquals(&quot;Newton&quot;, BibtexKeyGenerator.allAuthors(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_1));</span>
+<span class="fc" id="L561">        assertEquals(&quot;NewtonMaxwell&quot;,</span>
+<span class="fc" id="L562">                BibtexKeyGenerator.allAuthors(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_2));</span>
+<span class="fc" id="L563">        assertEquals(&quot;NewtonMaxwellEinstein&quot;,</span>
+<span class="fc" id="L564">                BibtexKeyGenerator.allAuthors(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_3));</span>
+<span class="fc" id="L565">    }</span>
+
+    /**
+     * Tests [authorsAlpha]
+     */
+    @Test
+    public void authorsAlpha() {
+<span class="fc" id="L572">        assertEquals(&quot;New&quot;, BibtexKeyGenerator.authorsAlpha(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_1));</span>
+<span class="fc" id="L573">        assertEquals(&quot;NM&quot;, BibtexKeyGenerator.authorsAlpha(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_2));</span>
+<span class="fc" id="L574">        assertEquals(&quot;NME&quot;, BibtexKeyGenerator.authorsAlpha(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_3));</span>
+<span class="fc" id="L575">        assertEquals(&quot;NMEB&quot;, BibtexKeyGenerator.authorsAlpha(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_4));</span>
+<span class="fc" id="L576">        assertEquals(&quot;NME+&quot;, BibtexKeyGenerator.authorsAlpha(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_5));</span>
+
+<span class="fc" id="L578">        assertEquals(&quot;vdAal&quot;,</span>
+<span class="fc" id="L579">                BibtexKeyGenerator.authorsAlpha(AUTHOR_STRING_FIRSTNAME_FULL_LASTNAME_FULL_WITH_VAN_COUNT_1));</span>
+<span class="fc" id="L580">        assertEquals(&quot;vdAvL&quot;,</span>
+<span class="fc" id="L581">                BibtexKeyGenerator.authorsAlpha(AUTHOR_STRING_FIRSTNAME_FULL_LASTNAME_FULL_WITH_VAN_COUNT_2));</span>
+<span class="fc" id="L582">    }</span>
+
+    /**
+     * Tests [authorLast]
+     */
+    @Test
+    public void lastAuthor() {
+<span class="fc" id="L589">        assertEquals(&quot;Newton&quot;, BibtexKeyGenerator.lastAuthor(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_1));</span>
+<span class="fc" id="L590">        assertEquals(&quot;Maxwell&quot;, BibtexKeyGenerator.lastAuthor(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_2));</span>
+<span class="fc" id="L591">        assertEquals(&quot;Einstein&quot;,</span>
+<span class="fc" id="L592">                BibtexKeyGenerator.lastAuthor(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_3));</span>
+<span class="fc" id="L593">        assertEquals(&quot;Bohr&quot;, BibtexKeyGenerator.lastAuthor(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_4));</span>
+<span class="fc" id="L594">        assertEquals(&quot;Unknown&quot;, BibtexKeyGenerator.lastAuthor(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_5));</span>
+
+<span class="fc" id="L596">        assertEquals(&quot;Aalst&quot;,</span>
+<span class="fc" id="L597">                BibtexKeyGenerator.lastAuthor(AUTHOR_STRING_FIRSTNAME_FULL_LASTNAME_FULL_WITH_VAN_COUNT_1));</span>
+<span class="fc" id="L598">        assertEquals(&quot;Lessen&quot;,</span>
+<span class="fc" id="L599">                BibtexKeyGenerator.lastAuthor(AUTHOR_STRING_FIRSTNAME_FULL_LASTNAME_FULL_WITH_VAN_COUNT_2));</span>
+<span class="fc" id="L600">    }</span>
+
+    /**
+     * Tests [authorLastForeIni]
+     */
+    @Test
+    public void lastAuthorForenameInitials() {
+<span class="fc" id="L607">        assertEquals(&quot;I&quot;,</span>
+<span class="fc" id="L608">                BibtexKeyGenerator.lastAuthorForenameInitials(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_1));</span>
+<span class="fc" id="L609">        assertEquals(&quot;J&quot;,</span>
+<span class="fc" id="L610">                BibtexKeyGenerator.lastAuthorForenameInitials(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_2));</span>
+<span class="fc" id="L611">        assertEquals(&quot;A&quot;,</span>
+<span class="fc" id="L612">                BibtexKeyGenerator.lastAuthorForenameInitials(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_3));</span>
+<span class="fc" id="L613">        assertEquals(&quot;N&quot;,</span>
+<span class="fc" id="L614">                BibtexKeyGenerator.lastAuthorForenameInitials(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_4));</span>
+<span class="fc" id="L615">        assertEquals(&quot;H&quot;,</span>
+<span class="fc" id="L616">                BibtexKeyGenerator.lastAuthorForenameInitials(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_5));</span>
+
+<span class="fc" id="L618">        assertEquals(&quot;W&quot;, BibtexKeyGenerator</span>
+<span class="fc" id="L619">                .lastAuthorForenameInitials(AUTHOR_STRING_FIRSTNAME_FULL_LASTNAME_FULL_WITH_VAN_COUNT_1));</span>
+<span class="fc" id="L620">        assertEquals(&quot;T&quot;, BibtexKeyGenerator</span>
+<span class="fc" id="L621">                .lastAuthorForenameInitials(AUTHOR_STRING_FIRSTNAME_FULL_LASTNAME_FULL_WITH_VAN_COUNT_2));</span>
+<span class="fc" id="L622">    }</span>
+
+    /**
+     * Tests [authorIni]
+     */
+    @Test
+    public void oneAuthorPlusIni() {
+<span class="fc" id="L629">        assertEquals(&quot;Newto&quot;,</span>
+<span class="fc" id="L630">                BibtexKeyGenerator.oneAuthorPlusIni(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_1));</span>
+<span class="fc" id="L631">        assertEquals(&quot;NewtoM&quot;,</span>
+<span class="fc" id="L632">                BibtexKeyGenerator.oneAuthorPlusIni(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_2));</span>
+<span class="fc" id="L633">        assertEquals(&quot;NewtoME&quot;,</span>
+<span class="fc" id="L634">                BibtexKeyGenerator.oneAuthorPlusIni(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_3));</span>
+<span class="fc" id="L635">        assertEquals(&quot;NewtoMEB&quot;,</span>
+<span class="fc" id="L636">                BibtexKeyGenerator.oneAuthorPlusIni(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_4));</span>
+<span class="fc" id="L637">        assertEquals(&quot;NewtoMEBU&quot;,</span>
+<span class="fc" id="L638">                BibtexKeyGenerator.oneAuthorPlusIni(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_5));</span>
+
+<span class="fc" id="L640">        assertEquals(&quot;Aalst&quot;,</span>
+<span class="fc" id="L641">                BibtexKeyGenerator.oneAuthorPlusIni(AUTHOR_STRING_FIRSTNAME_FULL_LASTNAME_FULL_WITH_VAN_COUNT_1));</span>
+<span class="fc" id="L642">        assertEquals(&quot;AalstL&quot;,</span>
+<span class="fc" id="L643">                BibtexKeyGenerator.oneAuthorPlusIni(AUTHOR_STRING_FIRSTNAME_FULL_LASTNAME_FULL_WITH_VAN_COUNT_2));</span>
+<span class="fc" id="L644">    }</span>
+
+    /**
+     * Tests the [authorsN] pattern. -&gt; [authors1]
+     */
+    @Test
+    public void testNAuthors1() {
+<span class="fc" id="L651">        assertEquals(&quot;Newton&quot;, BibtexKeyGenerator.nAuthors(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_1, 1));</span>
+<span class="fc" id="L652">        assertEquals(&quot;NewtonEtAl&quot;,</span>
+<span class="fc" id="L653">                BibtexKeyGenerator.nAuthors(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_2, 1));</span>
+<span class="fc" id="L654">        assertEquals(&quot;NewtonEtAl&quot;,</span>
+<span class="fc" id="L655">                BibtexKeyGenerator.nAuthors(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_3, 1));</span>
+<span class="fc" id="L656">        assertEquals(&quot;NewtonEtAl&quot;,</span>
+<span class="fc" id="L657">                BibtexKeyGenerator.nAuthors(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_4, 1));</span>
+<span class="fc" id="L658">    }</span>
+
+    @Test
+    public void testNAuthors1EmptyReturnEmpty() {
+<span class="fc" id="L662">        assertEquals(&quot;&quot;, BibtexKeyGenerator.nAuthors(&quot;&quot;, 1));</span>
+<span class="fc" id="L663">    }</span>
+
+    /**
+     * Tests the [authorsN] pattern. -&gt; [authors3]
+     */
+    @Test
+    public void testNAuthors3() {
+<span class="fc" id="L670">        assertEquals(&quot;Newton&quot;, BibtexKeyGenerator.nAuthors(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_1, 3));</span>
+<span class="fc" id="L671">        assertEquals(&quot;NewtonMaxwell&quot;,</span>
+<span class="fc" id="L672">                BibtexKeyGenerator.nAuthors(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_2, 3));</span>
+<span class="fc" id="L673">        assertEquals(&quot;NewtonMaxwellEinstein&quot;,</span>
+<span class="fc" id="L674">                BibtexKeyGenerator.nAuthors(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_3, 3));</span>
+<span class="fc" id="L675">        assertEquals(&quot;NewtonMaxwellEinsteinEtAl&quot;,</span>
+<span class="fc" id="L676">                BibtexKeyGenerator.nAuthors(AUTHOR_STRING_FIRSTNAME_INITIAL_LASTNAME_FULL_COUNT_4, 3));</span>
+<span class="fc" id="L677">    }</span>
+
+    @Test
+    public void testFirstPage() {
+<span class="fc" id="L681">        assertEquals(&quot;7&quot;, BibtexKeyGenerator.firstPage(&quot;7--27&quot;));</span>
+<span class="fc" id="L682">        assertEquals(&quot;27&quot;, BibtexKeyGenerator.firstPage(&quot;--27&quot;));</span>
+<span class="fc" id="L683">        assertEquals(&quot;&quot;, BibtexKeyGenerator.firstPage(&quot;&quot;));</span>
+<span class="fc" id="L684">        assertEquals(&quot;42&quot;, BibtexKeyGenerator.firstPage(&quot;42--111&quot;));</span>
+<span class="fc" id="L685">        assertEquals(&quot;7&quot;, BibtexKeyGenerator.firstPage(&quot;7,41,73--97&quot;));</span>
+<span class="fc" id="L686">        assertEquals(&quot;7&quot;, BibtexKeyGenerator.firstPage(&quot;41,7,73--97&quot;));</span>
+<span class="fc" id="L687">        assertEquals(&quot;43&quot;, BibtexKeyGenerator.firstPage(&quot;43+&quot;));</span>
+<span class="fc" id="L688">    }</span>
+
+    public void testFirstPageNull() {
+<span class="nc" id="L691">        assertThrows(NullPointerException.class, () -&gt; BibtexKeyGenerator.firstPage(null));</span>
+<span class="nc" id="L692">    }</span>
+
+    @Test
+    public void testPagePrefix() {
+<span class="fc" id="L696">        assertEquals(&quot;L&quot;, BibtexKeyGenerator.pagePrefix(&quot;L7--27&quot;));</span>
+<span class="fc" id="L697">        assertEquals(&quot;L--&quot;, BibtexKeyGenerator.pagePrefix(&quot;L--27&quot;));</span>
+<span class="fc" id="L698">        assertEquals(&quot;L&quot;, BibtexKeyGenerator.pagePrefix(&quot;L&quot;));</span>
+<span class="fc" id="L699">        assertEquals(&quot;L&quot;, BibtexKeyGenerator.pagePrefix(&quot;L42--111&quot;));</span>
+<span class="fc" id="L700">        assertEquals(&quot;L&quot;, BibtexKeyGenerator.pagePrefix(&quot;L7,L41,L73--97&quot;));</span>
+<span class="fc" id="L701">        assertEquals(&quot;L&quot;, BibtexKeyGenerator.pagePrefix(&quot;L41,L7,L73--97&quot;));</span>
+<span class="fc" id="L702">        assertEquals(&quot;L&quot;, BibtexKeyGenerator.pagePrefix(&quot;L43+&quot;));</span>
+<span class="fc" id="L703">        assertEquals(&quot;&quot;, BibtexKeyGenerator.pagePrefix(&quot;7--27&quot;));</span>
+<span class="fc" id="L704">        assertEquals(&quot;--&quot;, BibtexKeyGenerator.pagePrefix(&quot;--27&quot;));</span>
+<span class="fc" id="L705">        assertEquals(&quot;&quot;, BibtexKeyGenerator.pagePrefix(&quot;&quot;));</span>
+<span class="fc" id="L706">        assertEquals(&quot;&quot;, BibtexKeyGenerator.pagePrefix(&quot;42--111&quot;));</span>
+<span class="fc" id="L707">        assertEquals(&quot;&quot;, BibtexKeyGenerator.pagePrefix(&quot;7,41,73--97&quot;));</span>
+<span class="fc" id="L708">        assertEquals(&quot;&quot;, BibtexKeyGenerator.pagePrefix(&quot;41,7,73--97&quot;));</span>
+<span class="fc" id="L709">        assertEquals(&quot;&quot;, BibtexKeyGenerator.pagePrefix(&quot;43+&quot;));</span>
+<span class="fc" id="L710">    }</span>
+
+    public void testPagePrefixNull() {
+<span class="nc" id="L713">        assertThrows(NullPointerException.class, () -&gt; BibtexKeyGenerator.pagePrefix(null));</span>
+<span class="nc" id="L714">    }</span>
+
+    @Test
+    public void testLastPage() {
+
+<span class="fc" id="L719">        assertEquals(&quot;27&quot;, BibtexKeyGenerator.lastPage(&quot;7--27&quot;));</span>
+<span class="fc" id="L720">        assertEquals(&quot;27&quot;, BibtexKeyGenerator.lastPage(&quot;--27&quot;));</span>
+<span class="fc" id="L721">        assertEquals(&quot;&quot;, BibtexKeyGenerator.lastPage(&quot;&quot;));</span>
+<span class="fc" id="L722">        assertEquals(&quot;111&quot;, BibtexKeyGenerator.lastPage(&quot;42--111&quot;));</span>
+<span class="fc" id="L723">        assertEquals(&quot;97&quot;, BibtexKeyGenerator.lastPage(&quot;7,41,73--97&quot;));</span>
+<span class="fc" id="L724">        assertEquals(&quot;97&quot;, BibtexKeyGenerator.lastPage(&quot;7,41,97--73&quot;));</span>
+<span class="fc" id="L725">        assertEquals(&quot;43&quot;, BibtexKeyGenerator.lastPage(&quot;43+&quot;));</span>
+<span class="fc" id="L726">    }</span>
+
+    public void testLastPageNull() {
+<span class="nc" id="L729">        assertThrows(NullPointerException.class, () -&gt; BibtexKeyGenerator.lastPage(null));</span>
+<span class="nc" id="L730">    }</span>
+
+    /**
+     * Tests [veryShortTitle]
+     */
+    @Test
+    public void veryShortTitle() {
+        // veryShortTitle is getTitleWords with &quot;1&quot; as count
+<span class="fc" id="L738">        int count = 1;</span>
+<span class="fc" id="L739">        assertEquals(&quot;application&quot;,</span>
+<span class="fc" id="L740">                BibtexKeyGenerator.getTitleWords(count,</span>
+<span class="fc" id="L741">                        BibtexKeyGenerator.removeSmallWords(TITLE_STRING_ALL_LOWER_FOUR_SMALL_WORDS_ONE_EN_DASH)));</span>
+<span class="fc" id="L742">        assertEquals(&quot;BPEL&quot;, BibtexKeyGenerator.getTitleWords(count,</span>
+<span class="fc" id="L743">                BibtexKeyGenerator.removeSmallWords(</span>
+<span class="fc" id="L744">                        TITLE_STRING_ALL_LOWER_FIRST_WORD_IN_BRACKETS_TWO_SMALL_WORDS_SMALL_WORD_AFTER_COLON)));</span>
+<span class="fc" id="L745">        assertEquals(&quot;Process&quot;, BibtexKeyGenerator.getTitleWords(count,</span>
+<span class="fc" id="L746">                BibtexKeyGenerator.removeSmallWords(TITLE_STRING_CASED)));</span>
+<span class="fc" id="L747">        assertEquals(&quot;BPMN&quot;,</span>
+<span class="fc" id="L748">                BibtexKeyGenerator.getTitleWords(count,</span>
+<span class="fc" id="L749">                        BibtexKeyGenerator.removeSmallWords(TITLE_STRING_CASED_ONE_UPPER_WORD_ONE_SMALL_WORD)));</span>
+<span class="fc" id="L750">        assertEquals(&quot;Difference&quot;, BibtexKeyGenerator.getTitleWords(count,</span>
+<span class="fc" id="L751">                BibtexKeyGenerator.removeSmallWords(TITLE_STRING_CASED_TWO_SMALL_WORDS_SMALL_WORD_AT_THE_BEGINNING)));</span>
+<span class="fc" id="L752">        assertEquals(&quot;Cloud&quot;,</span>
+<span class="fc" id="L753">                BibtexKeyGenerator.getTitleWords(count,</span>
+                        BibtexKeyGenerator
+<span class="fc" id="L755">                                .removeSmallWords(TITLE_STRING_CASED_TWO_SMALL_WORDS_SMALL_WORD_AFTER_COLON)));</span>
+<span class="fc" id="L756">        assertEquals(&quot;Towards&quot;,</span>
+<span class="fc" id="L757">                BibtexKeyGenerator.getTitleWords(count,</span>
+<span class="fc" id="L758">                        BibtexKeyGenerator.removeSmallWords(TITLE_STRING_CASED_TWO_SMALL_WORDS_ONE_CONNECTED_WORD)));</span>
+<span class="fc" id="L759">        assertEquals(&quot;Measurement&quot;,</span>
+<span class="fc" id="L760">                BibtexKeyGenerator.getTitleWords(count,</span>
+                        BibtexKeyGenerator
+<span class="fc" id="L762">                                .removeSmallWords(TITLE_STRING_CASED_FOUR_SMALL_WORDS_TWO_CONNECTED_WORDS)));</span>
+<span class="fc" id="L763">    }</span>
+
+    /**
+     * Tests [shortTitle]
+     */
+    @Test
+    public void shortTitle() {
+        // shortTitle is getTitleWords with &quot;3&quot; as count
+<span class="fc" id="L771">        int count = 3;</span>
+<span class="fc" id="L772">        assertEquals(&quot;application migration effort&quot;,</span>
+<span class="fc" id="L773">                BibtexKeyGenerator.getTitleWords(count, TITLE_STRING_ALL_LOWER_FOUR_SMALL_WORDS_ONE_EN_DASH));</span>
+<span class="fc" id="L774">        assertEquals(&quot;BPEL conformance in&quot;, BibtexKeyGenerator.getTitleWords(count,</span>
+<span class="fc" id="L775">                TITLE_STRING_ALL_LOWER_FIRST_WORD_IN_BRACKETS_TWO_SMALL_WORDS_SMALL_WORD_AFTER_COLON));</span>
+<span class="fc" id="L776">        assertEquals(&quot;Process Viewing Patterns&quot;, BibtexKeyGenerator.getTitleWords(count, TITLE_STRING_CASED));</span>
+<span class="fc" id="L777">        assertEquals(&quot;BPMN Conformance in&quot;,</span>
+<span class="fc" id="L778">                BibtexKeyGenerator.getTitleWords(count, TITLE_STRING_CASED_ONE_UPPER_WORD_ONE_SMALL_WORD));</span>
+<span class="fc" id="L779">        assertEquals(&quot;The Difference Between&quot;, BibtexKeyGenerator.getTitleWords(count,</span>
+<span class="fc" id="L780">                TITLE_STRING_CASED_TWO_SMALL_WORDS_SMALL_WORD_AT_THE_BEGINNING));</span>
+<span class="fc" id="L781">        assertEquals(&quot;Cloud Computing: The&quot;,</span>
+<span class="fc" id="L782">                BibtexKeyGenerator.getTitleWords(count, TITLE_STRING_CASED_TWO_SMALL_WORDS_SMALL_WORD_AFTER_COLON));</span>
+<span class="fc" id="L783">        assertEquals(&quot;Towards Choreography based&quot;,</span>
+<span class="fc" id="L784">                BibtexKeyGenerator.getTitleWords(count, TITLE_STRING_CASED_TWO_SMALL_WORDS_ONE_CONNECTED_WORD));</span>
+<span class="fc" id="L785">        assertEquals(&quot;On the Measurement&quot;,</span>
+<span class="fc" id="L786">                BibtexKeyGenerator.getTitleWords(count, TITLE_STRING_CASED_FOUR_SMALL_WORDS_TWO_CONNECTED_WORDS));</span>
+<span class="fc" id="L787">    }</span>
+
+    /**
+    * Tests [camel]
+    */
+    @Test
+    public void camel() {
+        // camel capitalises and concatenates all the words of the title
+<span class="fc" id="L795">        assertEquals(&quot;ApplicationMigrationEffortInTheCloudTheCaseOfCloudPlatforms&quot;,</span>
+<span class="fc" id="L796">                BibtexKeyGenerator.getCamelizedTitle(TITLE_STRING_ALL_LOWER_FOUR_SMALL_WORDS_ONE_EN_DASH));</span>
+<span class="fc" id="L797">        assertEquals(&quot;BPELConformanceInOpenSourceEnginesTheCaseOfStaticAnalysis&quot;,</span>
+<span class="fc" id="L798">                BibtexKeyGenerator.getCamelizedTitle(</span>
+<span class="fc" id="L799">                        TITLE_STRING_ALL_LOWER_FIRST_WORD_IN_BRACKETS_TWO_SMALL_WORDS_SMALL_WORD_AFTER_COLON));</span>
+<span class="fc" id="L800">        assertEquals(&quot;ProcessViewingPatterns&quot;, BibtexKeyGenerator.getCamelizedTitle(TITLE_STRING_CASED));</span>
+<span class="fc" id="L801">        assertEquals(&quot;BPMNConformanceInOpenSourceEngines&quot;,</span>
+<span class="fc" id="L802">                BibtexKeyGenerator.getCamelizedTitle(TITLE_STRING_CASED_ONE_UPPER_WORD_ONE_SMALL_WORD));</span>
+<span class="fc" id="L803">        assertEquals(&quot;TheDifferenceBetweenGraphBasedAndBlockStructuredBusinessProcessModellingLanguages&quot;,</span>
+<span class="fc" id="L804">                BibtexKeyGenerator.getCamelizedTitle(</span>
+<span class="fc" id="L805">                        TITLE_STRING_CASED_TWO_SMALL_WORDS_SMALL_WORD_AT_THE_BEGINNING));</span>
+<span class="fc" id="L806">        assertEquals(&quot;CloudComputingTheNextRevolutionInIT&quot;,</span>
+<span class="fc" id="L807">                BibtexKeyGenerator.getCamelizedTitle(TITLE_STRING_CASED_TWO_SMALL_WORDS_SMALL_WORD_AFTER_COLON));</span>
+<span class="fc" id="L808">        assertEquals(&quot;TowardsChoreographyBasedProcessDistributionInTheCloud&quot;,</span>
+<span class="fc" id="L809">                BibtexKeyGenerator.getCamelizedTitle(TITLE_STRING_CASED_TWO_SMALL_WORDS_ONE_CONNECTED_WORD));</span>
+<span class="fc" id="L810">        assertEquals(&quot;OnTheMeasurementOfDesignTimeAdaptabilityForProcessBasedSystems&quot;,</span>
+<span class="fc" id="L811">                BibtexKeyGenerator.getCamelizedTitle(TITLE_STRING_CASED_FOUR_SMALL_WORDS_TWO_CONNECTED_WORDS));</span>
+<span class="fc" id="L812">    }</span>
+
+    /**
+     * Tests [title]
+     */
+    @Test
+    public void title() {
+        // title capitalises the significant words of the title
+        // for the title case the concatenation happens at formatting, which is tested in MakeLabelWithDatabaseTest.java
+<span class="fc" id="L821">        assertEquals(&quot;Application Migration Effort in the Cloud the Case of Cloud Platforms&quot;,</span>
+                BibtexKeyGenerator
+<span class="fc" id="L823">                        .camelizeSignificantWordsInTitle(TITLE_STRING_ALL_LOWER_FOUR_SMALL_WORDS_ONE_EN_DASH));</span>
+<span class="fc" id="L824">        assertEquals(&quot;BPEL Conformance in Open Source Engines: the Case of Static Analysis&quot;,</span>
+<span class="fc" id="L825">                BibtexKeyGenerator.camelizeSignificantWordsInTitle(</span>
+<span class="fc" id="L826">                        TITLE_STRING_ALL_LOWER_FIRST_WORD_IN_BRACKETS_TWO_SMALL_WORDS_SMALL_WORD_AFTER_COLON));</span>
+<span class="fc" id="L827">        assertEquals(&quot;Process Viewing Patterns&quot;,</span>
+<span class="fc" id="L828">                BibtexKeyGenerator.camelizeSignificantWordsInTitle(TITLE_STRING_CASED));</span>
+<span class="fc" id="L829">        assertEquals(&quot;BPMN Conformance in Open Source Engines&quot;,</span>
+                BibtexKeyGenerator
+<span class="fc" id="L831">                        .camelizeSignificantWordsInTitle(TITLE_STRING_CASED_ONE_UPPER_WORD_ONE_SMALL_WORD));</span>
+<span class="fc" id="L832">        assertEquals(&quot;The Difference between Graph Based and Block Structured Business Process Modelling Languages&quot;,</span>
+<span class="fc" id="L833">                BibtexKeyGenerator.camelizeSignificantWordsInTitle(</span>
+<span class="fc" id="L834">                        TITLE_STRING_CASED_TWO_SMALL_WORDS_SMALL_WORD_AT_THE_BEGINNING));</span>
+<span class="fc" id="L835">        assertEquals(&quot;Cloud Computing: the Next Revolution in IT&quot;,</span>
+<span class="fc" id="L836">                BibtexKeyGenerator.camelizeSignificantWordsInTitle(</span>
+<span class="fc" id="L837">                        TITLE_STRING_CASED_TWO_SMALL_WORDS_SMALL_WORD_AFTER_COLON));</span>
+<span class="fc" id="L838">        assertEquals(&quot;Towards Choreography Based Process Distribution in the Cloud&quot;,</span>
+                BibtexKeyGenerator
+<span class="fc" id="L840">                        .camelizeSignificantWordsInTitle(TITLE_STRING_CASED_TWO_SMALL_WORDS_ONE_CONNECTED_WORD));</span>
+<span class="fc" id="L841">        assertEquals(&quot;On the Measurement of Design Time Adaptability for Process Based Systems&quot;,</span>
+<span class="fc" id="L842">                BibtexKeyGenerator.camelizeSignificantWordsInTitle(</span>
+<span class="fc" id="L843">                        TITLE_STRING_CASED_FOUR_SMALL_WORDS_TWO_CONNECTED_WORDS));</span>
+<span class="fc" id="L844">    }</span>
+
+    @Test
+    public void keywordNKeywordsSeparatedBySpace() {
+<span class="fc" id="L848">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L849">        entry.setField(&quot;keywords&quot;, &quot;w1, w2a w2b, w3&quot;);</span>
+
+<span class="fc" id="L851">        String result = BibtexKeyGenerator.generateKey(entry, &quot;keyword1&quot;);</span>
+<span class="fc" id="L852">        assertEquals(&quot;w1&quot;, result);</span>
+
+        // check keywords with space
+<span class="fc" id="L855">        result = BibtexKeyGenerator.generateKey(entry, &quot;keyword2&quot;);</span>
+<span class="fc" id="L856">        assertEquals(&quot;w2aw2b&quot;, result);</span>
+
+        // check out of range
+<span class="fc" id="L859">        result = BibtexKeyGenerator.generateKey(entry, &quot;keyword4&quot;);</span>
+<span class="fc" id="L860">        assertEquals(&quot;&quot;, result);</span>
+<span class="fc" id="L861">    }</span>
+
+    @Test
+    public void crossrefkeywordNKeywordsSeparatedBySpace() {
+<span class="fc" id="L865">        BibDatabase database = new BibDatabase();</span>
+<span class="fc" id="L866">        BibEntry entry1 = new BibEntry();</span>
+<span class="fc" id="L867">        BibEntry entry2 = new BibEntry();</span>
+<span class="fc" id="L868">        entry1.setField(FieldName.CROSSREF, &quot;entry2&quot;);</span>
+<span class="fc" id="L869">        entry2.setCiteKey(&quot;entry2&quot;);</span>
+<span class="fc" id="L870">        database.insertEntry(entry2);</span>
+<span class="fc" id="L871">        database.insertEntry(entry1);</span>
+<span class="fc" id="L872">        entry2.setField(&quot;keywords&quot;, &quot;w1, w2a w2b, w3&quot;);</span>
+
+<span class="fc" id="L874">        String result = BibtexKeyGenerator.generateKey(entry1, &quot;keyword1&quot;, database);</span>
+
+<span class="fc" id="L876">        assertEquals(&quot;w1&quot;, result);</span>
+<span class="fc" id="L877">    }</span>
+
+    @Test
+    public void keywordsNKeywordsSeparatedBySpace() {
+<span class="fc" id="L881">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L882">        entry.setField(&quot;keywords&quot;, &quot;w1, w2a w2b, w3&quot;);</span>
+
+        // all keywords
+<span class="fc" id="L885">        String result = BibtexKeyGenerator.generateKey(entry, &quot;keywords&quot;);</span>
+<span class="fc" id="L886">        assertEquals(&quot;w1w2aw2bw3&quot;, result);</span>
+
+        // check keywords with space
+<span class="fc" id="L889">        result = BibtexKeyGenerator.generateKey(entry, &quot;keywords2&quot;);</span>
+<span class="fc" id="L890">        assertEquals(&quot;w1w2aw2b&quot;, result);</span>
+
+        // check out of range
+<span class="fc" id="L893">        result = BibtexKeyGenerator.generateKey(entry, &quot;keywords55&quot;);</span>
+<span class="fc" id="L894">        assertEquals(&quot;w1w2aw2bw3&quot;, result);</span>
+<span class="fc" id="L895">    }</span>
+
+    @Test
+    public void crossrefkeywordsNKeywordsSeparatedBySpace() {
+<span class="fc" id="L899">        BibDatabase database = new BibDatabase();</span>
+<span class="fc" id="L900">        BibEntry entry1 = new BibEntry();</span>
+<span class="fc" id="L901">        BibEntry entry2 = new BibEntry();</span>
+<span class="fc" id="L902">        entry1.setField(FieldName.CROSSREF, &quot;entry2&quot;);</span>
+<span class="fc" id="L903">        entry2.setCiteKey(&quot;entry2&quot;);</span>
+<span class="fc" id="L904">        database.insertEntry(entry2);</span>
+<span class="fc" id="L905">        database.insertEntry(entry1);</span>
+<span class="fc" id="L906">        entry2.setField(&quot;keywords&quot;, &quot;w1, w2a w2b, w3&quot;);</span>
+
+<span class="fc" id="L908">        String result = BibtexKeyGenerator.generateKey(entry1, &quot;keywords&quot;, database);</span>
+
+<span class="fc" id="L910">        assertEquals(&quot;w1w2aw2bw3&quot;, result);</span>
+<span class="fc" id="L911">    }</span>
+
+    @Test
+    public void testCheckLegalKeyEnforceLegal() {
+<span class="fc" id="L915">        assertEquals(&quot;AAAA&quot;, BibtexKeyGenerator.cleanKey(&quot;AA AA&quot;, true));</span>
+<span class="fc" id="L916">        assertEquals(&quot;SPECIALCHARS&quot;, BibtexKeyGenerator.cleanKey(&quot;SPECIAL CHARS#{\\\&quot;}~,^&quot;, true));</span>
+<span class="fc" id="L917">        assertEquals(&quot;&quot;, BibtexKeyGenerator.cleanKey(&quot;\n\t\r&quot;, true));</span>
+<span class="fc" id="L918">    }</span>
+
+    @Test
+    public void testCheckLegalKeyDoNotEnforceLegal() {
+<span class="fc" id="L922">        assertEquals(&quot;AAAA&quot;, BibtexKeyGenerator.cleanKey(&quot;AA AA&quot;, false));</span>
+<span class="fc" id="L923">        assertEquals(&quot;SPECIALCHARS#~^&quot;, BibtexKeyGenerator.cleanKey(&quot;SPECIAL CHARS#{\\\&quot;}~,^&quot;, false));</span>
+<span class="fc" id="L924">        assertEquals(&quot;&quot;, BibtexKeyGenerator.cleanKey(&quot;\n\t\r&quot;, false));</span>
+<span class="fc" id="L925">    }</span>
+
+    @Test
+    public void testCheckLegalNullInNullOut() {
+<span class="pc" id="L929">        assertThrows(NullPointerException.class, () -&gt; BibtexKeyGenerator.cleanKey(null, true));</span>
+<span class="pc" id="L930">        assertThrows(NullPointerException.class, () -&gt; BibtexKeyGenerator.cleanKey(null, false));</span>
+<span class="fc" id="L931">    }</span>
+
+    @Test
+    public void testApplyModifiers() {
+<span class="fc" id="L935">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L936">        entry.setField(&quot;title&quot;, &quot;Green Scheduling of Whatever&quot;);</span>
+<span class="fc" id="L937">        assertEquals(&quot;GSo&quot;, BibtexKeyGenerator.generateKey(entry, &quot;shorttitleINI&quot;));</span>
+<span class="fc" id="L938">        assertEquals(&quot;GreenSchedulingof&quot;, BibtexKeyGenerator.generateKey(entry, &quot;shorttitle&quot;,</span>
+<span class="fc" id="L939">                new BibDatabase()));</span>
+<span class="fc" id="L940">    }</span>
+
+    @Test
+    public void testcrossrefShorttitle() {
+<span class="fc" id="L944">        BibDatabase database = new BibDatabase();</span>
+<span class="fc" id="L945">        BibEntry entry1 = new BibEntry();</span>
+<span class="fc" id="L946">        BibEntry entry2 = new BibEntry();</span>
+<span class="fc" id="L947">        entry1.setField(FieldName.CROSSREF, &quot;entry2&quot;);</span>
+<span class="fc" id="L948">        entry2.setCiteKey(&quot;entry2&quot;);</span>
+<span class="fc" id="L949">        database.insertEntry(entry2);</span>
+<span class="fc" id="L950">        database.insertEntry(entry1);</span>
+<span class="fc" id="L951">        entry2.setField(&quot;title&quot;, &quot;Green Scheduling of Whatever&quot;);</span>
+
+<span class="fc" id="L953">        assertEquals(&quot;GreenSchedulingof&quot;, BibtexKeyGenerator.generateKey(entry1, &quot;shorttitle&quot;,</span>
+<span class="fc" id="L954">                database));</span>
+<span class="fc" id="L955">    }</span>
+
+    @Test
+    public void testcrossrefShorttitleInitials() {
+<span class="fc" id="L959">        BibDatabase database = new BibDatabase();</span>
+<span class="fc" id="L960">        BibEntry entry1 = new BibEntry();</span>
+<span class="fc" id="L961">        BibEntry entry2 = new BibEntry();</span>
+<span class="fc" id="L962">        entry1.setField(FieldName.CROSSREF, &quot;entry2&quot;);</span>
+<span class="fc" id="L963">        entry2.setCiteKey(&quot;entry2&quot;);</span>
+<span class="fc" id="L964">        database.insertEntry(entry2);</span>
+<span class="fc" id="L965">        database.insertEntry(entry1);</span>
+<span class="fc" id="L966">        entry2.setField(&quot;title&quot;, &quot;Green Scheduling of Whatever&quot;);</span>
+
+<span class="fc" id="L968">        assertEquals(&quot;GSo&quot;, BibtexKeyGenerator.generateKey(entry1, &quot;shorttitleINI&quot;, database));</span>
+<span class="fc" id="L969">    }</span>
+
+    @Test
+    public void generateKeyStripsColonFromTitle() throws Exception {
+<span class="fc" id="L973">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L974">        entry.setField(&quot;title&quot;, &quot;Green Scheduling of: Whatever&quot;);</span>
+<span class="fc" id="L975">        assertEquals(&quot;GreenSchedulingOfWhatever&quot;, BibtexKeyGenerator.generateKey(entry, &quot;title&quot;));</span>
+<span class="fc" id="L976">    }</span>
+
+    @Test
+    public void generateKeyStripsApostropheFromTitle() throws Exception {
+<span class="fc" id="L980">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L981">        entry.setField(&quot;title&quot;, &quot;Green Scheduling of `Whatever`&quot;);</span>
+<span class="fc" id="L982">        assertEquals(&quot;GreenSchedulingofWhatever&quot;, BibtexKeyGenerator.generateKey(entry, &quot;title&quot;));</span>
+<span class="fc" id="L983">    }</span>
+
+    @Test
+    public void generateKeyWithOneModifier() throws Exception {
+<span class="fc" id="L987">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L988">        entry.setField(&quot;title&quot;, &quot;The Interesting Title&quot;);</span>
+<span class="fc" id="L989">        assertEquals(&quot;theinterestingtitle&quot;, BibtexKeyGenerator.generateKey(entry, &quot;title:lower&quot;));</span>
+<span class="fc" id="L990">    }</span>
+
+    @Test
+    public void generateKeyWithTwoModifiers() throws Exception {
+<span class="fc" id="L994">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L995">        entry.setField(&quot;title&quot;, &quot;The Interesting Title&quot;);</span>
+<span class="fc" id="L996">        assertEquals(&quot;theinterestingtitle&quot;, BibtexKeyGenerator.generateKey(entry, &quot;title:lower:(_)&quot;));</span>
+<span class="fc" id="L997">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

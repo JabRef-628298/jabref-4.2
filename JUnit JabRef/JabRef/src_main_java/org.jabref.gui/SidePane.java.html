@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>SidePane.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui</a> &gt; <span class="el_source">SidePane.java</span></div><h1>SidePane.java</h1><pre class="source lang-java linenums">package org.jabref.gui;
+
+import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.util.Collection;
+
+import javax.swing.Box;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.ScrollPaneConstants;
+
+/**
+ * The side pane is displayed at the left side of JabRef and shows instances of
+ * SidePaneComponents, for instance the GroupSelector, or the SearchManager.
+ */
+public class SidePane extends JPanel {
+
+<span class="fc" id="L22">    private final Dimension PREFERRED_SIZE = new Dimension(220, 100);</span>
+
+<span class="fc" id="L24">    private final GridBagLayout gridBagLayout = new GridBagLayout();</span>
+
+<span class="fc" id="L26">    private final GridBagConstraints constraint = new GridBagConstraints();</span>
+
+<span class="fc" id="L28">    private final JPanel mainPanel = new JPanel();</span>
+
+
+<span class="fc" id="L31">    public SidePane() {</span>
+        // For debugging the border:
+        // setBorder(BorderFactory.createLineBorder(Color.BLUE));
+
+<span class="fc" id="L35">        setLayout(new BorderLayout());</span>
+<span class="fc" id="L36">        mainPanel.setLayout(gridBagLayout);</span>
+
+        // Initialize constraint
+<span class="fc" id="L39">        constraint.anchor = GridBagConstraints.NORTH;</span>
+<span class="fc" id="L40">        constraint.fill = GridBagConstraints.BOTH;</span>
+<span class="fc" id="L41">        constraint.gridwidth = GridBagConstraints.REMAINDER;</span>
+<span class="fc" id="L42">        constraint.insets = new Insets(1, 1, 1, 1);</span>
+<span class="fc" id="L43">        constraint.gridheight = 1;</span>
+<span class="fc" id="L44">        constraint.weightx = 1;</span>
+
+        /*
+         * Added Scrollpane to fix:
+         */
+<span class="fc" id="L49">        JScrollPane sp = new JScrollPane(mainPanel, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,</span>
+<span class="fc" id="L50">                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);</span>
+<span class="fc" id="L51">        sp.setBorder(null);</span>
+
+        // To remove the scroll panel just change sp to mainPanel and comment
+        // the JScrollPane declaration
+<span class="fc" id="L55">        super.add(sp);</span>
+<span class="fc" id="L56">    }</span>
+
+    public void setComponents(Collection&lt;SidePaneComponent&gt; comps) {
+<span class="fc" id="L59">        mainPanel.removeAll();</span>
+
+<span class="fc" id="L61">        int totalWeights = 0;</span>
+<span class="pc bpc" id="L62" title="1 of 2 branches missed.">        for (SidePaneComponent c : comps) {</span>
+<span class="nc" id="L63">            constraint.weighty = c.getRescalingWeight();</span>
+<span class="nc" id="L64">            totalWeights += c.getRescalingWeight();</span>
+<span class="nc" id="L65">            gridBagLayout.setConstraints(c, constraint);</span>
+<span class="nc" id="L66">            mainPanel.add(c);</span>
+        }
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">        if (totalWeights &lt;= 0) {</span>
+            // Fill vertical space so that components start at top
+<span class="fc" id="L70">            constraint.weighty = 1;</span>
+<span class="fc" id="L71">            Component bx = Box.createVerticalGlue();</span>
+<span class="fc" id="L72">            gridBagLayout.setConstraints(bx, constraint);</span>
+<span class="fc" id="L73">            mainPanel.add(bx);</span>
+        }
+
+<span class="fc" id="L76">        revalidate();</span>
+<span class="fc" id="L77">        repaint();</span>
+<span class="fc" id="L78">    }</span>
+
+    @Override
+    public void remove(Component c) {
+<span class="nc" id="L82">        mainPanel.remove(c);</span>
+<span class="nc" id="L83">    }</span>
+
+    @Override
+    public Dimension getMaximumSize() {
+<span class="nc" id="L87">        return getPreferredSize();</span>
+    }
+
+    @Override
+    public Dimension getPreferredSize() {
+<span class="nc" id="L92">        return PREFERRED_SIZE;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

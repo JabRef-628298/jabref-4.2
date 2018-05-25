@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>GroupsParserTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.importer.util</a> &gt; <span class="el_source">GroupsParserTest.java</span></div><h1>GroupsParserTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.importer.util;
+
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.List;
+
+import javafx.scene.paint.Color;
+
+import org.jabref.logic.auxparser.DefaultAuxParser;
+import org.jabref.logic.importer.ParseException;
+import org.jabref.model.database.BibDatabase;
+import org.jabref.model.groups.AbstractGroup;
+import org.jabref.model.groups.AutomaticGroup;
+import org.jabref.model.groups.AutomaticKeywordGroup;
+import org.jabref.model.groups.AutomaticPersonsGroup;
+import org.jabref.model.groups.ExplicitGroup;
+import org.jabref.model.groups.GroupHierarchyType;
+import org.jabref.model.groups.GroupTreeNode;
+import org.jabref.model.groups.TexGroup;
+import org.jabref.model.util.DummyFileUpdateMonitor;
+import org.jabref.model.util.FileUpdateMonitor;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+<span class="fc" id="L29">public class GroupsParserTest {</span>
+    private FileUpdateMonitor fileMonitor;
+
+    @BeforeEach
+    public void setUp() throws Exception {
+<span class="fc" id="L34">        fileMonitor = new DummyFileUpdateMonitor();</span>
+<span class="fc" id="L35">    }</span>
+
+    @Test
+    // For https://github.com/JabRef/jabref/issues/1681
+    public void fromStringParsesExplicitGroupWithEscapedCharacterInName() throws Exception {
+<span class="fc" id="L40">        ExplicitGroup expected = new ExplicitGroup(&quot;B{\\\&quot;{o}}hmer&quot;, GroupHierarchyType.INDEPENDENT, ',');</span>
+<span class="fc" id="L41">        AbstractGroup parsed = GroupsParser.fromString(&quot;ExplicitGroup:B{\\\\\&quot;{o}}hmer;0;&quot;, ',', fileMonitor);</span>
+
+<span class="fc" id="L43">        assertEquals(expected, parsed);</span>
+<span class="fc" id="L44">    }</span>
+
+    @Test
+    public void keywordDelimiterThatNeedsToBeEscaped() throws Exception {
+<span class="fc" id="L48">        AutomaticGroup expected = new AutomaticKeywordGroup(&quot;group1&quot;, GroupHierarchyType.INDEPENDENT, &quot;keywords&quot;, ';', '&gt;');</span>
+<span class="fc" id="L49">        AbstractGroup parsed = GroupsParser.fromString(&quot;AutomaticKeywordGroup:group1;0;keywords;\\;;&gt;;1;;;;;&quot;, ';', fileMonitor);</span>
+<span class="fc" id="L50">        assertEquals(expected, parsed);</span>
+<span class="fc" id="L51">    }</span>
+
+    @Test
+    public void hierarchicalDelimiterThatNeedsToBeEscaped() throws Exception {
+<span class="fc" id="L55">        AutomaticGroup expected = new AutomaticKeywordGroup(&quot;group1&quot;, GroupHierarchyType.INDEPENDENT, &quot;keywords&quot;, ',', ';');</span>
+<span class="fc" id="L56">        AbstractGroup parsed = GroupsParser.fromString(&quot;AutomaticKeywordGroup:group1;0;keywords;,;\\;;1;;;;;&quot;, ';', fileMonitor);</span>
+<span class="fc" id="L57">        assertEquals(expected, parsed);</span>
+<span class="fc" id="L58">    }</span>
+
+    @Test
+    public void fromStringThrowsParseExceptionForNotEscapedGroupName() throws Exception {
+<span class="pc" id="L62">        assertThrows(ParseException.class, () -&gt; GroupsParser.fromString(&quot;ExplicitGroup:slit\\\\;0\\;mertsch_slit2_2007\\;;&quot;, ',', fileMonitor));</span>
+<span class="fc" id="L63">    }</span>
+
+    @Test
+    public void testImportSubGroups() throws Exception {
+
+<span class="fc" id="L68">        List&lt;String&gt; orderedData = Arrays.asList(&quot;0 AllEntriesGroup:&quot;, &quot;1 ExplicitGroup:1;0;&quot;,</span>
+<span class="fc" id="L69">                &quot;2 ExplicitGroup:2;0;&quot;, &quot;0 ExplicitGroup:3;0;&quot;);</span>
+        //Create group hierarchy:
+        //  Level 0 Name: All entries
+        //  Level 1 Name: 1
+        //  Level 2 Name: 2
+        //  Level 1 Name: 3
+
+<span class="fc" id="L76">        GroupTreeNode rootNode = new GroupTreeNode(</span>
+<span class="fc" id="L77">                new ExplicitGroup(&quot;All entries&quot;, GroupHierarchyType.INDEPENDENT, ','));</span>
+
+<span class="fc" id="L79">        AbstractGroup firstSubGrpLvl1 = new ExplicitGroup(&quot;1&quot;, GroupHierarchyType.INDEPENDENT, ',');</span>
+<span class="fc" id="L80">        rootNode.addSubgroup(firstSubGrpLvl1);</span>
+
+<span class="fc" id="L82">        AbstractGroup subLvl2 = new ExplicitGroup(&quot;2&quot;, GroupHierarchyType.INDEPENDENT, ',');</span>
+<span class="fc" id="L83">        rootNode.getFirstChild().ifPresent(c -&gt; c.addSubgroup(subLvl2));</span>
+
+<span class="fc" id="L85">        AbstractGroup thirdSubGrpLvl1 = new ExplicitGroup(&quot;3&quot;, GroupHierarchyType.INDEPENDENT, ',');</span>
+<span class="fc" id="L86">        rootNode.addSubgroup(thirdSubGrpLvl1);</span>
+
+<span class="fc" id="L88">        GroupTreeNode parsedNode = GroupsParser.importGroups(orderedData, ',', fileMonitor);</span>
+<span class="fc" id="L89">        assertEquals(rootNode.getChildren(), parsedNode.getChildren());</span>
+
+<span class="fc" id="L91">    }</span>
+
+    @Test
+    public void fromStringParsesExplicitGroupWithIconAndDescription() throws Exception {
+<span class="fc" id="L95">        ExplicitGroup expected = new ExplicitGroup(&quot;myExplicitGroup&quot;, GroupHierarchyType.INDEPENDENT, ',');</span>
+<span class="fc" id="L96">        expected.setIconName(&quot;test icon&quot;);</span>
+<span class="fc" id="L97">        expected.setExpanded(true);</span>
+<span class="fc" id="L98">        expected.setColor(Color.ALICEBLUE);</span>
+<span class="fc" id="L99">        expected.setDescription(&quot;test description&quot;);</span>
+<span class="fc" id="L100">        AbstractGroup parsed = GroupsParser.fromString(&quot;StaticGroup:myExplicitGroup;0;1;0xf0f8ffff;test icon;test description;&quot;, ',', fileMonitor);</span>
+
+<span class="fc" id="L102">        assertEquals(expected, parsed);</span>
+<span class="fc" id="L103">    }</span>
+
+    @Test
+    public void fromStringParsesAutomaticKeywordGroup() throws Exception {
+<span class="fc" id="L107">        AutomaticGroup expected = new AutomaticKeywordGroup(&quot;myAutomaticGroup&quot;, GroupHierarchyType.INDEPENDENT, &quot;keywords&quot;, ',', '&gt;');</span>
+<span class="fc" id="L108">        AbstractGroup parsed = GroupsParser.fromString(&quot;AutomaticKeywordGroup:myAutomaticGroup;0;keywords;,;&gt;;1;;;;&quot;, ',', fileMonitor);</span>
+<span class="fc" id="L109">        assertEquals(expected, parsed);</span>
+<span class="fc" id="L110">    }</span>
+
+    @Test
+    public void fromStringParsesAutomaticPersonGroup() throws Exception {
+<span class="fc" id="L114">        AutomaticPersonsGroup expected = new AutomaticPersonsGroup(&quot;myAutomaticGroup&quot;, GroupHierarchyType.INDEPENDENT, &quot;authors&quot;);</span>
+<span class="fc" id="L115">        AbstractGroup parsed = GroupsParser.fromString(&quot;AutomaticPersonsGroup:myAutomaticGroup;0;authors;1;;;;&quot;, ',', fileMonitor);</span>
+<span class="fc" id="L116">        assertEquals(expected, parsed);</span>
+<span class="fc" id="L117">    }</span>
+
+    @Test
+    public void fromStringParsesTexGroup() throws Exception {
+<span class="fc" id="L121">        TexGroup expected = new TexGroup(&quot;myTexGroup&quot;, GroupHierarchyType.INDEPENDENT, Paths.get(&quot;path&quot;, &quot;To&quot;, &quot;File&quot;), new DefaultAuxParser(new BibDatabase()), fileMonitor);</span>
+<span class="fc" id="L122">        AbstractGroup parsed = GroupsParser.fromString(&quot;TexGroup:myTexGroup;0;path/To/File;1;;;;&quot;, ',', fileMonitor);</span>
+<span class="fc" id="L123">        assertEquals(expected, parsed);</span>
+<span class="fc" id="L124">    }</span>
+
+    @Test
+    public void fromStringUnknownGroupThrowsException() throws Exception {
+<span class="pc" id="L128">        assertThrows(ParseException.class, () -&gt; GroupsParser.fromString(&quot;0 UnknownGroup:myUnknownGroup;0;;1;;;;&quot;, ',', fileMonitor));</span>
+<span class="fc" id="L129">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

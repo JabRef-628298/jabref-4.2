@@ -1,0 +1,323 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>LocalizationParser.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.l10n</a> &gt; <span class="el_source">LocalizationParser.java</span></div><h1>LocalizationParser.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">package org.jabref.logic.l10n;</span>
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Properties;
+import java.util.ResourceBundle;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import javafx.fxml.FXMLLoader;
+
+import com.sun.javafx.application.PlatformImpl;
+
+<span class="nc" id="L29">public class LocalizationParser {</span>
+
+    public static SortedSet&lt;LocalizationEntry&gt; find(LocalizationBundleForTest type) throws IOException {
+<span class="fc" id="L32">        Set&lt;LocalizationEntry&gt; entries = findLocalizationEntriesInFiles(type);</span>
+
+<span class="fc" id="L34">        Set&lt;String&gt; keysInJavaFiles = entries.stream()</span>
+<span class="fc" id="L35">                .map(LocalizationEntry::getKey)</span>
+<span class="fc" id="L36">                .distinct()</span>
+<span class="fc" id="L37">                .sorted()</span>
+<span class="fc" id="L38">                .collect(Collectors.toSet());</span>
+
+        Set&lt;String&gt; englishKeys;
+<span class="pc bpc" id="L41" title="1 of 2 branches missed.">        if (type == LocalizationBundleForTest.LANG) {</span>
+<span class="nc" id="L42">            englishKeys = getKeysInPropertiesFile(&quot;/l10n/JabRef_en.properties&quot;);</span>
+<span class="nc" id="L43">        } else {</span>
+<span class="fc" id="L44">            englishKeys = getKeysInPropertiesFile(&quot;/l10n/Menu_en.properties&quot;);</span>
+        }
+<span class="fc" id="L46">        List&lt;String&gt; missingKeys = new ArrayList&lt;&gt;(keysInJavaFiles);</span>
+<span class="fc" id="L47">        missingKeys.removeAll(englishKeys);</span>
+
+<span class="fc" id="L49">        return entries.stream().filter(e -&gt; missingKeys.contains(e.getKey())).collect(</span>
+<span class="fc" id="L50">                Collectors.toCollection(TreeSet::new));</span>
+    }
+
+    public static SortedSet&lt;String&gt; findObsolete(LocalizationBundleForTest type) throws IOException {
+<span class="fc" id="L54">        Set&lt;LocalizationEntry&gt; entries = findLocalizationEntriesInFiles(type);</span>
+
+<span class="fc" id="L56">        Set&lt;String&gt; keysInFiles = entries.stream().map(LocalizationEntry::getKey).collect(Collectors.toSet());</span>
+
+        Set&lt;String&gt; englishKeys;
+<span class="pc bpc" id="L59" title="1 of 2 branches missed.">        if (type == LocalizationBundleForTest.LANG) {</span>
+<span class="nc" id="L60">            englishKeys = getKeysInPropertiesFile(&quot;/l10n/JabRef_en.properties&quot;);</span>
+<span class="nc" id="L61">        } else {</span>
+<span class="fc" id="L62">            englishKeys = getKeysInPropertiesFile(&quot;/l10n/Menu_en.properties&quot;);</span>
+        }
+<span class="fc" id="L64">        englishKeys.removeAll(keysInFiles);</span>
+
+<span class="fc" id="L66">        return new TreeSet&lt;&gt;(englishKeys);</span>
+    }
+
+    private static Set&lt;LocalizationEntry&gt; findLocalizationEntriesInFiles(LocalizationBundleForTest type) throws IOException {
+<span class="fc bfc" id="L70" title="All 2 branches covered.">        if (type == LocalizationBundleForTest.MENU) {</span>
+<span class="fc" id="L71">            return findLocalizationEntriesInJavaFiles(type);</span>
+        } else {
+<span class="fc" id="L73">            Set&lt;LocalizationEntry&gt; entriesInFiles = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L74">            entriesInFiles.addAll(findLocalizationEntriesInJavaFiles(type));</span>
+<span class="nc" id="L75">            entriesInFiles.addAll(findLocalizationEntriesInFxmlFiles(type));</span>
+<span class="nc" id="L76">            return entriesInFiles;</span>
+        }
+    }
+
+    public static Set&lt;LocalizationEntry&gt; findLocalizationParametersStringsInJavaFiles(LocalizationBundleForTest type)
+            throws IOException {
+<span class="fc" id="L82">        try (Stream&lt;Path&gt; pathStream = Files.walk(Paths.get(&quot;src/main&quot;))) {</span>
+<span class="pc" id="L83">            return pathStream</span>
+<span class="fc" id="L84">                    .filter(LocalizationParser::isJavaFile)</span>
+<span class="fc" id="L85">                    .flatMap(path -&gt; getLocalizationParametersInJavaFile(path, type).stream())</span>
+<span class="fc" id="L86">                    .collect(Collectors.toSet());</span>
+<span class="pc bpc" id="L87" title="7 of 8 branches missed.">        } catch (UncheckedIOException ioe) {</span>
+<span class="nc" id="L88">            throw new IOException(ioe);</span>
+        }
+    }
+
+    private static Set&lt;LocalizationEntry&gt; findLocalizationEntriesInJavaFiles(LocalizationBundleForTest type)
+            throws IOException {
+<span class="fc" id="L94">        try (Stream&lt;Path&gt; pathStream = Files.walk(Paths.get(&quot;src/main&quot;))) {</span>
+<span class="pc" id="L95">            return pathStream</span>
+<span class="fc" id="L96">                    .filter(LocalizationParser::isJavaFile)</span>
+<span class="fc" id="L97">                    .flatMap(path -&gt; getLanguageKeysInJavaFile(path, type).stream())</span>
+<span class="fc" id="L98">                    .collect(Collectors.toSet());</span>
+<span class="pc bpc" id="L99" title="7 of 8 branches missed.">        } catch (UncheckedIOException ioe) {</span>
+<span class="nc" id="L100">            throw new IOException(ioe);</span>
+        }
+    }
+
+    private static Set&lt;LocalizationEntry&gt; findLocalizationEntriesInFxmlFiles(LocalizationBundleForTest type)
+            throws IOException {
+<span class="fc" id="L106">        try (Stream&lt;Path&gt; pathStream = Files.walk(Paths.get(&quot;src/main&quot;))) {</span>
+<span class="pc" id="L107">            return pathStream</span>
+<span class="fc" id="L108">                    .filter(LocalizationParser::isFxmlFile)</span>
+<span class="pc" id="L109">                    .flatMap(path -&gt; getLanguageKeysInFxmlFile(path, type).stream())</span>
+<span class="nc" id="L110">                    .collect(Collectors.toSet());</span>
+<span class="pc bpc" id="L111" title="5 of 8 branches missed.">        } catch (UncheckedIOException ioe) {</span>
+<span class="nc" id="L112">            throw new IOException(ioe);</span>
+        }
+    }
+
+    public static SortedSet&lt;String&gt; getKeysInPropertiesFile(String path) {
+<span class="fc" id="L117">        Properties properties = getProperties(path);</span>
+
+<span class="fc" id="L119">        return properties.keySet().stream()</span>
+<span class="fc" id="L120">                .sorted()</span>
+<span class="fc" id="L121">                .map(Object::toString)</span>
+<span class="fc" id="L122">                .map(String::trim)</span>
+<span class="fc" id="L123">                .map(e -&gt; new LocalizationKey(e).getPropertiesKey())</span>
+<span class="fc" id="L124">                .collect(Collectors.toCollection(TreeSet::new));</span>
+    }
+
+    public static Properties getProperties(String path) {
+<span class="fc" id="L128">        Properties properties = new Properties();</span>
+<span class="fc" id="L129">        try (InputStream is = LocalizationConsistencyTest.class.getResourceAsStream(path);</span>
+<span class="fc" id="L130">             InputStreamReader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {</span>
+<span class="fc" id="L131">            properties.load(reader);</span>
+<span class="pc bpc" id="L132" title="14 of 16 branches missed.">        } catch (IOException e) {</span>
+<span class="nc" id="L133">            throw new RuntimeException(e);</span>
+        }
+<span class="fc" id="L135">        return properties;</span>
+    }
+
+    private static boolean isJavaFile(Path path) {
+<span class="fc" id="L139">        return path.toString().endsWith(&quot;.java&quot;);</span>
+    }
+
+    private static boolean isFxmlFile(Path path) {
+<span class="fc" id="L143">        return path.toString().endsWith(&quot;.fxml&quot;);</span>
+    }
+
+    private static List&lt;LocalizationEntry&gt; getLanguageKeysInJavaFile(Path path, LocalizationBundleForTest type) {
+<span class="fc" id="L147">        List&lt;LocalizationEntry&gt; result = new ArrayList&lt;&gt;();</span>
+
+        try {
+<span class="fc" id="L150">            List&lt;String&gt; lines = Files.readAllLines(path, StandardCharsets.UTF_8);</span>
+<span class="fc" id="L151">            String content = String.join(&quot;\n&quot;, lines);</span>
+
+<span class="fc" id="L153">            List&lt;String&gt; keys = JavaLocalizationEntryParser.getLanguageKeysInString(content, type);</span>
+
+<span class="fc bfc" id="L155" title="All 2 branches covered.">            for (String key : keys) {</span>
+<span class="fc" id="L156">                result.add(new LocalizationEntry(path, key, type));</span>
+            }
+<span class="pc" id="L158">        } catch (IOException ignore) {</span>
+<span class="nc" id="L159">            ignore.printStackTrace();</span>
+        }
+
+<span class="fc" id="L162">        return result;</span>
+    }
+
+    private static List&lt;LocalizationEntry&gt; getLocalizationParametersInJavaFile(Path path, LocalizationBundleForTest type) {
+<span class="fc" id="L166">        List&lt;LocalizationEntry&gt; result = new ArrayList&lt;&gt;();</span>
+
+        try {
+<span class="fc" id="L169">            List&lt;String&gt; lines = Files.readAllLines(path, StandardCharsets.UTF_8);</span>
+<span class="fc" id="L170">            String content = String.join(&quot;\n&quot;, lines);</span>
+
+<span class="fc" id="L172">            List&lt;String&gt; keys = JavaLocalizationEntryParser.getLocalizationParameter(content, type);</span>
+
+<span class="fc bfc" id="L174" title="All 2 branches covered.">            for (String key : keys) {</span>
+<span class="fc" id="L175">                result.add(new LocalizationEntry(path, key, type));</span>
+            }
+<span class="pc" id="L177">        } catch (IOException ignore) {</span>
+<span class="nc" id="L178">            ignore.printStackTrace();</span>
+        }
+
+<span class="fc" id="L181">        return result;</span>
+    }
+
+    /**
+     * Loads the fxml file and returns all used language resources.
+     */
+    private static List&lt;LocalizationEntry&gt; getLanguageKeysInFxmlFile(Path path, LocalizationBundleForTest type) {
+<span class="fc" id="L188">        List&lt;String&gt; result = new ArrayList&lt;&gt;();</span>
+
+        // Record which keys are requested; we pretend that we have all keys
+<span class="fc" id="L191">        ResourceBundle registerUsageResourceBundle = new ResourceBundle() {</span>
+
+            @Override
+            protected Object handleGetObject(String key) {
+<span class="nc" id="L195">                result.add(key);</span>
+<span class="nc" id="L196">                return &quot;test&quot;;</span>
+            }
+
+            @Override
+            public Enumeration&lt;String&gt; getKeys() {
+<span class="nc" id="L201">                return null;</span>
+            }
+
+            @Override
+            public boolean containsKey(String key) {
+<span class="nc" id="L206">                return true;</span>
+            }
+        };
+
+<span class="nc" id="L210">        PlatformImpl.startup(() -&gt; {</span>
+<span class="nc" id="L211">        });</span>
+        try {
+<span class="nc" id="L213">            FXMLLoader loader = new FXMLLoader(path.toUri().toURL(), registerUsageResourceBundle);</span>
+            // We don't want to initialize controller
+<span class="nc" id="L215">            loader.setControllerFactory(controllerType -&gt; null);</span>
+            // Don't check if root is null (needed for custom controls, where the root value is normally set in the FXMLLoader)
+<span class="nc" id="L217">            loader.impl_setStaticLoad(true);</span>
+<span class="nc" id="L218">            loader.load();</span>
+<span class="nc" id="L219">        } catch (IOException ignore) {</span>
+<span class="nc" id="L220">            ignore.printStackTrace();</span>
+        }
+
+<span class="nc" id="L223">        return result.stream()</span>
+<span class="nc" id="L224">                .map(key -&gt; new LocalizationEntry(path, new LocalizationKey(key).getPropertiesKey(), type))</span>
+<span class="nc" id="L225">                .collect(Collectors.toList());</span>
+    }
+
+<span class="nc" id="L228">    static class JavaLocalizationEntryParser {</span>
+
+        private static final String INFINITE_WHITESPACE = &quot;\\s*&quot;;
+        private static final String DOT = &quot;\\.&quot;;
+<span class="fc" id="L232">        private static final Pattern LOCALIZATION_START_PATTERN = Pattern.compile(&quot;Localization&quot; + INFINITE_WHITESPACE + DOT + INFINITE_WHITESPACE + &quot;lang&quot; + INFINITE_WHITESPACE + &quot;\\(&quot;);</span>
+
+<span class="fc" id="L234">        private static final Pattern LOCALIZATION_MENU_START_PATTERN = Pattern.compile(&quot;Localization&quot; + INFINITE_WHITESPACE + DOT + INFINITE_WHITESPACE + &quot;menuTitle&quot; + INFINITE_WHITESPACE + &quot;\\(&quot;);</span>
+<span class="fc" id="L235">        private static final Pattern ESCAPED_QUOTATION_SYMBOL = Pattern.compile(&quot;\\\\\&quot;&quot;);</span>
+
+<span class="fc" id="L237">        private static final Pattern QUOTATION_SYMBOL = Pattern.compile(&quot;QUOTATIONPLACEHOLDER&quot;);</span>
+
+        public static List&lt;String&gt; getLanguageKeysInString(String content, LocalizationBundleForTest type) {
+<span class="fc" id="L240">            List&lt;String&gt; parameters = getLocalizationParameter(content, type);</span>
+
+<span class="fc" id="L242">            List&lt;String&gt; result = new ArrayList&lt;&gt;();</span>
+
+<span class="fc bfc" id="L244" title="All 2 branches covered.">            for (String param : parameters) {</span>
+
+<span class="fc" id="L246">                String parsedContentsOfLangMethod = ESCAPED_QUOTATION_SYMBOL.matcher(param).replaceAll(&quot;QUOTATIONPLACEHOLDER&quot;);</span>
+
+                // only retain what is within quotation
+<span class="fc" id="L249">                StringBuilder b = new StringBuilder();</span>
+<span class="fc" id="L250">                int quotations = 0;</span>
+<span class="fc bfc" id="L251" title="All 2 branches covered.">                for (char c : parsedContentsOfLangMethod.toCharArray()) {</span>
+<span class="fc bfc" id="L252" title="All 4 branches covered.">                    if ((c == '&quot;') &amp;&amp; (quotations &gt; 0)) {</span>
+<span class="fc" id="L253">                        quotations--;</span>
+<span class="fc bfc" id="L254" title="All 2 branches covered.">                    } else if (c == '&quot;') {</span>
+<span class="fc" id="L255">                        quotations++;</span>
+<span class="fc" id="L256">                    } else {</span>
+<span class="fc bfc" id="L257" title="All 2 branches covered.">                        if (quotations != 0) {</span>
+<span class="fc" id="L258">                            b.append(c);</span>
+<span class="fc" id="L259">                        } else {</span>
+<span class="fc bfc" id="L260" title="All 2 branches covered.">                            if (c == ',') {</span>
+<span class="fc" id="L261">                                break;</span>
+                            }
+                        }
+                    }
+                }
+
+<span class="fc" id="L267">                String languageKey = QUOTATION_SYMBOL.matcher(b.toString()).replaceAll(&quot;\\\&quot;&quot;);</span>
+
+                // escape chars which are not allowed in property file keys
+<span class="fc" id="L270">                String languagePropertyKey = new LocalizationKey(languageKey).getPropertiesKey();</span>
+
+<span class="pc bpc" id="L272" title="1 of 2 branches missed.">                if (languagePropertyKey.endsWith(&quot; &quot;)) {</span>
+<span class="nc" id="L273">                    throw new RuntimeException(languageKey + &quot; ends with a space. As this is a localization key, this is illegal!&quot;);</span>
+                }
+
+<span class="pc bpc" id="L276" title="1 of 2 branches missed.">                if (languagePropertyKey.contains(&quot;\\n&quot;)) {</span>
+<span class="nc" id="L277">                    throw new RuntimeException(languageKey + &quot; contains a new line character. As this is a localization key, this is illegal!&quot;);</span>
+                }
+
+<span class="pc bpc" id="L280" title="1 of 2 branches missed.">                if (!languagePropertyKey.trim().isEmpty()) {</span>
+<span class="fc" id="L281">                    result.add(languagePropertyKey);</span>
+                }
+            }
+
+<span class="fc" id="L285">            return result;</span>
+        }
+
+        public static List&lt;String&gt; getLocalizationParameter(String content, LocalizationBundleForTest type) {
+<span class="fc" id="L289">            List&lt;String&gt; result = new ArrayList&lt;&gt;();</span>
+
+            Matcher matcher;
+<span class="fc bfc" id="L292" title="All 2 branches covered.">            if (type == LocalizationBundleForTest.LANG) {</span>
+<span class="fc" id="L293">                matcher = LOCALIZATION_START_PATTERN.matcher(content);</span>
+<span class="fc" id="L294">            } else {</span>
+<span class="fc" id="L295">                matcher = LOCALIZATION_MENU_START_PATTERN.matcher(content);</span>
+            }
+<span class="fc bfc" id="L297" title="All 2 branches covered.">            while (matcher.find()) {</span>
+                // find contents between the brackets, covering multi-line strings as well
+<span class="fc" id="L299">                int index = matcher.end();</span>
+<span class="fc" id="L300">                int brackets = 1;</span>
+<span class="fc" id="L301">                StringBuilder buffer = new StringBuilder();</span>
+<span class="fc bfc" id="L302" title="All 2 branches covered.">                while (brackets != 0) {</span>
+<span class="fc" id="L303">                    char c = content.charAt(index);</span>
+<span class="fc bfc" id="L304" title="All 2 branches covered.">                    if (c == '(') {</span>
+<span class="fc" id="L305">                        brackets++;</span>
+<span class="fc bfc" id="L306" title="All 2 branches covered.">                    } else if (c == ')') {</span>
+<span class="fc" id="L307">                        brackets--;</span>
+                    }
+                    // skip closing brackets
+<span class="fc bfc" id="L310" title="All 2 branches covered.">                    if (brackets != 0) {</span>
+<span class="fc" id="L311">                        buffer.append(c);</span>
+                    }
+<span class="fc" id="L313">                    index++;</span>
+                }
+                // trim newlines and whitespace
+<span class="fc" id="L316">                result.add(buffer.toString().trim());</span>
+            }
+
+<span class="fc" id="L319">            return result;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

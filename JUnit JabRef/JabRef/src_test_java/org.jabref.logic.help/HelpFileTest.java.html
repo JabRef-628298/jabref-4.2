@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>HelpFileTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.help</a> &gt; <span class="el_source">HelpFileTest.java</span></div><h1>HelpFileTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.help;
+
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
+
+import org.jabref.logic.net.URLDownload;
+
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+<span class="fc" id="L13">public class HelpFileTest {</span>
+
+<span class="fc" id="L15">    private final String jabrefHelp = &quot;https://help.jabref.org/en/&quot;;</span>
+
+    @Test
+    public void referToValidPage() throws IOException {
+<span class="fc bfc" id="L19" title="All 2 branches covered.">        for (HelpFile help : HelpFile.values()) {</span>
+<span class="fc" id="L20">            URL url = new URL(jabrefHelp + help.getPageName());</span>
+<span class="fc" id="L21">            HttpURLConnection http = (HttpURLConnection) url.openConnection();</span>
+<span class="fc" id="L22">            http.setRequestProperty(&quot;User-Agent&quot;, URLDownload.USER_AGENT);</span>
+<span class="fc" id="L23">            assertEquals(200, http.getResponseCode());</span>
+        }
+<span class="fc" id="L25">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

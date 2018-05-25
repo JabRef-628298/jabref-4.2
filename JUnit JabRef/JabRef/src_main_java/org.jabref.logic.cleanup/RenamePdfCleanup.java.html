@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>RenamePdfCleanup.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.cleanup</a> &gt; <span class="el_source">RenamePdfCleanup.java</span></div><h1>RenamePdfCleanup.java</h1><pre class="source lang-java linenums">package org.jabref.logic.cleanup;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import org.jabref.logic.layout.LayoutFormatterPreferences;
+import org.jabref.logic.util.io.FileUtil;
+import org.jabref.model.FieldChange;
+import org.jabref.model.cleanup.CleanupJob;
+import org.jabref.model.database.BibDatabaseContext;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.LinkedFile;
+import org.jabref.model.metadata.FileDirectoryPreferences;
+import org.jabref.model.strings.StringUtil;
+import org.jabref.model.util.FileHelper;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class RenamePdfCleanup implements CleanupJob {
+
+<span class="fc" id="L31">    private static final Logger LOGGER = LoggerFactory.getLogger(RenamePdfCleanup.class);</span>
+
+    private final BibDatabaseContext databaseContext;
+    private final boolean onlyRelativePaths;
+    private final String fileNamePattern;
+    private final FileDirectoryPreferences fileDirectoryPreferences;
+    private int unsuccessfulRenames;
+    private LinkedFile singleFieldCleanup;
+
+    // FIXME: (S.G.) remove unused constructor argument 'layoutPreferences' later; for now,
+    // however, the argument is retained in order not to change the class interface:
+<span class="fc" id="L42">    public RenamePdfCleanup(boolean onlyRelativePaths, BibDatabaseContext databaseContext, String fileNamePattern,</span>
+                            LayoutFormatterPreferences layoutPreferences,
+                            FileDirectoryPreferences fileDirectoryPreferences) {
+<span class="fc" id="L45">        this.databaseContext = Objects.requireNonNull(databaseContext);</span>
+<span class="fc" id="L46">        this.onlyRelativePaths = onlyRelativePaths;</span>
+<span class="fc" id="L47">        this.fileNamePattern = Objects.requireNonNull(fileNamePattern);</span>
+<span class="fc" id="L48">        this.fileDirectoryPreferences = fileDirectoryPreferences;</span>
+<span class="fc" id="L49">    }</span>
+
+    public RenamePdfCleanup(boolean onlyRelativePaths, BibDatabaseContext databaseContext, String fileNamePattern,
+                            LayoutFormatterPreferences layoutPreferences,
+                            FileDirectoryPreferences fileDirectoryPreferences, LinkedFile singleField) {
+
+<span class="fc" id="L55">        this(onlyRelativePaths, databaseContext, fileNamePattern, layoutPreferences,</span>
+<span class="fc" id="L56">                fileDirectoryPreferences);</span>
+<span class="fc" id="L57">        this.singleFieldCleanup = singleField;</span>
+<span class="fc" id="L58">    }</span>
+
+    @Override
+    public List&lt;FieldChange&gt; cleanup(BibEntry entry) {
+        try {
+<span class="fc" id="L63">            return cleanupWithException(entry);</span>
+<span class="nc" id="L64">        } catch (IOException e) {</span>
+<span class="nc" id="L65">            LOGGER.error(&quot;Cleanup failed&quot;, e);</span>
+<span class="nc" id="L66">            return Collections.emptyList();</span>
+        }
+    }
+
+    public List&lt;FieldChange&gt; cleanupWithException(BibEntry entry) throws IOException {
+        List&lt;LinkedFile&gt; newFileList;
+        List&lt;LinkedFile&gt; oldFileList;
+<span class="fc bfc" id="L73" title="All 2 branches covered.">        if (singleFieldCleanup != null) {</span>
+<span class="fc" id="L74">            oldFileList = Collections.singletonList(singleFieldCleanup);</span>
+
+<span class="pc bpc" id="L76" title="1 of 2 branches missed.">            newFileList = entry.getFiles().stream().filter(x -&gt; !x.equals(singleFieldCleanup))</span>
+<span class="fc" id="L77">                    .collect(Collectors.toList());</span>
+<span class="fc" id="L78">        } else {</span>
+<span class="fc" id="L79">            newFileList = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L80">            oldFileList = entry.getFiles();</span>
+        }
+
+<span class="fc" id="L83">        boolean changed = false;</span>
+
+<span class="fc bfc" id="L85" title="All 2 branches covered.">        for (LinkedFile oldLinkedFile : oldFileList) {</span>
+<span class="fc" id="L86">            String realOldFilename = oldLinkedFile.getLink();</span>
+
+<span class="fc bfc" id="L88" title="All 2 branches covered.">            if (StringUtil.isBlank(realOldFilename)) {</span>
+<span class="fc" id="L89">                continue; //Skip empty filenames</span>
+            }
+
+<span class="pc bpc" id="L92" title="3 of 4 branches missed.">            if (onlyRelativePaths &amp;&amp; Paths.get(realOldFilename).isAbsolute()) {</span>
+<span class="nc" id="L93">                newFileList.add(oldLinkedFile);</span>
+<span class="nc" id="L94">                continue;</span>
+            }
+
+            //old path and old filename
+<span class="fc" id="L98">            Optional&lt;Path&gt; expandedOldFile = oldLinkedFile.findIn(databaseContext, fileDirectoryPreferences);</span>
+
+<span class="pc bpc" id="L100" title="2 of 4 branches missed.">            if ((!expandedOldFile.isPresent()) || (expandedOldFile.get().getParent() == null)) {</span>
+                // something went wrong. Just skip this entry
+<span class="nc" id="L102">                newFileList.add(oldLinkedFile);</span>
+<span class="nc" id="L103">                continue;</span>
+            }
+<span class="fc" id="L105">            String targetFileName = getTargetFileName(oldLinkedFile, entry);</span>
+<span class="fc" id="L106">            Path newPath = expandedOldFile.get().getParent().resolve(targetFileName);</span>
+
+<span class="fc" id="L108">            String expandedOldFilePath = expandedOldFile.get().toString();</span>
+<span class="fc bfc" id="L109" title="All 2 branches covered.">            boolean pathsDifferOnlyByCase = newPath.toString().equalsIgnoreCase(expandedOldFilePath)</span>
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">                    &amp;&amp; !newPath.toString().equals(expandedOldFilePath);</span>
+
+<span class="pc bpc" id="L112" title="3 of 4 branches missed.">            if (Files.exists(newPath) &amp;&amp; !pathsDifferOnlyByCase) {</span>
+                // we do not overwrite files
+                // Since File.exists is sometimes not case-sensitive, the check pathsDifferOnlyByCase ensures that we
+                // nonetheless rename files to a new name which just differs by case.
+                // TODO: we could check here if the newPath file is linked with the current entry. And if not, we could add a link
+<span class="nc" id="L117">                LOGGER.debug(&quot;There already exists a file with that name &quot; + newPath.getFileName() + &quot; so I won't rename it&quot;);</span>
+<span class="nc" id="L118">                newFileList.add(oldLinkedFile);</span>
+<span class="nc" id="L119">                continue;</span>
+            }
+
+            try {
+<span class="pc bpc" id="L123" title="1 of 2 branches missed.">                if (!Files.exists(newPath)) {</span>
+<span class="fc" id="L124">                    Files.createDirectories(newPath);</span>
+                }
+<span class="pc" id="L126">            } catch (IOException e) {</span>
+<span class="nc" id="L127">                LOGGER.error(&quot;Could not create necessary target directories for renaming&quot;, e);</span>
+            }
+
+<span class="fc" id="L130">            boolean renameSuccessful = FileUtil.renameFileWithException(Paths.get(expandedOldFilePath), newPath, true);</span>
+<span class="pc bpc" id="L131" title="1 of 2 branches missed.">            if (renameSuccessful) {</span>
+<span class="fc" id="L132">                changed = true;</span>
+
+                // Change the path for this entry
+<span class="fc" id="L135">                String description = oldLinkedFile.getDescription();</span>
+<span class="fc" id="L136">                String type = oldLinkedFile.getFileType();</span>
+
+                // We use the file directory (if none is set - then bib file) to create relative file links.
+                // The .get() is legal without check because the method will always return a value.
+<span class="fc" id="L140">                Path settingsDir = databaseContext.getFirstExistingFileDir(fileDirectoryPreferences).get();</span>
+<span class="pc bpc" id="L141" title="1 of 2 branches missed.">                if (settingsDir.getRoot().equals(newPath.getRoot())) {</span>
+<span class="fc" id="L142">                    newFileList.add(new LinkedFile(description, settingsDir.relativize(newPath).toString(), type));</span>
+<span class="fc" id="L143">                } else {</span>
+<span class="nc" id="L144">                    newFileList.add(new LinkedFile(description, newPath.toString(), type));</span>
+                }
+<span class="nc" id="L146">            } else {</span>
+<span class="nc" id="L147">                unsuccessfulRenames++;</span>
+            }
+        }
+<span class="pc bpc" id="L150" title="1 of 2 branches missed.">        if (changed) {</span>
+<span class="fc" id="L151">            Optional&lt;FieldChange&gt; change = entry.setFiles(newFileList);</span>
+            //we put an undo of the field content here
+            //the file is not being renamed back, which leads to inconsistencies
+            //if we put a null undo object here, the change by &quot;doMakePathsRelative&quot; would overwrite the field value nevertheless.
+<span class="fc" id="L155">            return change.map(Collections::singletonList).orElseGet(Collections::emptyList);</span>
+        }
+<span class="nc" id="L157">        return Collections.emptyList();</span>
+    }
+
+    public String getTargetFileName(LinkedFile flEntry, BibEntry entry) {
+<span class="fc" id="L161">        String realOldFilename = flEntry.getLink();</span>
+
+<span class="fc" id="L163">        String targetFileName = FileUtil.createFileNameFromPattern(</span>
+<span class="fc" id="L164">                databaseContext.getDatabase(), entry, fileNamePattern).trim()</span>
+<span class="fc" id="L165">                + '.'</span>
+<span class="fc" id="L166">                + FileHelper.getFileExtension(realOldFilename).orElse(&quot;pdf&quot;);</span>
+
+        // Only create valid file names
+<span class="fc" id="L169">        return FileUtil.getValidFileName(targetFileName);</span>
+    }
+
+    public int getUnsuccessfulRenames() {
+<span class="fc" id="L173">        return unsuccessfulRenames;</span>
+    }
+
+    /**
+    * Check to see if a file already exists in the target directory.  Search is not case sensitive.
+    * @param flEntry
+    * @param entry
+    * @return First identified path that matches an existing file.  This name can be used in subsequent calls to override the existing file.
+    */
+    public Optional&lt;Path&gt; findExistingFile(LinkedFile flEntry, BibEntry entry) {
+<span class="nc" id="L183">        String targetFileName = getTargetFileName(flEntry, entry);</span>
+        // The .get() is legal without check because the method will always return a value.
+<span class="nc" id="L185">        Path targetFilePath = flEntry.findIn(databaseContext,</span>
+<span class="nc" id="L186">                fileDirectoryPreferences).get().getParent().resolve(targetFileName);</span>
+<span class="nc" id="L187">        Path oldFilePath = flEntry.findIn(databaseContext, fileDirectoryPreferences).get();</span>
+        //Check if file already exists in directory with different case.
+        //This is necessary because other entries may have such a file.
+<span class="nc" id="L190">        Optional&lt;Path&gt; matchedByDiffCase = Optional.empty();</span>
+<span class="nc" id="L191">        try (Stream&lt;Path&gt; stream = Files.list(oldFilePath.getParent())) {</span>
+<span class="nc" id="L192">            matchedByDiffCase = stream</span>
+<span class="nc" id="L193">                    .filter(name -&gt; name.toString().equalsIgnoreCase(targetFilePath.toString()))</span>
+<span class="nc" id="L194">                    .findFirst();</span>
+<span class="nc bnc" id="L195" title="All 8 branches missed.">        } catch (IOException e) {</span>
+<span class="nc" id="L196">            LOGGER.error(&quot;Could not get the list of files in target directory&quot;, e);</span>
+        }
+<span class="nc" id="L198">        return matchedByDiffCase;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>ModsExportFormatTestFiles.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.exporter</a> &gt; <span class="el_source">ModsExportFormatTestFiles.java</span></div><h1>ModsExportFormatTestFiles.java</h1><pre class="source lang-java linenums">package org.jabref.logic.exporter;
+
+import java.io.File;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import org.jabref.logic.bibtex.BibEntryAssert;
+import org.jabref.logic.importer.ImportFormatPreferences;
+import org.jabref.logic.importer.fileformat.BibtexImporter;
+import org.jabref.logic.importer.fileformat.ModsImporter;
+import org.jabref.model.database.BibDatabaseContext;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.util.DummyFileUpdateMonitor;
+
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
+import org.mockito.Answers;
+import org.xmlunit.builder.Input;
+import org.xmlunit.builder.Input.Builder;
+import org.xmlunit.diff.DefaultNodeMatcher;
+import org.xmlunit.diff.ElementSelectors;
+import org.xmlunit.matchers.CompareMatcher;
+
+import static org.mockito.Mockito.mock;
+
+@RunWith(Parameterized.class)
+<span class="nc" id="L41">public class ModsExportFormatTestFiles {</span>
+
+    public Charset charset;
+    private BibDatabaseContext databaseContext;
+    private File tempFile;
+    private ModsExporter modsExportFormat;
+    private BibtexImporter bibtexImporter;
+    private ModsImporter modsImporter;
+    private Path importFile;
+
+
+    @Parameter
+    public String filename;
+
+    @Rule
+<span class="nc" id="L56">    public TemporaryFolder testFolder = new TemporaryFolder();</span>
+
+
+    @Parameters(name = &quot;{0}&quot;)
+    public static Collection&lt;String&gt; fileNames() throws Exception {
+<span class="fc" id="L61">        try (Stream&lt;Path&gt; stream = Files.list(Paths.get(ModsExportFormatTestFiles.class.getResource(&quot;&quot;).toURI()))) {</span>
+            //            stream.forEach(n -&gt; System.out.println(n));
+<span class="pc" id="L63">            return stream.map(n -&gt; n.getFileName().toString()).filter(n -&gt; n.endsWith(&quot;.bib&quot;))</span>
+<span class="pc" id="L64">                    .filter(n -&gt; n.startsWith(&quot;Mods&quot;)).collect(Collectors.toList());</span>
+<span class="pc bpc" id="L65" title="7 of 8 branches missed.">        }</span>
+    }
+
+    @Before
+    public void setUp() throws Exception {
+<span class="nc" id="L70">        databaseContext = new BibDatabaseContext();</span>
+<span class="nc" id="L71">        importFile = Paths.get(ModsExportFormatTestFiles.class.getResource(filename).toURI());</span>
+<span class="nc" id="L72">        charset = StandardCharsets.UTF_8;</span>
+<span class="nc" id="L73">        modsExportFormat = new ModsExporter();</span>
+<span class="nc" id="L74">        tempFile = testFolder.newFile();</span>
+<span class="nc" id="L75">        bibtexImporter = new BibtexImporter(mock(ImportFormatPreferences.class, Answers.RETURNS_DEEP_STUBS), new DummyFileUpdateMonitor());</span>
+<span class="nc" id="L76">        modsImporter = new ModsImporter(mock(ImportFormatPreferences.class, Answers.RETURNS_DEEP_STUBS));</span>
+<span class="nc" id="L77">    }</span>
+
+    @Test
+    public final void testPerformExport() throws Exception {
+<span class="nc" id="L81">        String xmlFileName = filename.replace(&quot;.bib&quot;, &quot;.xml&quot;);</span>
+<span class="nc" id="L82">        String tempFilename = tempFile.getCanonicalPath();</span>
+<span class="nc" id="L83">        List&lt;BibEntry&gt; entries = bibtexImporter.importDatabase(importFile, charset).getDatabase().getEntries();</span>
+<span class="nc" id="L84">        Path xmlFile = Paths.get(ModsExportFormatTestFiles.class.getResource(xmlFileName).toURI());</span>
+
+<span class="nc" id="L86">        modsExportFormat.export(databaseContext, tempFile.toPath(), charset, entries);</span>
+
+<span class="nc" id="L88">        Builder control = Input.from(Files.newInputStream(xmlFile));</span>
+<span class="nc" id="L89">        Builder test = Input.from(Files.newInputStream(Paths.get(tempFilename)));</span>
+
+<span class="nc" id="L91">        Assert.assertThat(test, CompareMatcher.isSimilarTo(control)</span>
+<span class="nc" id="L92">                .withNodeMatcher(new DefaultNodeMatcher(ElementSelectors.byNameAndText)).throwComparisonFailure());</span>
+<span class="nc" id="L93">    }</span>
+
+    @Test
+    public final void testExportAsModsAndThenImportAsMods() throws Exception {
+<span class="nc" id="L97">        List&lt;BibEntry&gt; entries = bibtexImporter.importDatabase(importFile, charset).getDatabase().getEntries();</span>
+
+<span class="nc" id="L99">        modsExportFormat.export(databaseContext, tempFile.toPath(), charset, entries);</span>
+<span class="nc" id="L100">        BibEntryAssert.assertEquals(entries, Paths.get(tempFile.getPath()), modsImporter);</span>
+<span class="nc" id="L101">    }</span>
+
+    @Test
+    public final void testImportAsModsAndExportAsMods() throws Exception {
+<span class="nc" id="L105">        String xmlFileName = filename.replace(&quot;.bib&quot;, &quot;.xml&quot;);</span>
+<span class="nc" id="L106">        String tempFilename = tempFile.getCanonicalPath();</span>
+<span class="nc" id="L107">        Path xmlFile = Paths.get(ModsExportFormatTestFiles.class.getResource(xmlFileName).toURI());</span>
+
+<span class="nc" id="L109">        List&lt;BibEntry&gt; entries = modsImporter.importDatabase(xmlFile, charset).getDatabase().getEntries();</span>
+
+<span class="nc" id="L111">        modsExportFormat.export(databaseContext, tempFile.toPath(), charset, entries);</span>
+
+<span class="nc" id="L113">        Builder control = Input.from(Files.newInputStream(xmlFile));</span>
+<span class="nc" id="L114">        Builder test = Input.from(Files.newInputStream(Paths.get(tempFilename)));</span>
+
+<span class="nc" id="L116">        Assert.assertThat(test, CompareMatcher.isSimilarTo(control)</span>
+<span class="nc" id="L117">                .withNodeMatcher(new DefaultNodeMatcher(ElementSelectors.byNameAndText)).throwComparisonFailure());</span>
+<span class="nc" id="L118">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

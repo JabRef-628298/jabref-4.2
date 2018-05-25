@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>TextPrefixFunctionTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.bst</a> &gt; <span class="el_source">TextPrefixFunctionTest.java</span></div><h1>TextPrefixFunctionTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.bst;
+
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+
+<span class="fc" id="L8">public class TextPrefixFunctionTest {</span>
+
+    @Test
+    public void testPrefix() {
+<span class="fc" id="L12">        assertPrefix(&quot;i&quot;, &quot;i&quot;);</span>
+<span class="fc" id="L13">        assertPrefix(&quot;0I~ &quot;, &quot;0I~ &quot;);</span>
+<span class="fc" id="L14">        assertPrefix(&quot;Hi Hi&quot;, &quot;Hi Hi &quot;);</span>
+<span class="fc" id="L15">        assertPrefix(&quot;{\\oe}&quot;, &quot;{\\oe}&quot;);</span>
+<span class="fc" id="L16">        assertPrefix(&quot;Hi {\\oe   }H&quot;, &quot;Hi {\\oe   }Hi &quot;);</span>
+<span class="fc" id="L17">        assertPrefix(&quot;Jonat&quot;, &quot;Jonathan Meyer and Charles Louis Xavier Joseph de la Vall{\\'e}e Poussin&quot;);</span>
+<span class="fc" id="L18">        assertPrefix(&quot;{\\'e}&quot;, &quot;{\\'e}&quot;);</span>
+<span class="fc" id="L19">        assertPrefix(&quot;{\\'{E}}doua&quot;, &quot;{\\'{E}}douard Masterly&quot;);</span>
+<span class="fc" id="L20">        assertPrefix(&quot;Ulric&quot;, &quot;Ulrich {\\\&quot;{U}}nderwood and Ned {\\~N}et and Paul {\\={P}}ot&quot;);</span>
+<span class="fc" id="L21">    }</span>
+
+    private static void assertPrefix(final String string, final String string2) {
+<span class="pc" id="L24">        assertEquals(string, BibtexTextPrefix.textPrefix(5, string2, s -&gt; fail(&quot;Should not Warn! text.prefix$ should be &quot; + string + &quot; for (5) &quot; + string2)));</span>
+<span class="fc" id="L25">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

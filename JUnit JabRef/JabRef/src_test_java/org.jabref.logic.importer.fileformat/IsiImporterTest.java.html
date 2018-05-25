@@ -1,0 +1,351 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>IsiImporterTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.importer.fileformat</a> &gt; <span class="el_source">IsiImporterTest.java</span></div><h1>IsiImporterTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.importer.fileformat;
+
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
+
+import org.jabref.logic.util.FileType;
+import org.jabref.model.entry.BibEntry;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+/**
+ * Test cases for the IsiImporter
+ */
+<span class="fc" id="L26">public class IsiImporterTest {</span>
+
+<span class="fc" id="L28">    private final IsiImporter importer = new IsiImporter();</span>
+
+    private static final String FILE_ENDING = &quot;.isi&quot;;
+
+    private static Stream&lt;String&gt; fileNames() throws IOException {
+<span class="fc bfc" id="L33" title="All 2 branches covered.">        Predicate&lt;String&gt; fileName = name -&gt; name.startsWith(&quot;IsiImporterTest&quot;)</span>
+<span class="fc bfc" id="L34" title="All 2 branches covered.">                &amp;&amp; !name.contains(&quot;Empty&quot;)</span>
+<span class="pc bpc" id="L35" title="1 of 2 branches missed.">                &amp;&amp; name.endsWith(FILE_ENDING);</span>
+<span class="fc" id="L36">        return ImporterTestEngine.getTestFiles(fileName).stream();</span>
+    }
+
+    private static Stream&lt;String&gt; invalidFileNames() throws IOException {
+<span class="fc bfc" id="L40" title="All 2 branches covered.">        Predicate&lt;String&gt; fileName = name -&gt; !name.startsWith(&quot;IsiImporterTest&quot;);</span>
+<span class="fc" id="L41">        return ImporterTestEngine.getTestFiles(fileName).stream();</span>
+    }
+
+    @Test
+    public void testParseMonthException() {
+<span class="fc" id="L46">        IsiImporter.parseMonth(&quot;20l06 06-07&quot;);</span>
+<span class="fc" id="L47">    }</span>
+
+    @Test
+    public void testGetFormatName() {
+<span class="fc" id="L51">        assertEquals(&quot;ISI&quot;, importer.getName());</span>
+<span class="fc" id="L52">    }</span>
+
+    @Test
+    public void testGetCLIId() {
+<span class="fc" id="L56">        assertEquals(&quot;isi&quot;, importer.getId());</span>
+<span class="fc" id="L57">    }</span>
+
+    @Test
+    public void testsGetExtensions() {
+<span class="fc" id="L61">        assertEquals(FileType.ISI, importer.getFileType());</span>
+<span class="fc" id="L62">    }</span>
+
+    @Test
+    public void testGetDescription() {
+<span class="fc" id="L66">        assertEquals(&quot;Importer for the ISI Web of Science, INSPEC and Medline format.&quot;,</span>
+<span class="fc" id="L67">                importer.getDescription());</span>
+<span class="fc" id="L68">    }</span>
+
+    @ParameterizedTest
+    @MethodSource(&quot;fileNames&quot;)
+    public void testIsRecognizedFormatAccepted(String fileName) throws IOException {
+<span class="fc" id="L73">        ImporterTestEngine.testIsRecognizedFormat(importer, fileName);</span>
+<span class="fc" id="L74">    }</span>
+
+    @ParameterizedTest
+    @MethodSource(&quot;invalidFileNames&quot;)
+    public void testIsRecognizedFormatRejected(String fileName) throws IOException {
+<span class="fc" id="L79">        ImporterTestEngine.testIsNotRecognizedFormat(importer, fileName);</span>
+<span class="fc" id="L80">    }</span>
+
+    @Test
+    public void testProcessSubSup() {
+<span class="fc" id="L84">        HashMap&lt;String, String&gt; subs = new HashMap&lt;&gt;();</span>
+
+<span class="fc" id="L86">        subs.put(&quot;title&quot;, &quot;/sub 3/&quot;);</span>
+<span class="fc" id="L87">        IsiImporter.processSubSup(subs);</span>
+<span class="fc" id="L88">        assertEquals(&quot;$_3$&quot;, subs.get(&quot;title&quot;));</span>
+
+<span class="fc" id="L90">        subs.put(&quot;title&quot;, &quot;/sub   3   /&quot;);</span>
+<span class="fc" id="L91">        IsiImporter.processSubSup(subs);</span>
+<span class="fc" id="L92">        assertEquals(&quot;$_3$&quot;, subs.get(&quot;title&quot;));</span>
+
+<span class="fc" id="L94">        subs.put(&quot;title&quot;, &quot;/sub 31/&quot;);</span>
+<span class="fc" id="L95">        IsiImporter.processSubSup(subs);</span>
+<span class="fc" id="L96">        assertEquals(&quot;$_{31}$&quot;, subs.get(&quot;title&quot;));</span>
+
+<span class="fc" id="L98">        subs.put(&quot;abstract&quot;, &quot;/sub 3/&quot;);</span>
+<span class="fc" id="L99">        IsiImporter.processSubSup(subs);</span>
+<span class="fc" id="L100">        assertEquals(&quot;$_3$&quot;, subs.get(&quot;abstract&quot;));</span>
+
+<span class="fc" id="L102">        subs.put(&quot;review&quot;, &quot;/sub 31/&quot;);</span>
+<span class="fc" id="L103">        IsiImporter.processSubSup(subs);</span>
+<span class="fc" id="L104">        assertEquals(&quot;$_{31}$&quot;, subs.get(&quot;review&quot;));</span>
+
+<span class="fc" id="L106">        subs.put(&quot;title&quot;, &quot;/sup 3/&quot;);</span>
+<span class="fc" id="L107">        IsiImporter.processSubSup(subs);</span>
+<span class="fc" id="L108">        assertEquals(&quot;$^3$&quot;, subs.get(&quot;title&quot;));</span>
+
+<span class="fc" id="L110">        subs.put(&quot;title&quot;, &quot;/sup 31/&quot;);</span>
+<span class="fc" id="L111">        IsiImporter.processSubSup(subs);</span>
+<span class="fc" id="L112">        assertEquals(&quot;$^{31}$&quot;, subs.get(&quot;title&quot;));</span>
+
+<span class="fc" id="L114">        subs.put(&quot;abstract&quot;, &quot;/sup 3/&quot;);</span>
+<span class="fc" id="L115">        IsiImporter.processSubSup(subs);</span>
+<span class="fc" id="L116">        assertEquals(&quot;$^3$&quot;, subs.get(&quot;abstract&quot;));</span>
+
+<span class="fc" id="L118">        subs.put(&quot;review&quot;, &quot;/sup 31/&quot;);</span>
+<span class="fc" id="L119">        IsiImporter.processSubSup(subs);</span>
+<span class="fc" id="L120">        assertEquals(&quot;$^{31}$&quot;, subs.get(&quot;review&quot;));</span>
+
+<span class="fc" id="L122">        subs.put(&quot;title&quot;, &quot;/sub $Hello/&quot;);</span>
+<span class="fc" id="L123">        IsiImporter.processSubSup(subs);</span>
+<span class="fc" id="L124">        assertEquals(&quot;$_{\\$Hello}$&quot;, subs.get(&quot;title&quot;));</span>
+<span class="fc" id="L125">    }</span>
+
+    @Test
+    public void testImportEntries1() throws IOException, URISyntaxException {
+<span class="fc" id="L129">        Path file = Paths.get(IsiImporterTest.class.getResource(&quot;IsiImporterTest1.isi&quot;).toURI());</span>
+<span class="fc" id="L130">        List&lt;BibEntry&gt; entries = importer.importDatabase(file, StandardCharsets.UTF_8).getDatabase().getEntries();</span>
+<span class="fc" id="L131">        BibEntry entry = entries.get(0);</span>
+
+<span class="fc" id="L133">        assertEquals(1, entries.size());</span>
+<span class="fc" id="L134">        assertEquals(Optional.of(&quot;Optical properties of MgO doped LiNbO$_3$ single crystals&quot;),</span>
+<span class="fc" id="L135">                entry.getField(&quot;title&quot;));</span>
+<span class="fc" id="L136">        assertEquals(</span>
+<span class="fc" id="L137">                Optional.of(</span>
+<span class="fc" id="L138">                        &quot;James Brown and James Marc Brown and Brown, J. M. and Brown, J. and Brown, J. M. and Brown, J.&quot;),</span>
+<span class="fc" id="L139">                entry.getField(&quot;author&quot;));</span>
+<span class="fc" id="L140">        assertEquals(&quot;article&quot;, entry.getType());</span>
+<span class="fc" id="L141">        assertEquals(Optional.of(&quot;Optical Materials&quot;), entry.getField(&quot;journal&quot;));</span>
+<span class="fc" id="L142">        assertEquals(Optional.of(&quot;2006&quot;), entry.getField(&quot;year&quot;));</span>
+<span class="fc" id="L143">        assertEquals(Optional.of(&quot;28&quot;), entry.getField(&quot;volume&quot;));</span>
+<span class="fc" id="L144">        assertEquals(Optional.of(&quot;5&quot;), entry.getField(&quot;number&quot;));</span>
+<span class="fc" id="L145">        assertEquals(Optional.of(&quot;467--72&quot;), entry.getField(&quot;pages&quot;));</span>
+<span class="fc" id="L146">    }</span>
+
+    @Test
+    public void testImportEntries2() throws IOException, URISyntaxException {
+<span class="fc" id="L150">        Path file = Paths.get(IsiImporterTest.class.getResource(&quot;IsiImporterTest2.isi&quot;).toURI());</span>
+<span class="fc" id="L151">        List&lt;BibEntry&gt; entries = importer.importDatabase(file, StandardCharsets.UTF_8).getDatabase().getEntries();</span>
+<span class="fc" id="L152">        BibEntry entry = entries.get(0);</span>
+
+<span class="fc" id="L154">        assertEquals(3, entries.size());</span>
+<span class="fc" id="L155">        assertEquals(Optional.of(&quot;Optical properties of MgO doped LiNbO$_3$ single crystals&quot;),</span>
+<span class="fc" id="L156">                entry.getField(&quot;title&quot;));</span>
+<span class="fc" id="L157">        assertEquals(&quot;misc&quot;, entry.getType());</span>
+<span class="fc" id="L158">        assertEquals(Optional.of(&quot;Optical Materials&quot;), entry.getField(&quot;journal&quot;));</span>
+<span class="fc" id="L159">        assertEquals(Optional.of(&quot;2006&quot;), entry.getField(&quot;year&quot;));</span>
+<span class="fc" id="L160">        assertEquals(Optional.of(&quot;28&quot;), entry.getField(&quot;volume&quot;));</span>
+<span class="fc" id="L161">        assertEquals(Optional.of(&quot;5&quot;), entry.getField(&quot;number&quot;));</span>
+<span class="fc" id="L162">        assertEquals(Optional.of(&quot;467-72&quot;), entry.getField(&quot;pages&quot;));</span>
+<span class="fc" id="L163">    }</span>
+
+    @Test
+    public void testImportEntriesINSPEC() throws IOException, URISyntaxException {
+<span class="fc" id="L167">        Path file = Paths.get(IsiImporterTest.class.getResource(&quot;IsiImporterTestInspec.isi&quot;).toURI());</span>
+<span class="fc" id="L168">        List&lt;BibEntry&gt; entries = importer.importDatabase(file, StandardCharsets.UTF_8).getDatabase().getEntries();</span>
+
+<span class="fc" id="L170">        BibEntry first = entries.get(0);</span>
+<span class="fc" id="L171">        BibEntry second = entries.get(1);</span>
+
+<span class="fc" id="L173">        if (first.getField(&quot;title&quot;).equals(</span>
+<span class="pc bpc" id="L174" title="1 of 2 branches missed.">                Optional.of(&quot;Optical and photoelectric spectroscopy of photorefractive Sn$_2$P$_2$S$_6$ crystals&quot;))) {</span>
+<span class="nc" id="L175">            BibEntry tmp = first;</span>
+<span class="nc" id="L176">            first = second;</span>
+<span class="nc" id="L177">            second = tmp;</span>
+        }
+
+<span class="fc" id="L180">        assertEquals(2, entries.size());</span>
+<span class="fc" id="L181">        assertEquals(</span>
+<span class="fc" id="L182">                Optional.of(</span>
+<span class="fc" id="L183">                        &quot;Second harmonic generation of continuous wave ultraviolet light and production of beta -BaB$_2$O$_4$ optical waveguides&quot;),</span>
+<span class="fc" id="L184">                first.getField(&quot;title&quot;));</span>
+<span class="fc" id="L185">        assertEquals(&quot;article&quot;, first.getType());</span>
+
+<span class="fc" id="L187">        assertEquals(Optional.of(&quot;Degl'Innocenti, R. and Guarino, A. and Poberaj, G. and Gunter, P.&quot;),</span>
+<span class="fc" id="L188">                first.getField(&quot;author&quot;));</span>
+<span class="fc" id="L189">        assertEquals(Optional.of(&quot;Applied Physics Letters&quot;), first.getField(&quot;journal&quot;));</span>
+<span class="fc" id="L190">        assertEquals(Optional.of(&quot;2006&quot;), first.getField(&quot;year&quot;));</span>
+<span class="fc" id="L191">        assertEquals(Optional.of(&quot;#jul#&quot;), first.getField(&quot;month&quot;));</span>
+<span class="fc" id="L192">        assertEquals(Optional.of(&quot;89&quot;), first.getField(&quot;volume&quot;));</span>
+<span class="fc" id="L193">        assertEquals(Optional.of(&quot;4&quot;), first.getField(&quot;number&quot;));</span>
+<span class="fc" id="L194">        assertEquals(Optional.of(&quot;Lorem ipsum abstract&quot;), first.getField(&quot;abstract&quot;));</span>
+<span class="fc" id="L195">        assertEquals(Optional.of(&quot;Aip&quot;), first.getField(&quot;publisher&quot;));</span>
+<span class="fc" id="L196">        assertEquals(</span>
+<span class="fc" id="L197">                Optional.of(&quot;Optical and photoelectric spectroscopy of photorefractive Sn$_2$P$_2$S$_6$ crystals&quot;),</span>
+<span class="fc" id="L198">                second.getField(&quot;title&quot;));</span>
+<span class="fc" id="L199">        assertEquals(&quot;article&quot;, second.getType());</span>
+<span class="fc" id="L200">    }</span>
+
+    @Test
+    public void testImportEntriesWOS() throws IOException, URISyntaxException {
+<span class="fc" id="L204">        Path file = Paths.get(IsiImporterTest.class.getResource(&quot;IsiImporterTestWOS.isi&quot;).toURI());</span>
+<span class="fc" id="L205">        List&lt;BibEntry&gt; entries = importer.importDatabase(file, StandardCharsets.UTF_8).getDatabase().getEntries();</span>
+
+<span class="fc" id="L207">        BibEntry first = entries.get(0);</span>
+<span class="fc" id="L208">        BibEntry second = entries.get(1);</span>
+
+<span class="fc" id="L210">        assertEquals(2, entries.size());</span>
+
+<span class="fc" id="L212">        assertEquals(Optional.of(&quot;Optical and photoelectric spectroscopy of photorefractive Sn2P2S6 crystals&quot;),</span>
+<span class="fc" id="L213">                first.getField(&quot;title&quot;));</span>
+<span class="fc" id="L214">        assertEquals(Optional.of(&quot;Optical waveguides in Sn2P2S6 by low fluence MeV He+ ion implantation&quot;),</span>
+<span class="fc" id="L215">                second.getField(&quot;title&quot;));</span>
+
+<span class="fc" id="L217">        assertEquals(Optional.of(&quot;Journal of Physics-condensed Matter&quot;), first.getField(&quot;journal&quot;));</span>
+<span class="fc" id="L218">    }</span>
+
+    @Test
+    public void testIsiAuthorsConvert() {
+<span class="fc" id="L222">        assertEquals(</span>
+<span class="fc" id="L223">                &quot;James Brown and James Marc Brown and Brown, J. M. and Brown, J. and Brown, J. M. and Brown, J.&quot;,</span>
+<span class="fc" id="L224">                IsiImporter.isiAuthorsConvert(</span>
+<span class="fc" id="L225">                        &quot;James Brown and James Marc Brown and Brown, J.M. and Brown, J. and Brown, J.M. and Brown, J.&quot;));</span>
+
+<span class="fc" id="L227">        assertEquals(</span>
+<span class="fc" id="L228">                &quot;Joffe, Hadine and Hall, Janet E. and Gruber, Staci and Sarmiento, Ingrid A. and Cohen, Lee S. and Yurgelun-Todd, Deborah and Martin, Kathryn A.&quot;,</span>
+<span class="fc" id="L229">                IsiImporter.isiAuthorsConvert(</span>
+<span class="fc" id="L230">                        &quot;Joffe, Hadine; Hall, Janet E; Gruber, Staci; Sarmiento, Ingrid A; Cohen, Lee S; Yurgelun-Todd, Deborah; Martin, Kathryn A&quot;));</span>
+
+<span class="fc" id="L232">    }</span>
+
+    @Test
+    public void testMonthConvert() {
+<span class="fc" id="L236">        assertEquals(&quot;#jun#&quot;, IsiImporter.parseMonth(&quot;06&quot;));</span>
+<span class="fc" id="L237">        assertEquals(&quot;#jun#&quot;, IsiImporter.parseMonth(&quot;JUN&quot;));</span>
+<span class="fc" id="L238">        assertEquals(&quot;#jun#&quot;, IsiImporter.parseMonth(&quot;jUn&quot;));</span>
+<span class="fc" id="L239">        assertEquals(&quot;#may#&quot;, IsiImporter.parseMonth(&quot;MAY-JUN&quot;));</span>
+<span class="fc" id="L240">        assertEquals(&quot;#jun#&quot;, IsiImporter.parseMonth(&quot;2006 06&quot;));</span>
+<span class="fc" id="L241">        assertEquals(&quot;#jun#&quot;, IsiImporter.parseMonth(&quot;2006 06-07&quot;));</span>
+<span class="fc" id="L242">        assertEquals(&quot;#jul#&quot;, IsiImporter.parseMonth(&quot;2006 07 03&quot;));</span>
+<span class="fc" id="L243">        assertEquals(&quot;#may#&quot;, IsiImporter.parseMonth(&quot;2006 May-Jun&quot;));</span>
+<span class="fc" id="L244">    }</span>
+
+    @Test
+    public void testIsiAuthorConvert() {
+<span class="fc" id="L248">        assertEquals(&quot;James Brown&quot;, IsiImporter.isiAuthorConvert(&quot;James Brown&quot;));</span>
+<span class="fc" id="L249">        assertEquals(&quot;James Marc Brown&quot;, IsiImporter.isiAuthorConvert(&quot;James Marc Brown&quot;));</span>
+<span class="fc" id="L250">        assertEquals(&quot;Brown, J. M.&quot;, IsiImporter.isiAuthorConvert(&quot;Brown, J.M.&quot;));</span>
+<span class="fc" id="L251">        assertEquals(&quot;Brown, J.&quot;, IsiImporter.isiAuthorConvert(&quot;Brown, J.&quot;));</span>
+<span class="fc" id="L252">        assertEquals(&quot;Brown, J. M.&quot;, IsiImporter.isiAuthorConvert(&quot;Brown, JM&quot;));</span>
+<span class="fc" id="L253">        assertEquals(&quot;Brown, J.&quot;, IsiImporter.isiAuthorConvert(&quot;Brown, J&quot;));</span>
+<span class="fc" id="L254">        assertEquals(&quot;Brown, James&quot;, IsiImporter.isiAuthorConvert(&quot;Brown, James&quot;));</span>
+<span class="fc" id="L255">        assertEquals(&quot;Hall, Janet E.&quot;, IsiImporter.isiAuthorConvert(&quot;Hall, Janet E&quot;));</span>
+<span class="fc" id="L256">        assertEquals(&quot;&quot;, IsiImporter.isiAuthorConvert(&quot;&quot;));</span>
+<span class="fc" id="L257">    }</span>
+
+    @Test
+    public void testImportIEEEExport() throws IOException, URISyntaxException {
+<span class="fc" id="L261">        Path file = Paths.get(IsiImporterTest.class.getResource(&quot;IEEEImport1.txt&quot;).toURI());</span>
+<span class="fc" id="L262">        List&lt;BibEntry&gt; entries = importer.importDatabase(file, StandardCharsets.UTF_8).getDatabase().getEntries();</span>
+<span class="fc" id="L263">        BibEntry entry = entries.get(0);</span>
+
+<span class="fc" id="L265">        assertEquals(1, entries.size());</span>
+<span class="fc" id="L266">        assertEquals(&quot;article&quot;, entry.getType());</span>
+<span class="fc" id="L267">        assertEquals(Optional.of(&quot;Geoscience and Remote Sensing Letters, IEEE&quot;), entry.getField(&quot;journal&quot;));</span>
+<span class="fc" id="L268">        assertEquals(Optional.of(&quot;Improving Urban Road Extraction in High-Resolution &quot;</span>
+                + &quot;Images Exploiting Directional Filtering, Perceptual &quot; + &quot;Grouping, and Simple Topological Concepts&quot;),
+<span class="fc" id="L270">                entry.getField(&quot;title&quot;));</span>
+<span class="fc" id="L271">        assertEquals(Optional.of(&quot;4&quot;), entry.getField(&quot;volume&quot;));</span>
+<span class="fc" id="L272">        assertEquals(Optional.of(&quot;3&quot;), entry.getField(&quot;number&quot;));</span>
+<span class="fc" id="L273">        assertEquals(Optional.of(&quot;1545-598X&quot;), entry.getField(&quot;SN&quot;));</span>
+<span class="fc" id="L274">        assertEquals(Optional.of(&quot;387--391&quot;), entry.getField(&quot;pages&quot;));</span>
+<span class="fc" id="L275">        assertEquals(Optional.of(&quot;Gamba, P. and Dell'Acqua, F. and Lisini, G.&quot;), entry.getField(&quot;author&quot;));</span>
+<span class="fc" id="L276">        assertEquals(Optional.of(&quot;2006&quot;), entry.getField(&quot;year&quot;));</span>
+<span class="fc" id="L277">        assertEquals(Optional.of(&quot;Perceptual grouping, street extraction, urban remote sensing&quot;),</span>
+<span class="fc" id="L278">                entry.getField(&quot;keywords&quot;));</span>
+<span class="fc" id="L279">        assertEquals(Optional.of(&quot;Lorem ipsum abstract&quot;), entry.getField(&quot;abstract&quot;));</span>
+<span class="fc" id="L280">    }</span>
+
+    @Test
+    public void testIEEEImport() throws IOException, URISyntaxException {
+<span class="fc" id="L284">        Path file = Paths.get(IsiImporterTest.class.getResource(&quot;IEEEImport1.txt&quot;).toURI());</span>
+<span class="fc" id="L285">        List&lt;BibEntry&gt; entries = importer.importDatabase(file, StandardCharsets.UTF_8).getDatabase().getEntries();</span>
+<span class="fc" id="L286">        BibEntry entry = entries.get(0);</span>
+
+<span class="fc" id="L288">        assertEquals(1, entries.size());</span>
+<span class="fc" id="L289">        assertEquals(&quot;article&quot;, entry.getType());</span>
+<span class="fc" id="L290">        assertEquals(Optional.of(&quot;Geoscience and Remote Sensing Letters, IEEE&quot;), entry.getField(&quot;journal&quot;));</span>
+<span class="fc" id="L291">        assertEquals(</span>
+<span class="fc" id="L292">                Optional.of(</span>
+<span class="fc" id="L293">                        &quot;Improving Urban Road Extraction in High-Resolution Images Exploiting Directional Filtering, Perceptual Grouping, and Simple Topological Concepts&quot;),</span>
+<span class="fc" id="L294">                entry.getField(&quot;title&quot;));</span>
+<span class="fc" id="L295">        assertEquals(Optional.of(&quot;4&quot;), entry.getField(&quot;volume&quot;));</span>
+<span class="fc" id="L296">        assertEquals(Optional.of(&quot;3&quot;), entry.getField(&quot;number&quot;));</span>
+<span class="fc" id="L297">        assertEquals(Optional.of(&quot;1545-598X&quot;), entry.getField(&quot;SN&quot;));</span>
+<span class="fc" id="L298">        assertEquals(Optional.of(&quot;387--391&quot;), entry.getField(&quot;pages&quot;));</span>
+<span class="fc" id="L299">        assertEquals(Optional.of(&quot;Gamba, P. and Dell'Acqua, F. and Lisini, G.&quot;), entry.getField(&quot;author&quot;));</span>
+<span class="fc" id="L300">        assertEquals(Optional.of(&quot;2006&quot;), entry.getField(&quot;year&quot;));</span>
+<span class="fc" id="L301">        assertEquals(Optional.of(&quot;Perceptual grouping, street extraction, urban remote sensing&quot;),</span>
+<span class="fc" id="L302">                entry.getField(&quot;keywords&quot;));</span>
+<span class="fc" id="L303">        assertEquals(Optional.of(&quot;Lorem ipsum abstract&quot;), entry.getField(&quot;abstract&quot;));</span>
+<span class="fc" id="L304">    }</span>
+
+    @Test
+    public void testImportEntriesMedline() throws IOException, URISyntaxException {
+<span class="fc" id="L308">        Path file = Paths.get(IsiImporterTest.class.getResource(&quot;IsiImporterTestMedline.isi&quot;).toURI());</span>
+<span class="fc" id="L309">        List&lt;BibEntry&gt; entries = importer.importDatabase(file, StandardCharsets.UTF_8).getDatabase().getEntries();</span>
+
+<span class="fc" id="L311">        BibEntry first = entries.get(0);</span>
+<span class="fc" id="L312">        BibEntry second = entries.get(1);</span>
+
+<span class="fc" id="L314">        assertEquals(2, entries.size());</span>
+<span class="fc" id="L315">        assertEquals(</span>
+<span class="fc" id="L316">                Optional.of(&quot;Effects of modafinil on cognitive performance and alertness during sleep deprivation.&quot;),</span>
+<span class="fc" id="L317">                first.getField(&quot;title&quot;));</span>
+<span class="fc" id="L318">        assertEquals(Optional.of(&quot;Wesensten, Nancy J.&quot;), first.getField(&quot;author&quot;));</span>
+<span class="fc" id="L319">        assertEquals(Optional.of(&quot;Curr Pharm Des&quot;), first.getField(&quot;journal&quot;));</span>
+<span class="fc" id="L320">        assertEquals(Optional.of(&quot;2006&quot;), first.getField(&quot;year&quot;));</span>
+<span class="fc" id="L321">        assertEquals(Optional.empty(), first.getField(&quot;month&quot;));</span>
+<span class="fc" id="L322">        assertEquals(Optional.of(&quot;12&quot;), first.getField(&quot;volume&quot;));</span>
+<span class="fc" id="L323">        assertEquals(Optional.of(&quot;20&quot;), first.getField(&quot;number&quot;));</span>
+<span class="fc" id="L324">        assertEquals(Optional.of(&quot;2457--71&quot;), first.getField(&quot;pages&quot;));</span>
+<span class="fc" id="L325">        assertEquals(&quot;article&quot;, first.getType());</span>
+<span class="fc" id="L326">        assertEquals(</span>
+<span class="fc" id="L327">                Optional.of(</span>
+<span class="fc" id="L328">                        &quot;Estrogen therapy selectively enhances prefrontal cognitive processes: a randomized, double-blind, placebo-controlled study with functional magnetic resonance imaging in perimenopausal and recently postmenopausal women.&quot;),</span>
+<span class="fc" id="L329">                second.getField(&quot;title&quot;));</span>
+<span class="fc" id="L330">        assertEquals(</span>
+<span class="fc" id="L331">                Optional.of(</span>
+<span class="fc" id="L332">                        &quot;Joffe, Hadine and Hall, Janet E. and Gruber, Staci and Sarmiento, Ingrid A. and Cohen, Lee S. and Yurgelun-Todd, Deborah and Martin, Kathryn A.&quot;),</span>
+<span class="fc" id="L333">                second.getField(&quot;author&quot;));</span>
+<span class="fc" id="L334">        assertEquals(Optional.of(&quot;2006&quot;), second.getField(&quot;year&quot;));</span>
+<span class="fc" id="L335">        assertEquals(Optional.of(&quot;#may#&quot;), second.getField(&quot;month&quot;));</span>
+<span class="fc" id="L336">        assertEquals(Optional.of(&quot;13&quot;), second.getField(&quot;volume&quot;));</span>
+<span class="fc" id="L337">        assertEquals(Optional.of(&quot;3&quot;), second.getField(&quot;number&quot;));</span>
+<span class="fc" id="L338">        assertEquals(Optional.of(&quot;411--22&quot;), second.getField(&quot;pages&quot;));</span>
+<span class="fc" id="L339">        assertEquals(&quot;article&quot;, second.getType());</span>
+<span class="fc" id="L340">    }</span>
+
+    @Test
+    public void testImportEntriesEmpty() throws IOException, URISyntaxException {
+<span class="fc" id="L344">        Path file = Paths.get(IsiImporterTest.class.getResource(&quot;IsiImporterTestEmpty.isi&quot;).toURI());</span>
+
+<span class="fc" id="L346">        List&lt;BibEntry&gt; entries = importer.importDatabase(file, StandardCharsets.UTF_8).getDatabase().getEntries();</span>
+
+<span class="fc" id="L348">        assertEquals(1, entries.size());</span>
+<span class="fc" id="L349">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MsBibImporterTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.importer.fileformat</a> &gt; <span class="el_source">MsBibImporterTest.java</span></div><h1>MsBibImporterTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.importer.fileformat;
+
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.charset.Charset;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+import org.jabref.logic.util.FileType;
+import org.jabref.model.entry.BibEntry;
+
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
+<span class="fc" id="L20">public class MsBibImporterTest {</span>
+
+    @Test
+    public void testsGetExtensions() {
+<span class="fc" id="L24">        MsBibImporter importer = new MsBibImporter();</span>
+<span class="fc" id="L25">        assertEquals(FileType.MSBIB, importer.getFileType());</span>
+<span class="fc" id="L26">    }</span>
+
+    @Test
+    public void testGetDescription() {
+<span class="fc" id="L30">        MsBibImporter importer = new MsBibImporter();</span>
+<span class="fc" id="L31">        assertEquals(&quot;Importer for the MS Office 2007 XML bibliography format.&quot;, importer.getDescription());</span>
+<span class="fc" id="L32">    }</span>
+
+    @Test
+    public final void testIsNotRecognizedFormat() throws Exception {
+<span class="fc" id="L36">        MsBibImporter testImporter = new MsBibImporter();</span>
+<span class="fc" id="L37">        List&lt;String&gt; notAccepted = Arrays.asList(&quot;CopacImporterTest1.txt&quot;, &quot;IsiImporterTest1.isi&quot;,</span>
+<span class="fc" id="L38">                &quot;IsiImporterTestInspec.isi&quot;, &quot;emptyFile.xml&quot;, &quot;IsiImporterTestWOS.isi&quot;);</span>
+<span class="fc bfc" id="L39" title="All 2 branches covered.">        for (String s : notAccepted) {</span>
+<span class="fc" id="L40">            Path file = Paths.get(MsBibImporter.class.getResource(s).toURI());</span>
+<span class="fc" id="L41">            assertFalse(testImporter.isRecognizedFormat(file, Charset.defaultCharset()));</span>
+        }
+<span class="fc" id="L43">    }</span>
+
+    @Test
+    public final void testImportEntriesEmpty() throws IOException, URISyntaxException {
+<span class="fc" id="L47">        MsBibImporter testImporter = new MsBibImporter();</span>
+<span class="fc" id="L48">        Path file = Paths.get(MsBibImporter.class.getResource(&quot;EmptyMsBib_Test.xml&quot;).toURI());</span>
+<span class="fc" id="L49">        List&lt;BibEntry&gt; entries = testImporter.importDatabase(file, Charset.defaultCharset()).getDatabase().getEntries();</span>
+<span class="fc" id="L50">        assertEquals(Collections.emptyList(), entries);</span>
+<span class="fc" id="L51">    }</span>
+
+    @Test
+    public final void testImportEntriesNotRecognizedFormat() throws IOException, URISyntaxException {
+<span class="fc" id="L55">        MsBibImporter testImporter = new MsBibImporter();</span>
+<span class="fc" id="L56">        Path file = Paths.get(MsBibImporter.class.getResource(&quot;CopacImporterTest1.txt&quot;).toURI());</span>
+<span class="fc" id="L57">        List&lt;BibEntry&gt; entries = testImporter.importDatabase(file, Charset.defaultCharset()).getDatabase().getEntries();</span>
+<span class="fc" id="L58">        assertEquals(0, entries.size());</span>
+<span class="fc" id="L59">    }</span>
+
+    @Test
+    public final void testGetFormatName() {
+<span class="fc" id="L63">        MsBibImporter testImporter = new MsBibImporter();</span>
+<span class="fc" id="L64">        assertEquals(&quot;MSBib&quot;, testImporter.getName());</span>
+<span class="fc" id="L65">    }</span>
+
+    @Test
+    public final void testGetCommandLineId() {
+<span class="fc" id="L69">        MsBibImporter testImporter = new MsBibImporter();</span>
+<span class="fc" id="L70">        assertEquals(&quot;msbib&quot;, testImporter.getId());</span>
+<span class="fc" id="L71">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

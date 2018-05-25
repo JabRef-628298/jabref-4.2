@@ -1,0 +1,436 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>FileUtilTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.util.io</a> &gt; <span class="el_source">FileUtilTest.java</span></div><h1>FileUtilTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.util.io;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import org.jabref.logic.layout.LayoutFormatterPreferences;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.util.FileHelper;
+
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.mockito.Answers;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+
+<span class="fc" id="L32">public class FileUtilTest {</span>
+<span class="fc" id="L33">    private final Path nonExistingTestPath = Paths.get(&quot;nonExistingTestPath&quot;);</span>
+    @Rule
+<span class="fc" id="L35">    public TemporaryFolder temporaryFolder = new TemporaryFolder();</span>
+<span class="fc" id="L36">    public TemporaryFolder otherTemporaryFolder = new TemporaryFolder();</span>
+    private Path existingTestFile;
+    private Path otherExistingTestFile;
+    private LayoutFormatterPreferences layoutFormatterPreferences;
+
+    @Before
+    public void setUpViewModel() throws IOException {
+<span class="fc" id="L43">        existingTestFile = createTemporaryTestFile(&quot;existingTestFile.txt&quot;);</span>
+<span class="fc" id="L44">        otherExistingTestFile = createTemporaryTestFile(&quot;otherExistingTestFile.txt&quot;);</span>
+<span class="fc" id="L45">        otherTemporaryFolder.create();</span>
+<span class="fc" id="L46">        layoutFormatterPreferences = mock(LayoutFormatterPreferences.class, Answers.RETURNS_DEEP_STUBS);</span>
+<span class="fc" id="L47">    }</span>
+
+    @Test
+    public void extensionBakAddedCorrectly() {
+<span class="fc" id="L51">        assertEquals(Paths.get(&quot;demo.bib.bak&quot;),</span>
+<span class="fc" id="L52">                FileUtil.addExtension(Paths.get(&quot;demo.bib&quot;), &quot;.bak&quot;));</span>
+<span class="fc" id="L53">    }</span>
+
+    @Test
+    public void extensionBakAddedCorrectlyToAFileContainedInTmpDirectory() {
+<span class="fc" id="L57">        assertEquals(Paths.get(&quot;tmp&quot;, &quot;demo.bib.bak&quot;),</span>
+<span class="fc" id="L58">                FileUtil.addExtension(Paths.get(&quot;tmp&quot;, &quot;demo.bib&quot;), &quot;.bak&quot;));</span>
+<span class="fc" id="L59">    }</span>
+
+    @Test
+    public void testGetLinkedFileNameDefaultWithLayout() {
+        // bibkey - title
+<span class="fc" id="L64">        String fileNamePattern = &quot;\\bibtexkey\\begin{title} - \\format[RemoveBrackets]{\\title}\\end{title}&quot;;</span>
+<span class="fc" id="L65">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L66">        entry.setCiteKey(&quot;1234&quot;);</span>
+<span class="fc" id="L67">        entry.setField(&quot;title&quot;, &quot;mytitle&quot;);</span>
+
+<span class="fc" id="L69">        assertEquals(&quot;1234 - mytitle&quot;,</span>
+<span class="fc" id="L70">                FileUtil.createFileNameFromPattern(null, entry, fileNamePattern, layoutFormatterPreferences));</span>
+<span class="fc" id="L71">    }</span>
+
+    @Test
+    public void testGetLinkedFileNameDefaultFullTitle() {
+        // bibkey - title
+<span class="fc" id="L76">        String fileNamePattern = &quot;[bibtexkey] - [fulltitle]&quot;;</span>
+<span class="fc" id="L77">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L78">        entry.setCiteKey(&quot;1234&quot;);</span>
+<span class="fc" id="L79">        entry.setField(&quot;title&quot;, &quot;mytitle&quot;);</span>
+
+<span class="fc" id="L81">        assertEquals(&quot;1234 - mytitle&quot;,</span>
+<span class="fc" id="L82">                FileUtil.createFileNameFromPattern(null, entry, fileNamePattern));</span>
+<span class="fc" id="L83">    }</span>
+
+    @Test
+    public void testGetLinkedFileNameDefaultWithLowercaseTitle() {
+        // bibkey - title
+<span class="fc" id="L88">        String fileNamePattern = &quot;[bibtexkey] - [title:lower]&quot;;</span>
+<span class="fc" id="L89">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L90">        entry.setCiteKey(&quot;1234&quot;);</span>
+<span class="fc" id="L91">        entry.setField(&quot;title&quot;, &quot;mytitle&quot;);</span>
+
+<span class="fc" id="L93">        assertEquals(&quot;1234 - mytitle&quot;,</span>
+<span class="fc" id="L94">                FileUtil.createFileNameFromPattern(null, entry, fileNamePattern));</span>
+<span class="fc" id="L95">    }</span>
+
+    @Test
+    public void testGetLinkedFileNameBibTeXKeyWithLayout() {
+        // bibkey
+<span class="fc" id="L100">        String fileNamePattern = &quot;\\bibtexkey&quot;;</span>
+<span class="fc" id="L101">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L102">        entry.setCiteKey(&quot;1234&quot;);</span>
+<span class="fc" id="L103">        entry.setField(&quot;title&quot;, &quot;mytitle&quot;);</span>
+
+<span class="fc" id="L105">        assertEquals(&quot;1234&quot;,</span>
+<span class="fc" id="L106">                FileUtil.createFileNameFromPattern(null, entry, fileNamePattern,</span>
+<span class="fc" id="L107">                        layoutFormatterPreferences));</span>
+<span class="fc" id="L108">    }</span>
+
+    @Test
+    public void testGetLinkedFileNameBibTeXKey() {
+        // bibkey
+<span class="fc" id="L113">        String fileNamePattern = &quot;[bibtexkey]&quot;;</span>
+<span class="fc" id="L114">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L115">        entry.setCiteKey(&quot;1234&quot;);</span>
+<span class="fc" id="L116">        entry.setField(&quot;title&quot;, &quot;mytitle&quot;);</span>
+
+<span class="fc" id="L118">        assertEquals(&quot;1234&quot;,</span>
+<span class="fc" id="L119">                FileUtil.createFileNameFromPattern(null, entry, fileNamePattern));</span>
+<span class="fc" id="L120">    }</span>
+
+    @Test
+    public void testGetLinkedFileNameNoPatternWithLayout() {
+<span class="fc" id="L124">        String fileNamePattern = &quot;&quot;;</span>
+<span class="fc" id="L125">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L126">        entry.setCiteKey(&quot;1234&quot;);</span>
+<span class="fc" id="L127">        entry.setField(&quot;title&quot;, &quot;mytitle&quot;);</span>
+
+<span class="fc" id="L129">        assertEquals(&quot;1234&quot;, FileUtil.createFileNameFromPattern(null, entry, fileNamePattern,</span>
+<span class="fc" id="L130">                layoutFormatterPreferences));</span>
+<span class="fc" id="L131">    }</span>
+
+    @Test
+    public void testGetLinkedFileNameNoPattern() {
+<span class="fc" id="L135">        String fileNamePattern = &quot;&quot;;</span>
+<span class="fc" id="L136">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L137">        entry.setCiteKey(&quot;1234&quot;);</span>
+<span class="fc" id="L138">        entry.setField(&quot;title&quot;, &quot;mytitle&quot;);</span>
+
+<span class="fc" id="L140">        assertEquals(&quot;1234&quot;, FileUtil.createFileNameFromPattern(null, entry, fileNamePattern));</span>
+<span class="fc" id="L141">    }</span>
+
+    @Test
+    public void testGetDefaultFileNameNoPatternNoBibTeXKeyWithLayout() {
+<span class="fc" id="L145">        String fileNamePattern = &quot;&quot;;</span>
+<span class="fc" id="L146">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L147">        entry.setField(&quot;title&quot;, &quot;mytitle&quot;);</span>
+
+<span class="fc" id="L149">        assertEquals(&quot;default&quot;, FileUtil.createFileNameFromPattern(null, entry, fileNamePattern,</span>
+<span class="fc" id="L150">                layoutFormatterPreferences));</span>
+<span class="fc" id="L151">    }</span>
+
+    @Test
+    public void testGetDefaultFileNameNoPatternNoBibTeXKey() {
+<span class="fc" id="L155">        String fileNamePattern = &quot;&quot;;</span>
+<span class="fc" id="L156">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L157">        entry.setField(&quot;title&quot;, &quot;mytitle&quot;);</span>
+
+<span class="fc" id="L159">        assertEquals(&quot;default&quot;, FileUtil.createFileNameFromPattern(null, entry, fileNamePattern));</span>
+<span class="fc" id="L160">    }</span>
+
+    @Test
+    public void testGetLinkedFileNameGetKeyIfEmptyFieldWithLayout() {
+        // bibkey - title
+<span class="fc" id="L165">        String fileNamePattern = &quot;\\begin{title} - \\format[RemoveBrackets]{\\title}\\end{title}&quot;;</span>
+<span class="fc" id="L166">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L167">        entry.setCiteKey(&quot;1234&quot;);</span>
+
+<span class="fc" id="L169">        assertEquals(&quot;1234&quot;, FileUtil.createFileNameFromPattern(null, entry, fileNamePattern,</span>
+<span class="fc" id="L170">                layoutFormatterPreferences));</span>
+<span class="fc" id="L171">    }</span>
+
+    @Test
+    public void testGetLinkedFileNameGetKeyIfEmptyField() {
+        // bibkey - title
+<span class="fc" id="L176">        String fileNamePattern = &quot;[title]&quot;;</span>
+<span class="fc" id="L177">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L178">        entry.setCiteKey(&quot;1234&quot;);</span>
+
+<span class="fc" id="L180">        assertEquals(&quot;1234&quot;, FileUtil.createFileNameFromPattern(null, entry, fileNamePattern));</span>
+<span class="fc" id="L181">    }</span>
+
+    @Test
+    public void testGetLinkedFileNameGetDefaultIfEmptyFieldNoKeyWithLayout() {
+        // bibkey - title
+<span class="fc" id="L186">        String fileNamePattern = &quot;\\begin{title} - \\format[RemoveBrackets]{\\title}\\end{title}&quot;;</span>
+<span class="fc" id="L187">        BibEntry entry = new BibEntry();</span>
+
+<span class="fc" id="L189">        assertEquals(&quot;default&quot;, FileUtil.createFileNameFromPattern(null, entry, fileNamePattern,</span>
+<span class="fc" id="L190">                layoutFormatterPreferences));</span>
+<span class="fc" id="L191">    }</span>
+
+    @Test
+    public void testGetLinkedFileNameGetDefaultIfEmptyFieldNoKey() {
+        // bibkey - title
+<span class="fc" id="L196">        String fileNamePattern = &quot;[title]&quot;;</span>
+<span class="fc" id="L197">        BibEntry entry = new BibEntry();</span>
+
+<span class="fc" id="L199">        assertEquals(&quot;default&quot;, FileUtil.createFileNameFromPattern(null, entry, fileNamePattern));</span>
+<span class="fc" id="L200">    }</span>
+
+    @Test
+    public void testGetLinkedFileNameByYearAuthorFirstpage() {
+        // bibkey - title
+<span class="fc" id="L205">        String fileNamePattern = &quot;[year]_[auth]_[firstpage]&quot;;</span>
+<span class="fc" id="L206">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L207">        entry.setField( &quot;author&quot;, &quot;O. Kitsune&quot; );</span>
+<span class="fc" id="L208">        entry.setField( &quot;year&quot;, &quot;1868&quot; );</span>
+<span class="fc" id="L209">        entry.setField( &quot;pages&quot;, &quot;567-579&quot; );</span>
+
+<span class="fc" id="L211">        assertEquals(&quot;1868_Kitsune_567&quot;, FileUtil.createFileNameFromPattern(null, entry, fileNamePattern));</span>
+<span class="fc" id="L212">    }</span>
+
+    @Test
+    public void testGetFileExtensionSimpleFile() {
+<span class="fc" id="L216">        assertEquals(&quot;pdf&quot;, FileHelper.getFileExtension(Paths.get(&quot;test.pdf&quot;)).get());</span>
+<span class="fc" id="L217">    }</span>
+
+    @Test
+    public void testGetFileExtensionLowerCaseAndTrimmingFile() {
+<span class="fc" id="L221">        assertEquals(&quot;pdf&quot;, FileHelper.getFileExtension(Paths.get(&quot;test.PdF  &quot;)).get());</span>
+<span class="fc" id="L222">    }</span>
+
+    @Test
+    public void testGetFileExtensionMultipleDotsFile() {
+<span class="fc" id="L226">        assertEquals(&quot;pdf&quot;, FileHelper.getFileExtension(Paths.get(&quot;te.st.PdF  &quot;)).get());</span>
+<span class="fc" id="L227">    }</span>
+
+    @Test
+    public void testGetFileExtensionNoExtensionFile() {
+<span class="fc" id="L231">        assertFalse(FileHelper.getFileExtension(Paths.get(&quot;JustTextNotASingleDot&quot;)).isPresent());</span>
+<span class="fc" id="L232">    }</span>
+
+    @Test
+    public void testGetFileExtensionNoExtension2File() {
+<span class="fc" id="L236">        assertFalse(FileHelper.getFileExtension(Paths.get(&quot;.StartsWithADotIsNotAnExtension&quot;)).isPresent());</span>
+<span class="fc" id="L237">    }</span>
+
+    @Test
+    public void getFileExtensionWithSimpleString() {
+<span class="fc" id="L241">        assertEquals(&quot;pdf&quot;, FileHelper.getFileExtension(&quot;test.pdf&quot;).get());</span>
+<span class="fc" id="L242">    }</span>
+
+    @Test
+    public void getFileExtensionTrimsAndReturnsInLowercase() {
+<span class="fc" id="L246">        assertEquals(&quot;pdf&quot;, FileHelper.getFileExtension(&quot;test.PdF  &quot;).get());</span>
+<span class="fc" id="L247">    }</span>
+
+    @Test
+    public void getFileExtensionWithMultipleDotsString() {
+<span class="fc" id="L251">        assertEquals(&quot;pdf&quot;, FileHelper.getFileExtension(&quot;te.st.PdF  &quot;).get());</span>
+<span class="fc" id="L252">    }</span>
+
+    @Test
+    public void getFileExtensionWithNoDotReturnsEmptyExtension() {
+<span class="fc" id="L256">        assertEquals(Optional.empty(), FileHelper.getFileExtension(&quot;JustTextNotASingleDot&quot;));</span>
+<span class="fc" id="L257">    }</span>
+
+    @Test
+    public void getFileExtensionWithDotAtStartReturnsEmptyExtension() {
+<span class="fc" id="L261">        assertEquals(Optional.empty(), FileHelper.getFileExtension(&quot;.StartsWithADotIsNotAnExtension&quot;));</span>
+<span class="fc" id="L262">    }</span>
+
+    @Test
+    public void getFileNameWithSimpleString() {
+<span class="fc" id="L266">        assertEquals(&quot;test&quot;, FileUtil.getBaseName(&quot;test.pdf&quot;));</span>
+<span class="fc" id="L267">    }</span>
+
+    @Test
+    public void getFileNameWithMultipleDotsString() {
+<span class="fc" id="L271">        assertEquals(&quot;te.st&quot;, FileUtil.getBaseName(&quot;te.st.PdF  &quot;));</span>
+<span class="fc" id="L272">    }</span>
+
+    @Test
+    public void uniquePathSubstrings() {
+<span class="fc" id="L276">        String[] pathArr = {Paths.get(&quot;C:/uniquefile.bib&quot;).toString(),</span>
+<span class="fc" id="L277">                Paths.get(&quot;C:/downloads/filename.bib&quot;).toString(), Paths.get(&quot;C:/mypaper/bib/filename.bib&quot;).toString(),</span>
+<span class="fc" id="L278">                Paths.get(&quot;C:/external/mypaper/bib/filename.bib&quot;).toString(), &quot;&quot;};</span>
+<span class="fc" id="L279">        String[] uniqArr = {Paths.get(&quot;uniquefile.bib&quot;).toString(), Paths.get(&quot;downloads/filename.bib&quot;).toString(),</span>
+<span class="fc" id="L280">                Paths.get(&quot;C:/mypaper/bib/filename.bib&quot;).toString(),</span>
+<span class="fc" id="L281">                Paths.get(&quot;external/mypaper/bib/filename.bib&quot;).toString(), &quot;&quot;};</span>
+<span class="fc" id="L282">        List&lt;String&gt; paths = Arrays.asList(pathArr);</span>
+<span class="fc" id="L283">        List&lt;String&gt; uniqPath = Arrays.asList(uniqArr);</span>
+
+<span class="fc" id="L285">        List&lt;String&gt; result = FileUtil.uniquePathSubstrings(paths);</span>
+<span class="fc" id="L286">        assertEquals(uniqPath, result);</span>
+<span class="fc" id="L287">    }</span>
+
+    @Test
+    public void testCopyFileFromEmptySourcePathToEmptyDestinationPathWithOverrideExistFile(){
+<span class="fc" id="L291">        assertFalse(FileUtil.copyFile(nonExistingTestPath, nonExistingTestPath, true));</span>
+<span class="fc" id="L292">    }</span>
+
+    @Test
+    public void testCopyFileFromEmptySourcePathToEmptyDestinationPathWithoutOverrideExistFile(){
+<span class="fc" id="L296">        assertFalse(FileUtil.copyFile(nonExistingTestPath, nonExistingTestPath, false));</span>
+<span class="fc" id="L297">    }</span>
+
+    @Test
+    public void testCopyFileFromEmptySourcePathToExistDestinationPathWithOverrideExistFile(){
+<span class="fc" id="L301">        assertFalse(FileUtil.copyFile(nonExistingTestPath, existingTestFile, true));</span>
+<span class="fc" id="L302">    }</span>
+
+    @Test
+    public void testCopyFileFromEmptySourcePathToExistDestinationPathWithoutOverrideExistFile(){
+<span class="fc" id="L306">        assertFalse(FileUtil.copyFile(nonExistingTestPath, existingTestFile, false));</span>
+<span class="fc" id="L307">    }</span>
+
+    @Test
+    public void testCopyFileFromExistSourcePathToExistDestinationPathWithOverrideExistFile(){
+<span class="fc" id="L311">        assertTrue(FileUtil.copyFile(existingTestFile, existingTestFile, true));</span>
+<span class="fc" id="L312">    }</span>
+
+    @Test
+    public void testCopyFileFromExistSourcePathToExistDestinationPathWithoutOverrideExistFile(){
+<span class="fc" id="L316">        assertFalse(FileUtil.copyFile(existingTestFile, existingTestFile, false));</span>
+<span class="fc" id="L317">    }</span>
+
+    @Test
+    public void testCopyFileFromExistSourcePathToOtherExistDestinationPathWithOverrideExistFile(){
+<span class="fc" id="L321">        assertTrue(FileUtil.copyFile(existingTestFile, otherExistingTestFile, true));</span>
+<span class="fc" id="L322">    }</span>
+
+    @Test
+    public void testCopyFileFromExistSourcePathToOtherExistDestinationPathWithoutOverrideExistFile(){
+<span class="fc" id="L326">        assertFalse(FileUtil.copyFile(existingTestFile, otherExistingTestFile, false));</span>
+<span class="fc" id="L327">    }</span>
+
+    @Test
+    public void testCopyFileSuccessfulWithOverrideExistFile() throws IOException {
+<span class="fc" id="L331">        Path temp = otherTemporaryFolder.newFile(&quot;existingTestFile.txt&quot;).toPath();</span>
+<span class="fc" id="L332">        FileUtil.copyFile(existingTestFile, temp, true);</span>
+<span class="fc" id="L333">        assertEquals(Files.readAllLines(existingTestFile, StandardCharsets.UTF_8),Files.readAllLines(temp, StandardCharsets.UTF_8));</span>
+<span class="fc" id="L334">    }</span>
+
+    @Test
+    public void testCopyFileSuccessfulWithoutOverrideExistFile() throws IOException {
+<span class="fc" id="L338">        Path temp = otherTemporaryFolder.newFile(&quot;existingTestFile.txt&quot;).toPath();</span>
+<span class="fc" id="L339">        FileUtil.copyFile(existingTestFile, temp, false);</span>
+<span class="fc" id="L340">        assertNotEquals(Files.readAllLines(existingTestFile, StandardCharsets.UTF_8),Files.readAllLines(temp, StandardCharsets.UTF_8));</span>
+<span class="fc" id="L341">    }</span>
+
+    @Test (expected = NullPointerException.class)
+    public void testRenameFileWithFromFileIsNullAndToFileIsNull() {
+<span class="nc" id="L345">        FileUtil.renameFile(null, null);</span>
+<span class="nc" id="L346">    }</span>
+
+    @Test (expected = NullPointerException.class)
+    public void testRenameFileWithFromFileExistAndToFileIsNull() {
+<span class="nc" id="L350">        FileUtil.renameFile(existingTestFile, null);</span>
+<span class="nc" id="L351">    }</span>
+
+    @Test (expected = NullPointerException.class)
+    public void testRenameFileWithFromFileIsNullAndToFileExist() {
+<span class="nc" id="L355">        FileUtil.renameFile(null, existingTestFile);</span>
+<span class="nc" id="L356">    }</span>
+
+    @Test
+    public void testRenameFileWithFromFileNotExistAndToFileNotExist(){
+<span class="fc" id="L360">        assertFalse(FileUtil.renameFile(nonExistingTestPath, nonExistingTestPath));</span>
+<span class="fc" id="L361">    }</span>
+
+    @Test
+    public void testRenameFileWithFromFileNotExistAndToFileExist(){
+<span class="fc" id="L365">        assertFalse(FileUtil.renameFile(nonExistingTestPath, existingTestFile));</span>
+<span class="fc" id="L366">    }</span>
+
+    @Test
+    public void testRenameFileWithFromFileExistAndToFileNotExist(){
+<span class="fc" id="L370">        assertTrue(FileUtil.renameFile(existingTestFile, nonExistingTestPath));</span>
+<span class="fc" id="L371">    }</span>
+
+    @Test
+    public void testRenameFileWithFromFileExistAndToFileExist(){
+<span class="fc" id="L375">        assertTrue(FileUtil.renameFile(existingTestFile, existingTestFile));</span>
+<span class="fc" id="L376">    }</span>
+
+    @Test
+    public void testRenameFileWithFromFileExistAndOtherToFileExist(){
+<span class="fc" id="L380">        assertFalse(FileUtil.renameFile(existingTestFile, otherExistingTestFile));</span>
+<span class="fc" id="L381">    }</span>
+
+    @Test
+    public void testRenameFileSuccessful() {
+<span class="fc" id="L385">        Path temp = Paths.get(otherTemporaryFolder.toString());</span>
+
+<span class="fc" id="L387">        System.out.println(temp);</span>
+<span class="fc" id="L388">        FileUtil.renameFile(existingTestFile, temp);</span>
+<span class="fc" id="L389">        assertFalse(Files.exists(existingTestFile));</span>
+<span class="fc" id="L390">    }</span>
+
+    @Test
+    public void validFilenameShouldNotAlterValidFilename() {
+<span class="fc" id="L394">        assertEquals(&quot;somename.pdf&quot;, FileUtil.getValidFileName(&quot;somename.pdf&quot;));</span>
+<span class="fc" id="L395">    }</span>
+
+    @Test
+    public void validFilenameWithoutExtension() {
+<span class="fc" id="L399">        assertEquals(&quot;somename&quot;, FileUtil.getValidFileName(&quot;somename&quot;));</span>
+<span class="fc" id="L400">    }</span>
+
+    @Test
+    public void validFilenameShouldBeMaximum255Chars() {
+<span class="fc" id="L404">        String longestValidFilename = Stream.generate(() -&gt; String.valueOf('1')).limit(FileUtil.MAXIMUM_FILE_NAME_LENGTH).collect(Collectors.joining()) + &quot;.pdf&quot;;</span>
+<span class="fc" id="L405">        String longerFilename = Stream.generate(() -&gt; String.valueOf('1')).limit(260).collect(Collectors.joining()) + &quot;.pdf&quot;;</span>
+<span class="fc" id="L406">        assertEquals(longestValidFilename, FileUtil.getValidFileName(longerFilename));</span>
+<span class="fc" id="L407">    }</span>
+
+    @Test
+    public void invalidFilenameWithoutExtension() {
+<span class="fc" id="L411">        String longestValidFilename = Stream.generate(() -&gt; String.valueOf('1')).limit(FileUtil.MAXIMUM_FILE_NAME_LENGTH).collect(Collectors.joining());</span>
+<span class="fc" id="L412">        String longerFilename = Stream.generate(() -&gt; String.valueOf('1')).limit(260).collect(Collectors.joining());</span>
+<span class="fc" id="L413">        assertEquals(longestValidFilename, FileUtil.getValidFileName(longerFilename));</span>
+<span class="fc" id="L414">    }</span>
+
+    @Test
+    public void testGetLinkedDirNameDefaultFullTitle() {
+        // bibkey - title
+<span class="fc" id="L419">        String fileNamePattern = &quot;PDF/[year]/[auth]/[bibtexkey] - [fulltitle]&quot;;</span>
+<span class="fc" id="L420">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L421">        entry.setCiteKey(&quot;1234&quot;);</span>
+<span class="fc" id="L422">        entry.setField(&quot;title&quot;, &quot;mytitle&quot;);</span>
+<span class="fc" id="L423">        entry.setField(&quot;year&quot;, &quot;1998&quot;);</span>
+<span class="fc" id="L424">        entry.setField(&quot;author&quot;, &quot;A. Åuthör and Author, Bete&quot;);</span>
+
+<span class="fc" id="L426">        assertEquals(&quot;PDF/1998/Åuthör/1234 - mytitle&quot;,</span>
+<span class="fc" id="L427">                FileUtil.createDirNameFromPattern(null, entry, fileNamePattern));</span>
+<span class="fc" id="L428">    }</span>
+
+    private Path createTemporaryTestFile(String name) throws IOException {
+<span class="fc" id="L431">        File testFile = temporaryFolder.newFile(name);</span>
+<span class="fc" id="L432">        Files.write(testFile.toPath(), name.getBytes(StandardCharsets.UTF_8), StandardOpenOption.APPEND);</span>
+<span class="fc" id="L433">        return testFile.toPath();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

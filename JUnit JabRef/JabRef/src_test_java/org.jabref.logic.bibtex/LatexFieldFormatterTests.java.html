@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>LatexFieldFormatterTests.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.bibtex</a> &gt; <span class="el_source">LatexFieldFormatterTests.java</span></div><h1>LatexFieldFormatterTests.java</h1><pre class="source lang-java linenums">package org.jabref.logic.bibtex;
+
+import java.util.Collections;
+
+import org.jabref.logic.util.OS;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Answers;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
+
+<span class="fc" id="L15">public class LatexFieldFormatterTests {</span>
+
+    private LatexFieldFormatter formatter;
+
+    @BeforeEach
+    public void setUp() {
+<span class="fc" id="L21">        this.formatter = new LatexFieldFormatter(mock(LatexFieldFormatterPreferences.class, Answers.RETURNS_DEEP_STUBS));</span>
+<span class="fc" id="L22">    }</span>
+
+    @Test
+    public void normalizeNewlineInAbstractField() throws Exception {
+<span class="fc" id="L26">        String fieldName = &quot;abstract&quot;;</span>
+<span class="fc" id="L27">        String text = &quot;lorem&quot; + OS.NEWLINE + &quot; ipsum lorem ipsum\nlorem ipsum \rlorem ipsum\r\ntest&quot;;</span>
+
+        // The newlines are normalized according to the globally configured newline setting in the formatter
+<span class="fc" id="L30">        String expected = &quot;{&quot; + &quot;lorem&quot; + OS.NEWLINE + &quot; ipsum lorem ipsum&quot; + OS.NEWLINE</span>
+<span class="fc" id="L31"> + &quot;lorem ipsum &quot;</span>
+<span class="fc" id="L32">                + OS.NEWLINE + &quot;lorem ipsum&quot;</span>
+<span class="fc" id="L33">                + OS.NEWLINE + &quot;test&quot; + &quot;}&quot;;</span>
+
+<span class="fc" id="L35">        String result = formatter.format(text, fieldName);</span>
+
+<span class="fc" id="L37">        assertEquals(expected, result);</span>
+<span class="fc" id="L38">    }</span>
+
+    @Test
+    public void preserveNewlineInAbstractField() throws Exception {
+<span class="fc" id="L42">        String fieldName = &quot;abstract&quot;;</span>
+        // The newlines are normalized according to the globally configured newline setting in the formatter
+<span class="fc" id="L44">        String text = &quot;lorem ipsum lorem ipsum&quot; + OS.NEWLINE + &quot;lorem ipsum lorem ipsum&quot; + OS.NEWLINE;</span>
+
+<span class="fc" id="L46">        String result = formatter.format(text, fieldName);</span>
+<span class="fc" id="L47">        String expected = &quot;{&quot; + text + &quot;}&quot;;</span>
+
+<span class="fc" id="L49">        assertEquals(expected, result);</span>
+<span class="fc" id="L50">    }</span>
+
+    @Test
+    public void preserveMultipleNewlinesInAbstractField() throws Exception {
+<span class="fc" id="L54">        String fieldName = &quot;abstract&quot;;</span>
+        // The newlines are normalized according to the globally configured newline setting in the formatter
+<span class="fc" id="L56">        String text = &quot;lorem ipsum lorem ipsum&quot; + OS.NEWLINE + OS.NEWLINE + &quot;lorem ipsum lorem ipsum&quot;</span>
+<span class="fc" id="L57">                + OS.NEWLINE;</span>
+
+<span class="fc" id="L59">        String result = formatter.format(text, fieldName);</span>
+<span class="fc" id="L60">        String expected = &quot;{&quot; + text + &quot;}&quot;;</span>
+
+<span class="fc" id="L62">        assertEquals(expected, result);</span>
+<span class="fc" id="L63">    }</span>
+
+    @Test
+    public void preserveNewlineInReviewField() throws Exception {
+<span class="fc" id="L67">        String fieldName = &quot;review&quot;;</span>
+        // The newlines are normalized according to the globally configured newline setting in the formatter
+<span class="fc" id="L69">        String text = &quot;lorem ipsum lorem ipsum&quot; + OS.NEWLINE + &quot;lorem ipsum lorem ipsum&quot; + OS.NEWLINE;</span>
+
+<span class="fc" id="L71">        String result = formatter.format(text, fieldName);</span>
+<span class="fc" id="L72">        String expected = &quot;{&quot;+text+&quot;}&quot;;</span>
+
+<span class="fc" id="L74">        assertEquals(expected, result);</span>
+<span class="fc" id="L75">    }</span>
+
+    @Test
+    public void removeWhitespaceFromNonMultiLineFields() throws Exception {
+<span class="fc" id="L79">        String original = &quot;I\nshould\nnot\ninclude\nadditional\nwhitespaces  \nor\n\ttabs.&quot;;</span>
+<span class="fc" id="L80">        String expected = &quot;{I should not include additional whitespaces or tabs.}&quot;;</span>
+
+<span class="fc" id="L82">        String title = formatter.format(original, &quot;title&quot;);</span>
+<span class="fc" id="L83">        String any = formatter.format(original, &quot;anyotherfield&quot;);</span>
+
+<span class="fc" id="L85">        assertEquals(expected, title);</span>
+<span class="fc" id="L86">        assertEquals(expected, any);</span>
+<span class="fc" id="L87">    }</span>
+
+    public void reportUnbalancedBracing() throws Exception {
+<span class="nc" id="L90">        String unbalanced = &quot;{&quot;;</span>
+
+<span class="nc" id="L92">        assertThrows(InvalidFieldValueException.class, () -&gt; formatter.format(unbalanced, &quot;anyfield&quot;));</span>
+<span class="nc" id="L93">    }</span>
+
+    public void reportUnbalancedBracingWithEscapedBraces() throws Exception {
+<span class="nc" id="L96">        String unbalanced = &quot;{\\}&quot;;</span>
+
+<span class="nc" id="L98">        assertThrows(InvalidFieldValueException.class, () -&gt; formatter.format(unbalanced, &quot;anyfield&quot;));</span>
+<span class="nc" id="L99">    }</span>
+
+    @Test
+    public void tolerateBalancedBrace() throws Exception {
+<span class="fc" id="L103">        String text = &quot;Incorporating evolutionary {Measures into Conservation Prioritization}&quot;;</span>
+
+<span class="fc" id="L105">        assertEquals(&quot;{&quot; + text + &quot;}&quot;, formatter.format(text, &quot;anyfield&quot;));</span>
+<span class="fc" id="L106">    }</span>
+
+    @Test
+    public void tolerateEscapeCharacters() throws Exception {
+<span class="fc" id="L110">        String text = &quot;Incorporating {\\O}evolutionary {Measures into Conservation Prioritization}&quot;;</span>
+
+<span class="fc" id="L112">        assertEquals(&quot;{&quot; + text + &quot;}&quot;, formatter.format(text, &quot;anyfield&quot;));</span>
+<span class="fc" id="L113">    }</span>
+
+    @Test
+    public void hashEnclosedWordsGetRealStringsInMonthField() throws Exception {
+<span class="fc" id="L117">        String text = &quot;#jan# - #feb#&quot;;</span>
+<span class="fc" id="L118">        assertEquals(&quot;jan #{ - } # feb&quot;, formatter.format(text, &quot;month&quot;));</span>
+<span class="fc" id="L119">    }</span>
+
+    @Test
+    public void hashEnclosedWordsGetRealStringsInMonthFieldBecauseMonthIsStandardField() throws Exception {
+<span class="fc" id="L123">        LatexFieldFormatterPreferences latexFieldFormatterPreferences = new LatexFieldFormatterPreferences(</span>
+<span class="fc" id="L124">                false, Collections.emptyList(), new FieldContentParserPreferences());</span>
+<span class="fc" id="L125">        LatexFieldFormatter formatter = new LatexFieldFormatter(latexFieldFormatterPreferences);</span>
+<span class="fc" id="L126">        String text = &quot;#jan# - #feb#&quot;;</span>
+<span class="fc" id="L127">        assertEquals(&quot;jan #{ - } # feb&quot;, formatter.format(text, &quot;month&quot;));</span>
+<span class="fc" id="L128">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

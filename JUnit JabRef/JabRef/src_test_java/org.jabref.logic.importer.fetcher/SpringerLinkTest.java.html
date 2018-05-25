@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>SpringerLinkTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.importer.fetcher</a> &gt; <span class="el_source">SpringerLinkTest.java</span></div><h1>SpringerLinkTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.importer.fetcher;
+
+import java.io.IOException;
+import java.net.URL;
+import java.util.Optional;
+
+import org.jabref.model.entry.BibEntry;
+import org.jabref.testutils.category.FetcherTest;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+@FetcherTest
+<span class="fc" id="L17">public class SpringerLinkTest {</span>
+
+    private SpringerLink finder;
+    private BibEntry entry;
+
+    @BeforeEach
+    public void setUp() {
+<span class="fc" id="L24">        finder = new SpringerLink();</span>
+<span class="fc" id="L25">        entry = new BibEntry();</span>
+<span class="fc" id="L26">    }</span>
+
+    @Test
+    public void rejectNullParameter() {
+<span class="pc" id="L30">        assertThrows(NullPointerException.class, () -&gt; finder.findFullText(null));</span>
+<span class="fc" id="L31">    }</span>
+
+    @Test
+    public void doiNotPresent() throws IOException {
+<span class="fc" id="L35">        assertEquals(Optional.empty(), finder.findFullText(entry));</span>
+<span class="fc" id="L36">    }</span>
+
+    @Test
+    public void findByDOI() throws IOException {
+<span class="fc" id="L40">        entry.setField(&quot;doi&quot;, &quot;10.1186/s13677-015-0042-8&quot;);</span>
+<span class="fc" id="L41">        assertEquals(</span>
+<span class="fc" id="L42">                Optional.of(new URL(&quot;http://link.springer.com/content/pdf/10.1186/s13677-015-0042-8.pdf&quot;)),</span>
+<span class="fc" id="L43">                finder.findFullText(entry));</span>
+<span class="fc" id="L44">    }</span>
+
+    @Test
+    public void notFoundByDOI() throws IOException {
+<span class="fc" id="L48">        entry.setField(&quot;doi&quot;, &quot;10.1186/unknown-doi&quot;);</span>
+
+<span class="fc" id="L50">        assertEquals(Optional.empty(), finder.findFullText(entry));</span>
+<span class="fc" id="L51">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>FileType.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.util</a> &gt; <span class="el_source">FileType.java</span></div><h1>FileType.java</h1><pre class="source lang-java linenums"><span class="pc" id="L1">package org.jabref.logic.util;</span>
+
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.StringJoiner;
+import java.util.stream.Collectors;
+
+import org.jabref.logic.l10n.Localization;
+
+/**
+ * This enum contains a list of file types used in open and save dialogs.
+ *
+ * @implNote Enter the extensions without a dot! The dot is added implicitly.
+ */
+public enum FileType {
+<span class="fc" id="L18">    BIBTEX_DB(String.format(&quot;%1s %2s&quot;, &quot;BibTex&quot;, Localization.lang(&quot;Library&quot;)), &quot;bib&quot;),</span>
+<span class="fc" id="L19">    BIBTEXML(Localization.lang(&quot;%0 file&quot;, &quot;BibTeXML&quot;), &quot;bibx&quot;, &quot;xml&quot;),</span>
+<span class="fc" id="L20">    BIBTEXML_XML_ONLY(Localization.lang(&quot;%0 file&quot;, &quot;BibTeXML&quot;), &quot;xml&quot;),</span>
+<span class="fc" id="L21">    BIBORDF(Localization.lang(&quot;%0 file&quot;, &quot;Bib 0&quot;), &quot;rdf&quot;),</span>
+<span class="fc" id="L22">    BIBLIOSCAPE(Localization.lang(&quot;%0 file&quot;, &quot;Biblioscape&quot;), &quot;txt&quot;),</span>
+<span class="fc" id="L23">    COPAC(Localization.lang(&quot;%0 file&quot;, &quot;Copac&quot;), &quot;txt&quot;),</span>
+<span class="fc" id="L24">    CITATION_STYLE(Localization.lang(&quot;%0 file&quot;, &quot;CSL&quot;), &quot;csl&quot;),</span>
+<span class="fc" id="L25">    DOCBOOK(Localization.lang(&quot;%0 file&quot;, &quot;Docbook 4.4&quot;), &quot;xml&quot;),</span>
+<span class="fc" id="L26">    DIN_1505(Localization.lang(&quot;%0 file&quot;, &quot;DIN 1505&quot;), &quot;rtf&quot;),</span>
+<span class="fc" id="L27">    ENDNOTE(Localization.lang(&quot;%0 file&quot;, &quot;EndNote/Refer&quot;), &quot;ref&quot;, &quot;enw&quot;),</span>
+<span class="fc" id="L28">    ENDNOTE_XML(Localization.lang(&quot;%0 file&quot;, &quot;EndNote XML&quot;), &quot;xml&quot;),</span>
+<span class="fc" id="L29">    ENDNOTE_TXT(Localization.lang(&quot;%0 file&quot;, &quot;EndNote&quot;), &quot;txt&quot;), //for export</span>
+<span class="fc" id="L30">    FREECITE(Localization.lang(&quot;%0 file&quot;, &quot;FreeCite&quot;), &quot;txt&quot;, &quot;xml&quot;),</span>
+<span class="fc" id="L31">    HARVARD_RTF(Localization.lang(&quot;%0 file&quot;, &quot;Harvard&quot;), &quot;rtf&quot;),</span>
+<span class="fc" id="L32">    HTML_LIST(Localization.lang(&quot;%0 file&quot;, Localization.lang(&quot;HTML list&quot;)), &quot;html&quot;),</span>
+<span class="fc" id="L33">    HTML_TABLE(Localization.lang(&quot;%0 file&quot;, Localization.lang(&quot;HTML table&quot;)), &quot;html&quot;),</span>
+<span class="fc" id="L34">    HTML_TABLE_WITH_ABSTRACT(Localization.lang(&quot;%0 file&quot;, Localization.lang(&quot;HTML table (with Abstract &amp; BibTeX)&quot;)), &quot;html&quot;),</span>
+<span class="fc" id="L35">    INSPEC(Localization.lang(&quot;%0 file&quot;, &quot;INSPEC&quot;), &quot;txt&quot;),</span>
+<span class="fc" id="L36">    ISI(Localization.lang(&quot;%0 file&quot;, &quot;ISI&quot;), &quot;isi&quot;, &quot;txt&quot;),</span>
+<span class="fc" id="L37">    ISO_690_RTF(Localization.lang(&quot;%0 file&quot;, &quot;ISO 690&quot;), &quot;rtf&quot;),</span>
+<span class="fc" id="L38">    ISO_690_TXT(Localization.lang(&quot;%0 file&quot;, &quot;ISO 690&quot;), &quot;txt&quot;),</span>
+<span class="fc" id="L39">    MEDLINE(Localization.lang(&quot;%0 file&quot;, &quot;Medline&quot;), &quot;nbib&quot;, &quot;xml&quot;),</span>
+<span class="fc" id="L40">    MEDLINE_PLAIN(Localization.lang(&quot;%0 file&quot;, &quot;MedlinePlain&quot;), &quot;nbib&quot;, &quot;txt&quot;),</span>
+<span class="fc" id="L41">    MIS_QUARTERLY(Localization.lang(&quot;%0 file&quot;, &quot;MIS Quarterly&quot;), &quot;rtf&quot;),</span>
+<span class="fc" id="L42">    MODS(Localization.lang(&quot;%0 file&quot;, &quot;MODS&quot;), &quot;xml&quot;),</span>
+<span class="fc" id="L43">    MSBIB(Localization.lang(&quot;%0 file&quot;, &quot;MS Office 2007 bib&quot;), &quot;xml&quot;),</span>
+<span class="fc" id="L44">    OO_LO(Localization.lang(&quot;%0 file&quot;, &quot;OpenOffice/LibreOffice&quot;), &quot;csv&quot;),</span>
+<span class="fc" id="L45">    OVID(Localization.lang(&quot;%0 file&quot;, &quot;Ovid&quot;), &quot;txt&quot;),</span>
+<span class="fc" id="L46">    PDF_CONTENT(Localization.lang(&quot;%0 file&quot;, &quot;PDF content &quot;), &quot;pdf&quot;),</span>
+<span class="fc" id="L47">    PUBMED(Localization.lang(&quot;%0 file&quot;, &quot;PubMed&quot;), &quot;fcgi&quot;),</span>
+<span class="fc" id="L48">    REPEC(&quot;REPEC New Economic Papers (NEP)&quot;, &quot;txt&quot;),</span>
+<span class="fc" id="L49">    RIS(Localization.lang(&quot;%0 file&quot;, &quot;RIS&quot;), &quot;ris&quot;),</span>
+<span class="fc" id="L50">    SILVER_PLATTER(Localization.lang(&quot;%0 file&quot;, &quot;SilverPlatter&quot;), &quot;dat&quot;, &quot;txt&quot;),</span>
+<span class="fc" id="L51">    SIMPLE_HTML(Localization.lang(&quot;%0 file&quot;, Localization.lang(&quot;Simple HTML&quot;)), &quot;html&quot;),</span>
+<span class="fc" id="L52">    PDF_XMP(Localization.lang(&quot;XMP-annotated PDF&quot;), &quot;pdf&quot;),</span>
+<span class="fc" id="L53">    PLAIN_XMP(Localization.lang(&quot;%0 file&quot;, &quot;XMP&quot;), &quot;xmp&quot;),</span>
+
+<span class="fc" id="L55">    AUX(Localization.lang(&quot;%0 file&quot;, &quot;AUX&quot;), &quot;aux&quot;),</span>
+<span class="fc" id="L56">    JSTYLE(Localization.lang(&quot;Style file&quot;), &quot;jstyle&quot;),</span>
+<span class="fc" id="L57">    LAYOUT(Localization.lang(&quot;Custom layout file&quot;), &quot;layout&quot;),</span>
+<span class="fc" id="L58">    TERMS(Localization.lang(&quot;Protected terms file&quot;), &quot;terms&quot;),</span>
+<span class="fc" id="L59">    TXT(Localization.lang(&quot;%0 file&quot;, Localization.lang(&quot;Plain text&quot;)), &quot;txt&quot;),</span>
+<span class="fc" id="L60">    CLASS(Localization.lang(&quot;%0 file&quot;, &quot;CLASS&quot;), &quot;class&quot;),</span>
+<span class="fc" id="L61">    JAR(Localization.lang(&quot;%0 file&quot;, &quot;JAR&quot;), &quot;jar&quot;),</span>
+<span class="fc" id="L62">    XML(Localization.lang(&quot;%0 file&quot;, &quot;XML&quot;), &quot;xml&quot;),</span>
+<span class="fc" id="L63">    ZIP(Localization.lang(&quot;%0 file&quot;, &quot;ZIP&quot;), &quot;zip&quot;),</span>
+<span class="fc" id="L64">    ODS(Localization.lang(&quot;%0 file&quot;, Localization.lang(&quot;OpenDocument spreadsheet&quot;)), &quot;ods&quot;),</span>
+<span class="fc" id="L65">    SXC(Localization.lang(&quot;%0 file&quot;, &quot;OpenOffice/LibreOffice Calc&quot;), &quot;sxc&quot;),</span>
+<span class="fc" id="L66">    HTML(Localization.lang(&quot;%0 file&quot;, &quot;HTML&quot;), &quot;html&quot;),</span>
+<span class="fc" id="L67">    RTF(Localization.lang(&quot;%0 file&quot;, &quot;RTF&quot;), &quot;rtf&quot;),</span>
+<span class="fc" id="L68">    RDF(Localization.lang(&quot;%0 file&quot;, &quot;RDF&quot;), &quot;rdf&quot;),</span>
+<span class="fc" id="L69">    CSV(Localization.lang(&quot;%0 file&quot;, &quot;CSV&quot;), &quot;csv&quot;),</span>
+<span class="fc" id="L70">    DEFAULT(Localization.lang(&quot;%0 file&quot;, &quot;DEFAULT&quot;), &quot;default&quot;);</span>
+
+<span class="fc" id="L72">    private static final EnumSet&lt;FileType&gt; ALL_FILE_TYPES = EnumSet.allOf(FileType.class);</span>
+    private final String[] extensions;
+    private final String description;
+
+<span class="fc" id="L76">    FileType(String description, String... extensions) {</span>
+<span class="fc" id="L77">        this.description = description;</span>
+<span class="fc" id="L78">        this.extensions = extensions;</span>
+<span class="fc" id="L79">    }</span>
+
+    public List&lt;String&gt; getExtensions() {
+<span class="fc" id="L82">        return Arrays.asList(extensions);</span>
+    }
+
+    public String getDescription() {
+<span class="fc" id="L86">        StringJoiner sj = new StringJoiner(&quot;, &quot;, description + &quot; (&quot;, &quot;)&quot;);</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">        for (String ext : extensions) {</span>
+<span class="fc" id="L88">            sj.add(&quot;*.&quot; + ext);</span>
+        }
+<span class="fc" id="L90">        return sj.toString();</span>
+    }
+
+    public String getFirstExtensionWithDot() {
+<span class="fc" id="L94">        return &quot;.&quot; + extensions[0].trim();</span>
+    }
+
+    public List&lt;String&gt; getExtensionsWithDot() {
+<span class="nc" id="L98">        return getExtensions().stream().map(extension -&gt; &quot;.&quot; + extension).collect(Collectors.toList());</span>
+    }
+
+    public static FileType parse(String fileExtension) {
+<span class="nc" id="L102">        Optional&lt;FileType&gt; fileType = ALL_FILE_TYPES.stream().filter(f -&gt; f.getExtensionsWithDot().stream().anyMatch(fileExtension::equals)).findFirst();</span>
+<span class="nc" id="L103">        return fileType.orElse(FileType.DEFAULT);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

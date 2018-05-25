@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MergeReviewIntoCommentActionMigrationTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.migrations</a> &gt; <span class="el_source">MergeReviewIntoCommentActionMigrationTest.java</span></div><h1>MergeReviewIntoCommentActionMigrationTest.java</h1><pre class="source lang-java linenums">package org.jabref.migrations;
+
+import java.util.Collections;
+
+import org.jabref.logic.importer.ParserResult;
+import org.jabref.logic.l10n.Localization;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.FieldName;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+<span class="fc" id="L16">class MergeReviewIntoCommentActionMigrationTest {</span>
+    private MergeReviewIntoCommentMigration action;
+
+    @BeforeEach
+    public void setUp() {
+<span class="fc" id="L21">        action = new MergeReviewIntoCommentMigration();</span>
+<span class="fc" id="L22">    }</span>
+
+    @Test
+    public void noFields() {
+<span class="fc" id="L26">        BibEntry entry = createMinimalBibEntry();</span>
+<span class="fc" id="L27">        ParserResult actualParserResult = new ParserResult(Collections.singletonList(entry));</span>
+
+<span class="fc" id="L29">        action.performMigration(actualParserResult);</span>
+
+<span class="fc" id="L31">        assertEquals(entry, actualParserResult.getDatabase().getEntryByKey(&quot;Entry1&quot;).get());</span>
+<span class="fc" id="L32">    }</span>
+
+    @Test
+    public void reviewField() {
+<span class="fc" id="L36">        BibEntry actualEntry = createMinimalBibEntry();</span>
+<span class="fc" id="L37">        actualEntry.setField(FieldName.REVIEW, &quot;My Review&quot;);</span>
+<span class="fc" id="L38">        ParserResult actualParserResult = new ParserResult(Collections.singletonList(actualEntry));</span>
+
+<span class="fc" id="L40">        BibEntry expectedEntry = createMinimalBibEntry();</span>
+<span class="fc" id="L41">        expectedEntry.setField(FieldName.COMMENT, &quot;My Review&quot;);</span>
+
+<span class="fc" id="L43">        action.performMigration(actualParserResult);</span>
+
+<span class="fc" id="L45">        assertEquals(expectedEntry, actualParserResult.getDatabase().getEntryByKey(&quot;Entry1&quot;).get());</span>
+<span class="fc" id="L46">    }</span>
+
+    @Test
+    public void commentField() {
+<span class="fc" id="L50">        BibEntry entry = createMinimalBibEntry();</span>
+<span class="fc" id="L51">        entry.setField(FieldName.COMMENT, &quot;My Comment&quot;);</span>
+<span class="fc" id="L52">        ParserResult actualParserResult = new ParserResult(Collections.singletonList(entry));</span>
+
+<span class="fc" id="L54">        action.performMigration(actualParserResult);</span>
+
+<span class="fc" id="L56">        assertEquals(entry, actualParserResult.getDatabase().getEntryByKey(&quot;Entry1&quot;).get());</span>
+<span class="fc" id="L57">    }</span>
+
+    @Test
+    public void multiLineReviewField() {
+<span class="fc" id="L61">        String commentString = &quot;My Review\n\nSecond Paragraph\n\nThird Paragraph&quot;;</span>
+
+<span class="fc" id="L63">        BibEntry actualEntry = createMinimalBibEntry();</span>
+<span class="fc" id="L64">        actualEntry.setField(FieldName.REVIEW, commentString);</span>
+<span class="fc" id="L65">        ParserResult actualParserResult = new ParserResult(Collections.singletonList(actualEntry));</span>
+
+<span class="fc" id="L67">        BibEntry expectedEntry = createMinimalBibEntry();</span>
+<span class="fc" id="L68">        expectedEntry.setField(FieldName.COMMENT, commentString);</span>
+
+<span class="fc" id="L70">        action.performMigration(actualParserResult);</span>
+
+<span class="fc" id="L72">        assertEquals(expectedEntry, actualParserResult.getDatabase().getEntryByKey(&quot;Entry1&quot;).get());</span>
+<span class="fc" id="L73">    }</span>
+
+    @Test
+    @Disabled(&quot;Re-enable if the MergeReviewIntoCommentMigration.mergeCommentFieldIfPresent() does not block and wait for user input.&quot;)
+    public void reviewAndCommentField() {
+<span class="nc" id="L78">        BibEntry actualEntry = createMinimalBibEntry();</span>
+<span class="nc" id="L79">        actualEntry.setField(FieldName.REVIEW, &quot;My Review&quot;);</span>
+<span class="nc" id="L80">        actualEntry.setField(FieldName.COMMENT, &quot;My Comment&quot;);</span>
+
+<span class="nc" id="L82">        ParserResult actualParserResult = new ParserResult(Collections.singletonList(actualEntry));</span>
+
+<span class="nc" id="L84">        BibEntry expectedEntry = createMinimalBibEntry();</span>
+<span class="nc" id="L85">        expectedEntry.setField(FieldName.COMMENT, &quot;My Comment\n&quot; + Localization.lang(&quot;Review&quot;) + &quot;:\nMy Review&quot;);</span>
+
+<span class="nc" id="L87">        action.performMigration(actualParserResult);</span>
+
+<span class="nc" id="L89">        assertEquals(expectedEntry, actualParserResult.getDatabase().getEntryByKey(&quot;Entry1&quot;).get());</span>
+<span class="nc" id="L90">    }</span>
+
+    private BibEntry createMinimalBibEntry() {
+<span class="fc" id="L93">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L94">        entry.setCiteKey(&quot;Entry1&quot;);</span>
+<span class="fc" id="L95">        entry.setField(FieldName.TITLE, &quot;A random entry!&quot;);</span>
+<span class="fc" id="L96">        entry.setField(FieldName.AUTHOR, &quot;JabRef DEVELOPERS&quot;);</span>
+<span class="fc" id="L97">        return entry;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>EntryAnnotationImporterTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.pdf</a> &gt; <span class="el_source">EntryAnnotationImporterTest.java</span></div><h1>EntryAnnotationImporterTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.pdf;
+
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
+import org.jabref.model.database.BibDatabaseContext;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.FieldName;
+import org.jabref.model.metadata.FileDirectoryPreferences;
+import org.jabref.model.pdf.FileAnnotation;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+<span class="fc" id="L23">public class EntryAnnotationImporterTest {</span>
+
+<span class="fc" id="L25">    private final BibDatabaseContext databaseContext = mock(BibDatabaseContext.class);</span>
+<span class="fc" id="L26">    private final BibEntry entry = new BibEntry(&quot;EntryKey&quot;);</span>
+
+    @BeforeEach
+    public void setUp() {
+<span class="fc" id="L30">        when(databaseContext.getFileDirectoriesAsPaths(any())).thenReturn(Collections.singletonList(Paths.get(&quot;src/test/resources/pdfs/&quot;)));</span>
+<span class="fc" id="L31">    }</span>
+
+    @Test
+    public void readEntryExampleThesis() {
+        //given
+<span class="fc" id="L36">        entry.setField(FieldName.FILE, &quot;:thesis-example.pdf:PDF&quot;);</span>
+<span class="fc" id="L37">        EntryAnnotationImporter entryAnnotationImporter = new EntryAnnotationImporter(entry);</span>
+
+        //when
+<span class="fc" id="L40">        Map&lt;Path, List&lt;FileAnnotation&gt;&gt; annotations = entryAnnotationImporter.importAnnotationsFromFiles(databaseContext, mock(FileDirectoryPreferences.class));</span>
+
+        //then
+<span class="fc" id="L43">        int fileCounter = 0;</span>
+<span class="fc" id="L44">        int annotationCounter = 0;</span>
+<span class="fc bfc" id="L45" title="All 2 branches covered.">        for (List&lt;FileAnnotation&gt; annotationsOfFile : annotations.values()) {</span>
+<span class="fc" id="L46">            fileCounter++;</span>
+<span class="fc" id="L47">            annotationCounter += annotationsOfFile.size();</span>
+        }
+<span class="fc" id="L49">        assertEquals(1, fileCounter);</span>
+<span class="fc" id="L50">        assertEquals(2, annotationCounter);</span>
+<span class="fc" id="L51">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

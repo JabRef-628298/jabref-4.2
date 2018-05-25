@@ -1,0 +1,600 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>BibtexDatabaseWriterTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.exporter</a> &gt; <span class="el_source">BibtexDatabaseWriterTest.java</span></div><h1>BibtexDatabaseWriterTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.exporter;
+
+import java.io.IOException;
+import java.io.StringReader;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Collections;
+import java.util.Scanner;
+
+import org.jabref.logic.formatter.casechanger.LowerCaseFormatter;
+import org.jabref.logic.importer.ImportFormatPreferences;
+import org.jabref.logic.importer.Importer;
+import org.jabref.logic.importer.ParserResult;
+import org.jabref.logic.importer.fileformat.BibtexParser;
+import org.jabref.logic.util.OS;
+import org.jabref.model.Defaults;
+import org.jabref.model.EntryTypes;
+import org.jabref.model.bibtexkeypattern.AbstractBibtexKeyPattern;
+import org.jabref.model.bibtexkeypattern.DatabaseBibtexKeyPattern;
+import org.jabref.model.bibtexkeypattern.GlobalBibtexKeyPattern;
+import org.jabref.model.cleanup.FieldFormatterCleanup;
+import org.jabref.model.cleanup.FieldFormatterCleanups;
+import org.jabref.model.database.BibDatabase;
+import org.jabref.model.database.BibDatabaseContext;
+import org.jabref.model.database.BibDatabaseMode;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.BibtexEntryTypes;
+import org.jabref.model.entry.BibtexString;
+import org.jabref.model.entry.CustomEntryType;
+import org.jabref.model.groups.AllEntriesGroup;
+import org.jabref.model.groups.ExplicitGroup;
+import org.jabref.model.groups.GroupHierarchyType;
+import org.jabref.model.groups.GroupTreeNode;
+import org.jabref.model.metadata.MetaData;
+import org.jabref.model.metadata.SaveOrderConfig;
+import org.jabref.model.util.DummyFileUpdateMonitor;
+import org.jabref.model.util.FileUpdateMonitor;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Answers;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
+
+<span class="fc" id="L49">public class BibtexDatabaseWriterTest {</span>
+
+    private BibtexDatabaseWriter&lt;StringSaveSession&gt; databaseWriter;
+    private BibDatabase database;
+    private MetaData metaData;
+    private BibDatabaseContext bibtexContext;
+    private ImportFormatPreferences importFormatPreferences;
+<span class="fc" id="L56">    private final FileUpdateMonitor fileMonitor = new DummyFileUpdateMonitor();</span>
+
+    @BeforeEach
+    public void setUp() {
+        // Write to a string instead of to a file
+<span class="fc" id="L61">        databaseWriter = new BibtexDatabaseWriter&lt;&gt;(StringSaveSession::new);</span>
+
+<span class="fc" id="L63">        database = new BibDatabase();</span>
+<span class="fc" id="L64">        metaData = new MetaData();</span>
+<span class="fc" id="L65">        bibtexContext = new BibDatabaseContext(database, metaData, new Defaults(BibDatabaseMode.BIBTEX));</span>
+<span class="fc" id="L66">        importFormatPreferences = mock(ImportFormatPreferences.class, Answers.RETURNS_DEEP_STUBS);</span>
+<span class="fc" id="L67">    }</span>
+
+    @Test
+    public void writeWithNullContextThrowsException() throws Exception {
+<span class="pc" id="L71">        assertThrows(NullPointerException.class, () -&gt; databaseWriter.savePartOfDatabase(null, Collections.emptyList(), new SavePreferences()));</span>
+<span class="fc" id="L72">    }</span>
+
+    @Test
+    public void writeWithNullEntriesThrowsException() throws Exception {
+<span class="pc" id="L76">        assertThrows(NullPointerException.class, () -&gt; databaseWriter.savePartOfDatabase(bibtexContext, null, new SavePreferences()));</span>
+<span class="fc" id="L77">    }</span>
+
+    @Test
+    public void writeWithNullPreferencesThrowsException() throws Exception {
+<span class="pc" id="L81">        assertThrows(NullPointerException.class, () -&gt; databaseWriter.savePartOfDatabase(bibtexContext, Collections.emptyList(), null));</span>
+<span class="fc" id="L82">    }</span>
+
+    @Test
+    public void writeEncoding() throws Exception {
+<span class="fc" id="L86">        SavePreferences preferences = new SavePreferences().withEncoding(StandardCharsets.US_ASCII);</span>
+
+<span class="fc" id="L88">        StringSaveSession session = databaseWriter.savePartOfDatabase(bibtexContext, Collections.emptyList(), preferences);</span>
+
+<span class="fc" id="L90">        assertEquals(&quot;% Encoding: US-ASCII&quot; + OS.NEWLINE, session.getStringValue());</span>
+<span class="fc" id="L91">    }</span>
+
+    @Test
+    public void writePreamble() throws Exception {
+<span class="fc" id="L95">        database.setPreamble(&quot;Test preamble&quot;);</span>
+
+<span class="fc" id="L97">        StringSaveSession session = databaseWriter.savePartOfDatabase(bibtexContext, Collections.emptyList(), new SavePreferences());</span>
+
+<span class="fc" id="L99">        assertEquals(OS.NEWLINE + &quot;@Preamble{Test preamble}&quot; + OS.NEWLINE, session.getStringValue());</span>
+<span class="fc" id="L100">    }</span>
+
+    @Test
+    public void writePreambleAndEncoding() throws Exception {
+<span class="fc" id="L104">        SavePreferences preferences = new SavePreferences().withEncoding(StandardCharsets.US_ASCII);</span>
+<span class="fc" id="L105">        database.setPreamble(&quot;Test preamble&quot;);</span>
+
+<span class="fc" id="L107">        StringSaveSession session = databaseWriter.savePartOfDatabase(bibtexContext, Collections.emptyList(), preferences);</span>
+
+<span class="fc" id="L109">        assertEquals(&quot;% Encoding: US-ASCII&quot; + OS.NEWLINE + OS.NEWLINE +</span>
+<span class="fc" id="L110">                &quot;@Preamble{Test preamble}&quot; + OS.NEWLINE, session.getStringValue());</span>
+<span class="fc" id="L111">    }</span>
+
+    @Test
+    public void writeEntry() throws Exception {
+<span class="fc" id="L115">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L116">        entry.setType(BibtexEntryTypes.ARTICLE);</span>
+<span class="fc" id="L117">        database.insertEntry(entry);</span>
+
+<span class="fc" id="L119">        StringSaveSession session = databaseWriter.savePartOfDatabase(bibtexContext, Collections.singletonList(entry), new SavePreferences());</span>
+
+<span class="fc" id="L121">        assertEquals(OS.NEWLINE +</span>
+<span class="fc" id="L122">                &quot;@Article{,&quot; + OS.NEWLINE + &quot;}&quot; + OS.NEWLINE + OS.NEWLINE</span>
+<span class="fc" id="L123">                + &quot;@Comment{jabref-meta: databaseType:bibtex;}&quot;</span>
+<span class="fc" id="L124">                + OS.NEWLINE, session.getStringValue());</span>
+<span class="fc" id="L125">    }</span>
+
+    @Test
+    public void writeEncodingAndEntry() throws Exception {
+<span class="fc" id="L129">        SavePreferences preferences = new SavePreferences().withEncoding(StandardCharsets.US_ASCII);</span>
+<span class="fc" id="L130">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L131">        entry.setType(BibtexEntryTypes.ARTICLE);</span>
+<span class="fc" id="L132">        database.insertEntry(entry);</span>
+
+<span class="fc" id="L134">        StringSaveSession session = databaseWriter.savePartOfDatabase(bibtexContext, Collections.singletonList(entry), preferences);</span>
+
+<span class="fc" id="L136">        assertEquals(&quot;% Encoding: US-ASCII&quot; + OS.NEWLINE + OS.NEWLINE +</span>
+<span class="fc" id="L137">                &quot;@Article{,&quot; + OS.NEWLINE + &quot;}&quot;</span>
+<span class="fc" id="L138">                + OS.NEWLINE + OS.NEWLINE</span>
+<span class="fc" id="L139">                + &quot;@Comment{jabref-meta: databaseType:bibtex;}&quot;</span>
+<span class="fc" id="L140">                + OS.NEWLINE, session.getStringValue());</span>
+<span class="fc" id="L141">    }</span>
+
+    @Test
+    public void writeEpilogue() throws Exception {
+<span class="fc" id="L145">        database.setEpilog(&quot;Test epilog&quot;);</span>
+
+<span class="fc" id="L147">        StringSaveSession session = databaseWriter.savePartOfDatabase(bibtexContext, Collections.emptyList(), new SavePreferences());</span>
+
+<span class="fc" id="L149">        assertEquals(OS.NEWLINE + &quot;Test epilog&quot; + OS.NEWLINE, session.getStringValue());</span>
+<span class="fc" id="L150">    }</span>
+
+    @Test
+    public void writeEpilogueAndEncoding() throws Exception {
+<span class="fc" id="L154">        SavePreferences preferences = new SavePreferences().withEncoding(StandardCharsets.US_ASCII);</span>
+<span class="fc" id="L155">        database.setEpilog(&quot;Test epilog&quot;);</span>
+
+<span class="fc" id="L157">        StringSaveSession session = databaseWriter.savePartOfDatabase(bibtexContext, Collections.emptyList(), preferences);</span>
+
+<span class="fc" id="L159">        assertEquals(&quot;% Encoding: US-ASCII&quot; + OS.NEWLINE + OS.NEWLINE +</span>
+<span class="fc" id="L160">                &quot;Test epilog&quot; + OS.NEWLINE, session.getStringValue());</span>
+<span class="fc" id="L161">    }</span>
+
+    @Test
+    public void writeMetadata() throws Exception {
+<span class="fc" id="L165">        DatabaseBibtexKeyPattern bibtexKeyPattern = new DatabaseBibtexKeyPattern(mock(GlobalBibtexKeyPattern.class));</span>
+<span class="fc" id="L166">        bibtexKeyPattern.setDefaultValue(&quot;test&quot;);</span>
+<span class="fc" id="L167">        metaData.setCiteKeyPattern(bibtexKeyPattern);</span>
+
+<span class="fc" id="L169">        StringSaveSession session = databaseWriter.savePartOfDatabase(bibtexContext, Collections.emptyList(), new SavePreferences());</span>
+
+<span class="fc" id="L171">        assertEquals(OS.NEWLINE + &quot;@Comment{jabref-meta: keypatterndefault:test;}&quot; + OS.NEWLINE,</span>
+<span class="fc" id="L172">                session.getStringValue());</span>
+<span class="fc" id="L173">    }</span>
+
+    @Test
+    public void writeMetadataAndEncoding() throws Exception {
+<span class="fc" id="L177">        SavePreferences preferences = new SavePreferences().withEncoding(StandardCharsets.US_ASCII);</span>
+<span class="fc" id="L178">        DatabaseBibtexKeyPattern bibtexKeyPattern = new DatabaseBibtexKeyPattern(mock(GlobalBibtexKeyPattern.class));</span>
+<span class="fc" id="L179">        bibtexKeyPattern.setDefaultValue(&quot;test&quot;);</span>
+<span class="fc" id="L180">        metaData.setCiteKeyPattern(bibtexKeyPattern);</span>
+
+<span class="fc" id="L182">        StringSaveSession session = databaseWriter.savePartOfDatabase(bibtexContext, Collections.emptyList(), preferences);</span>
+
+<span class="fc" id="L184">        assertEquals(&quot;% Encoding: US-ASCII&quot; + OS.NEWLINE + OS.NEWLINE</span>
+                +
+<span class="fc" id="L186">                &quot;@Comment{jabref-meta: keypatterndefault:test;}&quot; + OS.NEWLINE, session.getStringValue());</span>
+<span class="fc" id="L187">    }</span>
+
+    @Test
+    public void writeGroups() throws Exception {
+<span class="fc" id="L191">        GroupTreeNode groupRoot = GroupTreeNode.fromGroup(new AllEntriesGroup(&quot;&quot;));</span>
+<span class="fc" id="L192">        groupRoot.addSubgroup(new ExplicitGroup(&quot;test&quot;, GroupHierarchyType.INCLUDING, ','));</span>
+<span class="fc" id="L193">        metaData.setGroups(groupRoot);</span>
+
+<span class="fc" id="L195">        StringSaveSession session = databaseWriter.savePartOfDatabase(bibtexContext, Collections.emptyList(), new SavePreferences());</span>
+
+        // @formatter:off
+<span class="fc" id="L198">        assertEquals(OS.NEWLINE</span>
+<span class="fc" id="L199">                + &quot;@Comment{jabref-meta: grouping:&quot; + OS.NEWLINE</span>
+<span class="fc" id="L200">                + &quot;0 AllEntriesGroup:;&quot; + OS.NEWLINE</span>
+<span class="fc" id="L201">                + &quot;1 StaticGroup:test\\;2\\;1\\;\\;\\;\\;;&quot; + OS.NEWLINE</span>
+<span class="fc" id="L202">                + &quot;}&quot; + OS.NEWLINE, session.getStringValue());</span>
+        // @formatter:on
+<span class="fc" id="L204">    }</span>
+
+    @Test
+    public void writeGroupsAndEncoding() throws Exception {
+<span class="fc" id="L208">        SavePreferences preferences = new SavePreferences().withEncoding(StandardCharsets.US_ASCII);</span>
+
+<span class="fc" id="L210">        GroupTreeNode groupRoot = GroupTreeNode.fromGroup(new AllEntriesGroup(&quot;&quot;));</span>
+<span class="fc" id="L211">        groupRoot.addChild(GroupTreeNode.fromGroup(new ExplicitGroup(&quot;test&quot;, GroupHierarchyType.INCLUDING, ',')));</span>
+<span class="fc" id="L212">        metaData.setGroups(groupRoot);</span>
+
+<span class="fc" id="L214">        StringSaveSession session = databaseWriter.savePartOfDatabase(bibtexContext, Collections.emptyList(), preferences);</span>
+
+        // @formatter:off
+<span class="fc" id="L217">        assertEquals(</span>
+<span class="fc" id="L218">                &quot;% Encoding: US-ASCII&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L219">                OS.NEWLINE</span>
+<span class="fc" id="L220">                        + &quot;@Comment{jabref-meta: grouping:&quot; + OS.NEWLINE</span>
+<span class="fc" id="L221">                + &quot;0 AllEntriesGroup:;&quot; + OS.NEWLINE</span>
+<span class="fc" id="L222">                        + &quot;1 StaticGroup:test\\;2\\;1\\;\\;\\;\\;;&quot; + OS.NEWLINE</span>
+<span class="fc" id="L223">                + &quot;}&quot; + OS.NEWLINE, session.getStringValue());</span>
+        // @formatter:on
+<span class="fc" id="L225">    }</span>
+
+    @Test
+    public void writeString() throws Exception {
+<span class="fc" id="L229">        database.addString(new BibtexString(&quot;name&quot;, &quot;content&quot;));</span>
+
+<span class="fc" id="L231">        StringSaveSession session = databaseWriter.savePartOfDatabase(bibtexContext, Collections.emptyList(), new SavePreferences());</span>
+
+<span class="fc" id="L233">        assertEquals(OS.NEWLINE + &quot;@String{name = {content}}&quot; + OS.NEWLINE, session.getStringValue());</span>
+<span class="fc" id="L234">    }</span>
+
+    @Test
+    public void writeStringAndEncoding() throws Exception {
+<span class="fc" id="L238">        SavePreferences preferences = new SavePreferences().withEncoding(StandardCharsets.US_ASCII);</span>
+<span class="fc" id="L239">        database.addString(new BibtexString(&quot;name&quot;, &quot;content&quot;));</span>
+
+<span class="fc" id="L241">        StringSaveSession session = databaseWriter.savePartOfDatabase(bibtexContext, Collections.emptyList(), preferences);</span>
+
+<span class="fc" id="L243">        assertEquals(&quot;% Encoding: US-ASCII&quot; + OS.NEWLINE + OS.NEWLINE +</span>
+<span class="fc" id="L244">                &quot;@String{name = {content}}&quot; + OS.NEWLINE, session.getStringValue());</span>
+<span class="fc" id="L245">    }</span>
+
+    @Test
+    public void writeEntryWithCustomizedTypeAlsoWritesTypeDeclaration() throws Exception {
+        try {
+<span class="fc" id="L250">            EntryTypes.addOrModifyCustomEntryType(new CustomEntryType(&quot;customizedType&quot;, &quot;required&quot;, &quot;optional&quot;), BibDatabaseMode.BIBTEX);</span>
+<span class="fc" id="L251">            BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L252">            entry.setType(&quot;customizedType&quot;);</span>
+<span class="fc" id="L253">            database.insertEntry(entry);</span>
+
+<span class="fc" id="L255">            StringSaveSession session = databaseWriter.savePartOfDatabase(bibtexContext, Collections.singletonList(entry), new SavePreferences());</span>
+
+<span class="fc" id="L257">            assertEquals(</span>
+<span class="fc" id="L258">                    OS.NEWLINE +</span>
+<span class="fc" id="L259">                            &quot;@Customizedtype{,&quot; + OS.NEWLINE + &quot;}&quot; + OS.NEWLINE + OS.NEWLINE</span>
+<span class="fc" id="L260">                            + &quot;@Comment{jabref-meta: databaseType:bibtex;}&quot;</span>
+<span class="fc" id="L261">                            + OS.NEWLINE + OS.NEWLINE</span>
+<span class="fc" id="L262">                            + &quot;@Comment{jabref-entrytype: Customizedtype: req[required] opt[optional]}&quot; + OS.NEWLINE,</span>
+<span class="fc" id="L263">                    session.getStringValue());</span>
+<span class="pc" id="L264">        } finally {</span>
+<span class="pc" id="L265">            EntryTypes.removeAllCustomEntryTypes();</span>
+<span class="nc" id="L266">        }</span>
+<span class="fc" id="L267">    }</span>
+
+    @Test
+    public void roundtrip() throws Exception {
+<span class="fc" id="L271">        Path testBibtexFile = Paths.get(&quot;src/test/resources/testbib/complex.bib&quot;);</span>
+<span class="fc" id="L272">        Charset encoding = StandardCharsets.UTF_8;</span>
+<span class="fc" id="L273">        ParserResult result = new BibtexParser(importFormatPreferences, fileMonitor).parse(Importer.getReader(testBibtexFile, encoding));</span>
+
+<span class="fc" id="L275">        SavePreferences preferences = new SavePreferences().withEncoding(encoding).withSaveInOriginalOrder(true);</span>
+<span class="fc" id="L276">        BibDatabaseContext context = new BibDatabaseContext(result.getDatabase(), result.getMetaData(),</span>
+<span class="fc" id="L277">                new Defaults(BibDatabaseMode.BIBTEX));</span>
+
+<span class="fc" id="L279">        StringSaveSession session = databaseWriter.savePartOfDatabase(context, result.getDatabase().getEntries(), preferences);</span>
+<span class="fc" id="L280">        try (Scanner scanner = new Scanner(testBibtexFile,encoding.name())) {</span>
+<span class="fc" id="L281">            assertEquals(scanner.useDelimiter(&quot;\\A&quot;).next(), session.getStringValue());</span>
+<span class="pc bpc" id="L282" title="7 of 8 branches missed.">        }</span>
+<span class="fc" id="L283">    }</span>
+
+    @Test
+    public void roundtripWithUserComment() throws Exception {
+<span class="fc" id="L287">        Path testBibtexFile = Paths.get(&quot;src/test/resources/testbib/bibWithUserComments.bib&quot;);</span>
+<span class="fc" id="L288">        Charset encoding = StandardCharsets.UTF_8;</span>
+<span class="fc" id="L289">        ParserResult result = new BibtexParser(importFormatPreferences, fileMonitor).parse(Importer.getReader(testBibtexFile, encoding));</span>
+
+<span class="fc" id="L291">        SavePreferences preferences = new SavePreferences().withEncoding(encoding).withSaveInOriginalOrder(true);</span>
+<span class="fc" id="L292">        BibDatabaseContext context = new BibDatabaseContext(result.getDatabase(), result.getMetaData(),</span>
+<span class="fc" id="L293">                new Defaults(BibDatabaseMode.BIBTEX));</span>
+
+<span class="fc" id="L295">        StringSaveSession session = databaseWriter.savePartOfDatabase(context, result.getDatabase().getEntries(), preferences);</span>
+<span class="fc" id="L296">        try (Scanner scanner = new Scanner(testBibtexFile,encoding.name())) {</span>
+<span class="fc" id="L297">            assertEquals(scanner.useDelimiter(&quot;\\A&quot;).next(), session.getStringValue());</span>
+<span class="pc bpc" id="L298" title="7 of 8 branches missed.">        }</span>
+<span class="fc" id="L299">    }</span>
+
+    @Test
+    public void roundtripWithUserCommentAndEntryChange() throws Exception {
+<span class="fc" id="L303">        Path testBibtexFile = Paths.get(&quot;src/test/resources/testbib/bibWithUserComments.bib&quot;);</span>
+<span class="fc" id="L304">        Charset encoding = StandardCharsets.UTF_8;</span>
+<span class="fc" id="L305">        ParserResult result = new BibtexParser(importFormatPreferences, fileMonitor).parse(Importer.getReader(testBibtexFile, encoding));</span>
+
+<span class="fc" id="L307">        BibEntry entry = result.getDatabase().getEntryByKey(&quot;1137631&quot;).get();</span>
+<span class="fc" id="L308">        entry.setField(&quot;author&quot;, &quot;Mr. Author&quot;);</span>
+
+<span class="fc" id="L310">        SavePreferences preferences = new SavePreferences().withEncoding(encoding).withSaveInOriginalOrder(true);</span>
+<span class="fc" id="L311">        BibDatabaseContext context = new BibDatabaseContext(result.getDatabase(), result.getMetaData(),</span>
+<span class="fc" id="L312">                new Defaults(BibDatabaseMode.BIBTEX));</span>
+
+<span class="fc" id="L314">        StringSaveSession session = databaseWriter.savePartOfDatabase(context, result.getDatabase().getEntries(), preferences);</span>
+
+<span class="fc" id="L316">        try (Scanner scanner = new Scanner(Paths.get(&quot;src/test/resources/testbib/bibWithUserCommentAndEntryChange.bib&quot;),encoding.name())) {</span>
+<span class="fc" id="L317">            assertEquals(scanner.useDelimiter(&quot;\\A&quot;).next(), session.getStringValue());</span>
+<span class="pc bpc" id="L318" title="7 of 8 branches missed.">        }</span>
+<span class="fc" id="L319">    }</span>
+
+    @Test
+    public void roundtripWithUserCommentBeforeStringAndChange() throws Exception {
+<span class="fc" id="L323">        Path testBibtexFile = Paths.get(&quot;src/test/resources/testbib/complex.bib&quot;);</span>
+<span class="fc" id="L324">        Charset encoding = StandardCharsets.UTF_8;</span>
+<span class="fc" id="L325">        ParserResult result = new BibtexParser(importFormatPreferences, fileMonitor).parse(Importer.getReader(testBibtexFile, encoding));</span>
+
+<span class="fc bfc" id="L327" title="All 2 branches covered.">        for (BibtexString string : result.getDatabase().getStringValues()) {</span>
+            // Mark them as changed
+<span class="fc" id="L329">            string.setContent(string.getContent());</span>
+        }
+
+<span class="fc" id="L332">        SavePreferences preferences = new SavePreferences().withEncoding(encoding).withSaveInOriginalOrder(true);</span>
+<span class="fc" id="L333">        BibDatabaseContext context = new BibDatabaseContext(result.getDatabase(), result.getMetaData(),</span>
+<span class="fc" id="L334">                new Defaults(BibDatabaseMode.BIBTEX));</span>
+
+<span class="fc" id="L336">        StringSaveSession session = databaseWriter.savePartOfDatabase(context, result.getDatabase().getEntries(), preferences);</span>
+
+<span class="fc" id="L338">        try (Scanner scanner = new Scanner(testBibtexFile,encoding.name())) {</span>
+<span class="fc" id="L339">            assertEquals(scanner.useDelimiter(&quot;\\A&quot;).next(), session.getStringValue());</span>
+<span class="pc bpc" id="L340" title="7 of 8 branches missed.">        }</span>
+<span class="fc" id="L341">    }</span>
+
+    @Test
+    public void roundtripWithUnknownMetaData() throws Exception {
+<span class="fc" id="L345">        Path testBibtexFile = Paths.get(&quot;src/test/resources/testbib/unknownMetaData.bib&quot;);</span>
+<span class="fc" id="L346">        Charset encoding = StandardCharsets.UTF_8;</span>
+<span class="fc" id="L347">        ParserResult result = new BibtexParser(importFormatPreferences, fileMonitor).parse(Importer.getReader(testBibtexFile, encoding));</span>
+
+<span class="fc" id="L349">        SavePreferences preferences = new SavePreferences().withEncoding(encoding).withSaveInOriginalOrder(true);</span>
+<span class="fc" id="L350">        BibDatabaseContext context = new BibDatabaseContext(result.getDatabase(), result.getMetaData(),</span>
+<span class="fc" id="L351">                new Defaults(BibDatabaseMode.BIBTEX));</span>
+
+<span class="fc" id="L353">        StringSaveSession session = databaseWriter.savePartOfDatabase(context, result.getDatabase().getEntries(), preferences);</span>
+<span class="fc" id="L354">        try (Scanner scanner = new Scanner(testBibtexFile,encoding.name())) {</span>
+<span class="fc" id="L355">            assertEquals(scanner.useDelimiter(&quot;\\A&quot;).next(), session.getStringValue());</span>
+<span class="pc bpc" id="L356" title="7 of 8 branches missed.">        }</span>
+<span class="fc" id="L357">    }</span>
+
+    @Test
+    public void writeSavedSerializationOfEntryIfUnchanged() throws Exception {
+<span class="fc" id="L361">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L362">        entry.setType(BibtexEntryTypes.ARTICLE);</span>
+<span class="fc" id="L363">        entry.setField(&quot;author&quot;, &quot;Mr. author&quot;);</span>
+<span class="fc" id="L364">        entry.setParsedSerialization(&quot;presaved serialization&quot;);</span>
+<span class="fc" id="L365">        entry.setChanged(false);</span>
+<span class="fc" id="L366">        database.insertEntry(entry);</span>
+
+<span class="fc" id="L368">        StringSaveSession session = databaseWriter.savePartOfDatabase(bibtexContext, Collections.singletonList(entry), new SavePreferences());</span>
+
+<span class="fc" id="L370">        assertEquals(&quot;presaved serialization&quot; + OS.NEWLINE + &quot;@Comment{jabref-meta: databaseType:bibtex;}&quot;</span>
+<span class="fc" id="L371">                + OS.NEWLINE, session.getStringValue());</span>
+<span class="fc" id="L372">    }</span>
+
+    @Test
+    public void reformatEntryIfAskedToDoSo() throws Exception {
+<span class="fc" id="L376">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L377">        entry.setType(BibtexEntryTypes.ARTICLE);</span>
+<span class="fc" id="L378">        entry.setField(&quot;author&quot;, &quot;Mr. author&quot;);</span>
+<span class="fc" id="L379">        entry.setParsedSerialization(&quot;wrong serialization&quot;);</span>
+<span class="fc" id="L380">        entry.setChanged(false);</span>
+<span class="fc" id="L381">        database.insertEntry(entry);</span>
+
+<span class="fc" id="L383">        SavePreferences preferences = new SavePreferences().withReformatFile(true);</span>
+<span class="fc" id="L384">        StringSaveSession session = databaseWriter.savePartOfDatabase(bibtexContext, Collections.singletonList(entry), preferences);</span>
+
+<span class="fc" id="L386">        assertEquals(OS.NEWLINE +</span>
+<span class="fc" id="L387">                        &quot;@Article{,&quot; + OS.NEWLINE + &quot;  author = {Mr. author},&quot; + OS.NEWLINE + &quot;}&quot;</span>
+<span class="fc" id="L388">                        + OS.NEWLINE + OS.NEWLINE</span>
+<span class="fc" id="L389">                        + &quot;@Comment{jabref-meta: databaseType:bibtex;}&quot;</span>
+<span class="fc" id="L390">                        + OS.NEWLINE,</span>
+<span class="fc" id="L391">                session.getStringValue());</span>
+<span class="fc" id="L392">    }</span>
+
+    @Test
+    public void writeSavedSerializationOfStringIfUnchanged() throws Exception {
+<span class="fc" id="L396">        BibtexString string = new BibtexString(&quot;name&quot;, &quot;content&quot;);</span>
+<span class="fc" id="L397">        string.setParsedSerialization(&quot;serialization&quot;);</span>
+<span class="fc" id="L398">        database.addString(string);</span>
+
+<span class="fc" id="L400">        StringSaveSession session = databaseWriter.savePartOfDatabase(bibtexContext, Collections.emptyList(), new SavePreferences());</span>
+
+<span class="fc" id="L402">        assertEquals(&quot;serialization&quot;, session.getStringValue());</span>
+<span class="fc" id="L403">    }</span>
+
+    @Test
+    public void reformatStringIfAskedToDoSo() throws Exception {
+<span class="fc" id="L407">        BibtexString string = new BibtexString(&quot;name&quot;, &quot;content&quot;);</span>
+<span class="fc" id="L408">        string.setParsedSerialization(&quot;wrong serialization&quot;);</span>
+<span class="fc" id="L409">        database.addString(string);</span>
+
+<span class="fc" id="L411">        SavePreferences preferences = new SavePreferences().withReformatFile(true);</span>
+<span class="fc" id="L412">        StringSaveSession session = databaseWriter.savePartOfDatabase(bibtexContext, Collections.emptyList(), preferences);</span>
+
+<span class="fc" id="L414">        assertEquals(OS.NEWLINE + &quot;@String{name = {content}}&quot; + OS.NEWLINE, session.getStringValue());</span>
+
+<span class="fc" id="L416">    }</span>
+
+    @Test
+    public void writeSaveActions() throws Exception {
+<span class="fc" id="L420">        FieldFormatterCleanups saveActions = new FieldFormatterCleanups(true,</span>
+<span class="fc" id="L421">                Collections.singletonList(new FieldFormatterCleanup(&quot;title&quot;, new LowerCaseFormatter())));</span>
+<span class="fc" id="L422">        metaData.setSaveActions(saveActions);</span>
+
+<span class="fc" id="L424">        StringSaveSession session = databaseWriter.savePartOfDatabase(bibtexContext, Collections.emptyList(), new SavePreferences());</span>
+
+<span class="fc" id="L426">        assertEquals(OS.NEWLINE + &quot;@Comment{jabref-meta: saveActions:enabled;&quot; + OS.NEWLINE</span>
+<span class="fc" id="L427">                + &quot;title[lower_case]&quot; + OS.NEWLINE + &quot;;}&quot; + OS.NEWLINE, session.getStringValue());</span>
+<span class="fc" id="L428">    }</span>
+
+    @Test
+    public void writeSaveOrderConfig() throws Exception {
+<span class="fc" id="L432">        SaveOrderConfig saveOrderConfig = new SaveOrderConfig(false, new SaveOrderConfig.SortCriterion(&quot;author&quot;, false),</span>
+<span class="fc" id="L433">                new SaveOrderConfig.SortCriterion(&quot;year&quot;, true),</span>
+<span class="fc" id="L434">                new SaveOrderConfig.SortCriterion(&quot;abstract&quot;, false));</span>
+<span class="fc" id="L435">        metaData.setSaveOrderConfig(saveOrderConfig);</span>
+
+<span class="fc" id="L437">        StringSaveSession session = databaseWriter.savePartOfDatabase(bibtexContext, Collections.emptyList(), new SavePreferences());</span>
+
+<span class="fc" id="L439">        assertEquals(OS.NEWLINE</span>
+<span class="fc" id="L440">                + &quot;@Comment{jabref-meta: saveOrderConfig:specified;author;false;year;true;abstract;false;}&quot;</span>
+<span class="fc" id="L441">                + OS.NEWLINE, session.getStringValue());</span>
+<span class="fc" id="L442">    }</span>
+
+    @Test
+    public void writeCustomKeyPattern() throws Exception {
+<span class="fc" id="L446">        AbstractBibtexKeyPattern pattern = new DatabaseBibtexKeyPattern(mock(GlobalBibtexKeyPattern.class));</span>
+<span class="fc" id="L447">        pattern.setDefaultValue(&quot;test&quot;);</span>
+<span class="fc" id="L448">        pattern.addBibtexKeyPattern(&quot;article&quot;, &quot;articleTest&quot;);</span>
+<span class="fc" id="L449">        metaData.setCiteKeyPattern(pattern);</span>
+
+<span class="fc" id="L451">        StringSaveSession session = databaseWriter.savePartOfDatabase(bibtexContext, Collections.emptyList(), new SavePreferences());</span>
+
+<span class="fc" id="L453">        assertEquals(OS.NEWLINE + &quot;@Comment{jabref-meta: keypattern_article:articleTest;}&quot; + OS.NEWLINE</span>
+<span class="fc" id="L454">                        + OS.NEWLINE + &quot;@Comment{jabref-meta: keypatterndefault:test;}&quot; + OS.NEWLINE,</span>
+<span class="fc" id="L455">                session.getStringValue());</span>
+<span class="fc" id="L456">    }</span>
+
+    @Test
+    public void writeBiblatexMode() throws Exception {
+<span class="fc" id="L460">        metaData.setMode(BibDatabaseMode.BIBLATEX);</span>
+
+<span class="fc" id="L462">        StringSaveSession session = databaseWriter.savePartOfDatabase(bibtexContext, Collections.emptyList(), new SavePreferences());</span>
+
+<span class="fc" id="L464">        assertEquals(OS.NEWLINE + &quot;@Comment{jabref-meta: databaseType:biblatex;}&quot; + OS.NEWLINE,</span>
+<span class="fc" id="L465">                session.getStringValue());</span>
+<span class="fc" id="L466">    }</span>
+
+    @Test
+    public void writeProtectedFlag() throws Exception {
+<span class="fc" id="L470">        metaData.markAsProtected();</span>
+
+<span class="fc" id="L472">        StringSaveSession session = databaseWriter.savePartOfDatabase(bibtexContext, Collections.emptyList(), new SavePreferences());</span>
+
+<span class="fc" id="L474">        assertEquals(OS.NEWLINE + &quot;@Comment{jabref-meta: protectedFlag:true;}&quot; + OS.NEWLINE,</span>
+<span class="fc" id="L475">                session.getStringValue());</span>
+<span class="fc" id="L476">    }</span>
+
+    @Test
+    public void writeFileDirectories() throws Exception {
+<span class="fc" id="L480">        metaData.setDefaultFileDirectory(&quot;\\Literature\\&quot;);</span>
+<span class="fc" id="L481">        metaData.setUserFileDirectory(&quot;defaultOwner-user&quot;, &quot;D:\\Documents&quot;);</span>
+
+<span class="fc" id="L483">        StringSaveSession session = databaseWriter.savePartOfDatabase(bibtexContext, Collections.emptyList(), new SavePreferences());</span>
+
+<span class="fc" id="L485">        assertEquals(OS.NEWLINE + &quot;@Comment{jabref-meta: fileDirectory:\\\\Literature\\\\;}&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L486">                OS.NEWLINE + &quot;@Comment{jabref-meta: fileDirectory-defaultOwner-user:D:\\\\Documents;}&quot;</span>
+<span class="fc" id="L487">                + OS.NEWLINE, session.getStringValue());</span>
+<span class="fc" id="L488">    }</span>
+
+    @Test
+    public void writeEntriesSorted() throws Exception {
+<span class="fc" id="L492">        SaveOrderConfig saveOrderConfig = new SaveOrderConfig(false, new SaveOrderConfig.SortCriterion(&quot;author&quot;, false),</span>
+<span class="fc" id="L493">                new SaveOrderConfig.SortCriterion(&quot;year&quot;, true),</span>
+<span class="fc" id="L494">                new SaveOrderConfig.SortCriterion(&quot;abstract&quot;, false));</span>
+<span class="fc" id="L495">        metaData.setSaveOrderConfig(saveOrderConfig);</span>
+
+<span class="fc" id="L497">        BibEntry firstEntry = new BibEntry();</span>
+<span class="fc" id="L498">        firstEntry.setType(BibtexEntryTypes.ARTICLE);</span>
+<span class="fc" id="L499">        firstEntry.setField(&quot;author&quot;, &quot;A&quot;);</span>
+<span class="fc" id="L500">        firstEntry.setField(&quot;year&quot;, &quot;2000&quot;);</span>
+
+<span class="fc" id="L502">        BibEntry secondEntry = new BibEntry();</span>
+<span class="fc" id="L503">        secondEntry.setType(BibtexEntryTypes.ARTICLE);</span>
+<span class="fc" id="L504">        secondEntry.setField(&quot;author&quot;, &quot;A&quot;);</span>
+<span class="fc" id="L505">        secondEntry.setField(&quot;year&quot;, &quot;2010&quot;);</span>
+
+<span class="fc" id="L507">        BibEntry thirdEntry = new BibEntry();</span>
+<span class="fc" id="L508">        thirdEntry.setType(BibtexEntryTypes.ARTICLE);</span>
+<span class="fc" id="L509">        thirdEntry.setField(&quot;author&quot;, &quot;B&quot;);</span>
+<span class="fc" id="L510">        thirdEntry.setField(&quot;year&quot;, &quot;2000&quot;);</span>
+
+<span class="fc" id="L512">        database.insertEntry(secondEntry);</span>
+<span class="fc" id="L513">        database.insertEntry(thirdEntry);</span>
+<span class="fc" id="L514">        database.insertEntry(firstEntry);</span>
+
+<span class="fc" id="L516">        StringSaveSession session = databaseWriter.savePartOfDatabase(bibtexContext, database.getEntries(), new SavePreferences());</span>
+
+<span class="fc" id="L518">        assertEquals(</span>
+<span class="fc" id="L519">                OS.NEWLINE +</span>
+<span class="fc" id="L520">                &quot;@Article{,&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L521">                &quot;  author = {A},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L522">                &quot;  year   = {2000},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L523">                &quot;}&quot;  + OS.NEWLINE + OS.NEWLINE +</span>
+<span class="fc" id="L524">                &quot;@Article{,&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L525">                &quot;  author = {A},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L526">                &quot;  year   = {2010},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L527">                &quot;}&quot; + OS.NEWLINE + OS.NEWLINE +</span>
+<span class="fc" id="L528">                &quot;@Article{,&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L529">                &quot;  author = {B},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L530">                &quot;  year   = {2000},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L531">                &quot;}&quot; + OS.NEWLINE + OS.NEWLINE +</span>
+<span class="fc" id="L532">                &quot;@Comment{jabref-meta: databaseType:bibtex;}&quot;</span>
+<span class="fc" id="L533">                 + OS.NEWLINE + OS.NEWLINE +</span>
+<span class="fc" id="L534">                &quot;@Comment{jabref-meta: saveOrderConfig:specified;author;false;year;true;abstract;false;}&quot; +</span>
+<span class="fc" id="L535">                OS.NEWLINE</span>
+<span class="fc" id="L536">                , session.getStringValue());</span>
+<span class="fc" id="L537">    }</span>
+
+    @Test
+    public void writeEntriesInOriginalOrderWhenNoSaveOrderConfigIsSetInMetadata() throws Exception {
+<span class="fc" id="L541">        BibEntry firstEntry = new BibEntry();</span>
+<span class="fc" id="L542">        firstEntry.setType(BibtexEntryTypes.ARTICLE);</span>
+<span class="fc" id="L543">        firstEntry.setField(&quot;author&quot;, &quot;A&quot;);</span>
+<span class="fc" id="L544">        firstEntry.setField(&quot;year&quot;, &quot;2010&quot;);</span>
+
+<span class="fc" id="L546">        BibEntry secondEntry = new BibEntry();</span>
+<span class="fc" id="L547">        secondEntry.setType(BibtexEntryTypes.ARTICLE);</span>
+<span class="fc" id="L548">        secondEntry.setField(&quot;author&quot;, &quot;B&quot;);</span>
+<span class="fc" id="L549">        secondEntry.setField(&quot;year&quot;, &quot;2000&quot;);</span>
+
+<span class="fc" id="L551">        BibEntry thirdEntry = new BibEntry();</span>
+<span class="fc" id="L552">        thirdEntry.setType(BibtexEntryTypes.ARTICLE);</span>
+<span class="fc" id="L553">        thirdEntry.setField(&quot;author&quot;, &quot;A&quot;);</span>
+<span class="fc" id="L554">        thirdEntry.setField(&quot;year&quot;, &quot;2000&quot;);</span>
+
+<span class="fc" id="L556">        database.insertEntry(firstEntry);</span>
+<span class="fc" id="L557">        database.insertEntry(secondEntry);</span>
+<span class="fc" id="L558">        database.insertEntry(thirdEntry);</span>
+
+<span class="fc" id="L560">        SavePreferences preferences = new SavePreferences().withSaveInOriginalOrder(false);</span>
+<span class="fc" id="L561">        StringSaveSession session = databaseWriter.savePartOfDatabase(bibtexContext, database.getEntries(), preferences);</span>
+
+<span class="fc" id="L563">        assertEquals(</span>
+<span class="fc" id="L564">                OS.NEWLINE +</span>
+<span class="fc" id="L565">                        &quot;@Article{,&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L566">                        &quot;  author = {A},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L567">                        &quot;  year   = {2010},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L568">                        &quot;}&quot; + OS.NEWLINE + OS.NEWLINE +</span>
+<span class="fc" id="L569">                        &quot;@Article{,&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L570">                        &quot;  author = {B},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L571">                        &quot;  year   = {2000},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L572">                        &quot;}&quot; + OS.NEWLINE + OS.NEWLINE +</span>
+<span class="fc" id="L573">                        &quot;@Article{,&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L574">                        &quot;  author = {A},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L575">                        &quot;  year   = {2000},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L576">                        &quot;}&quot;</span>
+<span class="fc" id="L577">                        + OS.NEWLINE + OS.NEWLINE +</span>
+<span class="fc" id="L578">                        &quot;@Comment{jabref-meta: databaseType:bibtex;}&quot;</span>
+<span class="fc" id="L579">                        + OS.NEWLINE</span>
+<span class="fc" id="L580">                , session.getStringValue());</span>
+<span class="fc" id="L581">    }</span>
+
+    @Test
+    public void roundtripWithContentSelectorsAndUmlauts() throws IOException, SaveException {
+<span class="fc" id="L585">        String fileContent = &quot;% Encoding: UTF-8&quot; + OS.NEWLINE + OS.NEWLINE + &quot;@Comment{jabref-meta: selector_journal:Test {\\\\\&quot;U}mlaut;}&quot; + OS.NEWLINE;</span>
+<span class="fc" id="L586">        Charset encoding = StandardCharsets.UTF_8;</span>
+
+<span class="fc" id="L588">        ParserResult firstParse = new BibtexParser(importFormatPreferences, fileMonitor).parse(new StringReader(fileContent));</span>
+
+<span class="fc" id="L590">        SavePreferences preferences = new SavePreferences().withEncoding(encoding).withSaveInOriginalOrder(true);</span>
+<span class="fc" id="L591">        BibDatabaseContext context = new BibDatabaseContext(firstParse.getDatabase(), firstParse.getMetaData(),</span>
+<span class="fc" id="L592">                new Defaults(BibDatabaseMode.BIBTEX));</span>
+
+<span class="fc" id="L594">        StringSaveSession session = databaseWriter.savePartOfDatabase(context, firstParse.getDatabase().getEntries(), preferences);</span>
+
+<span class="fc" id="L596">        assertEquals(fileContent, session.getStringValue());</span>
+<span class="fc" id="L597">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

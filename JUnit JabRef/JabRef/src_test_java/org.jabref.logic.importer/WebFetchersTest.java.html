@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>WebFetchersTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.importer</a> &gt; <span class="el_source">WebFetchersTest.java</span></div><h1>WebFetchersTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.importer;
+
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import org.jabref.logic.importer.fetcher.ACS;
+import org.jabref.logic.importer.fetcher.AbstractIsbnFetcher;
+import org.jabref.logic.importer.fetcher.ArXiv;
+import org.jabref.logic.importer.fetcher.DoiResolution;
+import org.jabref.logic.importer.fetcher.GoogleScholar;
+import org.jabref.logic.importer.fetcher.IEEE;
+import org.jabref.logic.importer.fetcher.IsbnViaChimboriFetcher;
+import org.jabref.logic.importer.fetcher.IsbnViaEbookDeFetcher;
+import org.jabref.logic.importer.fetcher.MrDLibFetcher;
+import org.jabref.logic.importer.fetcher.OpenAccessDoi;
+import org.jabref.logic.importer.fetcher.ScienceDirect;
+import org.jabref.logic.importer.fetcher.SpringerLink;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.reflections.Reflections;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+
+<span class="fc" id="L28">public class WebFetchersTest {</span>
+
+<span class="fc" id="L30">    Reflections reflections = new Reflections(&quot;org.jabref&quot;);</span>
+    ImportFormatPreferences importFormatPreferences;
+
+    @BeforeEach
+    public void setUp() throws Exception {
+<span class="fc" id="L35">        importFormatPreferences = mock(ImportFormatPreferences.class);</span>
+<span class="fc" id="L36">    }</span>
+
+    @Test
+    public void getIdBasedFetchersReturnsAllFetcherDerivingFromIdBasedFetcher() throws Exception {
+<span class="fc" id="L40">        List&lt;IdBasedFetcher&gt; idFetchers = WebFetchers.getIdBasedFetchers(importFormatPreferences);</span>
+
+<span class="fc" id="L42">        Set&lt;Class&lt;? extends IdBasedFetcher&gt;&gt; expected = reflections.getSubTypesOf(IdBasedFetcher.class);</span>
+<span class="fc" id="L43">        expected.remove(AbstractIsbnFetcher.class);</span>
+<span class="fc" id="L44">        expected.remove(IdBasedParserFetcher.class);</span>
+        // Remove special ISBN fetcher since we don't want to expose them to the user
+<span class="fc" id="L46">        expected.remove(IsbnViaChimboriFetcher.class);</span>
+<span class="fc" id="L47">        expected.remove(IsbnViaEbookDeFetcher.class);</span>
+<span class="fc" id="L48">        assertEquals(expected, getClasses(idFetchers));</span>
+<span class="fc" id="L49">    }</span>
+
+    @Test
+    public void getEntryBasedFetchersReturnsAllFetcherDerivingFromEntryBasedFetcher() throws Exception {
+<span class="fc" id="L53">        List&lt;EntryBasedFetcher&gt; idFetchers = WebFetchers.getEntryBasedFetchers(importFormatPreferences);</span>
+
+<span class="fc" id="L55">        Set&lt;Class&lt;? extends EntryBasedFetcher&gt;&gt; expected = reflections.getSubTypesOf(EntryBasedFetcher.class);</span>
+<span class="fc" id="L56">        expected.remove(EntryBasedParserFetcher.class);</span>
+<span class="fc" id="L57">        expected.remove(MrDLibFetcher.class);</span>
+<span class="fc" id="L58">        assertEquals(expected, getClasses(idFetchers));</span>
+<span class="fc" id="L59">    }</span>
+
+    @Test
+    public void getSearchBasedFetchersReturnsAllFetcherDerivingFromSearchBasedFetcher() throws Exception {
+<span class="fc" id="L63">        List&lt;SearchBasedFetcher&gt; searchBasedFetchers = WebFetchers.getSearchBasedFetchers(importFormatPreferences);</span>
+
+<span class="fc" id="L65">        Set&lt;Class&lt;? extends SearchBasedFetcher&gt;&gt; expected = reflections.getSubTypesOf(SearchBasedFetcher.class);</span>
+<span class="fc" id="L66">        expected.remove(SearchBasedParserFetcher.class);</span>
+<span class="fc" id="L67">        assertEquals(expected, getClasses(searchBasedFetchers));</span>
+<span class="fc" id="L68">    }</span>
+
+    @Test
+    public void getFullTextFetchersReturnsAllFetcherDerivingFromFullTextFetcher() throws Exception {
+<span class="fc" id="L72">        List&lt;FulltextFetcher&gt; fullTextFetchers = WebFetchers.getFullTextFetchers(importFormatPreferences);</span>
+
+<span class="fc" id="L74">        Set&lt;Class&lt;? extends FulltextFetcher&gt;&gt; expected = reflections.getSubTypesOf(FulltextFetcher.class);</span>
+<span class="fc" id="L75">        assertEquals(expected, getClasses(fullTextFetchers));</span>
+<span class="fc" id="L76">    }</span>
+
+    @Test
+    public void getIdFetchersReturnsAllFetcherDerivingFromIdFetcher() throws Exception {
+<span class="fc" id="L80">        List&lt;IdFetcher&gt; idFetchers = WebFetchers.getIdFetchers(importFormatPreferences);</span>
+
+<span class="fc" id="L82">        Set&lt;Class&lt;? extends IdFetcher&gt;&gt; expected = reflections.getSubTypesOf(IdFetcher.class);</span>
+<span class="fc" id="L83">        expected.remove(IdParserFetcher.class);</span>
+<span class="fc" id="L84">        assertEquals(expected, getClasses(idFetchers));</span>
+<span class="fc" id="L85">    }</span>
+
+    private Set&lt;? extends Class&lt;?&gt;&gt; getClasses(List&lt;?&gt; objects) {
+<span class="fc" id="L88">        return objects.stream().map(Object::getClass).collect(Collectors.toSet());</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

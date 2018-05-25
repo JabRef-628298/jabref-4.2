@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>CustomImporterTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.importer.fileformat</a> &gt; <span class="el_source">CustomImporterTest.java</span></div><h1>CustomImporterTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.importer.fileformat;
+
+import java.nio.file.Paths;
+import java.util.Arrays;
+
+import org.jabref.logic.importer.Importer;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static junit.framework.TestCase.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+<span class="fc" id="L14">public class CustomImporterTest {</span>
+
+    private CustomImporter importer;
+
+    @BeforeEach
+    public void setUp() throws Exception {
+<span class="fc" id="L20">        importer = asCustomImporter(new CopacImporter());</span>
+<span class="fc" id="L21">    }</span>
+
+    @Test
+    public void testGetName() {
+<span class="fc" id="L25">        assertEquals(&quot;Copac&quot;, importer.getName());</span>
+<span class="fc" id="L26">    }</span>
+
+    @Test
+    public void testGetId() {
+<span class="fc" id="L30">        assertEquals(&quot;cpc&quot;, importer.getId());</span>
+<span class="fc" id="L31">    }</span>
+
+    @Test
+    public void testGetClassName() {
+<span class="fc" id="L35">        assertEquals(&quot;org.jabref.logic.importer.fileformat.CopacImporter&quot;, importer.getClassName());</span>
+<span class="fc" id="L36">    }</span>
+
+    @Test
+    public void testGetBasePath() {
+<span class="fc" id="L40">        assertEquals(Paths.get(&quot;src/main/java/org/jabref/logic/importer/fileformat/CopacImporter.java&quot;),</span>
+<span class="fc" id="L41">                importer.getBasePath());</span>
+<span class="fc" id="L42">    }</span>
+
+    @Test
+    public void testGetAsStringList() {
+<span class="fc" id="L46">        assertEquals(Arrays.asList(&quot;src/main/java/org/jabref/logic/importer/fileformat/CopacImporter.java&quot;,</span>
+<span class="fc" id="L47">                &quot;org.jabref.logic.importer.fileformat.CopacImporter&quot;), importer.getAsStringList());</span>
+<span class="fc" id="L48">    }</span>
+
+    @Test
+    public void equalsWithSameReference() {
+<span class="fc" id="L52">        assertEquals(importer, importer);</span>
+<span class="fc" id="L53">    }</span>
+
+    @Test
+    public void equalsIsBasedOnName() {
+        //noinspection AssertEqualsBetweenInconvertibleTypes
+<span class="fc" id="L58">        assertEquals(new CopacImporter(), importer);</span>
+<span class="fc" id="L59">    }</span>
+
+    @Test
+    public void testCompareToSmaller() throws Exception {
+<span class="fc" id="L63">        CustomImporter ovidImporter = asCustomImporter(new OvidImporter());</span>
+
+<span class="pc bpc" id="L65" title="1 of 2 branches missed.">        assertTrue(importer.compareTo(ovidImporter) &lt; 0);</span>
+<span class="fc" id="L66">    }</span>
+
+    @Test
+    public void testCompareToGreater() throws Exception {
+<span class="fc" id="L70">        CustomImporter bibtexmlImporter = asCustomImporter(new BibTeXMLImporter());</span>
+<span class="fc" id="L71">        CustomImporter ovidImporter = asCustomImporter(new OvidImporter());</span>
+
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">        assertTrue(ovidImporter.compareTo(bibtexmlImporter) &gt; 0);</span>
+<span class="fc" id="L74">    }</span>
+
+    @Test
+    public void testCompareToEven() throws Exception {
+<span class="fc" id="L78">        assertEquals(0, importer.compareTo(asCustomImporter(new CopacImporter())));</span>
+<span class="fc" id="L79">    }</span>
+
+    @Test
+    public void testToString() {
+<span class="fc" id="L83">        assertEquals(&quot;Copac&quot;, importer.toString());</span>
+<span class="fc" id="L84">    }</span>
+
+    @Test
+    public void testClassicConstructor() throws Exception {
+<span class="fc" id="L88">        CustomImporter customImporter = new CustomImporter(</span>
+<span class="fc" id="L89">                &quot;src/main/java/org/jabref/logic/importer/fileformat/CopacImporter.java&quot;,</span>
+<span class="fc" id="L90">                &quot;org.jabref.logic.importer.fileformat.CopacImporter&quot;);</span>
+
+<span class="fc" id="L92">        assertEquals(importer, customImporter);</span>
+<span class="fc" id="L93">    }</span>
+
+    private CustomImporter asCustomImporter(Importer importer) throws Exception {
+<span class="fc" id="L96">        return new CustomImporter(</span>
+<span class="fc" id="L97">                &quot;src/main/java/org/jabref/logic/importer/fileformat/&quot; + importer.getName() + &quot;Importer.java&quot;,</span>
+<span class="fc" id="L98">                importer.getClass().getName());</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

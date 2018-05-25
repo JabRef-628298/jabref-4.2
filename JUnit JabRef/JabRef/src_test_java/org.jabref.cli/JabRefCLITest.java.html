@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>JabRefCLITest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.cli</a> &gt; <span class="el_source">JabRefCLITest.java</span></div><h1>JabRefCLITest.java</h1><pre class="source lang-java linenums">package org.jabref.cli;
+
+import java.util.Collections;
+
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+<span class="fc" id="L10">public class JabRefCLITest {</span>
+
+    @Test
+    public void testCLIParsingLongOptions() {
+<span class="fc" id="L14">        JabRefCLI cli = new JabRefCLI(new String[] {&quot;--nogui&quot;, &quot;--import=some/file&quot;, &quot;--output=some/export/file&quot;});</span>
+
+<span class="fc" id="L16">        assertEquals(Collections.emptyList(), cli.getLeftOver());</span>
+<span class="fc" id="L17">        assertEquals(&quot;some/file&quot;, cli.getFileImport());</span>
+<span class="fc" id="L18">        assertTrue(cli.isDisableGui());</span>
+<span class="fc" id="L19">        assertEquals(&quot;some/export/file&quot;, cli.getFileExport());</span>
+<span class="fc" id="L20">    }</span>
+
+    @Test
+    public void testCLIParsingShortOptions() {
+<span class="fc" id="L24">        JabRefCLI cli = new JabRefCLI(new String[] {&quot;-n&quot;, &quot;-i=some/file&quot;, &quot;-o=some/export/file&quot;});</span>
+
+<span class="fc" id="L26">        assertEquals(Collections.emptyList(), cli.getLeftOver());</span>
+<span class="fc" id="L27">        assertEquals(&quot;some/file&quot;, cli.getFileImport());</span>
+<span class="fc" id="L28">        assertTrue(cli.isDisableGui());</span>
+<span class="fc" id="L29">        assertEquals(&quot;some/export/file&quot;, cli.getFileExport());</span>
+<span class="fc" id="L30">    }</span>
+
+    @Test
+    public void testPreferencesExport() {
+<span class="fc" id="L34">        JabRefCLI cli = new JabRefCLI(new String[] {&quot;-n&quot;, &quot;-x=some/file&quot;});</span>
+
+<span class="fc" id="L36">        assertEquals(Collections.emptyList(), cli.getLeftOver());</span>
+<span class="fc" id="L37">        assertEquals(&quot;some/file&quot;, cli.getPreferencesExport());</span>
+<span class="fc" id="L38">        assertTrue(cli.isDisableGui());</span>
+<span class="fc" id="L39">    }</span>
+
+    @Test
+    public void recognizesImportBibtex() {
+<span class="fc" id="L43">        String bibtex = &quot;@article{test, title=\&quot;test title\&quot;}&quot;;</span>
+<span class="fc" id="L44">        JabRefCLI cli = new JabRefCLI(new String[]{&quot;-ib&quot;, bibtex});</span>
+<span class="fc" id="L45">        assertEquals(Collections.emptyList(), cli.getLeftOver());</span>
+<span class="fc" id="L46">        assertTrue(cli.isBibtexImport());</span>
+<span class="fc" id="L47">        assertEquals(bibtex, cli.getBibtexImport());</span>
+<span class="fc" id="L48">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

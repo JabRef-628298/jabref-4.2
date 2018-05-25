@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MarkEntriesAction.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.worker</a> &gt; <span class="el_source">MarkEntriesAction.java</span></div><h1>MarkEntriesAction.java</h1><pre class="source lang-java linenums">package org.jabref.gui.worker;
+
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.List;
+
+import javax.swing.JMenuItem;
+
+import org.jabref.Globals;
+import org.jabref.gui.BasePanel;
+import org.jabref.gui.EntryMarker;
+import org.jabref.gui.JabRefFrame;
+import org.jabref.gui.undo.NamedCompound;
+import org.jabref.logic.l10n.Localization;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.preferences.JabRefPreferences;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class MarkEntriesAction extends AbstractWorker implements ActionListener {
+
+<span class="fc" id="L23">    private static final Logger LOGGER = LoggerFactory.getLogger(MarkEntriesAction.class);</span>
+    private final JabRefFrame frame;
+    private final int level;
+    private final JMenuItem menuItem;
+
+    private int besLength;
+
+<span class="fc" id="L30">    public MarkEntriesAction(JabRefFrame frame, int level) {</span>
+<span class="fc" id="L31">        this.frame = frame;</span>
+<span class="fc" id="L32">        this.level = level;</span>
+
+        //menuItem = new JMenuItem(Globals.menuTitle(&quot;Mark entries&quot;).replace(&quot;&amp;&quot;,&quot;&quot;));
+<span class="fc" id="L35">        menuItem = new JMenuItem(Localization.lang(&quot;Level&quot;) + &quot; &quot; + level + &quot;   &quot;);</span>
+<span class="fc" id="L36">        menuItem.setMnemonic(String.valueOf(level + 1).charAt(0));</span>
+<span class="fc" id="L37">        menuItem.setBackground(Globals.prefs.getColor(JabRefPreferences.MARKED_ENTRY_BACKGROUND + this.level));</span>
+<span class="fc" id="L38">        menuItem.setOpaque(true);</span>
+<span class="fc" id="L39">        menuItem.addActionListener(this);</span>
+<span class="fc" id="L40">    }</span>
+
+    public JMenuItem getMenuItem() {
+<span class="fc" id="L43">        return menuItem;</span>
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent actionEvent) {
+        try {
+<span class="nc" id="L49">            this.init();</span>
+<span class="nc" id="L50">            getWorker().run();</span>
+<span class="nc" id="L51">            getCallBack().update();</span>
+<span class="nc" id="L52">        } catch (Throwable t) {</span>
+<span class="nc" id="L53">            LOGGER.warn(&quot;Problem marking entries&quot;, t);</span>
+        }
+<span class="nc" id="L55">    }</span>
+
+    @Override
+    public void run() {
+<span class="nc" id="L59">        BasePanel panel = frame.getCurrentBasePanel();</span>
+<span class="nc bnc" id="L60" title="All 2 branches missed.">        if (panel != null) {</span>
+<span class="nc" id="L61">            List&lt;BibEntry&gt; bes = panel.getSelectedEntries();</span>
+
+            // used at update() to determine output string
+<span class="nc" id="L64">            besLength = bes.size();</span>
+
+<span class="nc bnc" id="L66" title="All 2 branches missed.">            if (!bes.isEmpty()) {</span>
+<span class="nc" id="L67">                NamedCompound ce = new NamedCompound(Localization.lang(&quot;Mark entries&quot;));</span>
+<span class="nc bnc" id="L68" title="All 2 branches missed.">                for (BibEntry be : bes) {</span>
+<span class="nc" id="L69">                    EntryMarker.markEntry(be, level + 1, false, ce);</span>
+                }
+<span class="nc" id="L71">                ce.end();</span>
+<span class="nc" id="L72">                panel.getUndoManager().addEdit(ce);</span>
+            }
+        }
+<span class="nc" id="L75">    }</span>
+
+    @Override
+    public void update() {
+        String outputStr;
+<span class="nc bnc" id="L80" title="All 3 branches missed.">        switch (besLength) {</span>
+        case 0:
+<span class="nc" id="L82">            outputStr = Localization.lang(&quot;This operation requires one or more entries to be selected.&quot;);</span>
+<span class="nc" id="L83">            break;</span>
+        case 1:
+<span class="nc" id="L85">            frame.getCurrentBasePanel().markBaseChanged();</span>
+<span class="nc" id="L86">            outputStr = Localization.lang(&quot;Marked selected entry&quot;);</span>
+<span class="nc" id="L87">            break;</span>
+        default:
+<span class="nc" id="L89">            frame.getCurrentBasePanel().markBaseChanged();</span>
+<span class="nc" id="L90">            outputStr = Localization.lang(&quot;Marked all %0 selected entries&quot;, Integer.toString(besLength));</span>
+            break;
+        }
+<span class="nc" id="L93">        frame.output(outputStr);</span>
+<span class="nc" id="L94">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

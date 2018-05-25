@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>RemoveBracesFormatter.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.formatter.bibtexfields</a> &gt; <span class="el_source">RemoveBracesFormatter.java</span></div><h1>RemoveBracesFormatter.java</h1><pre class="source lang-java linenums">package org.jabref.logic.formatter.bibtexfields;
+
+import java.util.Objects;
+
+import org.jabref.logic.l10n.Localization;
+import org.jabref.model.cleanup.Formatter;
+
+/**
+ * Removes all matching braces around the string.
+ */
+<span class="fc" id="L11">public class RemoveBracesFormatter implements Formatter {</span>
+
+    @Override
+    public String getName() {
+<span class="fc" id="L15">        return Localization.lang(&quot;Remove enclosing braces&quot;);</span>
+    }
+
+    @Override
+    public String getKey() {
+<span class="fc" id="L20">        return &quot;remove_braces&quot;;</span>
+    }
+
+    @Override
+    public String format(String value) {
+<span class="fc" id="L25">        Objects.requireNonNull(value);</span>
+
+<span class="fc" id="L27">        String formatted = value;</span>
+<span class="fc bfc" id="L28" title="All 4 branches covered.">        while ((formatted.length() &gt;= 2) &amp;&amp; (formatted.charAt(0) == '{') &amp;&amp; (formatted.charAt(formatted.length() - 1)</span>
+<span class="fc bfc" id="L29" title="All 2 branches covered.">                == '}')) {</span>
+<span class="fc" id="L30">            String trimmed = formatted.substring(1, formatted.length() - 1);</span>
+
+            // It could be that the removed braces were not matching
+            // For example, &quot;{A} test {B}&quot; results in &quot;A} test {B&quot;
+            // In this case, trimmed has a closing } without an opening { before that
+<span class="fc bfc" id="L35" title="All 2 branches covered.">            if (hasNegativeBraceCount(trimmed)) {</span>
+<span class="fc" id="L36">                return formatted;</span>
+            } else {
+<span class="fc" id="L38">                formatted = trimmed;</span>
+            }
+        }
+<span class="fc" id="L41">        return formatted;</span>
+    }
+
+    @Override
+    public String getDescription() {
+<span class="fc" id="L46">        return Localization.lang(&quot;Removes braces encapsulating the complete field content.&quot;);</span>
+    }
+
+    @Override
+    public String getExampleInput() {
+<span class="fc" id="L51">        return &quot;{In CDMA}&quot;;</span>
+    }
+
+    /**
+     * Check if a string at any point has had more ending } braces than opening { ones.
+     * Will e.g. return true for the string &quot;DNA} blahblal {EPA&quot;
+     *
+     * @param value The string to check.
+     * @return true if at any index the brace count is negative.
+     */
+    private boolean hasNegativeBraceCount(String value) {
+<span class="fc" id="L62">        int braceCount = 0;</span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">        for (int index = 0; index &lt; value.length(); index++) {</span>
+<span class="fc" id="L64">            char charAtIndex = value.charAt(index);</span>
+<span class="fc bfc" id="L65" title="All 2 branches covered.">            if (charAtIndex == '{') {</span>
+<span class="fc" id="L66">                braceCount++;</span>
+<span class="fc bfc" id="L67" title="All 2 branches covered.">            } else if (charAtIndex == '}') {</span>
+<span class="fc" id="L68">                braceCount--;</span>
+            }
+<span class="fc bfc" id="L70" title="All 2 branches covered.">            if (braceCount &lt; 0) {</span>
+<span class="fc" id="L71">                return true;</span>
+            }
+        }
+<span class="fc" id="L74">        return false;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

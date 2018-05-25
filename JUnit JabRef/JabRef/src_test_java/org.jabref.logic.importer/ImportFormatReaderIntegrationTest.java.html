@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>ImportFormatReaderIntegrationTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.importer</a> &gt; <span class="el_source">ImportFormatReaderIntegrationTest.java</span></div><h1>ImportFormatReaderIntegrationTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.importer;
+
+import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collection;
+
+import org.jabref.logic.xmp.XmpPreferences;
+import org.jabref.model.util.DummyFileUpdateMonitor;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.mockito.Answers;
+
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+@RunWith(Parameterized.class)
+public class ImportFormatReaderIntegrationTest {
+
+    private ImportFormatReader reader;
+
+    private final int count;
+    public final String format;
+    private final Path file;
+
+<span class="fc" id="L33">    public ImportFormatReaderIntegrationTest(String resource, String format, int count) throws URISyntaxException {</span>
+<span class="fc" id="L34">        this.format = format;</span>
+<span class="fc" id="L35">        this.count = count;</span>
+<span class="fc" id="L36">        this.file = Paths.get(ImportFormatReaderIntegrationTest.class.getResource(resource).toURI());</span>
+
+<span class="fc" id="L38">    }</span>
+
+    @Before
+    public void setUp() {
+<span class="fc" id="L42">        reader = new ImportFormatReader();</span>
+<span class="fc" id="L43">        ImportFormatPreferences importFormatPreferences = mock(ImportFormatPreferences.class, Answers.RETURNS_DEEP_STUBS);</span>
+<span class="fc" id="L44">        when(importFormatPreferences.getEncoding()).thenReturn(StandardCharsets.UTF_8);</span>
+<span class="fc" id="L45">        reader.resetImportFormats(importFormatPreferences, mock(XmpPreferences.class), new DummyFileUpdateMonitor());</span>
+<span class="fc" id="L46">    }</span>
+
+    @Test
+    public void testImportUnknownFormat() throws Exception {
+<span class="fc" id="L50">        ImportFormatReader.UnknownFormatImport unknownFormat = reader.importUnknownFormat(file, new DummyFileUpdateMonitor());</span>
+<span class="fc" id="L51">        assertEquals(count, unknownFormat.parserResult.getDatabase().getEntryCount());</span>
+<span class="fc" id="L52">    }</span>
+
+    @Test
+    public void testImportFormatFromFile() throws Exception {
+<span class="fc" id="L56">        assertEquals(count, reader.importFromFile(format, file).getDatabase().getEntries().size());</span>
+<span class="fc" id="L57">    }</span>
+
+    @Test
+    public void testImportUnknownFormatFromString() throws Exception {
+<span class="fc" id="L61">        String data = new String(Files.readAllBytes(file), StandardCharsets.UTF_8);</span>
+<span class="fc" id="L62">        assertEquals(count, reader.importUnknownFormat(data).parserResult.getDatabase().getEntries().size());</span>
+<span class="fc" id="L63">    }</span>
+
+    @Parameterized.Parameters(name = &quot;{index}: {1}&quot;)
+    public static Collection&lt;Object[]&gt; importFormats() {
+<span class="fc" id="L67">        Collection&lt;Object[]&gt; result = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L68">        result.add(new Object[] {&quot;fileformat/RisImporterTest1.ris&quot;, &quot;ris&quot;, 1});</span>
+<span class="fc" id="L69">        result.add(new Object[] {&quot;fileformat/IsiImporterTest1.isi&quot;, &quot;isi&quot;, 1});</span>
+<span class="fc" id="L70">        result.add(new Object[] {&quot;fileformat/SilverPlatterImporterTest1.txt&quot;, &quot;silverplatter&quot;, 1});</span>
+<span class="fc" id="L71">        result.add(new Object[] {&quot;fileformat/RepecNepImporterTest2.txt&quot;, &quot;repecnep&quot;, 1});</span>
+<span class="fc" id="L72">        result.add(new Object[] {&quot;fileformat/OvidImporterTest3.txt&quot;, &quot;ovid&quot;, 1});</span>
+<span class="fc" id="L73">        result.add(new Object[] {&quot;fileformat/Endnote.entries.enw&quot;, &quot;refer&quot;, 5});</span>
+<span class="fc" id="L74">        result.add(new Object[] {&quot;fileformat/MsBibImporterTest4.xml&quot;, &quot;msbib&quot;, 1});</span>
+<span class="fc" id="L75">        result.add(new Object[] {&quot;fileformat/MsBibImporterTest4.bib&quot;, &quot;bibtex&quot;, 1});</span>
+<span class="fc" id="L76">        return result;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

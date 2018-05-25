@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>ExternalFileTypeEntryEditor.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.externalfiletype</a> &gt; <span class="el_source">ExternalFileTypeEntryEditor.java</span></div><h1>ExternalFileTypeEntryEditor.java</h1><pre class="source lang-java linenums"><span class="nc" id="L1">package org.jabref.gui.externalfiletype;</span>
+
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.event.ActionListener;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Optional;
+
+import javax.swing.BorderFactory;
+import javax.swing.ButtonGroup;
+import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JRadioButton;
+import javax.swing.JTextField;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+
+import org.jabref.Globals;
+import org.jabref.gui.DialogService;
+import org.jabref.gui.FXDialogService;
+import org.jabref.gui.IconTheme;
+import org.jabref.gui.util.DefaultTaskExecutor;
+import org.jabref.gui.util.FileDialogConfiguration;
+import org.jabref.logic.l10n.Localization;
+import org.jabref.logic.util.OS;
+import org.jabref.preferences.JabRefPreferences;
+
+import com.jgoodies.forms.builder.ButtonBarBuilder;
+import com.jgoodies.forms.builder.FormBuilder;
+import com.jgoodies.forms.layout.FormLayout;
+
+/**
+ * This class produces a dialog box for editing an external file type.
+ */
+public class ExternalFileTypeEntryEditor {
+
+    private JFrame fParent;
+    private JDialog dParent;
+    private JDialog diag;
+<span class="nc" id="L44">    private final JTextField extension = new JTextField();</span>
+<span class="nc" id="L45">    private final JTextField name = new JTextField();</span>
+<span class="nc" id="L46">    private final JTextField mimeType = new JTextField();</span>
+<span class="nc" id="L47">    private final JTextField application = new JTextField();</span>
+<span class="nc" id="L48">    private final JLabel icon = new JLabel(IconTheme.JabRefIcon.FILE.getSmallIcon());</span>
+<span class="nc" id="L49">    private final JButton ok = new JButton(Localization.lang(&quot;OK&quot;));</span>
+<span class="nc" id="L50">    private final JButton cancel = new JButton(Localization.lang(&quot;Cancel&quot;));</span>
+<span class="nc" id="L51">    private final JRadioButton useDefault = new JRadioButton(Localization.lang(&quot;Default&quot;));</span>
+<span class="nc" id="L52">    private final JRadioButton other = new JRadioButton(&quot;&quot;);</span>
+<span class="nc" id="L53">    private final String editFileTitle = Localization.lang(&quot;Edit file type&quot;);</span>
+<span class="nc" id="L54">    private final String newFileTitle = Localization.lang(&quot;Add new file type&quot;);</span>
+
+    private ExternalFileType entry;
+    private boolean okPressed;
+
+<span class="nc" id="L59">    private final ActionListener browsePressed = e -&gt; {</span>
+<span class="nc" id="L60">        String appDir = application.getText().trim();</span>
+<span class="nc bnc" id="L61" title="All 2 branches missed.">        if (appDir.isEmpty()) {</span>
+<span class="nc" id="L62">            appDir = Globals.prefs.get(JabRefPreferences.WORKING_DIRECTORY);</span>
+        }
+
+<span class="nc" id="L65">        FileDialogConfiguration fileDialogConfiguration = new FileDialogConfiguration.Builder()</span>
+<span class="nc" id="L66">                .withInitialDirectory(Paths.get(appDir)).build();</span>
+<span class="nc" id="L67">        DialogService ds = new FXDialogService();</span>
+
+<span class="nc" id="L69">        Optional&lt;Path&gt; path = DefaultTaskExecutor</span>
+<span class="nc" id="L70">                .runInJavaFXThread(() -&gt; ds.showFileOpenDialog(fileDialogConfiguration));</span>
+
+<span class="nc" id="L72">        path.ifPresent(applicationDir -&gt; {</span>
+<span class="nc bnc" id="L73" title="All 2 branches missed.">            if (applicationDir.getParent() != null) {</span>
+<span class="nc" id="L74">                Globals.prefs.put(JabRefPreferences.WORKING_DIRECTORY, applicationDir.getParent().toString());</span>
+            }
+<span class="nc" id="L76">            application.setText(applicationDir.toString());</span>
+<span class="nc" id="L77">        });</span>
+<span class="nc" id="L78">    };</span>
+
+<span class="nc" id="L80">    public ExternalFileTypeEntryEditor(JFrame parent, ExternalFileType entry) {</span>
+<span class="nc" id="L81">        fParent = parent;</span>
+<span class="nc" id="L82">        init(entry);</span>
+<span class="nc" id="L83">    }</span>
+
+<span class="nc" id="L85">    public ExternalFileTypeEntryEditor(JDialog parent, ExternalFileType entry) {</span>
+<span class="nc" id="L86">        dParent = parent;</span>
+<span class="nc" id="L87">        init(entry);</span>
+<span class="nc" id="L88">    }</span>
+
+    private void init(ExternalFileType inEntry) {
+<span class="nc" id="L91">        entry = inEntry;</span>
+<span class="nc" id="L92">        icon.setText(null);</span>
+
+<span class="nc" id="L94">        ButtonGroup bg = new ButtonGroup();</span>
+<span class="nc" id="L95">        bg.add(useDefault);</span>
+<span class="nc" id="L96">        bg.add(other);</span>
+
+<span class="nc" id="L98">        FormBuilder builder = FormBuilder.create();</span>
+<span class="nc" id="L99">        builder.layout(new FormLayout(&quot;left:pref, 4dlu, fill:150dlu, 4dlu, fill:pref&quot;,</span>
+<span class="nc" id="L100">                &quot;p, 2dlu, p, 2dlu, p, 2dlu, p, 2dlu, p, 2dlu, p&quot;));</span>
+<span class="nc" id="L101">        builder.add(Localization.lang(&quot;Icon&quot;)).xy(1, 1);</span>
+<span class="nc" id="L102">        builder.add(icon).xy(3, 1);</span>
+<span class="nc" id="L103">        builder.add(Localization.lang(&quot;Name&quot;)).xy(1, 3);</span>
+<span class="nc" id="L104">        builder.add(name).xy(3, 3);</span>
+<span class="nc" id="L105">        builder.add(Localization.lang(&quot;Extension&quot;)).xy(1, 5);</span>
+<span class="nc" id="L106">        builder.add(extension).xy(3, 5);</span>
+<span class="nc" id="L107">        builder.add(Localization.lang(&quot;MIME type&quot;)).xy(1, 7);</span>
+<span class="nc" id="L108">        builder.add(mimeType).xy(3, 7);</span>
+<span class="nc" id="L109">        builder.getPanel().setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));</span>
+<span class="nc" id="L110">        builder.add(Localization.lang(&quot;Application&quot;)).xy(1, 9);</span>
+<span class="nc" id="L111">        JButton browseBut = new JButton(Localization.lang(&quot;Browse&quot;));</span>
+<span class="nc bnc" id="L112" title="All 2 branches missed.">        if (OS.WINDOWS) {</span>
+<span class="nc" id="L113">            builder.add(useDefault).xy(3, 9);</span>
+<span class="nc" id="L114">            builder.appendRows(&quot;2dlu, p&quot;);</span>
+<span class="nc" id="L115">            JPanel p1 = new JPanel();</span>
+<span class="nc" id="L116">            builder.add(p1).xy(1, 11);</span>
+<span class="nc" id="L117">            JPanel p2 = new JPanel();</span>
+<span class="nc" id="L118">            application.setPreferredSize(new Dimension(300, application.getPreferredSize().height));</span>
+<span class="nc" id="L119">            BorderLayout bl = new BorderLayout();</span>
+<span class="nc" id="L120">            bl.setHgap(4);</span>
+<span class="nc" id="L121">            p2.setLayout(bl);</span>
+<span class="nc" id="L122">            p2.add(other, BorderLayout.WEST);</span>
+<span class="nc" id="L123">            p2.add(application, BorderLayout.CENTER);</span>
+<span class="nc" id="L124">            builder.add(p2).xy(3, 11);</span>
+<span class="nc" id="L125">            builder.add(browseBut).xy(5, 11);</span>
+<span class="nc" id="L126">        } else {</span>
+<span class="nc" id="L127">            builder.add(application).xy(3, 9);</span>
+<span class="nc" id="L128">            builder.add(browseBut).xy(5, 9);</span>
+        }
+<span class="nc" id="L130">        ButtonBarBuilder bb = new ButtonBarBuilder();</span>
+<span class="nc" id="L131">        bb.addGlue();</span>
+<span class="nc" id="L132">        bb.addButton(ok);</span>
+<span class="nc" id="L133">        bb.addButton(cancel);</span>
+<span class="nc" id="L134">        bb.addGlue();</span>
+
+<span class="nc" id="L136">        ok.addActionListener(e -&gt; {</span>
+<span class="nc" id="L137">            okPressed = true;</span>
+
+<span class="nc" id="L139">            storeSettings(ExternalFileTypeEntryEditor.this.entry);</span>
+<span class="nc" id="L140">            diag.dispose();</span>
+
+<span class="nc" id="L142">        });</span>
+<span class="nc" id="L143">        cancel.addActionListener(e -&gt; diag.dispose());</span>
+
+<span class="nc bnc" id="L145" title="All 2 branches missed.">        if (OS.WINDOWS) {</span>
+<span class="nc" id="L146">            application.getDocument().addDocumentListener(new DocumentListener() {</span>
+
+                private void handle() {
+<span class="nc bnc" id="L149" title="All 2 branches missed.">                    if (application.getText().isEmpty()) {</span>
+<span class="nc" id="L150">                        useDefault.setSelected(true);</span>
+<span class="nc" id="L151">                    } else {</span>
+<span class="nc" id="L152">                        other.setSelected(true);</span>
+                    }
+<span class="nc" id="L154">                }</span>
+
+                @Override
+                public void insertUpdate(DocumentEvent documentEvent) {
+<span class="nc" id="L158">                    handle();</span>
+<span class="nc" id="L159">                }</span>
+
+                @Override
+                public void removeUpdate(DocumentEvent documentEvent) {
+<span class="nc" id="L163">                    handle();</span>
+<span class="nc" id="L164">                }</span>
+
+                @Override
+                public void changedUpdate(DocumentEvent documentEvent) {
+<span class="nc" id="L168">                    handle();</span>
+<span class="nc" id="L169">                }</span>
+            });
+        }
+
+<span class="nc" id="L173">        String title = editFileTitle;</span>
+
+<span class="nc bnc" id="L175" title="All 2 branches missed.">        if (entry.getName().isEmpty()) {</span>
+<span class="nc" id="L176">            title = newFileTitle;</span>
+        }
+
+<span class="nc bnc" id="L179" title="All 2 branches missed.">        if (dParent == null) {</span>
+<span class="nc" id="L180">            diag = new JDialog(fParent, title, true);</span>
+<span class="nc" id="L181">        } else {</span>
+<span class="nc" id="L182">            diag = new JDialog(dParent, title, true);</span>
+        }
+<span class="nc" id="L184">        diag.getContentPane().add(builder.getPanel(), BorderLayout.CENTER);</span>
+<span class="nc" id="L185">        diag.getContentPane().add(bb.getPanel(), BorderLayout.SOUTH);</span>
+<span class="nc" id="L186">        diag.pack();</span>
+
+<span class="nc" id="L188">        browseBut.addActionListener(browsePressed);</span>
+
+<span class="nc bnc" id="L190" title="All 2 branches missed.">        if (dParent == null) {</span>
+<span class="nc" id="L191">            diag.setLocationRelativeTo(fParent);</span>
+<span class="nc" id="L192">        } else {</span>
+<span class="nc" id="L193">            diag.setLocationRelativeTo(dParent);</span>
+        }
+
+<span class="nc" id="L196">        setValues(entry);</span>
+<span class="nc" id="L197">    }</span>
+
+    public void setEntry(ExternalFileType entry) {
+<span class="nc" id="L200">        this.entry = entry;</span>
+<span class="nc bnc" id="L201" title="All 2 branches missed.">        if (entry.getName().isEmpty()) {</span>
+<span class="nc" id="L202">            diag.setTitle(newFileTitle);</span>
+<span class="nc" id="L203">        } else {</span>
+<span class="nc" id="L204">            diag.setTitle(editFileTitle);</span>
+        }
+<span class="nc" id="L206">        setValues(entry);</span>
+<span class="nc" id="L207">    }</span>
+
+    public void setVisible(boolean visible) {
+<span class="nc bnc" id="L210" title="All 2 branches missed.">        if (visible) {</span>
+<span class="nc" id="L211">            okPressed = false;</span>
+        }
+<span class="nc" id="L213">        diag.setVisible(visible);</span>
+<span class="nc" id="L214">    }</span>
+
+    private void setValues(ExternalFileType entry) {
+<span class="nc" id="L217">        name.setText(entry.getName());</span>
+<span class="nc" id="L218">        extension.setText(entry.getExtension());</span>
+<span class="nc" id="L219">        mimeType.setText(entry.getMimeType());</span>
+<span class="nc" id="L220">        application.setText(entry.getOpenWithApplication());</span>
+<span class="nc" id="L221">        icon.setIcon(entry.getIcon());</span>
+<span class="nc bnc" id="L222" title="All 2 branches missed.">        if (application.getText().isEmpty()) {</span>
+<span class="nc" id="L223">            useDefault.setSelected(true);</span>
+<span class="nc" id="L224">        } else {</span>
+<span class="nc" id="L225">            other.setSelected(true);</span>
+        }
+<span class="nc" id="L227">    }</span>
+
+    private void storeSettings(ExternalFileType fileTypeEntry) {
+<span class="nc" id="L230">        fileTypeEntry.setName(name.getText().trim());</span>
+<span class="nc" id="L231">        fileTypeEntry.setMimeType(mimeType.getText().trim());</span>
+        // Set extension, but remove initial dot if user has added that:
+<span class="nc" id="L233">        String ext = extension.getText().trim();</span>
+<span class="nc bnc" id="L234" title="All 4 branches missed.">        if (!ext.isEmpty() &amp;&amp; (ext.charAt(0) == '.')) {</span>
+<span class="nc" id="L235">            fileTypeEntry.setExtension(ext.substring(1));</span>
+<span class="nc" id="L236">        } else {</span>
+<span class="nc" id="L237">            fileTypeEntry.setExtension(ext);</span>
+        }
+
+<span class="nc bnc" id="L240" title="All 2 branches missed.">        if (OS.WINDOWS) {</span>
+            // On Windows, store application as empty if the &quot;Default&quot; option is selected,
+            // or if the application name is empty:
+<span class="nc bnc" id="L243" title="All 4 branches missed.">            if (useDefault.isSelected() || application.getText().trim().isEmpty()) {</span>
+<span class="nc" id="L244">                fileTypeEntry.setOpenWith(&quot;&quot;);</span>
+<span class="nc" id="L245">            } else {</span>
+<span class="nc" id="L246">                fileTypeEntry.setOpenWith(application.getText().trim());</span>
+            }
+<span class="nc" id="L248">        } else {</span>
+<span class="nc" id="L249">            fileTypeEntry.setOpenWith(application.getText().trim());</span>
+        }
+<span class="nc" id="L251">    }</span>
+
+    public boolean okPressed() {
+<span class="nc" id="L254">        return okPressed;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

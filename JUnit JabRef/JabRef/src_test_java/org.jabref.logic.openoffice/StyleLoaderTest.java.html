@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>StyleLoaderTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.openoffice</a> &gt; <span class="el_source">StyleLoaderTest.java</span></div><h1>StyleLoaderTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.openoffice;
+
+import java.net.URISyntaxException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import org.jabref.logic.layout.LayoutFormatterPreferences;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Answers;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+<span class="fc" id="L24">public class StyleLoaderTest {</span>
+
+<span class="fc" id="L26">    private static int numberOfInternalStyles = 2;</span>
+    private StyleLoader loader;
+
+    private OpenOfficePreferences preferences;
+    private LayoutFormatterPreferences layoutPreferences;
+    private Charset encoding;
+
+
+    @BeforeEach
+    public void setUp() {
+<span class="fc" id="L36">        preferences = mock(OpenOfficePreferences.class, Answers.RETURNS_DEEP_STUBS);</span>
+<span class="fc" id="L37">        layoutPreferences = mock(LayoutFormatterPreferences.class, Answers.RETURNS_DEEP_STUBS);</span>
+<span class="fc" id="L38">        encoding = StandardCharsets.UTF_8;</span>
+
+<span class="fc" id="L40">    }</span>
+
+    @Test
+    public void throwNPEWithNullPreferences() {
+<span class="pc" id="L44">        assertThrows(NullPointerException.class, () -&gt; loader = new StyleLoader(null, layoutPreferences, mock(Charset.class)));</span>
+
+<span class="fc" id="L46">    }</span>
+
+    @Test
+    public void throwNPEWithNullLayoutPreferences() {
+<span class="pc" id="L50">        assertThrows(NullPointerException.class, () -&gt; loader = new StyleLoader(mock(OpenOfficePreferences.class), null, mock(Charset.class)));</span>
+<span class="fc" id="L51">    }</span>
+
+    @Test
+    public void throwNPEWithNullCharset() {
+<span class="pc" id="L55">        assertThrows(NullPointerException.class, () -&gt; loader = new StyleLoader(mock(OpenOfficePreferences.class), layoutPreferences, null));</span>
+<span class="fc" id="L56">    }</span>
+
+    @Test
+    public void testGetStylesWithEmptyExternal() {
+<span class="fc" id="L60">        preferences.setExternalStyles(Collections.emptyList());</span>
+<span class="fc" id="L61">        loader = new StyleLoader(preferences, layoutPreferences, encoding);</span>
+
+<span class="fc" id="L63">        assertEquals(2, loader.getStyles().size());</span>
+<span class="fc" id="L64">    }</span>
+
+    @Test
+    public void testAddStyleLeadsToOneMoreStyle() throws URISyntaxException {
+<span class="fc" id="L68">        preferences.setExternalStyles(Collections.emptyList());</span>
+<span class="fc" id="L69">        loader = new StyleLoader(preferences, layoutPreferences, encoding);</span>
+
+<span class="fc" id="L71">        String filename = Paths.get(StyleLoader.class.getResource(StyleLoader.DEFAULT_AUTHORYEAR_STYLE_PATH).toURI())</span>
+<span class="fc" id="L72">                .toFile().getPath();</span>
+<span class="fc" id="L73">        loader.addStyleIfValid(filename);</span>
+<span class="fc" id="L74">        assertEquals(numberOfInternalStyles + 1, loader.getStyles().size());</span>
+<span class="fc" id="L75">    }</span>
+
+    @Test
+    public void testAddInvalidStyleLeadsToNoMoreStyle() {
+<span class="fc" id="L79">        preferences.setExternalStyles(Collections.emptyList());</span>
+<span class="fc" id="L80">        loader = new StyleLoader(preferences, layoutPreferences, encoding);</span>
+<span class="fc" id="L81">        int beforeAdding = loader.getStyles().size();</span>
+<span class="fc" id="L82">        loader.addStyleIfValid(&quot;DefinitelyNotAValidFileNameOrWeAreExtremelyUnlucky&quot;);</span>
+<span class="fc" id="L83">        assertEquals(beforeAdding, loader.getStyles().size());</span>
+<span class="fc" id="L84">    }</span>
+
+    @Test
+    public void testInitalizeWithOneExternalFile() throws URISyntaxException {
+<span class="fc" id="L88">        String filename = Paths.get(StyleLoader.class.getResource(StyleLoader.DEFAULT_AUTHORYEAR_STYLE_PATH).toURI())</span>
+<span class="fc" id="L89">                .toFile().getPath();</span>
+<span class="fc" id="L90">        when(preferences.getExternalStyles()).thenReturn(Collections.singletonList(filename));</span>
+<span class="fc" id="L91">        loader = new StyleLoader(preferences, layoutPreferences, encoding);</span>
+<span class="fc" id="L92">        assertEquals(numberOfInternalStyles + 1, loader.getStyles().size());</span>
+<span class="fc" id="L93">    }</span>
+
+    @Test
+    public void testInitalizeWithIncorrectExternalFile() {
+<span class="fc" id="L97">        preferences.setExternalStyles(Collections.singletonList(&quot;DefinitelyNotAValidFileNameOrWeAreExtremelyUnlucky&quot;));</span>
+
+<span class="fc" id="L99">        loader = new StyleLoader(preferences, layoutPreferences, encoding);</span>
+<span class="fc" id="L100">        assertEquals(numberOfInternalStyles, loader.getStyles().size());</span>
+<span class="fc" id="L101">    }</span>
+
+    @Test
+    public void testInitalizeWithOneExternalFileRemoveStyle() throws URISyntaxException {
+<span class="fc" id="L105">        String filename = Paths.get(StyleLoader.class.getResource(StyleLoader.DEFAULT_AUTHORYEAR_STYLE_PATH).toURI())</span>
+<span class="fc" id="L106">                .toFile().getPath();</span>
+<span class="fc" id="L107">        when(preferences.getExternalStyles()).thenReturn(Collections.singletonList(filename));</span>
+
+<span class="fc" id="L109">        loader = new StyleLoader(preferences, layoutPreferences, encoding);</span>
+<span class="fc" id="L110">        List&lt;OOBibStyle&gt; toremove = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L111">        int beforeRemoving = loader.getStyles().size();</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">        for (OOBibStyle style : loader.getStyles()) {</span>
+<span class="fc bfc" id="L113" title="All 2 branches covered.">            if (!style.isFromResource()) {</span>
+<span class="fc" id="L114">                toremove.add(style);</span>
+            }
+        }
+
+<span class="fc bfc" id="L118" title="All 2 branches covered.">        for (OOBibStyle style : toremove) {</span>
+<span class="fc" id="L119">            assertTrue(loader.removeStyle(style));</span>
+        }
+<span class="fc" id="L121">        assertEquals(beforeRemoving - 1, loader.getStyles().size());</span>
+<span class="fc" id="L122">    }</span>
+
+    @Test
+    public void testInitalizeWithOneExternalFileRemoveStyleUpdatesPreferences() throws URISyntaxException {
+<span class="fc" id="L126">        String filename = Paths.get(StyleLoader.class.getResource(StyleLoader.DEFAULT_AUTHORYEAR_STYLE_PATH).toURI())</span>
+<span class="fc" id="L127">                .toFile().getPath();</span>
+<span class="fc" id="L128">        when(preferences.getExternalStyles()).thenReturn(Collections.singletonList(filename));</span>
+
+<span class="fc" id="L130">        loader = new StyleLoader(preferences, layoutPreferences, encoding);</span>
+<span class="fc" id="L131">        List&lt;OOBibStyle&gt; toremove = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L132" title="All 2 branches covered.">        for (OOBibStyle style : loader.getStyles()) {</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">            if (!style.isFromResource()) {</span>
+<span class="fc" id="L134">                toremove.add(style);</span>
+            }
+        }
+
+<span class="fc bfc" id="L138" title="All 2 branches covered.">        for (OOBibStyle style : toremove) {</span>
+<span class="fc" id="L139">            assertTrue(loader.removeStyle(style));</span>
+        }
+        //As the prefs are mocked away, the getExternalStyles still returns the initial one
+<span class="fc" id="L142">        assertFalse(preferences.getExternalStyles().isEmpty());</span>
+<span class="fc" id="L143">    }</span>
+
+    @Test
+    public void testAddSameStyleTwiceLeadsToOneMoreStyle() throws URISyntaxException {
+<span class="fc" id="L147">        preferences.setExternalStyles(Collections.emptyList());</span>
+<span class="fc" id="L148">        loader = new StyleLoader(preferences, layoutPreferences, encoding);</span>
+<span class="fc" id="L149">        int beforeAdding = loader.getStyles().size();</span>
+<span class="fc" id="L150">        String filename = Paths.get(StyleLoader.class.getResource(StyleLoader.DEFAULT_AUTHORYEAR_STYLE_PATH).toURI())</span>
+<span class="fc" id="L151">                .toFile().getPath();</span>
+<span class="fc" id="L152">        loader.addStyleIfValid(filename);</span>
+<span class="fc" id="L153">        loader.addStyleIfValid(filename);</span>
+<span class="fc" id="L154">        assertEquals(beforeAdding + 1, loader.getStyles().size());</span>
+<span class="fc" id="L155">    }</span>
+
+    @Test
+    public void testAddNullStyleThrowsNPE() {
+<span class="fc" id="L159">        loader = new StyleLoader(preferences, layoutPreferences, encoding);</span>
+<span class="pc" id="L160">        assertThrows(NullPointerException.class, () -&gt; loader.addStyleIfValid(null));</span>
+
+<span class="fc" id="L162">    }</span>
+
+    @Test
+    public void testGetDefaultUsedStyleWhenEmpty() {
+<span class="fc" id="L166">        when(preferences.getCurrentStyle()).thenReturn(StyleLoader.DEFAULT_AUTHORYEAR_STYLE_PATH);</span>
+<span class="fc" id="L167">        preferences.clearCurrentStyle();</span>
+<span class="fc" id="L168">        loader = new StyleLoader(preferences, layoutPreferences, encoding);</span>
+<span class="fc" id="L169">        OOBibStyle style = loader.getUsedStyle();</span>
+<span class="fc" id="L170">        assertTrue(style.isValid());</span>
+<span class="fc" id="L171">        assertEquals(StyleLoader.DEFAULT_AUTHORYEAR_STYLE_PATH, style.getPath());</span>
+<span class="fc" id="L172">        assertEquals(StyleLoader.DEFAULT_AUTHORYEAR_STYLE_PATH, preferences.getCurrentStyle());</span>
+<span class="fc" id="L173">    }</span>
+
+    @Test
+    public void testGetStoredUsedStyle() {
+<span class="fc" id="L177">        when(preferences.getCurrentStyle()).thenReturn(StyleLoader.DEFAULT_NUMERICAL_STYLE_PATH);</span>
+<span class="fc" id="L178">        loader = new StyleLoader(preferences, layoutPreferences, encoding);</span>
+<span class="fc" id="L179">        OOBibStyle style = loader.getUsedStyle();</span>
+<span class="fc" id="L180">        assertTrue(style.isValid());</span>
+<span class="fc" id="L181">        assertEquals(StyleLoader.DEFAULT_NUMERICAL_STYLE_PATH, style.getPath());</span>
+<span class="fc" id="L182">        assertEquals(StyleLoader.DEFAULT_NUMERICAL_STYLE_PATH, preferences.getCurrentStyle());</span>
+<span class="fc" id="L183">    }</span>
+
+    @Test
+    public void testGetDefaultUsedStyleWhenIncorrect() {
+<span class="fc" id="L187">        when(preferences.getCurrentStyle()).thenReturn(&quot;ljlkjlkjnljnvdlsjniuhwelfhuewfhlkuewhfuwhelu&quot;);</span>
+<span class="fc" id="L188">        loader = new StyleLoader(preferences, layoutPreferences, encoding);</span>
+<span class="fc" id="L189">        OOBibStyle style = loader.getUsedStyle();</span>
+<span class="fc" id="L190">        assertTrue(style.isValid());</span>
+<span class="fc" id="L191">        assertEquals(StyleLoader.DEFAULT_AUTHORYEAR_STYLE_PATH, style.getPath());</span>
+<span class="fc" id="L192">    }</span>
+
+    @Test
+    public void testRemoveInternalStyleReturnsFalseAndDoNotRemove() {
+<span class="fc" id="L196">        preferences.setExternalStyles(Collections.emptyList());</span>
+
+<span class="fc" id="L198">        loader = new StyleLoader(preferences, layoutPreferences, encoding);</span>
+<span class="fc" id="L199">        List&lt;OOBibStyle&gt; toremove = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L200" title="All 2 branches covered.">        for (OOBibStyle style : loader.getStyles()) {</span>
+<span class="pc bpc" id="L201" title="1 of 2 branches missed.">            if (style.isFromResource()) {</span>
+<span class="fc" id="L202">                toremove.add(style);</span>
+            }
+        }
+
+<span class="fc" id="L206">        assertFalse(loader.removeStyle(toremove.get(0)));</span>
+<span class="fc" id="L207">        assertEquals(numberOfInternalStyles, loader.getStyles().size());</span>
+<span class="fc" id="L208">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>IsMarkedComparator.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.util.comparator</a> &gt; <span class="el_source">IsMarkedComparator.java</span></div><h1>IsMarkedComparator.java</h1><pre class="source lang-java linenums">package org.jabref.gui.util.comparator;
+
+import java.util.Comparator;
+
+import org.jabref.gui.EntryMarker;
+import org.jabref.model.entry.BibEntry;
+
+<span class="nc" id="L8">public class IsMarkedComparator implements Comparator&lt;BibEntry&gt; {</span>
+
+<span class="nc" id="L10">    public static Comparator&lt;BibEntry&gt; INSTANCE = new IsMarkedComparator();</span>
+
+    @Override
+    public int compare(BibEntry e1, BibEntry e2) {
+<span class="nc" id="L14">        return -EntryMarker.isMarked(e1) + EntryMarker.isMarked(e2);</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

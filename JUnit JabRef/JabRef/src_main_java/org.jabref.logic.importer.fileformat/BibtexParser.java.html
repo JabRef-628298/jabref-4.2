@@ -1,0 +1,945 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>BibtexParser.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.importer.fileformat</a> &gt; <span class="el_source">BibtexParser.java</span></div><h1>BibtexParser.java</h1><pre class="source lang-java linenums">package org.jabref.logic.importer.fileformat;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.PushbackReader;
+import java.io.Reader;
+import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
+import java.util.Collection;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+
+import org.jabref.logic.bibtex.FieldContentParser;
+import org.jabref.logic.exporter.BibtexDatabaseWriter;
+import org.jabref.logic.exporter.SavePreferences;
+import org.jabref.logic.importer.ImportFormatPreferences;
+import org.jabref.logic.importer.ParseException;
+import org.jabref.logic.importer.Parser;
+import org.jabref.logic.importer.ParserResult;
+import org.jabref.logic.importer.util.MetaDataParser;
+import org.jabref.logic.l10n.Localization;
+import org.jabref.model.database.BibDatabase;
+import org.jabref.model.database.KeyCollisionException;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.BibtexString;
+import org.jabref.model.entry.CustomEntryType;
+import org.jabref.model.entry.EntryType;
+import org.jabref.model.entry.FieldName;
+import org.jabref.model.entry.FieldProperty;
+import org.jabref.model.entry.InternalBibtexFields;
+import org.jabref.model.metadata.MetaData;
+import org.jabref.model.util.FileUpdateMonitor;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * Class for importing BibTeX-files.
+ * &lt;p&gt;
+ * Use:
+ * &lt;p&gt;
+ * BibtexParser parser = new BibtexParser(reader);
+ * &lt;p&gt;
+ * ParserResult result = parser.parse();
+ * &lt;p&gt;
+ * or
+ * &lt;p&gt;
+ * ParserResult result = BibtexParser.parse(reader);
+ * &lt;p&gt;
+ * Can be used stand-alone.
+ */
+public class BibtexParser implements Parser {
+<span class="fc" id="L61">    private static final Logger LOGGER = LoggerFactory.getLogger(BibtexParser.class);</span>
+
+<span class="fc" id="L63">    private static final Integer LOOKAHEAD = 64;</span>
+    private final FieldContentParser fieldContentParser;
+<span class="fc" id="L65">    private final Deque&lt;Character&gt; pureTextFromFile = new LinkedList&lt;&gt;();</span>
+    private final ImportFormatPreferences importFormatPreferences;
+    private PushbackReader pushbackReader;
+    private BibDatabase database;
+    private Map&lt;String, EntryType&gt; entryTypes;
+    private boolean eof;
+<span class="fc" id="L71">    private int line = 1;</span>
+    private ParserResult parserResult;
+    private MetaDataParser metaDataParser;
+
+<span class="fc" id="L75">    public BibtexParser(ImportFormatPreferences importFormatPreferences, FileUpdateMonitor fileMonitor) {</span>
+<span class="fc" id="L76">        this.importFormatPreferences = Objects.requireNonNull(importFormatPreferences);</span>
+<span class="fc" id="L77">        fieldContentParser = new FieldContentParser(importFormatPreferences.getFieldContentParserPreferences());</span>
+<span class="fc" id="L78">        metaDataParser = new MetaDataParser(fileMonitor);</span>
+<span class="fc" id="L79">    }</span>
+
+    /**
+     * Parses BibtexEntries from the given string and returns one entry found (or null if none found)
+     * &lt;p&gt;
+     * It is undetermined which entry is returned, so use this in case you know there is only one entry in the string.
+     *
+     * @param bibtexString
+     * @param fileMonitor
+     * @return An Optional&lt;BibEntry&gt;. Optional.empty() if non was found or an error occurred.
+     * @throws ParseException
+     */
+    public static Optional&lt;BibEntry&gt; singleFromString(String bibtexString, ImportFormatPreferences importFormatPreferences, FileUpdateMonitor fileMonitor) throws ParseException {
+<span class="fc" id="L92">        Collection&lt;BibEntry&gt; entries = new BibtexParser(importFormatPreferences, fileMonitor).parseEntries(bibtexString);</span>
+<span class="pc bpc" id="L93" title="1 of 4 branches missed.">        if ((entries == null) || entries.isEmpty()) {</span>
+<span class="fc" id="L94">            return Optional.empty();</span>
+        }
+<span class="fc" id="L96">        return Optional.of(entries.iterator().next());</span>
+    }
+
+    @Override
+    public List&lt;BibEntry&gt; parseEntries(InputStream inputStream) throws ParseException {
+<span class="fc" id="L101">        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));</span>
+<span class="fc" id="L102">        return parseEntries(reader);</span>
+    }
+
+    public List&lt;BibEntry&gt; parseEntries(Reader reader) throws ParseException {
+        try {
+<span class="fc" id="L107">            return parse(reader).getDatabase().getEntries();</span>
+<span class="nc" id="L108">        } catch (IOException e) {</span>
+<span class="nc" id="L109">            throw new ParseException(e);</span>
+        }
+    }
+
+    public List&lt;BibEntry&gt; parseEntries(String bibtexString) throws ParseException {
+<span class="fc" id="L114">        return parseEntries(new StringReader(bibtexString));</span>
+    }
+
+    public Optional&lt;BibEntry&gt; parseSingleEntry(String bibtexString) throws ParseException {
+<span class="fc" id="L118">        return parseEntries(bibtexString).stream().findFirst();</span>
+    }
+
+    /**
+     * Will parse the BibTex-Data found when reading from reader. Ignores any encoding supplied in the file by
+     * &quot;Encoding: myEncoding&quot;.
+     * &lt;p&gt;
+     * The reader will be consumed.
+     * &lt;p&gt;
+     * Multiple calls to parse() return the same results
+     *
+     * @return ParserResult
+     * @throws IOException
+     */
+    public ParserResult parse(Reader in) throws IOException {
+<span class="fc" id="L133">        Objects.requireNonNull(in);</span>
+<span class="fc" id="L134">        pushbackReader = new PushbackReader(in, BibtexParser.LOOKAHEAD);</span>
+
+        // Bibtex related contents.
+<span class="fc" id="L137">        initializeParserResult();</span>
+
+<span class="fc" id="L139">        parseDatabaseID();</span>
+
+<span class="fc" id="L141">        skipWhitespace();</span>
+
+        try {
+<span class="fc" id="L144">            return parseFileContent();</span>
+<span class="nc" id="L145">        } catch (KeyCollisionException kce) {</span>
+<span class="nc" id="L146">            throw new IOException(&quot;Duplicate ID in bibtex file: &quot; + kce);</span>
+        }
+    }
+
+    private void initializeParserResult() {
+<span class="fc" id="L151">        database = new BibDatabase();</span>
+<span class="fc" id="L152">        entryTypes = new HashMap&lt;&gt;(); // To store custom entry types parsed.</span>
+<span class="fc" id="L153">        parserResult = new ParserResult(database, new MetaData(), entryTypes);</span>
+<span class="fc" id="L154">    }</span>
+
+    private void parseDatabaseID() throws IOException {
+
+<span class="fc bfc" id="L158" title="All 2 branches covered.">        while (!eof) {</span>
+<span class="fc" id="L159">            skipWhitespace();</span>
+<span class="fc" id="L160">            char c = (char) read();</span>
+
+<span class="fc bfc" id="L162" title="All 2 branches covered.">            if (c == '%') {</span>
+<span class="fc" id="L163">                skipWhitespace();</span>
+<span class="fc" id="L164">                String label = parseTextToken().trim();</span>
+
+<span class="fc bfc" id="L166" title="All 2 branches covered.">                if (label.equals(BibtexDatabaseWriter.DATABASE_ID_PREFIX)) {</span>
+<span class="fc" id="L167">                    skipWhitespace();</span>
+<span class="fc" id="L168">                    database.setSharedDatabaseID(parseTextToken().trim());</span>
+                }
+<span class="fc bfc" id="L170" title="All 2 branches covered.">            } else if (c == '@') {</span>
+<span class="fc" id="L171">                unread(c);</span>
+<span class="fc" id="L172">                break;</span>
+            }
+        }
+<span class="fc" id="L175">    }</span>
+
+    private ParserResult parseFileContent() throws IOException {
+<span class="fc" id="L178">        Map&lt;String, String&gt; meta = new HashMap&lt;&gt;();</span>
+
+<span class="fc bfc" id="L180" title="All 2 branches covered.">        while (!eof) {</span>
+<span class="fc" id="L181">            boolean found = consumeUncritically('@');</span>
+<span class="fc bfc" id="L182" title="All 2 branches covered.">            if (!found) {</span>
+<span class="fc" id="L183">                break;</span>
+            }
+
+<span class="fc" id="L186">            skipWhitespace();</span>
+
+            // Try to read the entry type
+<span class="fc" id="L189">            String entryType = parseTextToken().toLowerCase(Locale.ROOT).trim();</span>
+
+<span class="fc bfc" id="L191" title="All 2 branches covered.">            if (&quot;preamble&quot;.equals(entryType)) {</span>
+<span class="fc" id="L192">                database.setPreamble(parsePreamble());</span>
+                // Consume new line which signals end of preamble
+<span class="fc" id="L194">                skipOneNewline();</span>
+                // the preamble is saved verbatim anyways, so the text read so far can be dropped
+<span class="fc" id="L196">                dumpTextReadSoFarToString();</span>
+<span class="fc bfc" id="L197" title="All 2 branches covered.">            } else if (&quot;string&quot;.equals(entryType)) {</span>
+<span class="fc" id="L198">                parseBibtexString();</span>
+<span class="fc bfc" id="L199" title="All 2 branches covered.">            } else if (&quot;comment&quot;.equals(entryType)) {</span>
+<span class="fc" id="L200">                parseJabRefComment(meta);</span>
+<span class="fc" id="L201">            } else {</span>
+                // Not a comment, preamble, or string. Thus, it is an entry
+<span class="fc" id="L203">                parseAndAddEntry(entryType);</span>
+            }
+
+<span class="fc" id="L206">            skipWhitespace();</span>
+        }
+
+        // Instantiate meta data:
+        try {
+<span class="fc" id="L211">            parserResult.setMetaData(metaDataParser.parse(meta, importFormatPreferences.getKeywordSeparator()));</span>
+<span class="pc" id="L212">        } catch (ParseException exception) {</span>
+<span class="nc" id="L213">            parserResult.addException(exception);</span>
+        }
+
+<span class="fc" id="L216">        parseRemainingContent();</span>
+
+<span class="fc" id="L218">        return parserResult;</span>
+    }
+
+    private void parseRemainingContent() {
+<span class="fc" id="L222">        database.setEpilog(dumpTextReadSoFarToString().trim());</span>
+<span class="fc" id="L223">    }</span>
+
+    private void parseAndAddEntry(String type) {
+        /**
+         * Morten Alver 13 Aug 2006: Trying to make the parser more
+         * robust. If an exception is thrown when parsing an entry,
+         * drop the entry and try to resume parsing. Add a warning
+         * for the user.
+         */
+        try {
+            // collect all comments and the entry type definition in front of the actual entry
+            // this is at least `@Type`
+<span class="fc" id="L235">            String commentsAndEntryTypeDefinition = dumpTextReadSoFarToString();</span>
+
+<span class="fc" id="L237">            BibEntry entry = parseEntry(type);</span>
+            // store comments collected without type definition
+<span class="fc" id="L239">            entry.setCommentsBeforeEntry(</span>
+<span class="fc" id="L240">                    commentsAndEntryTypeDefinition.substring(0, commentsAndEntryTypeDefinition.lastIndexOf('@')));</span>
+            // store complete parsed serialization (comments, type definition + type contents)
+<span class="fc" id="L242">            entry.setParsedSerialization(commentsAndEntryTypeDefinition + dumpTextReadSoFarToString());</span>
+
+<span class="fc" id="L244">            boolean duplicateKey = database.insertEntry(entry);</span>
+<span class="fc bfc" id="L245" title="All 2 branches covered.">            if (duplicateKey) {</span>
+<span class="fc" id="L246">                parserResult.addDuplicateKey(entry.getCiteKey());</span>
+            }
+<span class="fc" id="L248">        } catch (IOException ex) {</span>
+<span class="fc" id="L249">            LOGGER.debug(&quot;Could not parse entry&quot;, ex);</span>
+<span class="fc" id="L250">            parserResult.addWarning(Localization.lang(&quot;Error occurred when parsing entry&quot;) + &quot;: '&quot; + ex.getMessage()</span>
+<span class="fc" id="L251">                    + &quot;'. &quot; + Localization.lang(&quot;Skipped entry.&quot;));</span>
+
+        }
+<span class="fc" id="L254">    }</span>
+
+    private void parseJabRefComment(Map&lt;String, String&gt; meta) {
+<span class="fc" id="L257">        StringBuilder buffer = null;</span>
+        try {
+<span class="fc" id="L259">            buffer = parseBracketedTextExactly();</span>
+<span class="fc" id="L260">        } catch (IOException e) {</span>
+            /* if we get an IO Exception here, than we have an unbracketed comment,
+            * which means that we should just return and the comment will be picked up as arbitrary text
+            *  by the parser
+             */
+<span class="fc" id="L265">            LOGGER.info(&quot;Found unbracketed comment&quot;);</span>
+<span class="fc" id="L266">            return;</span>
+        }
+
+<span class="fc" id="L269">        String comment = buffer.toString().replaceAll(&quot;[\\x0d\\x0a]&quot;, &quot;&quot;);</span>
+<span class="fc bfc" id="L270" title="All 2 branches covered.">        if (comment.substring(0, Math.min(comment.length(), MetaData.META_FLAG.length())).equals(MetaData.META_FLAG)) {</span>
+
+<span class="pc bpc" id="L272" title="1 of 2 branches missed.">            if (comment.substring(0, MetaData.META_FLAG.length()).equals(MetaData.META_FLAG)) {</span>
+<span class="fc" id="L273">                String rest = comment.substring(MetaData.META_FLAG.length());</span>
+
+<span class="fc" id="L275">                int pos = rest.indexOf(':');</span>
+
+<span class="pc bpc" id="L277" title="1 of 2 branches missed.">                if (pos &gt; 0) {</span>
+                    // We remove all line breaks in the metadata - these
+                    // will have been inserted
+                    // to prevent too long lines when the file was
+                    // saved, and are not part of the data.
+<span class="fc" id="L282">                    meta.put(rest.substring(0, pos), rest.substring(pos + 1));</span>
+
+                    // meta comments are always re-written by JabRef and not stored in the file
+<span class="fc" id="L285">                    dumpTextReadSoFarToString();</span>
+                }
+            }
+<span class="fc" id="L288">        } else if (comment.substring(0, Math.min(comment.length(), CustomEntryType.ENTRYTYPE_FLAG.length()))</span>
+<span class="fc bfc" id="L289" title="All 2 branches covered.">                .equals(CustomEntryType.ENTRYTYPE_FLAG)) {</span>
+            // A custom entry type can also be stored in a
+            // &quot;@comment&quot;
+<span class="fc" id="L292">            Optional&lt;CustomEntryType&gt; typ = CustomEntryType.parse(comment);</span>
+<span class="pc bpc" id="L293" title="1 of 2 branches missed.">            if (typ.isPresent()) {</span>
+<span class="fc" id="L294">                entryTypes.put(typ.get().getName(), typ.get());</span>
+<span class="fc" id="L295">            } else {</span>
+<span class="nc" id="L296">                parserResult.addWarning(Localization.lang(&quot;Ill-formed entrytype comment in BIB file&quot;) + &quot;: &quot; + comment);</span>
+            }
+
+            // custom entry types are always re-written by JabRef and not stored in the file
+<span class="fc" id="L300">            dumpTextReadSoFarToString();</span>
+        }
+
+<span class="fc" id="L303">    }</span>
+
+    private void parseBibtexString() throws IOException {
+<span class="fc" id="L306">        BibtexString bibtexString = parseString();</span>
+<span class="fc" id="L307">        bibtexString.setParsedSerialization(dumpTextReadSoFarToString());</span>
+        try {
+<span class="fc" id="L309">            database.addString(bibtexString);</span>
+<span class="fc" id="L310">        } catch (KeyCollisionException ex) {</span>
+<span class="fc" id="L311">            parserResult.addWarning(Localization.lang(&quot;Duplicate string name&quot;) + &quot;: &quot; + bibtexString.getName());</span>
+        }
+<span class="fc" id="L313">    }</span>
+
+    /**
+     * Puts all text that has been read from the reader, including newlines, etc., since the last call of this method into a string.
+     * Removes the JabRef file header, if it is found
+     *
+     * @return the text read so far
+     */
+    private String dumpTextReadSoFarToString() {
+<span class="fc" id="L322">        String result = getPureTextFromFile();</span>
+<span class="fc" id="L323">        int indexOfAt = result.indexOf(&quot;@&quot;);</span>
+
+        // if there is no entry found, simply return the content (necessary to parse text remaining after the last entry)
+<span class="fc bfc" id="L326" title="All 2 branches covered.">        if (indexOfAt == -1) {</span>
+<span class="fc" id="L327">            return purgeEOFCharacters(result);</span>
+<span class="fc bfc" id="L328" title="All 2 branches covered.">        } else if (result.contains(BibtexDatabaseWriter.DATABASE_ID_PREFIX)) {</span>
+<span class="fc" id="L329">            return purge(result, BibtexDatabaseWriter.DATABASE_ID_PREFIX);</span>
+<span class="fc bfc" id="L330" title="All 2 branches covered.">        } else if (result.contains(SavePreferences.ENCODING_PREFIX)) {</span>
+<span class="fc" id="L331">            return purge(result, SavePreferences.ENCODING_PREFIX);</span>
+        } else {
+<span class="fc" id="L333">            return result;</span>
+        }
+    }
+
+    private String purge(String context, String stringToPurge) {
+        // purge the encoding line if it exists
+<span class="fc" id="L339">        int runningIndex = context.indexOf(stringToPurge);</span>
+<span class="fc" id="L340">        int indexOfAt = context.indexOf(&quot;@&quot;);</span>
+<span class="fc bfc" id="L341" title="All 2 branches covered.">        while (runningIndex &lt; indexOfAt) {</span>
+<span class="fc bfc" id="L342" title="All 2 branches covered.">            if (context.charAt(runningIndex) == '\n') {</span>
+<span class="fc" id="L343">                break;</span>
+<span class="pc bpc" id="L344" title="1 of 2 branches missed.">            } else if (context.charAt(runningIndex) == '\r') {</span>
+<span class="nc bnc" id="L345" title="All 2 branches missed.">                if (context.charAt(runningIndex + 1) == '\n') {</span>
+<span class="nc" id="L346">                    runningIndex++;</span>
+                }
+<span class="nc" id="L348">                break;</span>
+            }
+<span class="fc" id="L350">            runningIndex++;</span>
+        }
+<span class="fc" id="L352">        return context.substring(runningIndex + 1);</span>
+    }
+
+    private String getPureTextFromFile() {
+<span class="fc" id="L356">        StringBuilder entry = new StringBuilder();</span>
+<span class="fc bfc" id="L357" title="All 2 branches covered.">        while (!pureTextFromFile.isEmpty()) {</span>
+<span class="fc" id="L358">            entry.append(pureTextFromFile.pollFirst());</span>
+        }
+
+<span class="fc" id="L361">        return entry.toString();</span>
+    }
+
+    /**
+     * Removes all eof characters from a StringBuilder and returns a new String with the resulting content
+     *
+     * @return a String without eof characters
+     */
+    private String purgeEOFCharacters(String input) {
+
+<span class="fc" id="L371">        StringBuilder remainingText = new StringBuilder();</span>
+<span class="fc bfc" id="L372" title="All 2 branches covered.">        for (Character character : input.toCharArray()) {</span>
+<span class="pc bpc" id="L373" title="1 of 2 branches missed.">            if (!(isEOFCharacter(character))) {</span>
+<span class="fc" id="L374">                remainingText.append(character);</span>
+            }
+        }
+
+<span class="fc" id="L378">        return remainingText.toString();</span>
+    }
+
+    private void skipWhitespace() throws IOException {
+        int character;
+
+        while (true) {
+<span class="fc" id="L385">            character = read();</span>
+<span class="fc bfc" id="L386" title="All 2 branches covered.">            if (isEOFCharacter(character)) {</span>
+<span class="fc" id="L387">                eof = true;</span>
+<span class="fc" id="L388">                return;</span>
+            }
+
+<span class="fc bfc" id="L391" title="All 2 branches covered.">            if (!Character.isWhitespace((char) character)) {</span>
+                // found non-whitespace char
+<span class="fc" id="L393">                unread(character);</span>
+                break;
+            }
+        }
+<span class="fc" id="L397">    }</span>
+
+    private void skipSpace() throws IOException {
+        int character;
+
+        while (true) {
+<span class="fc" id="L403">            character = read();</span>
+<span class="fc bfc" id="L404" title="All 2 branches covered.">            if (isEOFCharacter(character)) {</span>
+<span class="fc" id="L405">                eof = true;</span>
+<span class="fc" id="L406">                return;</span>
+            }
+
+<span class="pc bpc" id="L409" title="1 of 2 branches missed.">            if ((char) character != ' ') {</span>
+                // found non-space char
+<span class="fc" id="L411">                unread(character);</span>
+                break;
+            }
+        }
+<span class="fc" id="L415">    }</span>
+
+    private void skipOneNewline() throws IOException {
+<span class="fc" id="L418">        skipSpace();</span>
+<span class="fc bfc" id="L419" title="All 2 branches covered.">        if (peek() == '\r') {</span>
+<span class="fc" id="L420">            read();</span>
+        }
+<span class="fc bfc" id="L422" title="All 2 branches covered.">        if (peek() == '\n') {</span>
+<span class="fc" id="L423">            read();</span>
+        }
+<span class="fc" id="L425">    }</span>
+
+    private boolean isEOFCharacter(int character) {
+<span class="fc bfc" id="L428" title="All 4 branches covered.">        return (character == -1) || (character == 65535);</span>
+    }
+
+    private String skipAndRecordWhitespace(int character) throws IOException {
+<span class="fc" id="L432">        StringBuilder stringBuilder = new StringBuilder();</span>
+<span class="pc bpc" id="L433" title="1 of 2 branches missed.">        if (character != ' ') {</span>
+<span class="nc" id="L434">            stringBuilder.append((char) character);</span>
+        }
+        while (true) {
+<span class="fc" id="L437">            int nextCharacter = read();</span>
+<span class="pc bpc" id="L438" title="1 of 2 branches missed.">            if (isEOFCharacter(nextCharacter)) {</span>
+<span class="nc" id="L439">                eof = true;</span>
+<span class="nc" id="L440">                return stringBuilder.toString();</span>
+            }
+
+<span class="pc bpc" id="L443" title="1 of 2 branches missed.">            if (Character.isWhitespace((char) nextCharacter)) {</span>
+<span class="nc bnc" id="L444" title="All 2 branches missed.">                if (nextCharacter != ' ') {</span>
+<span class="nc" id="L445">                    stringBuilder.append((char) nextCharacter);</span>
+                }
+<span class="nc" id="L447">            } else {</span>
+                // found non-whitespace char
+<span class="fc" id="L449">                unread(nextCharacter);</span>
+                break;
+            }
+        }
+<span class="fc" id="L453">        return stringBuilder.toString();</span>
+    }
+
+    private int peek() throws IOException {
+<span class="fc" id="L457">        int character = read();</span>
+<span class="fc" id="L458">        unread(character);</span>
+
+<span class="fc" id="L460">        return character;</span>
+    }
+
+    private int read() throws IOException {
+<span class="fc" id="L464">        int character = pushbackReader.read();</span>
+
+<span class="fc bfc" id="L466" title="All 2 branches covered.">        if (!isEOFCharacter(character)) {</span>
+<span class="fc" id="L467">            pureTextFromFile.offerLast((char) character);</span>
+        }
+<span class="fc bfc" id="L469" title="All 2 branches covered.">        if (character == '\n') {</span>
+<span class="fc" id="L470">            line++;</span>
+        }
+<span class="fc" id="L472">        return character;</span>
+    }
+
+    private void unread(int character) throws IOException {
+<span class="fc bfc" id="L476" title="All 2 branches covered.">        if (character == '\n') {</span>
+<span class="fc" id="L477">            line--;</span>
+        }
+<span class="fc" id="L479">        pushbackReader.unread(character);</span>
+<span class="fc bfc" id="L480" title="All 2 branches covered.">        if (pureTextFromFile.getLast() == character) {</span>
+<span class="fc" id="L481">            pureTextFromFile.pollLast();</span>
+        }
+<span class="fc" id="L483">    }</span>
+
+    private BibtexString parseString() throws IOException {
+<span class="fc" id="L486">        skipWhitespace();</span>
+<span class="fc" id="L487">        consume('{', '(');</span>
+<span class="fc" id="L488">        skipWhitespace();</span>
+<span class="fc" id="L489">        LOGGER.debug(&quot;Parsing string name&quot;);</span>
+<span class="fc" id="L490">        String name = parseTextToken();</span>
+<span class="fc" id="L491">        LOGGER.debug(&quot;Parsed string name&quot;);</span>
+<span class="fc" id="L492">        skipWhitespace();</span>
+<span class="fc" id="L493">        LOGGER.debug(&quot;Now the contents&quot;);</span>
+<span class="fc" id="L494">        consume('=');</span>
+<span class="fc" id="L495">        String content = parseFieldContent(name);</span>
+<span class="fc" id="L496">        LOGGER.debug(&quot;Now I'm going to consume a }&quot;);</span>
+<span class="fc" id="L497">        consume('}', ')');</span>
+        // Consume new line which signals end of entry
+<span class="fc" id="L499">        skipOneNewline();</span>
+<span class="fc" id="L500">        LOGGER.debug(&quot;Finished string parsing.&quot;);</span>
+
+<span class="fc" id="L502">        return new BibtexString(name, content);</span>
+    }
+
+    private String parsePreamble() throws IOException {
+<span class="fc" id="L506">        skipWhitespace();</span>
+<span class="fc" id="L507">        return parseBracketedText();</span>
+
+    }
+
+    private BibEntry parseEntry(String entryType) throws IOException {
+<span class="fc" id="L512">        BibEntry result = new BibEntry(entryType);</span>
+<span class="fc" id="L513">        skipWhitespace();</span>
+<span class="fc" id="L514">        consume('{', '(');</span>
+<span class="fc" id="L515">        int character = peek();</span>
+<span class="pc bpc" id="L516" title="1 of 4 branches missed.">        if ((character != '\n') &amp;&amp; (character != '\r')) {</span>
+<span class="fc" id="L517">            skipWhitespace();</span>
+        }
+<span class="fc" id="L519">        String key = parseKey();</span>
+<span class="fc" id="L520">        result.setCiteKey(key);</span>
+<span class="fc" id="L521">        skipWhitespace();</span>
+
+<span class="fc" id="L523">        while (true) {</span>
+<span class="fc" id="L524">            character = peek();</span>
+<span class="fc bfc" id="L525" title="All 4 branches covered.">            if ((character == '}') || (character == ')')) {</span>
+<span class="fc" id="L526">                break;</span>
+            }
+
+<span class="fc bfc" id="L529" title="All 2 branches covered.">            if (character == ',') {</span>
+<span class="fc" id="L530">                consume(',');</span>
+            }
+
+<span class="fc" id="L533">            skipWhitespace();</span>
+
+<span class="fc" id="L535">            character = peek();</span>
+<span class="pc bpc" id="L536" title="1 of 4 branches missed.">            if ((character == '}') || (character == ')')) {</span>
+<span class="nc" id="L537">                break;</span>
+            }
+<span class="fc" id="L539">            parseField(result);</span>
+        }
+
+<span class="fc" id="L542">        consume('}', ')');</span>
+
+        // Consume new line which signals end of entry
+<span class="fc" id="L545">        skipOneNewline();</span>
+
+<span class="fc" id="L547">        return result;</span>
+    }
+
+    private void parseField(BibEntry entry) throws IOException {
+<span class="fc" id="L551">        String key = parseTextToken().toLowerCase(Locale.ROOT);</span>
+
+<span class="fc" id="L553">        skipWhitespace();</span>
+<span class="fc" id="L554">        consume('=');</span>
+<span class="fc" id="L555">        String content = parseFieldContent(key);</span>
+<span class="fc bfc" id="L556" title="All 2 branches covered.">        if (!content.isEmpty()) {</span>
+<span class="fc bfc" id="L557" title="All 2 branches covered.">            if (entry.hasField(key)) {</span>
+                // The following hack enables the parser to deal with multiple
+                // author or
+                // editor lines, stringing them together instead of getting just
+                // one of them.
+                // Multiple author or editor lines are not allowed by the bibtex
+                // format, but
+                // at least one online database exports bibtex like that, making
+                // it inconvenient
+                // for users if JabRef did not accept it.
+<span class="fc bfc" id="L567" title="All 2 branches covered.">                if (InternalBibtexFields.getFieldProperties(key).contains(FieldProperty.PERSON_NAMES)) {</span>
+<span class="fc" id="L568">                    entry.setField(key, entry.getField(key).get() + &quot; and &quot; + content);</span>
+<span class="fc bfc" id="L569" title="All 2 branches covered.">                } else if (FieldName.KEYWORDS.equals(key)) {</span>
+                    //multiple keywords fields should be combined to one
+<span class="fc" id="L571">                    entry.addKeyword(content, importFormatPreferences.getKeywordSeparator());</span>
+                }
+<span class="fc" id="L573">            } else {</span>
+<span class="fc" id="L574">                entry.setField(key, content);</span>
+            }
+        }
+<span class="fc" id="L577">    }</span>
+
+    private String parseFieldContent(String key) throws IOException {
+<span class="fc" id="L580">        skipWhitespace();</span>
+<span class="fc" id="L581">        StringBuilder value = new StringBuilder();</span>
+        int character;
+
+<span class="fc bfc" id="L584" title="All 6 branches covered.">        while (((character = peek()) != ',') &amp;&amp; (character != '}') &amp;&amp; (character != ')')) {</span>
+
+<span class="fc bfc" id="L586" title="All 2 branches covered.">            if (eof) {</span>
+<span class="fc" id="L587">                throw new IOException(&quot;Error in line &quot; + line + &quot;: EOF in mid-string&quot;);</span>
+            }
+<span class="fc bfc" id="L589" title="All 2 branches covered.">            if (character == '&quot;') {</span>
+<span class="fc" id="L590">                StringBuilder text = parseQuotedFieldExactly();</span>
+<span class="fc" id="L591">                value.append(fieldContentParser.format(text, key));</span>
+<span class="fc bfc" id="L592" title="All 2 branches covered.">            } else if (character == '{') {</span>
+                // Value is a string enclosed in brackets. There can be pairs
+                // of brackets inside of a field, so we need to count the
+                // brackets to know when the string is finished.
+<span class="fc" id="L596">                StringBuilder text = parseBracketedTextExactly();</span>
+<span class="fc" id="L597">                value.append(fieldContentParser.format(text, key));</span>
+
+<span class="fc bfc" id="L599" title="All 2 branches covered.">            } else if (Character.isDigit((char) character)) { // value is a number</span>
+<span class="fc" id="L600">                String number = parseTextToken();</span>
+<span class="fc" id="L601">                value.append(number);</span>
+<span class="fc bfc" id="L602" title="All 2 branches covered.">            } else if (character == '#') {</span>
+<span class="fc" id="L603">                consume('#');</span>
+<span class="fc" id="L604">            } else {</span>
+<span class="fc" id="L605">                String textToken = parseTextToken();</span>
+<span class="fc bfc" id="L606" title="All 2 branches covered.">                if (textToken.isEmpty()) {</span>
+<span class="fc" id="L607">                    throw new IOException(&quot;Error in line &quot; + line + &quot; or above: &quot;</span>
+<span class="fc" id="L608">                            + &quot;Empty text token.\nThis could be caused &quot; + &quot;by a missing comma between two fields.&quot;);</span>
+                }
+<span class="fc" id="L610">                value.append('#').append(textToken).append('#');</span>
+            }
+<span class="fc" id="L612">            skipWhitespace();</span>
+        }
+<span class="fc" id="L614">        return value.toString();</span>
+
+    }
+
+    /**
+     * This method is used to parse string labels, field names, entry type and
+     * numbers outside brackets.
+     */
+    private String parseTextToken() throws IOException {
+<span class="fc" id="L623">        StringBuilder token = new StringBuilder(20);</span>
+
+        while (true) {
+<span class="fc" id="L626">            int character = read();</span>
+<span class="pc bpc" id="L627" title="1 of 2 branches missed.">            if (character == -1) {</span>
+<span class="nc" id="L628">                eof = true;</span>
+
+<span class="nc" id="L630">                return token.toString();</span>
+            }
+
+<span class="fc bfc" id="L633" title="All 4 branches covered.">            if (Character.isLetterOrDigit((char) character) || (&quot;:-_*+./'&quot;.indexOf(character) &gt;= 0)) {</span>
+<span class="fc" id="L634">                token.append((char) character);</span>
+<span class="fc" id="L635">            } else {</span>
+<span class="fc" id="L636">                unread(character);</span>
+<span class="fc" id="L637">                return token.toString();</span>
+            }
+        }
+    }
+
+    /**
+     * Tries to restore the key
+     *
+     * @return rest of key on success, otherwise empty string
+     * @throws IOException on Reader-Error
+     */
+    private String fixKey() throws IOException {
+<span class="fc" id="L649">        StringBuilder key = new StringBuilder();</span>
+<span class="fc" id="L650">        int lookaheadUsed = 0;</span>
+        char currentChar;
+
+        // Find a char which ends key (','&amp;&amp;'\n') or entryfield ('='):
+<span class="pc bpc" id="L654" title="1 of 2 branches missed.">        do {</span>
+<span class="fc" id="L655">            currentChar = (char) read();</span>
+<span class="fc" id="L656">            key.append(currentChar);</span>
+<span class="fc" id="L657">            lookaheadUsed++;</span>
+<span class="pc bpc" id="L658" title="1 of 6 branches missed.">        } while ((currentChar != ',') &amp;&amp; (currentChar != '\n') &amp;&amp; (currentChar != '=')</span>
+<span class="fc" id="L659">                &amp;&amp; (lookaheadUsed &lt; BibtexParser.LOOKAHEAD));</span>
+
+        // Consumed a char too much, back into reader and remove from key:
+<span class="fc" id="L662">        unread(currentChar);</span>
+<span class="fc" id="L663">        key.deleteCharAt(key.length() - 1);</span>
+
+        // Restore if possible:
+<span class="pc bpc" id="L666" title="2 of 4 branches missed.">        switch (currentChar) {</span>
+        case '=':
+            // Get entryfieldname, push it back and take rest as key
+<span class="fc" id="L669">            key = key.reverse();</span>
+
+<span class="fc" id="L671">            boolean matchedAlpha = false;</span>
+<span class="fc bfc" id="L672" title="All 2 branches covered.">            for (int i = 0; i &lt; key.length(); i++) {</span>
+<span class="fc" id="L673">                currentChar = key.charAt(i);</span>
+
+                /// Skip spaces:
+<span class="fc bfc" id="L676" title="All 4 branches covered.">                if (!matchedAlpha &amp;&amp; (currentChar == ' ')) {</span>
+<span class="fc" id="L677">                    continue;</span>
+                }
+<span class="fc" id="L679">                matchedAlpha = true;</span>
+
+                // Begin of entryfieldname (e.g. author) -&gt; push back:
+<span class="fc" id="L682">                unread(currentChar);</span>
+<span class="pc bpc" id="L683" title="1 of 4 branches missed.">                if ((currentChar == ' ') || (currentChar == '\n')) {</span>
+
+                    /*
+                     * found whitespaces, entryfieldname completed -&gt; key in
+                     * keybuffer, skip whitespaces
+                     */
+<span class="fc" id="L689">                    StringBuilder newKey = new StringBuilder();</span>
+<span class="fc bfc" id="L690" title="All 2 branches covered.">                    for (int j = i; j &lt; key.length(); j++) {</span>
+<span class="fc" id="L691">                        currentChar = key.charAt(j);</span>
+<span class="pc bpc" id="L692" title="1 of 2 branches missed.">                        if (!Character.isWhitespace(currentChar)) {</span>
+<span class="nc" id="L693">                            newKey.append(currentChar);</span>
+                        }
+                    }
+
+                    // Finished, now reverse newKey and remove whitespaces:
+<span class="fc" id="L698">                    parserResult.addWarning(</span>
+<span class="fc" id="L699">                            Localization.lang(&quot;Line %0: Found corrupted BibTeX key.&quot;, String.valueOf(line)));</span>
+<span class="fc" id="L700">                    key = newKey.reverse();</span>
+                }
+            }
+<span class="fc" id="L703">            break;</span>
+
+        case ',':
+<span class="fc" id="L706">            parserResult.addWarning(Localization.lang(&quot;Line %0: Found corrupted BibTeX key (contains whitespaces).&quot;,</span>
+<span class="fc" id="L707">                    String.valueOf(line)));</span>
+<span class="fc" id="L708">            break;</span>
+
+        case '\n':
+<span class="nc" id="L711">            parserResult.addWarning(</span>
+<span class="nc" id="L712">                    Localization.lang(&quot;Line %0: Found corrupted BibTeX key (comma missing).&quot;, String.valueOf(line)));</span>
+<span class="nc" id="L713">            break;</span>
+
+        default:
+
+            // No more lookahead, give up:
+<span class="nc" id="L718">            unreadBuffer(key);</span>
+<span class="nc" id="L719">            return &quot;&quot;;</span>
+        }
+
+<span class="fc" id="L722">        return removeWhitespaces(key).toString();</span>
+    }
+
+    /**
+     * returns a new &lt;code&gt;StringBuilder&lt;/code&gt; which corresponds to &lt;code&gt;toRemove&lt;/code&gt; without whitespaces
+     *
+     * @param toRemove
+     * @return
+     */
+    private StringBuilder removeWhitespaces(StringBuilder toRemove) {
+<span class="fc" id="L732">        StringBuilder result = new StringBuilder();</span>
+        char current;
+<span class="fc bfc" id="L734" title="All 2 branches covered.">        for (int i = 0; i &lt; toRemove.length(); ++i) {</span>
+<span class="fc" id="L735">            current = toRemove.charAt(i);</span>
+<span class="pc bpc" id="L736" title="1 of 2 branches missed.">            if (!Character.isWhitespace(current)) {</span>
+<span class="fc" id="L737">                result.append(current);</span>
+            }
+        }
+<span class="fc" id="L740">        return result;</span>
+    }
+
+    /**
+     * pushes buffer back into input
+     *
+     * @param stringBuilder
+     * @throws IOException can be thrown if buffer is bigger than LOOKAHEAD
+     */
+    private void unreadBuffer(StringBuilder stringBuilder) throws IOException {
+<span class="nc bnc" id="L750" title="All 2 branches missed.">        for (int i = stringBuilder.length() - 1; i &gt;= 0; --i) {</span>
+<span class="nc" id="L751">            unread(stringBuilder.charAt(i));</span>
+        }
+<span class="nc" id="L753">    }</span>
+
+    /**
+     * This method is used to parse the bibtex key for an entry.
+     */
+    private String parseKey() throws IOException {
+<span class="fc" id="L759">        StringBuilder token = new StringBuilder(20);</span>
+
+        while (true) {
+<span class="fc" id="L762">            int character = read();</span>
+
+<span class="pc bpc" id="L764" title="1 of 2 branches missed.">            if (character == -1) {</span>
+<span class="nc" id="L765">                eof = true;</span>
+
+<span class="nc" id="L767">                return token.toString();</span>
+            }
+
+<span class="fc bfc" id="L770" title="All 4 branches covered.">            if (!Character.isWhitespace((char) character) &amp;&amp; (Character.isLetterOrDigit((char) character)</span>
+<span class="fc bfc" id="L771" title="All 4 branches covered.">                    || (character == ':') || (&quot;#{}~,=\uFFFD&quot;.indexOf(character) == -1))) {</span>
+<span class="fc" id="L772">                token.append((char) character);</span>
+<span class="fc" id="L773">            } else {</span>
+
+<span class="fc bfc" id="L775" title="All 2 branches covered.">                if (Character.isWhitespace((char) character)) {</span>
+                    // We have encountered white space instead of the comma at
+                    // the end of
+                    // the key. Possibly the comma is missing, so we try to
+                    // return what we
+                    // have found, as the key and try to restore the rest in fixKey().
+<span class="fc" id="L781">                    return token + fixKey();</span>
+<span class="pc bpc" id="L782" title="1 of 4 branches missed.">                } else if ((character == ',') || (character == '}')) {</span>
+<span class="fc" id="L783">                    unread(character);</span>
+<span class="fc" id="L784">                    return token.toString();</span>
+<span class="nc bnc" id="L785" title="All 2 branches missed.">                } else if (character == '=') {</span>
+                    // If we find a '=' sign, it is either an error, or
+                    // the entry lacked a comma signifying the end of the key.
+<span class="nc" id="L788">                    return token.toString();</span>
+                } else {
+<span class="nc" id="L790">                    throw new IOException(&quot;Error in line &quot; + line + &quot;:&quot; + &quot;Character '&quot; + (char) character + &quot;' is not &quot;</span>
+<span class="nc" id="L791">                            + &quot;allowed in bibtex keys.&quot;);</span>
+                }
+
+            }
+        }
+
+    }
+
+    private String parseBracketedText() throws IOException {
+<span class="fc" id="L800">        StringBuilder value = new StringBuilder();</span>
+
+<span class="fc" id="L802">        consume('{', '(');</span>
+
+<span class="fc" id="L804">        int brackets = 0;</span>
+
+<span class="pc bpc" id="L806" title="1 of 4 branches missed.">        while (!((isClosingBracketNext()) &amp;&amp; (brackets == 0))) {</span>
+
+<span class="fc" id="L808">            int character = read();</span>
+<span class="pc bpc" id="L809" title="1 of 2 branches missed.">            if (isEOFCharacter(character)) {</span>
+<span class="nc" id="L810">                throw new IOException(&quot;Error in line &quot; + line + &quot;: EOF in mid-string&quot;);</span>
+<span class="pc bpc" id="L811" title="2 of 4 branches missed.">            } else if ((character == '{') || (character == '(')) {</span>
+<span class="nc" id="L812">                brackets++;</span>
+<span class="pc bpc" id="L813" title="2 of 4 branches missed.">            } else if ((character == '}') || (character == ')')) {</span>
+<span class="nc" id="L814">                brackets--;</span>
+            }
+
+            // If we encounter whitespace of any kind, read it as a
+            // simple space, and ignore any others that follow immediately.
+            /*
+             * if (j == '\n') { if (peek() == '\n') value.append('\n'); } else
+             */
+<span class="fc bfc" id="L822" title="All 2 branches covered.">            if (Character.isWhitespace((char) character)) {</span>
+<span class="fc" id="L823">                String whitespacesReduced = skipAndRecordWhitespace(character);</span>
+
+<span class="pc bpc" id="L825" title="3 of 4 branches missed.">                if (!(whitespacesReduced.isEmpty()) &amp;&amp; !&quot;\n\t&quot;.equals(whitespacesReduced)) { // &amp;&amp;</span>
+<span class="nc" id="L826">                    whitespacesReduced = whitespacesReduced.replace(&quot;\t&quot;, &quot;&quot;); // Remove tabulators.</span>
+<span class="nc" id="L827">                    value.append(whitespacesReduced);</span>
+<span class="nc" id="L828">                } else {</span>
+<span class="fc" id="L829">                    value.append(' ');</span>
+                }
+
+<span class="fc" id="L832">            } else {</span>
+<span class="fc" id="L833">                value.append((char) character);</span>
+            }
+        }
+
+<span class="fc" id="L837">        consume('}', ')');</span>
+
+<span class="fc" id="L839">        return value.toString();</span>
+    }
+
+    private boolean isClosingBracketNext() {
+        try {
+<span class="fc" id="L844">            int peek = peek();</span>
+<span class="fc bfc" id="L845" title="All 2 branches covered.">            boolean isCurlyBracket = peek == '}';</span>
+<span class="fc bfc" id="L846" title="All 2 branches covered.">            boolean isRoundBracket = peek == ')';</span>
+<span class="fc bfc" id="L847" title="All 4 branches covered.">            return isCurlyBracket || isRoundBracket;</span>
+<span class="nc" id="L848">        } catch (IOException e) {</span>
+<span class="nc" id="L849">            return false;</span>
+        }
+    }
+
+    private StringBuilder parseBracketedTextExactly() throws IOException {
+<span class="fc" id="L854">        StringBuilder value = new StringBuilder();</span>
+
+<span class="fc" id="L856">        consume('{');</span>
+
+<span class="fc" id="L858">        int brackets = 0;</span>
+        char character;
+<span class="fc" id="L860">        char lastCharacter = '\0';</span>
+
+<span class="fc" id="L862">        while (true) {</span>
+<span class="fc" id="L863">            character = (char) read();</span>
+
+<span class="fc bfc" id="L865" title="All 4 branches covered.">            boolean isClosingBracket = (character == '}') &amp;&amp; (lastCharacter != '\\');</span>
+
+<span class="fc bfc" id="L867" title="All 4 branches covered.">            if (isClosingBracket &amp;&amp; (brackets == 0)) {</span>
+<span class="fc" id="L868">                return value;</span>
+<span class="pc bpc" id="L869" title="1 of 2 branches missed.">            } else if (isEOFCharacter(character)) {</span>
+<span class="nc" id="L870">                throw new IOException(&quot;Error in line &quot; + line + &quot;: EOF in mid-string&quot;);</span>
+<span class="fc bfc" id="L871" title="All 4 branches covered.">            } else if ((character == '{') &amp;&amp; (!isEscapeSymbol(lastCharacter))) {</span>
+<span class="fc" id="L872">                brackets++;</span>
+<span class="fc bfc" id="L873" title="All 2 branches covered.">            } else if (isClosingBracket) {</span>
+<span class="fc" id="L874">                brackets--;</span>
+            }
+
+<span class="fc" id="L877">            value.append(character);</span>
+
+<span class="fc" id="L879">            lastCharacter = character;</span>
+        }
+    }
+
+    private boolean isEscapeSymbol(char character) {
+<span class="fc bfc" id="L884" title="All 2 branches covered.">        return '\\' == character;</span>
+    }
+
+    private StringBuilder parseQuotedFieldExactly() throws IOException {
+<span class="fc" id="L888">        StringBuilder value = new StringBuilder();</span>
+
+<span class="fc" id="L890">        consume('&quot;');</span>
+
+<span class="fc" id="L892">        int brackets = 0;</span>
+
+<span class="fc bfc" id="L894" title="All 4 branches covered.">        while (!((peek() == '&quot;') &amp;&amp; (brackets == 0))) {</span>
+<span class="fc" id="L895">            int j = read();</span>
+<span class="fc bfc" id="L896" title="All 2 branches covered.">            if (isEOFCharacter(j)) {</span>
+<span class="fc" id="L897">                throw new IOException(&quot;Error in line &quot; + line + &quot;: EOF in mid-string&quot;);</span>
+<span class="fc bfc" id="L898" title="All 2 branches covered.">            } else if (j == '{') {</span>
+<span class="fc" id="L899">                brackets++;</span>
+<span class="fc bfc" id="L900" title="All 2 branches covered.">            } else if (j == '}') {</span>
+<span class="fc" id="L901">                brackets--;</span>
+            }
+<span class="fc" id="L903">            value.append((char) j);</span>
+        }
+
+<span class="fc" id="L906">        consume('&quot;');</span>
+
+<span class="fc" id="L908">        return value;</span>
+    }
+
+    private void consume(char expected) throws IOException {
+<span class="fc" id="L912">        int character = read();</span>
+
+<span class="fc bfc" id="L914" title="All 2 branches covered.">        if (character != expected) {</span>
+<span class="fc" id="L915">            throw new IOException(</span>
+<span class="fc" id="L916">                    &quot;Error in line &quot; + line + &quot;: Expected &quot; + expected + &quot; but received &quot; + (char) character);</span>
+        }
+<span class="fc" id="L918">    }</span>
+
+    private boolean consumeUncritically(char expected) throws IOException {
+        int character;
+        do {
+<span class="fc" id="L923">            character = read();</span>
+<span class="pc bpc" id="L924" title="1 of 6 branches missed.">        } while ((character != expected) &amp;&amp; (character != -1) &amp;&amp; (character != 65535));</span>
+
+<span class="fc bfc" id="L926" title="All 2 branches covered.">        if (isEOFCharacter(character)) {</span>
+<span class="fc" id="L927">            eof = true;</span>
+        }
+
+        // Return true if we actually found the character we were looking for:
+<span class="fc bfc" id="L931" title="All 2 branches covered.">        return character == expected;</span>
+    }
+
+    private void consume(char firstOption, char secondOption) throws IOException {
+        // Consumes one of the two, doesn't care which appears.
+
+<span class="fc" id="L937">        int character = read();</span>
+
+<span class="fc bfc" id="L939" title="All 4 branches covered.">        if ((character != firstOption) &amp;&amp; (character != secondOption)) {</span>
+<span class="fc" id="L940">            throw new IOException(&quot;Error in line &quot; + line + &quot;: Expected &quot; + firstOption + &quot; or &quot; + secondOption</span>
+<span class="fc" id="L941">                    + &quot; but received &quot; + (char) character);</span>
+        }
+<span class="fc" id="L943">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

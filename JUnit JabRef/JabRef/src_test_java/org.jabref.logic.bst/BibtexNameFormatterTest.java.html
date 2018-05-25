@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>BibtexNameFormatterTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.bst</a> &gt; <span class="el_source">BibtexNameFormatterTest.java</span></div><h1>BibtexNameFormatterTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.bst;
+
+import org.jabref.model.entry.AuthorList;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+<span class="fc" id="L10">public class BibtexNameFormatterTest {</span>
+
+    @Test
+    public void testFormatName() {
+        {
+<span class="fc" id="L15">            AuthorList al = AuthorList</span>
+<span class="fc" id="L16">                    .parse(&quot;Charles Louis Xavier Joseph de la Vall{\\'e}e Poussin&quot;);</span>
+
+<span class="fc" id="L18">            assertEquals(&quot;de~laVall{\\'e}e~PoussinCharles Louis Xavier~Joseph&quot;, BibtexNameFormatter.formatName(al</span>
+<span class="fc" id="L19">                    .getAuthor(0), &quot;{vv}{ll}{jj}{ff}&quot;, Assertions::fail));</span>
+        }
+
+        {
+<span class="fc" id="L23">            AuthorList al = AuthorList</span>
+<span class="fc" id="L24">                    .parse(&quot;Charles Louis Xavier Joseph de la Vall{\\'e}e Poussin&quot;);</span>
+
+<span class="fc" id="L26">            assertEquals(&quot;de~la Vall{\\'e}e~Poussin, C.~L. X.~J.&quot;, BibtexNameFormatter.formatName(al</span>
+<span class="fc" id="L27">                    .getAuthor(0), &quot;{vv~}{ll}{, jj}{, f.}&quot;, Assertions::fail));</span>
+        }
+
+        {
+<span class="fc" id="L31">            AuthorList al = AuthorList</span>
+<span class="fc" id="L32">                    .parse(&quot;Charles Louis Xavier Joseph de la Vall{\\'e}e Poussin&quot;);</span>
+
+<span class="fc" id="L34">            assertEquals(&quot;de~la Vall{\\'e}e~Poussin, C.~L. X.~J?&quot;, BibtexNameFormatter.formatName(al</span>
+<span class="fc" id="L35">                    .getAuthor(0), &quot;{vv~}{ll}{, jj}{, f}?&quot;, Assertions::fail));</span>
+        }
+
+<span class="fc" id="L38">        AuthorList al = AuthorList</span>
+<span class="fc" id="L39">                .parse(&quot;Charles Louis Xavier Joseph de la Vall{\\'e}e Poussin&quot;);</span>
+
+<span class="fc" id="L41">        assertEquals(&quot;dlVP&quot;, BibtexNameFormatter.formatName(al.getAuthor(0), &quot;{v{}}{l{}}&quot;,</span>
+<span class="fc" id="L42">                Assertions::fail));</span>
+
+<span class="fc" id="L44">        assertNameFormatA(&quot;Meyer, J?&quot;, &quot;Jonathan Meyer and Charles Louis Xavier Joseph de la Vall{\\'e}e Poussin&quot;);</span>
+<span class="fc" id="L45">        assertNameFormatB(&quot;J.~Meyer&quot;, &quot;Jonathan Meyer and Charles Louis Xavier Joseph de la Vall{\\'e}e Poussin&quot;);</span>
+<span class="fc" id="L46">        assertNameFormatC(&quot;Jonathan Meyer&quot;, &quot;Jonathan Meyer and Charles Louis Xavier Joseph de la Vall{\\'e}e Poussin&quot;);</span>
+<span class="fc" id="L47">        assertNameFormatA(&quot;Masterly, {\\'{E}}?&quot;, &quot;{\\'{E}}douard Masterly&quot;);</span>
+<span class="fc" id="L48">        assertNameFormatB(&quot;{\\'{E}}.~Masterly&quot;, &quot;{\\'{E}}douard Masterly&quot;);</span>
+<span class="fc" id="L49">        assertNameFormatC(&quot;{\\'{E}}douard Masterly&quot;, &quot;{\\'{E}}douard Masterly&quot;);</span>
+<span class="fc" id="L50">        assertNameFormatA(&quot;{\\\&quot;{U}}nderwood, U?&quot;, &quot;Ulrich {\\\&quot;{U}}nderwood and Ned {\\~N}et and Paul {\\={P}}ot&quot;);</span>
+<span class="fc" id="L51">        assertNameFormatB(&quot;U.~{\\\&quot;{U}}nderwood&quot;, &quot;Ulrich {\\\&quot;{U}}nderwood and Ned {\\~N}et and Paul {\\={P}}ot&quot;);</span>
+<span class="fc" id="L52">        assertNameFormatC(&quot;Ulrich {\\\&quot;{U}}nderwood&quot;, &quot;Ulrich {\\\&quot;{U}}nderwood and Ned {\\~N}et and Paul {\\={P}}ot&quot;);</span>
+<span class="fc" id="L53">        assertNameFormatA(&quot;Victor, P.~{\\'E}?&quot;, &quot;Paul {\\'E}mile Victor and and de la Cierva y Codorn{\\’\\i}u, Juan&quot;);</span>
+<span class="fc" id="L54">        assertNameFormatB(&quot;P.~{\\'E}. Victor&quot;, &quot;Paul {\\'E}mile Victor and and de la Cierva y Codorn{\\’\\i}u, Juan&quot;);</span>
+<span class="fc" id="L55">        assertNameFormatC(&quot;Paul~{\\'E}mile Victor&quot;,</span>
+<span class="fc" id="L56">                &quot;Paul {\\'E}mile Victor and and de la Cierva y Codorn{\\’\\i}u, Juan&quot;);</span>
+
+<span class="fc" id="L58">    }</span>
+
+    private void assertNameFormat(String string, String string2, int which, String format) {
+<span class="fc" id="L61">        assertEquals(string, BibtexNameFormatter.formatName(string2, which, format,</span>
+<span class="fc" id="L62">                Assertions::fail));</span>
+<span class="fc" id="L63">    }</span>
+
+    private void assertNameFormatC(String string, String string2) {
+<span class="fc" id="L66">        assertNameFormat(string, string2, 1, &quot;{ff }{vv }{ll}{ jj}&quot;);</span>
+<span class="fc" id="L67">    }</span>
+
+    private void assertNameFormatB(String string, String string2) {
+<span class="fc" id="L70">        assertNameFormat(string, string2, 1, &quot;{f.~}{vv~}{ll}{, jj}&quot;);</span>
+<span class="fc" id="L71">    }</span>
+
+    private void assertNameFormatA(String string, String string2) {
+<span class="fc" id="L74">        assertNameFormat(string, string2, 1, &quot;{vv~}{ll}{, jj}{, f}?&quot;);</span>
+<span class="fc" id="L75">    }</span>
+
+    @Test
+    public void testConsumeToMatchingBrace() {
+        {
+<span class="fc" id="L80">            StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L81">            assertEquals(6, BibtexNameFormatter.consumeToMatchingBrace(sb, &quot;{HELLO} {WORLD}&quot;</span>
+<span class="fc" id="L82">                    .toCharArray(), 0));</span>
+<span class="fc" id="L83">            assertEquals(&quot;{HELLO}&quot;, sb.toString());</span>
+        }
+        {
+<span class="fc" id="L86">            StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L87">            assertEquals(18, BibtexNameFormatter.consumeToMatchingBrace(sb, &quot;{HE{L{}L}O} {WORLD}&quot;</span>
+<span class="fc" id="L88">                    .toCharArray(), 12));</span>
+<span class="fc" id="L89">            assertEquals(&quot;{WORLD}&quot;, sb.toString());</span>
+        }
+<span class="fc" id="L91">        StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L92">        assertEquals(10, BibtexNameFormatter.consumeToMatchingBrace(sb, &quot;{HE{L{}L}O} {WORLD}&quot;</span>
+<span class="fc" id="L93">                .toCharArray(), 0));</span>
+<span class="fc" id="L94">        assertEquals(&quot;{HE{L{}L}O}&quot;, sb.toString());</span>
+<span class="fc" id="L95">    }</span>
+
+    @Test
+    public void testGetFirstCharOfString() {
+<span class="fc" id="L99">        assertEquals(&quot;C&quot;, BibtexNameFormatter.getFirstCharOfString(&quot;Charles&quot;));</span>
+<span class="fc" id="L100">        assertEquals(&quot;V&quot;, BibtexNameFormatter.getFirstCharOfString(&quot;Vall{\\'e}e&quot;));</span>
+<span class="fc" id="L101">        assertEquals(&quot;{\\'e}&quot;, BibtexNameFormatter.getFirstCharOfString(&quot;{\\'e}&quot;));</span>
+<span class="fc" id="L102">        assertEquals(&quot;{\\'e&quot;, BibtexNameFormatter.getFirstCharOfString(&quot;{\\'e&quot;));</span>
+<span class="fc" id="L103">        assertEquals(&quot;E&quot;, BibtexNameFormatter.getFirstCharOfString(&quot;{E&quot;));</span>
+<span class="fc" id="L104">    }</span>
+
+    @Test
+    public void testNumberOfChars() {
+
+<span class="fc" id="L109">        assertEquals(6, BibtexNameFormatter.numberOfChars(&quot;Vall{\\'e}e&quot;, -1));</span>
+<span class="fc" id="L110">        assertEquals(2, BibtexNameFormatter.numberOfChars(&quot;Vall{\\'e}e&quot;, 2));</span>
+<span class="fc" id="L111">        assertEquals(1, BibtexNameFormatter.numberOfChars(&quot;Vall{\\'e}e&quot;, 1));</span>
+<span class="fc" id="L112">        assertEquals(6, BibtexNameFormatter.numberOfChars(&quot;Vall{\\'e}e&quot;, 6));</span>
+<span class="fc" id="L113">        assertEquals(6, BibtexNameFormatter.numberOfChars(&quot;Vall{\\'e}e&quot;, 7));</span>
+<span class="fc" id="L114">        assertEquals(8, BibtexNameFormatter.numberOfChars(&quot;Vall{e}e&quot;, -1));</span>
+<span class="fc" id="L115">        assertEquals(6, BibtexNameFormatter.numberOfChars(&quot;Vall{\\'e this will be skipped}e&quot;, -1));</span>
+<span class="fc" id="L116">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

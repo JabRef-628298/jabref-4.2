@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>FromAuxDialog.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.auximport</a> &gt; <span class="el_source">FromAuxDialog.java</span></div><h1>FromAuxDialog.java</h1><pre class="source lang-java linenums"><span class="nc" id="L1">package org.jabref.gui.auximport;</span>
+
+import java.awt.BorderLayout;
+import java.awt.event.ActionEvent;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Optional;
+
+import javax.swing.AbstractAction;
+import javax.swing.ActionMap;
+import javax.swing.BorderFactory;
+import javax.swing.InputMap;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTabbedPane;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
+
+import org.jabref.Globals;
+import org.jabref.gui.BasePanel;
+import org.jabref.gui.DialogService;
+import org.jabref.gui.FXDialogService;
+import org.jabref.gui.JabRefDialog;
+import org.jabref.gui.JabRefFrame;
+import org.jabref.gui.keyboard.KeyBinding;
+import org.jabref.gui.util.DefaultTaskExecutor;
+import org.jabref.gui.util.FileDialogConfiguration;
+import org.jabref.logic.auxparser.DefaultAuxParser;
+import org.jabref.logic.l10n.Localization;
+import org.jabref.logic.util.FileType;
+import org.jabref.model.auxparser.AuxParser;
+import org.jabref.model.auxparser.AuxParserResult;
+import org.jabref.model.database.BibDatabase;
+import org.jabref.preferences.JabRefPreferences;
+
+import com.jgoodies.forms.builder.ButtonBarBuilder;
+import com.jgoodies.forms.builder.DefaultFormBuilder;
+import com.jgoodies.forms.layout.FormLayout;
+
+/**
+ * A wizard dialog for generating a new sub database from existing TeX AUX file
+ */
+public class FromAuxDialog extends JabRefDialog {
+
+<span class="nc" id="L50">    private final JPanel statusPanel = new JPanel();</span>
+<span class="nc" id="L51">    private final JPanel buttons = new JPanel();</span>
+<span class="nc" id="L52">    private final JButton generateButton = new JButton();</span>
+<span class="nc" id="L53">    private final JButton cancelButton = new JButton();</span>
+<span class="nc" id="L54">    private final JButton parseButton = new JButton();</span>
+
+<span class="nc" id="L56">    private final JComboBox&lt;String&gt; dbChooser = new JComboBox&lt;&gt;();</span>
+    private JTextField auxFileField;
+
+    private JList&lt;String&gt; notFoundList;
+    private JTextArea statusInfos;
+
+    // all open databases from JabRefFrame
+    private final JTabbedPane parentTabbedPane;
+
+    private boolean generatePressed;
+
+    private AuxParserResult auxParserResult;
+
+    private final JabRefFrame parentFrame;
+
+    public FromAuxDialog(JabRefFrame frame, String title, boolean modal, JTabbedPane viewedDBs) {
+<span class="nc" id="L72">        super(frame, title, modal, FromAuxDialog.class);</span>
+
+<span class="nc" id="L74">        parentTabbedPane = viewedDBs;</span>
+<span class="nc" id="L75">        parentFrame = frame;</span>
+
+<span class="nc" id="L77">        jbInit();</span>
+<span class="nc" id="L78">        pack();</span>
+<span class="nc" id="L79">        setSize(600, 500);</span>
+<span class="nc" id="L80">    }</span>
+
+    private void jbInit() {
+<span class="nc" id="L83">        JPanel panel1 = new JPanel();</span>
+
+<span class="nc" id="L85">        panel1.setLayout(new BorderLayout());</span>
+<span class="nc" id="L86">        generateButton.setText(Localization.lang(&quot;Generate&quot;));</span>
+<span class="nc" id="L87">        generateButton.setEnabled(false);</span>
+<span class="nc" id="L88">        generateButton.addActionListener(e -&gt; {</span>
+<span class="nc" id="L89">            generatePressed = true;</span>
+<span class="nc" id="L90">            dispose();</span>
+<span class="nc" id="L91">        });</span>
+<span class="nc" id="L92">        cancelButton.setText(Localization.lang(&quot;Cancel&quot;));</span>
+<span class="nc" id="L93">        cancelButton.addActionListener(e -&gt; dispose());</span>
+
+<span class="nc" id="L95">        parseButton.setText(Localization.lang(&quot;Parse&quot;));</span>
+<span class="nc" id="L96">        parseButton.addActionListener(e -&gt; parseActionPerformed());</span>
+
+<span class="nc" id="L98">        initPanels();</span>
+
+        // insert the buttons
+<span class="nc" id="L101">        ButtonBarBuilder bb = new ButtonBarBuilder();</span>
+<span class="nc" id="L102">        JPanel buttonPanel = bb.getPanel();</span>
+<span class="nc" id="L103">        buttonPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));</span>
+
+<span class="nc" id="L105">        bb.addGlue();</span>
+<span class="nc" id="L106">        bb.addButton(parseButton);</span>
+<span class="nc" id="L107">        bb.addRelatedGap();</span>
+<span class="nc" id="L108">        bb.addButton(generateButton);</span>
+<span class="nc" id="L109">        bb.addButton(cancelButton);</span>
+<span class="nc" id="L110">        bb.addGlue();</span>
+<span class="nc" id="L111">        this.setModal(true);</span>
+<span class="nc" id="L112">        this.setResizable(true);</span>
+<span class="nc" id="L113">        this.setTitle(Localization.lang(&quot;AUX file import&quot;));</span>
+<span class="nc" id="L114">        JLabel desc = new JLabel(&quot;&lt;html&gt;&lt;h3&gt;&quot; + Localization.lang(&quot;AUX file import&quot;) + &quot;&lt;/h3&gt;&lt;p&gt;&quot;</span>
+<span class="nc" id="L115">                + Localization.lang(&quot;This feature generates a new library based on which entries &quot;</span>
+                        + &quot;are needed in an existing LaTeX document.&quot;)
+<span class="nc" id="L117">                + &quot;&lt;/p&gt;&quot; + &quot;&lt;p&gt;&quot;</span>
+<span class="nc" id="L118">                + Localization.lang(&quot;You need to select one of your open libraries from which to choose &quot;</span>
+                        + &quot;entries, as well as the AUX file produced by LaTeX when compiling your document.&quot;)
+<span class="nc" id="L120">                + &quot;&lt;/p&gt;&lt;/html&gt;&quot;);</span>
+<span class="nc" id="L121">        desc.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));</span>
+<span class="nc" id="L122">        panel1.add(desc, BorderLayout.NORTH);</span>
+
+<span class="nc" id="L124">        JPanel centerPane = new JPanel(new BorderLayout());</span>
+<span class="nc" id="L125">        centerPane.add(buttons, BorderLayout.NORTH);</span>
+<span class="nc" id="L126">        centerPane.add(statusPanel, BorderLayout.CENTER);</span>
+
+<span class="nc" id="L128">        getContentPane().add(panel1, BorderLayout.NORTH);</span>
+<span class="nc" id="L129">        getContentPane().add(centerPane, BorderLayout.CENTER);</span>
+<span class="nc" id="L130">        getContentPane().add(buttonPanel, BorderLayout.SOUTH);</span>
+
+        // Key bindings:
+<span class="nc" id="L133">        ActionMap am = statusPanel.getActionMap();</span>
+<span class="nc" id="L134">        InputMap im = statusPanel.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);</span>
+<span class="nc" id="L135">        im.put(Globals.getKeyPrefs().getKey(KeyBinding.CLOSE_DIALOG), &quot;close&quot;);</span>
+<span class="nc" id="L136">        am.put(&quot;close&quot;, new AbstractAction() {</span>
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L140">                dispose();</span>
+<span class="nc" id="L141">            }</span>
+        });
+
+<span class="nc" id="L144">    }</span>
+
+    private void initPanels() {
+        // collect the names of all open databases
+<span class="nc" id="L148">        int len = parentTabbedPane.getTabCount();</span>
+<span class="nc" id="L149">        int toSelect = -1;</span>
+<span class="nc bnc" id="L150" title="All 2 branches missed.">        for (int i = 0; i &lt; len; i++) {</span>
+<span class="nc" id="L151">            dbChooser.addItem(parentTabbedPane.getTitleAt(i));</span>
+<span class="nc bnc" id="L152" title="All 2 branches missed.">            if (parentFrame.getBasePanelAt(i) == parentFrame.getCurrentBasePanel()) {</span>
+<span class="nc" id="L153">                toSelect = i;</span>
+            }
+        }
+<span class="nc bnc" id="L156" title="All 2 branches missed.">        if (toSelect &gt;= 0) {</span>
+<span class="nc" id="L157">            dbChooser.setSelectedIndex(toSelect);</span>
+        }
+
+<span class="nc" id="L160">        auxFileField = new JTextField(&quot;&quot;, 25);</span>
+<span class="nc" id="L161">        JButton browseAuxFileButton = new JButton(Localization.lang(&quot;Browse&quot;));</span>
+
+<span class="nc" id="L163">        FileDialogConfiguration fileDialogConfiguration = new FileDialogConfiguration.Builder()</span>
+<span class="nc" id="L164">                .addExtensionFilter(FileType.AUX)</span>
+<span class="nc" id="L165">                .withDefaultExtension(FileType.AUX)</span>
+<span class="nc" id="L166">                .withInitialDirectory(Globals.prefs.get(JabRefPreferences.WORKING_DIRECTORY)).build();</span>
+<span class="nc" id="L167">        DialogService ds = new FXDialogService();</span>
+
+<span class="nc" id="L169">        browseAuxFileButton.addActionListener(e -&gt; {</span>
+<span class="nc" id="L170">            Optional&lt;Path&gt; file = DefaultTaskExecutor</span>
+<span class="nc" id="L171">                    .runInJavaFXThread(() -&gt; ds.showFileOpenDialog(fileDialogConfiguration));</span>
+<span class="nc" id="L172">            file.ifPresent(f -&gt; auxFileField.setText(f.toAbsolutePath().toString()));</span>
+<span class="nc" id="L173">        });</span>
+
+<span class="nc" id="L175">        notFoundList = new JList&lt;&gt;();</span>
+<span class="nc" id="L176">        JScrollPane listScrollPane = new JScrollPane(notFoundList);</span>
+<span class="nc" id="L177">        statusInfos = new JTextArea(&quot;&quot;, 5, 20);</span>
+<span class="nc" id="L178">        JScrollPane statusScrollPane = new JScrollPane(statusInfos);</span>
+<span class="nc" id="L179">        statusInfos.setEditable(false);</span>
+
+<span class="nc" id="L181">        DefaultFormBuilder b = new DefaultFormBuilder(</span>
+<span class="nc" id="L182">                new FormLayout(&quot;left:pref, 4dlu, fill:pref:grow, 4dlu, left:pref&quot;, &quot;&quot;), buttons);</span>
+<span class="nc" id="L183">        b.appendSeparator(Localization.lang(&quot;Options&quot;));</span>
+<span class="nc" id="L184">        b.append(Localization.lang(&quot;Reference library&quot;) + &quot;:&quot;);</span>
+<span class="nc" id="L185">        b.append(dbChooser, 3);</span>
+<span class="nc" id="L186">        b.nextLine();</span>
+<span class="nc" id="L187">        b.append(Localization.lang(&quot;LaTeX AUX file&quot;) + &quot;:&quot;);</span>
+<span class="nc" id="L188">        b.append(auxFileField);</span>
+<span class="nc" id="L189">        b.append(browseAuxFileButton);</span>
+<span class="nc" id="L190">        b.getPanel().setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));</span>
+
+<span class="nc" id="L192">        b = new DefaultFormBuilder(new FormLayout(&quot;fill:pref:grow, 4dlu, fill:pref:grow&quot;, &quot;pref, pref, fill:pref:grow&quot;),</span>
+<span class="nc" id="L193">                statusPanel);</span>
+<span class="nc" id="L194">        b.appendSeparator(Localization.lang(&quot;Result&quot;));</span>
+<span class="nc" id="L195">        b.append(Localization.lang(&quot;Unknown BibTeX entries&quot;) + &quot;:&quot;);</span>
+<span class="nc" id="L196">        b.append(Localization.lang(&quot;Messages&quot;) + &quot;:&quot;);</span>
+<span class="nc" id="L197">        b.nextLine();</span>
+<span class="nc" id="L198">        b.append(listScrollPane);</span>
+<span class="nc" id="L199">        b.append(statusScrollPane);</span>
+<span class="nc" id="L200">        b.getPanel().setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));</span>
+<span class="nc" id="L201">    }</span>
+
+    private void parseActionPerformed() {
+<span class="nc" id="L204">        parseButton.setEnabled(false);</span>
+<span class="nc" id="L205">        BasePanel bp = (BasePanel) parentTabbedPane.getComponentAt(dbChooser.getSelectedIndex());</span>
+<span class="nc" id="L206">        notFoundList.removeAll();</span>
+<span class="nc" id="L207">        statusInfos.setText(null);</span>
+<span class="nc" id="L208">        BibDatabase refBase = bp.getDatabase();</span>
+<span class="nc" id="L209">        String auxName = auxFileField.getText();</span>
+
+<span class="nc bnc" id="L211" title="All 6 branches missed.">        if ((auxName != null) &amp;&amp; (refBase != null) &amp;&amp; !auxName.isEmpty()) {</span>
+<span class="nc" id="L212">            AuxParser auxParser = new DefaultAuxParser(refBase);</span>
+<span class="nc" id="L213">            auxParserResult = auxParser.parse(Paths.get(auxName));</span>
+<span class="nc" id="L214">            notFoundList.setListData(auxParserResult.getUnresolvedKeys().toArray(new String[auxParserResult.getUnresolvedKeys().size()]));</span>
+<span class="nc" id="L215">            statusInfos.append(new AuxParserResultViewModel(auxParserResult).getInformation(false));</span>
+
+<span class="nc" id="L217">            generateButton.setEnabled(true);</span>
+
+            // the generated database contains no entries -&gt; no active generate-button
+<span class="nc bnc" id="L220" title="All 2 branches missed.">            if (!auxParserResult.getGeneratedBibDatabase().hasEntries()) {</span>
+<span class="nc" id="L221">                statusInfos.append(&quot;\n&quot; + Localization.lang(&quot;empty library&quot;));</span>
+<span class="nc" id="L222">                generateButton.setEnabled(false);</span>
+            }
+<span class="nc" id="L224">        } else {</span>
+<span class="nc" id="L225">            generateButton.setEnabled(false);</span>
+        }
+
+<span class="nc" id="L228">        parseButton.setEnabled(true);</span>
+<span class="nc" id="L229">    }</span>
+
+    public boolean generatePressed() {
+<span class="nc" id="L232">        return generatePressed;</span>
+    }
+
+    public BibDatabase getGenerateDB() {
+<span class="nc" id="L236">        return auxParserResult.getGeneratedBibDatabase();</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

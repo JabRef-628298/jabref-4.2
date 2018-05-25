@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MedlineFetcherTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.importer.fetcher</a> &gt; <span class="el_source">MedlineFetcherTest.java</span></div><h1>MedlineFetcherTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.importer.fetcher;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.BiblatexEntryTypes;
+import org.jabref.model.entry.FieldName;
+import org.jabref.testutils.category.FetcherTest;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+@FetcherTest
+<span class="fc" id="L19">public class MedlineFetcherTest {</span>
+
+    private MedlineFetcher fetcher;
+    private BibEntry entryWijedasa, entryEndharti, bibEntryIchikawa, bibEntrySari;
+
+    @BeforeEach
+    public void setUp() {
+<span class="fc" id="L26">        fetcher = new MedlineFetcher();</span>
+
+<span class="fc" id="L28">        entryWijedasa = new BibEntry();</span>
+<span class="fc" id="L29">        entryWijedasa.setType(BiblatexEntryTypes.ARTICLE);</span>
+<span class="fc" id="L30">        entryWijedasa.setField(&quot;author&quot;, &quot;Wijedasa, Lahiru S and Jauhiainen, Jyrki and Könönen, Mari and Lampela, Maija and Vasander, Harri and Leblanc, Marie-Claire and Evers, Stephanie and Smith, Thomas E L and Yule, Catherine M and Varkkey, Helena and Lupascu, Massimo and Parish, Faizal and Singleton, Ian and Clements, Gopalasamy R and Aziz, Sheema Abdul and Harrison, Mark E and Cheyne, Susan and Anshari, Gusti Z and Meijaard, Erik and Goldstein, Jenny E and Waldron, Susan and Hergoualc'h, Kristell and Dommain, Rene and Frolking, Steve and Evans, Christopher D and Posa, Mary Rose C and Glaser, Paul H and Suryadiputra, Nyoman and Lubis, Reza and Santika, Truly and Padfield, Rory and Kurnianto, Sofyan and Hadisiswoyo, Panut and Lim, Teck Wyn and Page, Susan E and Gauci, Vincent and Van Der Meer, Peter J and Buckland, Helen and Garnier, Fabien and Samuel, Marshall K and Choo, Liza Nuriati Lim Kim and O'Reilly, Patrick and Warren, Matthew and Suksuwan, Surin and Sumarga, Elham and Jain, Anuj and Laurance, William F and Couwenberg, John and Joosten, Hans and Vernimmen, Ronald and Hooijer, Aljosja and Malins, Chris and Cochrane, Mark A and Perumal, Balu and Siegert, Florian and Peh, Kelvin S-H and Comeau, Louis-Pierre and Verchot, Louis and Harvey, Charles F and Cobb, Alex and Jaafar, Zeehan and Wösten, Henk and Manuri, Solichin and Müller, Moritz and Giesen, Wim and Phelps, Jacob and Yong, Ding Li and Silvius, Marcel and Wedeux, Béatrice M M and Hoyt, Alison and Osaki, Mitsuru and Hirano, Takashi and Takahashi, Hidenori and Kohyama, Takashi S and Haraguchi, Akira and Nugroho, Nunung P and Coomes, David A and Quoi, Le Phat and Dohong, Alue and Gunawan, Haris and Gaveau, David L A and Langner, Andreas and Lim, Felix K S and Edwards, David P and Giam, Xingli and Van Der Werf, Guido and Carmenta, Rachel and Verwer, Caspar C and Gibson, Luke and Gandois, Laure and Graham, Laura Linda Bozena and Regalino, Jhanson and Wich, Serge A and Rieley, Jack and Kettridge, Nicholas and Brown, Chloe and Pirard, Romain and Moore, Sam and Capilla, B Ripoll and Ballhorn, Uwe and Ho, Hua Chew and Hoscilo, Agata and Lohberger, Sandra and Evans, Theodore A and Yulianti, Nina and Blackham, Grace and Onrizal and Husson, Simon and Murdiyarso, Daniel and Pangala, Sunita and Cole, Lydia E S and Tacconi, Luca and Segah, Hendrik and Tonoto, Prayoto and Lee, Janice S H and Schmilewski, Gerald and Wulffraat, Stephan and Putra, Erianto Indra and Cattau, Megan E and Clymo, R S and Morrison, Ross and Mujahid, Aazani and Miettinen, Jukka and Liew, Soo Chin and Valpola, Samu and Wilson, David and D'Arcy, Laura and Gerding, Michiel and Sundari, Siti and Thornton, Sara A and Kalisz, Barbara and Chapman, Stephen J and Su, Ahmad Suhaizi Mat and Basuki, Imam and Itoh, Masayuki and Traeholt, Carl and Sloan, Sean and Sayok, Alexander K and Andersen, Roxane&quot;);</span>
+<span class="fc" id="L31">        entryWijedasa.setField(&quot;country&quot;, &quot;England&quot;);</span>
+<span class="fc" id="L32">        entryWijedasa.setField(&quot;doi&quot;, &quot;10.1111/gcb.13516&quot;);</span>
+<span class="fc" id="L33">        entryWijedasa.setField(&quot;issn&quot;, &quot;1365-2486&quot;);</span>
+<span class="fc" id="L34">        entryWijedasa.setField(&quot;issn-linking&quot;, &quot;1354-1013&quot;);</span>
+<span class="fc" id="L35">        entryWijedasa.setField(&quot;issue&quot;, &quot;3&quot;);</span>
+<span class="fc" id="L36">        entryWijedasa.setField(&quot;journal&quot;, &quot;Global change biology&quot;);</span>
+<span class="fc" id="L37">        entryWijedasa.setField(&quot;month&quot;, &quot;#mar#&quot;);</span>
+<span class="fc" id="L38">        entryWijedasa.setField(&quot;nlm-id&quot;, &quot;9888746&quot;);</span>
+<span class="fc" id="L39">        entryWijedasa.setField(&quot;owner&quot;, &quot;NLM&quot;);</span>
+<span class="fc" id="L40">        entryWijedasa.setField(&quot;pages&quot;, &quot;977--982&quot;);</span>
+<span class="fc" id="L41">        entryWijedasa.setField(&quot;pmid&quot;, &quot;27670948&quot;);</span>
+<span class="fc" id="L42">        entryWijedasa.setField(&quot;pubmodel&quot;, &quot;Print-Electronic&quot;);</span>
+<span class="fc" id="L43">        entryWijedasa.setField(&quot;pubstatus&quot;, &quot;ppublish&quot;);</span>
+<span class="fc" id="L44">        entryWijedasa.setField(&quot;revised&quot;, &quot;2018-01-23&quot;);</span>
+<span class="fc" id="L45">        entryWijedasa.setField(&quot;title&quot;, &quot;Denial of long-term issues with agriculture on tropical peatlands will have devastating consequences.&quot;);</span>
+<span class="fc" id="L46">        entryWijedasa.setField(&quot;volume&quot;, &quot;23&quot;);</span>
+<span class="fc" id="L47">        entryWijedasa.setField(&quot;year&quot;, &quot;2017&quot;);</span>
+
+<span class="fc" id="L49">        entryEndharti = new BibEntry();</span>
+<span class="fc" id="L50">        entryEndharti.setType(BiblatexEntryTypes.ARTICLE);</span>
+<span class="fc" id="L51">        entryEndharti.setField(&quot;title&quot;, &quot;Dendrophthoe pentandra (L.) Miq extract effectively inhibits inflammation, proliferation and induces p53 expression on colitis-associated colon cancer.&quot;);</span>
+<span class="fc" id="L52">        entryEndharti.setField(&quot;author&quot;, &quot;Endharti, Agustina Tri and Wulandari, Adisti and Listyana, Anik and Norahmawati, Eviana and Permana, Sofy&quot;);</span>
+<span class="fc" id="L53">        entryEndharti.setField(&quot;country&quot;, &quot;England&quot;);</span>
+<span class="fc" id="L54">        entryEndharti.setField(&quot;doi&quot;, &quot;10.1186/s12906-016-1345-0&quot;);</span>
+<span class="fc" id="L55">        entryEndharti.setField(&quot;pii&quot;, &quot;10.1186/s12906-016-1345-0&quot;);</span>
+<span class="fc" id="L56">        entryEndharti.setField(&quot;pmc&quot;, &quot;PMC5037598&quot;);</span>
+<span class="fc" id="L57">        entryEndharti.setField(&quot;issn&quot;, &quot;1472-6882&quot;);</span>
+<span class="fc" id="L58">        entryEndharti.setField(&quot;issn-linking&quot;, &quot;1472-6882&quot;);</span>
+<span class="fc" id="L59">        entryEndharti.setField(&quot;issue&quot;, &quot;1&quot;);</span>
+<span class="fc" id="L60">        entryEndharti.setField(&quot;journal&quot;, &quot;BMC complementary and alternative medicine&quot;);</span>
+<span class="fc" id="L61">        entryEndharti.setField(&quot;keywords&quot;, &quot;CAC; Dendrophtoe pentandra; IL-22; MPO; Proliferation; p53&quot;);</span>
+<span class="fc" id="L62">        entryEndharti.setField(&quot;nlm-id&quot;, &quot;101088661&quot;);</span>
+<span class="fc" id="L63">        entryEndharti.setField(&quot;owner&quot;, &quot;NLM&quot;);</span>
+<span class="fc" id="L64">        entryEndharti.setField(&quot;pages&quot;, &quot;374&quot;);</span>
+<span class="fc" id="L65">        entryEndharti.setField(&quot;month&quot;, &quot;#sep#&quot;);</span>
+<span class="fc" id="L66">        entryEndharti.setField(&quot;pmid&quot;, &quot;27670445&quot;);</span>
+<span class="fc" id="L67">        entryEndharti.setField(&quot;pubmodel&quot;, &quot;Electronic&quot;);</span>
+<span class="fc" id="L68">        entryEndharti.setField(&quot;pubstatus&quot;, &quot;epublish&quot;);</span>
+<span class="fc" id="L69">        entryEndharti.setField(&quot;revised&quot;, &quot;2017-02-20&quot;);</span>
+<span class="fc" id="L70">        entryEndharti.setField(&quot;volume&quot;, &quot;16&quot;);</span>
+<span class="fc" id="L71">        entryEndharti.setField(&quot;year&quot;, &quot;2016&quot;);</span>
+
+<span class="fc" id="L73">        bibEntryIchikawa = new BibEntry();</span>
+<span class="fc" id="L74">        bibEntryIchikawa.setType(BiblatexEntryTypes.ARTICLE);</span>
+<span class="fc" id="L75">        bibEntryIchikawa.setField(&quot;author&quot;, &quot;Ichikawa-Seki, Madoka and Guswanto, Azirwan and Allamanda, Puttik and Mariamah, Euis Siti and Wibowo, Putut Eko and Igarashi, Ikuo and Nishikawa, Yoshifumi&quot;);</span>
+<span class="fc" id="L76">        bibEntryIchikawa.setField(&quot;chemicals&quot;, &quot;Antibodies, Protozoan, Antigens, Protozoan, GRA7 protein, Toxoplasma gondii, Protozoan Proteins&quot;);</span>
+<span class="fc" id="L77">        bibEntryIchikawa.setField(&quot;citation-subset&quot;, &quot;IM&quot;);</span>
+<span class="fc" id="L78">        bibEntryIchikawa.setField(&quot;completed&quot;, &quot;2016-07-26&quot;);</span>
+<span class="fc" id="L79">        bibEntryIchikawa.setField(&quot;country&quot;, &quot;Netherlands&quot;);</span>
+<span class="fc" id="L80">        bibEntryIchikawa.setField(&quot;doi&quot;, &quot;10.1016/j.parint.2015.07.004&quot;);</span>
+<span class="fc" id="L81">        bibEntryIchikawa.setField(&quot;issn&quot;, &quot;1873-0329&quot;);</span>
+<span class="fc" id="L82">        bibEntryIchikawa.setField(&quot;pubstatus&quot;, &quot;ppublish&quot;);</span>
+<span class="fc" id="L83">        bibEntryIchikawa.setField(&quot;revised&quot;, &quot;2015-09-26&quot;);</span>
+<span class="fc" id="L84">        bibEntryIchikawa.setField(&quot;issn-linking&quot;, &quot;1383-5769&quot;);</span>
+<span class="fc" id="L85">        bibEntryIchikawa.setField(&quot;issue&quot;, &quot;6&quot;);</span>
+<span class="fc" id="L86">        bibEntryIchikawa.setField(&quot;journal&quot;, &quot;Parasitology international&quot;);</span>
+<span class="fc" id="L87">        bibEntryIchikawa.setField(&quot;keywords&quot;, &quot;Animals; Antibodies, Protozoan, blood; Antigens, Protozoan, immunology; Cattle, parasitology; Cattle Diseases, epidemiology, parasitology; Enzyme-Linked Immunosorbent Assay, veterinary; Geography; Humans; Indonesia, epidemiology; Livestock, immunology, parasitology; Meat, parasitology; Protozoan Proteins, immunology; Seroepidemiologic Studies; Swine, parasitology; Swine Diseases, epidemiology, parasitology; Toxoplasma, immunology; Toxoplasmosis, Animal, epidemiology, immunology, parasitology; Cattle; ELISA; Indonesia; Pig; TgGRA7; Toxoplasma gondii&quot;);</span>
+<span class="fc" id="L88">        bibEntryIchikawa.setField(&quot;month&quot;, &quot;#dec#&quot;);</span>
+<span class="fc" id="L89">        bibEntryIchikawa.setField(&quot;nlm-id&quot;, &quot;9708549&quot;);</span>
+<span class="fc" id="L90">        bibEntryIchikawa.setField(&quot;owner&quot;, &quot;NLM&quot;);</span>
+<span class="fc" id="L91">        bibEntryIchikawa.setField(&quot;pages&quot;, &quot;484--486&quot;);</span>
+<span class="fc" id="L92">        bibEntryIchikawa.setField(&quot;pii&quot;, &quot;S1383-5769(15)00124-5&quot;);</span>
+<span class="fc" id="L93">        bibEntryIchikawa.setField(&quot;pmid&quot;, &quot;26197440&quot;);</span>
+<span class="fc" id="L94">        bibEntryIchikawa.setField(&quot;pubmodel&quot;, &quot;Print-Electronic&quot;);</span>
+<span class="fc" id="L95">        bibEntryIchikawa.setField(&quot;title&quot;, &quot;Seroprevalence of antibody to TgGRA7 antigen of Toxoplasma gondii in livestock animals from Western Java, Indonesia.&quot;);</span>
+<span class="fc" id="L96">        bibEntryIchikawa.setField(&quot;volume&quot;, &quot;64&quot;);</span>
+<span class="fc" id="L97">        bibEntryIchikawa.setField(&quot;year&quot;, &quot;2015&quot;);</span>
+
+<span class="fc" id="L99">        bibEntrySari = new BibEntry();</span>
+<span class="fc" id="L100">        bibEntrySari.setType(BiblatexEntryTypes.ARTICLE);</span>
+<span class="fc" id="L101">        bibEntrySari.setField(&quot;author&quot;, &quot;Sari, Yulia and Haryati, Sri and Raharjo, Irvan and Prasetyo, Afiono Agung&quot;);</span>
+<span class="fc" id="L102">        bibEntrySari.setField(&quot;chemicals&quot;, &quot;Antibodies, Protozoan, Antibodies, Viral, HTLV-I Antibodies, HTLV-II Antibodies, Hepatitis Antibodies, Hepatitis B Antibodies, Hepatitis C Antibodies, Immunoglobulin G, Immunoglobulin M&quot;);</span>
+<span class="fc" id="L103">        bibEntrySari.setField(&quot;citation-subset&quot;, &quot;IM&quot;);</span>
+<span class="fc" id="L104">        bibEntrySari.setField(&quot;completed&quot;, &quot;2016-04-21&quot;);</span>
+<span class="fc" id="L105">        bibEntrySari.setField(&quot;country&quot;, &quot;Thailand&quot;);</span>
+<span class="fc" id="L106">        bibEntrySari.setField(&quot;issn&quot;, &quot;0125-1562&quot;);</span>
+<span class="fc" id="L107">        bibEntrySari.setField(&quot;issn-linking&quot;, &quot;0125-1562&quot;);</span>
+<span class="fc" id="L108">        bibEntrySari.setField(&quot;issue&quot;, &quot;6&quot;);</span>
+<span class="fc" id="L109">        bibEntrySari.setField(&quot;journal&quot;, &quot;The Southeast Asian journal of tropical medicine and public health&quot;);</span>
+<span class="fc" id="L110">        bibEntrySari.setField(&quot;keywords&quot;, &quot;Antibodies, Protozoan; Antibodies, Viral, immunology; Coinfection, epidemiology, immunology; Female; HIV Infections, epidemiology; HTLV-I Antibodies, immunology; HTLV-I Infections, epidemiology, immunology; HTLV-II Antibodies, immunology; HTLV-II Infections, epidemiology, immunology; Hepatitis Antibodies, immunology; Hepatitis B Antibodies, immunology; Hepatitis C Antibodies, immunology; Hepatitis Delta Virus, immunology; Hepatitis, Viral, Human, epidemiology, immunology; Humans; Immunoglobulin G, immunology; Immunoglobulin M, immunology; Indonesia, epidemiology; Male; Prisoners; Seroepidemiologic Studies; Toxoplasma, immunology; Toxoplasmosis, epidemiology, immunology&quot;);</span>
+<span class="fc" id="L111">        bibEntrySari.setField(&quot;month&quot;, &quot;#nov#&quot;);</span>
+<span class="fc" id="L112">        bibEntrySari.setField(&quot;pubstatus&quot;, &quot;ppublish&quot;);</span>
+<span class="fc" id="L113">        bibEntrySari.setField(&quot;revised&quot;, &quot;2016-02-12&quot;);</span>
+<span class="fc" id="L114">        bibEntrySari.setField(&quot;nlm-id&quot;, &quot;0266303&quot;);</span>
+<span class="fc" id="L115">        bibEntrySari.setField(&quot;owner&quot;, &quot;NLM&quot;);</span>
+<span class="fc" id="L116">        bibEntrySari.setField(&quot;pages&quot;, &quot;977--985&quot;);</span>
+<span class="fc" id="L117">        bibEntrySari.setField(&quot;pmid&quot;, &quot;26867355&quot;);</span>
+<span class="fc" id="L118">        bibEntrySari.setField(&quot;pubmodel&quot;, &quot;Print&quot;);</span>
+<span class="fc" id="L119">        bibEntrySari.setField(&quot;title&quot;, &quot;TOXOPLASMA AND VIRAL ANTIBODIES AMONG HIV PATIENTS AND INMATES IN CENTRAL JAVA, INDONESIA.&quot;);</span>
+<span class="fc" id="L120">        bibEntrySari.setField(&quot;volume&quot;, &quot;46&quot;);</span>
+<span class="fc" id="L121">        bibEntrySari.setField(&quot;year&quot;, &quot;2015&quot;);</span>
+<span class="fc" id="L122">    }</span>
+
+    @Test
+    public void testGetName() {
+<span class="fc" id="L126">        assertEquals(&quot;Medline/PubMed&quot;, fetcher.getName());</span>
+<span class="fc" id="L127">    }</span>
+
+    @Test
+    public void testGetHelpPage() {
+<span class="fc" id="L131">        assertEquals(&quot;Medline&quot;, fetcher.getHelpPage().getPageName());</span>
+<span class="fc" id="L132">    }</span>
+
+    @Test
+    public void testSearchByIDWijedasa() throws Exception {
+<span class="fc" id="L136">        Optional&lt;BibEntry&gt; fetchedEntry = fetcher.performSearchById(&quot;27670948&quot;);</span>
+<span class="nc" id="L137">        fetchedEntry.get().clearField(FieldName.ABSTRACT); //Remove abstract due to copyright</span>
+<span class="nc" id="L138">        assertEquals(Optional.of(entryWijedasa), fetchedEntry);</span>
+<span class="nc" id="L139">    }</span>
+
+    @Test
+    public void testSearchByIDEndharti() throws Exception {
+<span class="fc" id="L143">        Optional&lt;BibEntry&gt; fetchedEntry = fetcher.performSearchById(&quot;27670445&quot;);</span>
+<span class="fc" id="L144">        fetchedEntry.get().clearField(FieldName.ABSTRACT); //Remove abstract due to copyright</span>
+<span class="fc" id="L145">        assertEquals(Optional.of(entryEndharti), fetchedEntry);</span>
+<span class="fc" id="L146">    }</span>
+
+    @Test
+    public void testSearchByIDIchikawa() throws Exception {
+<span class="fc" id="L150">        Optional&lt;BibEntry&gt; fetchedEntry = fetcher.performSearchById(&quot;26197440&quot;);</span>
+<span class="fc" id="L151">        fetchedEntry.get().clearField(FieldName.ABSTRACT); //Remove abstract due to copyright</span>
+<span class="fc" id="L152">        assertEquals(Optional.of(bibEntryIchikawa), fetchedEntry);</span>
+<span class="fc" id="L153">    }</span>
+
+    @Test
+    public void testSearchByIDSari() throws Exception {
+<span class="fc" id="L157">        Optional&lt;BibEntry&gt; fetchedEntry = fetcher.performSearchById(&quot;26867355&quot;);</span>
+<span class="fc" id="L158">        fetchedEntry.get().clearField(FieldName.ABSTRACT); //Remove abstract due to copyright</span>
+<span class="fc" id="L159">        assertEquals(Optional.of(bibEntrySari), fetchedEntry);</span>
+<span class="fc" id="L160">    }</span>
+
+    @Test
+    public void testMultipleEntries() throws Exception {
+<span class="fc" id="L164">        List&lt;BibEntry&gt; entryList = fetcher.performSearch(&quot;java&quot;);</span>
+<span class="fc" id="L165">        entryList.forEach(entry -&gt; entry.clearField(FieldName.ABSTRACT)); //Remove abstract due to copyright);</span>
+<span class="fc" id="L166">        assertEquals(50, entryList.size());</span>
+<span class="fc" id="L167">        assertTrue(entryList.contains(bibEntryIchikawa));</span>
+<span class="fc" id="L168">        assertTrue(entryList.contains(bibEntrySari));</span>
+<span class="fc" id="L169">    }</span>
+
+    @Test
+    public void testInvalidSearchTerm() throws Exception {
+<span class="fc" id="L173">        assertEquals(Optional.empty(), fetcher.performSearchById(&quot;this.is.a.invalid.search.term.for.the.medline.fetcher&quot;));</span>
+<span class="fc" id="L174">    }</span>
+
+    @Test
+    public void testEmptyEntryList() throws Exception {
+<span class="fc" id="L178">        List&lt;BibEntry&gt; entryList = fetcher.performSearch(&quot;java is fantastic and awesome &quot;);</span>
+<span class="fc" id="L179">        assertEquals(Collections.emptyList(), entryList);</span>
+<span class="fc" id="L180">    }</span>
+
+    @Test
+    public void testEmptyInput() throws Exception {
+<span class="fc" id="L184">        assertEquals(Collections.emptyList(), fetcher.performSearch(&quot;&quot;));</span>
+<span class="fc" id="L185">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

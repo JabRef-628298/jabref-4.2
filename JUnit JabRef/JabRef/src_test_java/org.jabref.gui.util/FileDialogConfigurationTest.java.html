@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>FileDialogConfigurationTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.util</a> &gt; <span class="el_source">FileDialogConfigurationTest.java</span></div><h1>FileDialogConfigurationTest.java</h1><pre class="source lang-java linenums">package org.jabref.gui.util;
+
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import javafx.stage.FileChooser;
+
+import org.jabref.logic.util.FileType;
+
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+
+import static org.junit.Assert.assertEquals;
+
+<span class="fc" id="L21">public class FileDialogConfigurationTest {</span>
+
+<span class="fc" id="L23">    @Rule public TemporaryFolder folder = new TemporaryFolder();</span>
+
+    @Test
+    public void testWithValidDirectoryString() throws IOException {
+<span class="fc" id="L27">        String tempFolder = folder.newFolder().toString();</span>
+
+<span class="fc" id="L29">        FileDialogConfiguration fileDialogConfiguration = new FileDialogConfiguration.Builder()</span>
+<span class="fc" id="L30">                .withInitialDirectory(tempFolder).build();</span>
+
+<span class="fc" id="L32">        assertEquals(Optional.of(Paths.get(tempFolder)), fileDialogConfiguration.getInitialDirectory());</span>
+<span class="fc" id="L33">    }</span>
+
+    @Test
+    public void testWithValidDirectoryPath() throws IOException {
+<span class="fc" id="L37">        Path tempFolder = folder.newFolder().toPath();</span>
+
+<span class="fc" id="L39">        FileDialogConfiguration fileDialogConfiguration = new FileDialogConfiguration.Builder()</span>
+<span class="fc" id="L40">                .withInitialDirectory(tempFolder).build();</span>
+
+<span class="fc" id="L42">        assertEquals(Optional.of(tempFolder), fileDialogConfiguration.getInitialDirectory());</span>
+<span class="fc" id="L43">    }</span>
+
+    @Test
+    public void testWithNullStringDirectory() {
+<span class="fc" id="L47">        String tempFolder = null;</span>
+<span class="fc" id="L48">        FileDialogConfiguration fileDialogConfiguration = new FileDialogConfiguration.Builder()</span>
+<span class="fc" id="L49">                .withInitialDirectory(tempFolder).build();</span>
+
+<span class="fc" id="L51">        assertEquals(Optional.ofNullable(tempFolder), fileDialogConfiguration.getInitialDirectory());</span>
+<span class="fc" id="L52">    }</span>
+
+    @Test
+    public void testWithNullPathDirectory() {
+<span class="fc" id="L56">        Path tempFolder = null;</span>
+<span class="fc" id="L57">        FileDialogConfiguration fileDialogConfiguration = new FileDialogConfiguration.Builder()</span>
+<span class="fc" id="L58">                .withInitialDirectory(tempFolder).build();</span>
+
+<span class="fc" id="L60">        assertEquals(Optional.ofNullable(tempFolder), fileDialogConfiguration.getInitialDirectory());</span>
+<span class="fc" id="L61">    }</span>
+
+    @Test
+    public void testWithNonExistingDirectoryAndParentNull() {
+<span class="fc" id="L65">        String tempFolder = &quot;workingDirectory&quot;;</span>
+<span class="fc" id="L66">        FileDialogConfiguration fileDialogConfiguration = new FileDialogConfiguration.Builder()</span>
+<span class="fc" id="L67">                .withInitialDirectory(tempFolder).build();</span>
+
+<span class="fc" id="L69">        assertEquals(Optional.ofNullable(null), fileDialogConfiguration.getInitialDirectory());</span>
+<span class="fc" id="L70">    }</span>
+
+    @Test
+    public void testSingleExtension() {
+<span class="fc" id="L74">        FileDialogConfiguration fileDialogConfiguration = new FileDialogConfiguration.Builder()</span>
+<span class="fc" id="L75">                .withDefaultExtension(FileType.BIBTEX_DB).build();</span>
+
+<span class="fc" id="L77">        FileChooser.ExtensionFilter filter = toFilter(FileType.BIBTEX_DB);</span>
+
+<span class="fc" id="L79">        assertEquals(filter.getExtensions(), fileDialogConfiguration.getDefaultExtension().getExtensions());</span>
+<span class="fc" id="L80">    }</span>
+
+    @Test
+    public void testMultipleExtension() {
+<span class="fc" id="L84">        EnumSet&lt;FileType&gt; extensions = EnumSet.allOf(FileType.class);</span>
+
+<span class="fc" id="L86">        FileDialogConfiguration fileDialogConfiguration = new FileDialogConfiguration.Builder()</span>
+<span class="fc" id="L87">                .addExtensionFilters(extensions).build();</span>
+
+<span class="fc" id="L89">        List&lt;FileChooser.ExtensionFilter&gt; extensionFilters = extensions.stream().map(this::toFilter)</span>
+<span class="fc" id="L90">                .collect(Collectors.toList());</span>
+
+        //We use size here as we otherwise would compare object references, as extension filters does not override equals
+<span class="fc" id="L93">        assertEquals(extensionFilters.size(), fileDialogConfiguration.getExtensionFilters().size());</span>
+
+<span class="fc" id="L95">    }</span>
+
+    private FileChooser.ExtensionFilter toFilter(FileType extension) {
+<span class="fc" id="L98">        return new FileChooser.ExtensionFilter(extension.getDescription(),</span>
+<span class="fc" id="L99">                extension.getExtensions().stream().map(ending -&gt; &quot;*.&quot; + ending).collect(Collectors.toList()));</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

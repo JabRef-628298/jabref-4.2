@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>EntryLinkListTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.model.entry</a> &gt; <span class="el_source">EntryLinkListTest.java</span></div><h1>EntryLinkListTest.java</h1><pre class="source lang-java linenums">package org.jabref.model.entry;
+
+import java.util.List;
+import java.util.Optional;
+
+import org.jabref.model.database.BibDatabase;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+<span class="fc" id="L14">public class EntryLinkListTest {</span>
+
+    private static final String key = &quot;test&quot;;
+
+    private BibDatabase database;
+    private List&lt;ParsedEntryLink&gt; links;
+    private ParsedEntryLink link;
+    private BibEntry source;
+    private BibEntry target;
+
+    @BeforeEach
+    public void before() {
+<span class="fc" id="L26">        database = new BibDatabase();</span>
+<span class="fc" id="L27">        links = EntryLinkList.parse(key, database);</span>
+<span class="fc" id="L28">        link = links.get(0);</span>
+<span class="fc" id="L29">        source = create(&quot;source&quot;);</span>
+<span class="fc" id="L30">        target = create(&quot;target&quot;);</span>
+<span class="fc" id="L31">    }</span>
+
+    private BibEntry create(String citeKey) {
+<span class="fc" id="L34">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L35">        entry.setCiteKey(citeKey);</span>
+<span class="fc" id="L36">        database.insertEntry(entry);</span>
+<span class="fc" id="L37">        return entry;</span>
+    }
+
+    @Test
+    public void givenFieldValueAndDatabaseWhenParsingThenExpectKey() {
+<span class="fc" id="L42">        assertEquals(key, link.getKey());</span>
+<span class="fc" id="L43">    }</span>
+
+    @Test
+    public void givenFieldValueAndDatabaseWhenParsingThenExpectDataBase() {
+<span class="fc" id="L47">        assertEquals(database, link.getDataBase());</span>
+<span class="fc" id="L48">    }</span>
+
+    @Test
+    public void givenFieldValueAndDatabaseWhenParsingThenExpectEmptyLinkedEntry() {
+<span class="fc" id="L52">        assertEquals(Optional.empty(), link.getLinkedEntry());</span>
+<span class="fc" id="L53">    }</span>
+
+    @Test
+    public void givenFieldValueAndDatabaseWhenParsingThenExpectLink() {
+<span class="fc" id="L57">        ParsedEntryLink expected = new ParsedEntryLink(key, database);</span>
+<span class="fc" id="L58">        assertEquals(expected, link);</span>
+<span class="fc" id="L59">    }</span>
+
+    @Test
+    public void givenNullFieldValueAndDatabaseWhenParsingThenExpectLinksIsEmpty() {
+<span class="fc" id="L63">        links = EntryLinkList.parse(null, database);</span>
+<span class="fc" id="L64">        assertTrue(links.isEmpty());</span>
+<span class="fc" id="L65">    }</span>
+
+    @Test
+    public void givenTargetAndSourceWhenSourceCrossrefTargetThenSourceCrossrefsTarget() {
+<span class="fc" id="L69">        source.setField(FieldName.CROSSREF, &quot;target&quot;);</span>
+<span class="fc" id="L70">        assertSourceCrossrefsTarget(target, source);</span>
+<span class="fc" id="L71">    }</span>
+
+    private void assertSourceCrossrefsTarget(BibEntry target, BibEntry source) {
+<span class="fc" id="L74">        Optional&lt;String&gt; sourceCrossref = source.getField(FieldName.CROSSREF);</span>
+<span class="fc" id="L75">        Optional&lt;String&gt; targetCiteKey = target.getCiteKeyOptional();</span>
+<span class="fc" id="L76">        assertEquals(sourceCrossref, targetCiteKey);</span>
+<span class="fc" id="L77">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

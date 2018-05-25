@@ -1,0 +1,1714 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>BibtexParserTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.importer.fileformat</a> &gt; <span class="el_source">BibtexParserTest.java</span></div><h1>BibtexParserTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.importer.fileformat;
+
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import org.jabref.logic.exporter.SavePreferences;
+import org.jabref.logic.formatter.casechanger.LowerCaseFormatter;
+import org.jabref.logic.importer.ImportFormatPreferences;
+import org.jabref.logic.importer.ParseException;
+import org.jabref.logic.importer.ParserResult;
+import org.jabref.logic.util.OS;
+import org.jabref.model.bibtexkeypattern.AbstractBibtexKeyPattern;
+import org.jabref.model.bibtexkeypattern.DatabaseBibtexKeyPattern;
+import org.jabref.model.bibtexkeypattern.GlobalBibtexKeyPattern;
+import org.jabref.model.cleanup.FieldFormatterCleanup;
+import org.jabref.model.cleanup.FieldFormatterCleanups;
+import org.jabref.model.database.BibDatabaseMode;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.BibtexString;
+import org.jabref.model.entry.Date;
+import org.jabref.model.entry.EntryType;
+import org.jabref.model.entry.FieldName;
+import org.jabref.model.groups.AllEntriesGroup;
+import org.jabref.model.groups.ExplicitGroup;
+import org.jabref.model.groups.GroupHierarchyType;
+import org.jabref.model.groups.GroupTreeNode;
+import org.jabref.model.groups.RegexKeywordGroup;
+import org.jabref.model.groups.WordKeywordGroup;
+import org.jabref.model.metadata.SaveOrderConfig;
+import org.jabref.model.util.DummyFileUpdateMonitor;
+import org.jabref.model.util.FileUpdateMonitor;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
+import org.mockito.Answers;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+/**
+ * Test the BibtexParser
+ */
+<span class="fc" id="L58">public class BibtexParserTest {</span>
+
+    private ImportFormatPreferences importFormatPreferences;
+    private BibtexParser parser;
+<span class="fc" id="L62">    private FileUpdateMonitor fileMonitor = new DummyFileUpdateMonitor();</span>
+
+    @BeforeEach
+    public void setUp() {
+<span class="fc" id="L66">        importFormatPreferences = mock(ImportFormatPreferences.class, Answers.RETURNS_DEEP_STUBS);</span>
+<span class="fc" id="L67">        when(importFormatPreferences.getKeywordSeparator()).thenReturn(',');</span>
+<span class="fc" id="L68">        parser = new BibtexParser(importFormatPreferences, new DummyFileUpdateMonitor());</span>
+<span class="fc" id="L69">    }</span>
+
+    @Test
+    public void parseWithNullThrowsNullPointerException() throws Exception {
+<span class="pc" id="L73">        Executable toBeTested = () -&gt; parser.parse(null);</span>
+
+<span class="fc" id="L75">        assertThrows(NullPointerException.class, toBeTested);</span>
+<span class="fc" id="L76">    }</span>
+
+    @Test
+    public void fromStringRecognizesEntry() throws ParseException {
+<span class="fc" id="L80">        List&lt;BibEntry&gt; parsed = parser</span>
+<span class="fc" id="L81">                .parseEntries(&quot;@article{test,author={Ed von Test}}&quot;);</span>
+
+<span class="fc" id="L83">        BibEntry expected = new BibEntry();</span>
+<span class="fc" id="L84">        expected.setType(&quot;article&quot;);</span>
+<span class="fc" id="L85">        expected.setCiteKey(&quot;test&quot;);</span>
+<span class="fc" id="L86">        expected.setField(&quot;author&quot;, &quot;Ed von Test&quot;);</span>
+
+<span class="fc" id="L88">        assertEquals(Collections.singletonList(expected), parsed);</span>
+<span class="fc" id="L89">    }</span>
+
+    @Test
+    public void fromStringReturnsEmptyListFromEmptyString() throws ParseException {
+<span class="fc" id="L93">        Collection&lt;BibEntry&gt; parsed = parser.parseEntries(&quot;&quot;);</span>
+
+<span class="fc" id="L95">        assertNotNull(parsed);</span>
+<span class="fc" id="L96">        assertEquals(Collections.emptyList(), parsed);</span>
+<span class="fc" id="L97">    }</span>
+
+    @Test
+    public void fromStringReturnsEmptyListIfNoEntryRecognized() throws ParseException {
+<span class="fc" id="L101">        Collection&lt;BibEntry&gt; parsed = parser</span>
+<span class="fc" id="L102">                .parseEntries(&quot;@@article@@{{{{{{}&quot;);</span>
+
+<span class="fc" id="L104">        assertNotNull(parsed);</span>
+<span class="fc" id="L105">        assertEquals(Collections.emptyList(), parsed);</span>
+<span class="fc" id="L106">    }</span>
+
+    @Test
+    public void singleFromStringRecognizesEntry() throws ParseException {
+<span class="fc" id="L110">        Optional&lt;BibEntry&gt; parsed = BibtexParser.singleFromString(</span>
+<span class="fc" id="L111">                &quot;@article{canh05,&quot; + &quot;  author = {Crowston, K. and Annabi, H.},\n&quot; + &quot;  title = {Title A}}\n&quot;,</span>
+<span class="fc" id="L112">                importFormatPreferences, fileMonitor);</span>
+
+<span class="fc" id="L114">        BibEntry expected = new BibEntry();</span>
+<span class="fc" id="L115">        expected.setType(&quot;article&quot;);</span>
+<span class="fc" id="L116">        expected.setCiteKey(&quot;canh05&quot;);</span>
+<span class="fc" id="L117">        expected.setField(&quot;author&quot;, &quot;Crowston, K. and Annabi, H.&quot;);</span>
+<span class="fc" id="L118">        expected.setField(&quot;title&quot;, &quot;Title A&quot;);</span>
+
+<span class="fc" id="L120">        assertEquals(Optional.of(expected), parsed);</span>
+<span class="fc" id="L121">    }</span>
+
+    @Test
+    public void singleFromStringRecognizesEntryInMultiple() throws ParseException {
+<span class="fc" id="L125">        Optional&lt;BibEntry&gt; parsed = BibtexParser.singleFromString(</span>
+<span class="fc" id="L126">                &quot;@article{canh05,&quot; + &quot;  author = {Crowston, K. and Annabi, H.},\n&quot; + &quot;  title = {Title A}}\n&quot;</span>
+                        + &quot;@inProceedings{foo,&quot; + &quot;  author={Norton Bar}}&quot;,
+<span class="fc" id="L128">                importFormatPreferences, fileMonitor);</span>
+
+<span class="pc bpc" id="L130" title="1 of 2 branches missed.">        assertTrue(parsed.get().getCiteKeyOptional().equals(Optional.of(&quot;canh05&quot;))</span>
+<span class="pc bnc" id="L131" title="All 2 branches missed.">                || parsed.get().getCiteKeyOptional().equals(Optional.of(&quot;foo&quot;)));</span>
+<span class="fc" id="L132">    }</span>
+
+    @Test
+    public void singleFromStringReturnsEmptyFromEmptyString() throws ParseException {
+<span class="fc" id="L136">        Optional&lt;BibEntry&gt; parsed = BibtexParser.singleFromString(&quot;&quot;, importFormatPreferences, fileMonitor);</span>
+
+<span class="fc" id="L138">        assertEquals(Optional.empty(), parsed);</span>
+<span class="fc" id="L139">    }</span>
+
+    @Test
+    public void singleFromStringReturnsEmptyIfNoEntryRecognized() throws ParseException {
+<span class="fc" id="L143">        Optional&lt;BibEntry&gt; parsed = BibtexParser.singleFromString(&quot;@@article@@{{{{{{}&quot;, importFormatPreferences, fileMonitor);</span>
+
+<span class="fc" id="L145">        assertEquals(Optional.empty(), parsed);</span>
+<span class="fc" id="L146">    }</span>
+
+    @Test
+    public void parseRecognizesEntry() throws IOException {
+<span class="fc" id="L150">        ParserResult result = parser</span>
+<span class="fc" id="L151">                .parse(new StringReader(&quot;@article{test,author={Ed von Test}}&quot;));</span>
+
+<span class="fc" id="L153">        List&lt;BibEntry&gt; parsed = result.getDatabase().getEntries();</span>
+<span class="fc" id="L154">        BibEntry entry = parsed.iterator().next();</span>
+
+<span class="fc" id="L156">        assertEquals(1, parsed.size());</span>
+<span class="fc" id="L157">        assertEquals(&quot;article&quot;, entry.getType());</span>
+<span class="fc" id="L158">        assertEquals(Optional.of(&quot;test&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L159">        assertEquals(2, entry.getFieldNames().size());</span>
+<span class="fc" id="L160">        assertEquals(Optional.of(&quot;Ed von Test&quot;), entry.getField(&quot;author&quot;));</span>
+<span class="fc" id="L161">    }</span>
+
+    @Test
+    public void parseQuotedEntries() throws IOException {
+<span class="fc" id="L165">        ParserResult result = parser</span>
+<span class="fc" id="L166">                .parse(new StringReader(&quot;@article{test,author=\&quot;Ed von Test\&quot;}&quot;));</span>
+
+<span class="fc" id="L168">        List&lt;BibEntry&gt; parsed = result.getDatabase().getEntries();</span>
+<span class="fc" id="L169">        BibEntry entry = parsed.iterator().next();</span>
+
+<span class="fc" id="L171">        assertEquals(1, parsed.size());</span>
+<span class="fc" id="L172">        assertEquals(&quot;article&quot;, entry.getType());</span>
+<span class="fc" id="L173">        assertEquals(Optional.of(&quot;test&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L174">        assertEquals(2, entry.getFieldNames().size());</span>
+<span class="fc" id="L175">        assertEquals(Optional.of(&quot;Ed von Test&quot;), entry.getField(&quot;author&quot;));</span>
+<span class="fc" id="L176">    }</span>
+
+    @Test
+    public void parseRecognizesEntryOnlyWithKey() throws IOException {
+<span class="fc" id="L180">        ParserResult result = parser.parse(new StringReader(&quot;@article{test}&quot;));</span>
+
+<span class="fc" id="L182">        List&lt;BibEntry&gt; parsed = result.getDatabase().getEntries();</span>
+<span class="fc" id="L183">        BibEntry entry = parsed.iterator().next();</span>
+
+<span class="fc" id="L185">        assertEquals(1, parsed.size());</span>
+<span class="fc" id="L186">        assertEquals(&quot;article&quot;, entry.getType());</span>
+<span class="fc" id="L187">        assertEquals(Optional.of(&quot;test&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L188">    }</span>
+
+    @Test
+    public void parseRecognizesEntryWithWhitespaceAtBegining() throws IOException {
+<span class="fc" id="L192">        ParserResult result = parser</span>
+<span class="fc" id="L193">                .parse(new StringReader(&quot; @article{test,author={Ed von Test}}&quot;));</span>
+
+<span class="fc" id="L195">        List&lt;BibEntry&gt; parsed = result.getDatabase().getEntries();</span>
+<span class="fc" id="L196">        BibEntry entry = parsed.iterator().next();</span>
+
+<span class="fc" id="L198">        assertEquals(1, parsed.size());</span>
+<span class="fc" id="L199">        assertEquals(&quot;article&quot;, entry.getType());</span>
+<span class="fc" id="L200">        assertEquals(Optional.of(&quot;test&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L201">        assertEquals(2, entry.getFieldNames().size());</span>
+<span class="fc" id="L202">        assertEquals(Optional.of(&quot;Ed von Test&quot;), entry.getField(&quot;author&quot;));</span>
+<span class="fc" id="L203">    }</span>
+
+    @Test
+    public void parseRecognizesEntryWithWhitespace() throws IOException {
+<span class="fc" id="L207">        ParserResult result = parser</span>
+<span class="fc" id="L208">                .parse(new StringReader(&quot;@article { test,author={Ed von Test}}&quot;));</span>
+
+<span class="fc" id="L210">        List&lt;BibEntry&gt; parsed = result.getDatabase().getEntries();</span>
+<span class="fc" id="L211">        BibEntry entry = parsed.iterator().next();</span>
+
+<span class="fc" id="L213">        assertEquals(1, parsed.size());</span>
+<span class="fc" id="L214">        assertEquals(&quot;article&quot;, entry.getType());</span>
+<span class="fc" id="L215">        assertEquals(Optional.of(&quot;test&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L216">        assertEquals(2, entry.getFieldNames().size());</span>
+<span class="fc" id="L217">        assertEquals(Optional.of(&quot;Ed von Test&quot;), entry.getField(&quot;author&quot;));</span>
+<span class="fc" id="L218">    }</span>
+
+    @Test
+    public void parseRecognizesEntryWithNewlines() throws IOException {
+<span class="fc" id="L222">        ParserResult result = parser</span>
+<span class="fc" id="L223">                .parse(new StringReader(&quot;@article\n{\ntest,author={Ed von Test}}&quot;));</span>
+
+<span class="fc" id="L225">        Collection&lt;BibEntry&gt; parsed = result.getDatabase().getEntries();</span>
+<span class="fc" id="L226">        BibEntry entry = parsed.iterator().next();</span>
+
+<span class="fc" id="L228">        assertEquals(1, parsed.size());</span>
+<span class="fc" id="L229">        assertEquals(&quot;article&quot;, entry.getType());</span>
+<span class="fc" id="L230">        assertEquals(Optional.of(&quot;test&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L231">        assertEquals(2, entry.getFieldNames().size());</span>
+<span class="fc" id="L232">        assertEquals(Optional.of(&quot;Ed von Test&quot;), entry.getField(&quot;author&quot;));</span>
+<span class="fc" id="L233">    }</span>
+
+    @Test
+    public void parseRecognizesEntryWithUnknownType() throws IOException {
+<span class="fc" id="L237">        ParserResult result = parser</span>
+<span class="fc" id="L238">                .parse(new StringReader(&quot;@unknown{test,author={Ed von Test}}&quot;));</span>
+
+<span class="fc" id="L240">        Collection&lt;BibEntry&gt; parsed = result.getDatabase().getEntries();</span>
+<span class="fc" id="L241">        BibEntry entry = parsed.iterator().next();</span>
+
+<span class="fc" id="L243">        assertEquals(1, parsed.size());</span>
+<span class="fc" id="L244">        assertEquals(&quot;unknown&quot;, entry.getType());</span>
+<span class="fc" id="L245">        assertEquals(Optional.of(&quot;test&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L246">        assertEquals(2, entry.getFieldNames().size());</span>
+<span class="fc" id="L247">        assertEquals(Optional.of(&quot;Ed von Test&quot;), entry.getField(&quot;author&quot;));</span>
+<span class="fc" id="L248">    }</span>
+
+    @Test
+    public void parseRecognizesEntryWithVeryLongType() throws IOException {
+<span class="fc" id="L252">        ParserResult result = parser.parse(</span>
+<span class="fc" id="L253">                new StringReader(&quot;@thisIsALongStringToTestMaybeItIsToLongWhoKnowsNOTme{test,author={Ed von Test}}&quot;));</span>
+
+<span class="fc" id="L255">        Collection&lt;BibEntry&gt; parsed = result.getDatabase().getEntries();</span>
+<span class="fc" id="L256">        BibEntry entry = parsed.iterator().next();</span>
+
+<span class="fc" id="L258">        assertEquals(1, parsed.size());</span>
+<span class="fc" id="L259">        assertEquals(&quot;thisisalongstringtotestmaybeitistolongwhoknowsnotme&quot;, entry.getType());</span>
+<span class="fc" id="L260">        assertEquals(Optional.of(&quot;test&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L261">        assertEquals(2, entry.getFieldNames().size());</span>
+<span class="fc" id="L262">        assertEquals(Optional.of(&quot;Ed von Test&quot;), entry.getField(&quot;author&quot;));</span>
+<span class="fc" id="L263">    }</span>
+
+    @Test
+    public void parseRecognizesEntryInParenthesis() throws IOException {
+<span class="fc" id="L267">        ParserResult result = parser</span>
+<span class="fc" id="L268">                .parse(new StringReader(&quot;@article(test,author={Ed von Test})&quot;));</span>
+
+<span class="fc" id="L270">        Collection&lt;BibEntry&gt; parsed = result.getDatabase().getEntries();</span>
+<span class="fc" id="L271">        BibEntry entry = parsed.iterator().next();</span>
+
+<span class="fc" id="L273">        assertEquals(1, parsed.size());</span>
+<span class="fc" id="L274">        assertEquals(&quot;article&quot;, entry.getType());</span>
+<span class="fc" id="L275">        assertEquals(Optional.of(&quot;test&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L276">        assertEquals(2, entry.getFieldNames().size());</span>
+<span class="fc" id="L277">        assertEquals(Optional.of(&quot;Ed von Test&quot;), entry.getField(&quot;author&quot;));</span>
+<span class="fc" id="L278">    }</span>
+
+    @Test
+    public void parseRecognizesEntryWithBigNumbers() throws IOException {
+<span class="fc" id="L282">        ParserResult result = parser.parse(new StringReader(&quot;@article{canh05,&quot; + &quot;isbn = 1234567890123456789,\n&quot;</span>
+                + &quot;isbn2 = {1234567890123456789},\n&quot; + &quot;small = 1234,\n&quot; + &quot;}&quot;));
+
+<span class="fc" id="L285">        Collection&lt;BibEntry&gt; parsed = result.getDatabase().getEntries();</span>
+<span class="fc" id="L286">        BibEntry entry = parsed.iterator().next();</span>
+
+<span class="fc" id="L288">        assertEquals(&quot;article&quot;, entry.getType());</span>
+<span class="fc" id="L289">        assertEquals(Optional.of(&quot;canh05&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L290">        assertEquals(Optional.of(&quot;1234567890123456789&quot;), entry.getField(&quot;isbn&quot;));</span>
+<span class="fc" id="L291">        assertEquals(Optional.of(&quot;1234567890123456789&quot;), entry.getField(&quot;isbn2&quot;));</span>
+<span class="fc" id="L292">        assertEquals(Optional.of(&quot;1234&quot;), entry.getField(&quot;small&quot;));</span>
+<span class="fc" id="L293">    }</span>
+
+    @Test
+    public void parseRecognizesBibtexKeyWithSpecialCharacters() throws IOException {
+<span class="fc" id="L297">        ParserResult result = parser</span>
+<span class="fc" id="L298">                .parse(new StringReader(&quot;@article{te_st:with-special(characters),author={Ed von Test}}&quot;));</span>
+
+<span class="fc" id="L300">        Collection&lt;BibEntry&gt; parsed = result.getDatabase().getEntries();</span>
+<span class="fc" id="L301">        BibEntry entry = parsed.iterator().next();</span>
+
+<span class="fc" id="L303">        assertEquals(&quot;article&quot;, entry.getType());</span>
+<span class="fc" id="L304">        assertEquals(Optional.of(&quot;te_st:with-special(characters)&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L305">        assertEquals(2, entry.getFieldNames().size());</span>
+<span class="fc" id="L306">        assertEquals(Optional.of(&quot;Ed von Test&quot;), entry.getField(&quot;author&quot;));</span>
+<span class="fc" id="L307">    }</span>
+
+    @Test
+    public void parseRecognizesEntryWhereLastFieldIsFinishedWithComma() throws IOException {
+<span class="fc" id="L311">        ParserResult result = parser</span>
+<span class="fc" id="L312">                .parse(new StringReader(&quot;@article{test,author={Ed von Test},}&quot;));</span>
+
+<span class="fc" id="L314">        Collection&lt;BibEntry&gt; parsed = result.getDatabase().getEntries();</span>
+<span class="fc" id="L315">        BibEntry entry = parsed.iterator().next();</span>
+
+<span class="fc" id="L317">        assertEquals(1, parsed.size());</span>
+<span class="fc" id="L318">        assertEquals(&quot;article&quot;, entry.getType());</span>
+<span class="fc" id="L319">        assertEquals(Optional.of(&quot;test&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L320">        assertEquals(2, entry.getFieldNames().size());</span>
+<span class="fc" id="L321">        assertEquals(Optional.of(&quot;Ed von Test&quot;), entry.getField(&quot;author&quot;));</span>
+<span class="fc" id="L322">    }</span>
+
+    @Test
+    public void parseRecognizesEntryWithAtInField() throws IOException {
+<span class="fc" id="L326">        ParserResult result = parser</span>
+<span class="fc" id="L327">                .parse(new StringReader(&quot;@article{test,author={Ed von T@st}}&quot;));</span>
+
+<span class="fc" id="L329">        List&lt;BibEntry&gt; parsed = result.getDatabase().getEntries();</span>
+
+<span class="fc" id="L331">        BibEntry expected = new BibEntry(&quot;article&quot;).withField(BibEntry.KEY_FIELD, &quot;test&quot;)</span>
+<span class="fc" id="L332">                .withField(&quot;author&quot;, &quot;Ed von T@st&quot;);</span>
+
+<span class="fc" id="L334">        assertEquals(Collections.singletonList(expected), parsed);</span>
+<span class="fc" id="L335">    }</span>
+
+    @Test
+    public void parseRecognizesEntryPrecedingComment() throws IOException {
+<span class="fc" id="L339">        String comment = &quot;@Comment{@article{myarticle,}&quot; + OS.NEWLINE</span>
+<span class="fc" id="L340">                + &quot;@inproceedings{blabla, title={the proceedings of bl@bl@}; }&quot; + OS.NEWLINE + &quot;}&quot;;</span>
+<span class="fc" id="L341">        String entryWithComment = comment + OS.NEWLINE + &quot;@article{test,author={Ed von T@st}}&quot;;</span>
+<span class="fc" id="L342">        BibEntry expected = new BibEntry(&quot;article&quot;)</span>
+<span class="fc" id="L343">                .withField(BibEntry.KEY_FIELD, &quot;test&quot;)</span>
+<span class="fc" id="L344">                .withField(&quot;author&quot;, &quot;Ed von T@st&quot;);</span>
+<span class="fc" id="L345">        expected.setCommentsBeforeEntry(comment);</span>
+
+<span class="fc" id="L347">        ParserResult result = parser.parse(new StringReader(entryWithComment));</span>
+<span class="fc" id="L348">        List&lt;BibEntry&gt; parsed = result.getDatabase().getEntries();</span>
+
+<span class="fc" id="L350">        assertEquals(Collections.singletonList(expected), parsed);</span>
+<span class="fc" id="L351">        assertEquals(expected.getUserComments(), parsed.get(0).getUserComments());</span>
+<span class="fc" id="L352">    }</span>
+
+    @Test
+    public void parseRecognizesMultipleEntries() throws IOException {
+<span class="fc" id="L356">        List&lt;BibEntry&gt; expected = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L357">        BibEntry firstEntry = new BibEntry();</span>
+<span class="fc" id="L358">        firstEntry.setType(&quot;article&quot;);</span>
+<span class="fc" id="L359">        firstEntry.setCiteKey(&quot;canh05&quot;);</span>
+<span class="fc" id="L360">        firstEntry.setField(&quot;author&quot;, &quot;Crowston, K. and Annabi, H.&quot;);</span>
+<span class="fc" id="L361">        firstEntry.setField(&quot;title&quot;, &quot;Title A&quot;);</span>
+<span class="fc" id="L362">        expected.add(firstEntry);</span>
+
+<span class="fc" id="L364">        BibEntry secondEntry = new BibEntry();</span>
+<span class="fc" id="L365">        secondEntry.setType(&quot;inproceedings&quot;);</span>
+<span class="fc" id="L366">        secondEntry.setCiteKey(&quot;foo&quot;);</span>
+<span class="fc" id="L367">        secondEntry.setField(&quot;author&quot;, &quot;Norton Bar&quot;);</span>
+<span class="fc" id="L368">        expected.add(secondEntry);</span>
+
+<span class="fc" id="L370">        ParserResult result = parser.parse(</span>
+<span class="fc" id="L371">                new StringReader(&quot;@article{canh05,&quot; + &quot;  author = {Crowston, K. and Annabi, H.},\n&quot;</span>
+                        + &quot;  title = {Title A}}\n&quot; + &quot;@inProceedings{foo,&quot; + &quot;  author={Norton Bar}}&quot;));
+<span class="fc" id="L373">        List&lt;BibEntry&gt; parsed = result.getDatabase().getEntries();</span>
+
+<span class="fc" id="L375">        assertEquals(expected, parsed);</span>
+<span class="fc" id="L376">    }</span>
+
+    @Test
+    public void parseSetsParsedSerialization() throws IOException {
+<span class="fc" id="L380">        String firstEntry = &quot;@article{canh05,&quot; + &quot;  author = {Crowston, K. and Annabi, H.},&quot; + OS.NEWLINE</span>
+<span class="fc" id="L381">                + &quot;  title = {Title A}}&quot; + OS.NEWLINE;</span>
+<span class="fc" id="L382">        String secondEntry = &quot;@inProceedings{foo,&quot; + &quot;  author={Norton Bar}}&quot;;</span>
+
+<span class="fc" id="L384">        ParserResult result = parser</span>
+<span class="fc" id="L385">                .parse(new StringReader(firstEntry + secondEntry));</span>
+
+<span class="fc bfc" id="L387" title="All 2 branches covered.">        for (BibEntry entry : result.getDatabase().getEntries()) {</span>
+<span class="fc bfc" id="L388" title="All 2 branches covered.">            if (entry.getCiteKeyOptional().get().equals(&quot;canh05&quot;)) {</span>
+<span class="fc" id="L389">                assertEquals(firstEntry, entry.getParsedSerialization());</span>
+<span class="fc" id="L390">            } else {</span>
+<span class="fc" id="L391">                assertEquals(secondEntry, entry.getParsedSerialization());</span>
+            }
+        }
+<span class="fc" id="L394">    }</span>
+
+    @Test
+    public void parseRecognizesMultipleEntriesOnSameLine() throws IOException {
+<span class="fc" id="L398">        List&lt;BibEntry&gt; expected = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L399">        BibEntry firstEntry = new BibEntry();</span>
+<span class="fc" id="L400">        firstEntry.setType(&quot;article&quot;);</span>
+<span class="fc" id="L401">        firstEntry.setCiteKey(&quot;canh05&quot;);</span>
+<span class="fc" id="L402">        expected.add(firstEntry);</span>
+
+<span class="fc" id="L404">        BibEntry secondEntry = new BibEntry();</span>
+<span class="fc" id="L405">        secondEntry.setType(&quot;inproceedings&quot;);</span>
+<span class="fc" id="L406">        secondEntry.setCiteKey(&quot;foo&quot;);</span>
+<span class="fc" id="L407">        expected.add(secondEntry);</span>
+
+<span class="fc" id="L409">        ParserResult result = parser</span>
+<span class="fc" id="L410">                .parse(new StringReader(&quot;@article{canh05}&quot; + &quot;@inProceedings{foo}&quot;));</span>
+<span class="fc" id="L411">        List&lt;BibEntry&gt; parsed = result.getDatabase().getEntries();</span>
+
+<span class="fc" id="L413">        assertEquals(expected, parsed);</span>
+<span class="fc" id="L414">    }</span>
+
+    @Test
+    public void parseCombinesMultipleAuthorFields() throws IOException {
+<span class="fc" id="L418">        ParserResult result = parser.parse(</span>
+<span class="fc" id="L419">                new StringReader(&quot;@article{test,author={Ed von Test},author={Second Author},author={Third Author}}&quot;));</span>
+
+<span class="fc" id="L421">        Collection&lt;BibEntry&gt; parsed = result.getDatabase().getEntries();</span>
+<span class="fc" id="L422">        BibEntry entry = parsed.iterator().next();</span>
+
+<span class="fc" id="L424">        assertEquals(1, parsed.size());</span>
+<span class="fc" id="L425">        assertEquals(&quot;article&quot;, entry.getType());</span>
+<span class="fc" id="L426">        assertEquals(Optional.of(&quot;test&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L427">        assertEquals(2, entry.getFieldNames().size());</span>
+<span class="fc" id="L428">        assertEquals(Optional.of(&quot;Ed von Test and Second Author and Third Author&quot;), entry.getField(&quot;author&quot;));</span>
+<span class="fc" id="L429">    }</span>
+
+    @Test
+    public void parseCombinesMultipleEditorFields() throws IOException {
+<span class="fc" id="L433">        ParserResult result = parser.parse(</span>
+<span class="fc" id="L434">                new StringReader(&quot;@article{test,editor={Ed von Test},editor={Second Author},editor={Third Author}}&quot;));</span>
+
+<span class="fc" id="L436">        Collection&lt;BibEntry&gt; parsed = result.getDatabase().getEntries();</span>
+<span class="fc" id="L437">        BibEntry entry = parsed.iterator().next();</span>
+
+<span class="fc" id="L439">        assertEquals(1, parsed.size());</span>
+<span class="fc" id="L440">        assertEquals(&quot;article&quot;, entry.getType());</span>
+<span class="fc" id="L441">        assertEquals(Optional.of(&quot;test&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L442">        assertEquals(2, entry.getFieldNames().size());</span>
+<span class="fc" id="L443">        assertEquals(Optional.of(&quot;Ed von Test and Second Author and Third Author&quot;), entry.getField(&quot;editor&quot;));</span>
+<span class="fc" id="L444">    }</span>
+
+    @Test
+    public void parseCombinesMultipleKeywordsFields() throws IOException {
+<span class="fc" id="L448">        ParserResult result = parser.parse(</span>
+<span class="fc" id="L449">                new StringReader(&quot;@article{test,Keywords={Test},Keywords={Second Keyword},Keywords={Third Keyword}}&quot;));</span>
+
+<span class="fc" id="L451">        Collection&lt;BibEntry&gt; parsed = result.getDatabase().getEntries();</span>
+<span class="fc" id="L452">        BibEntry entry = parsed.iterator().next();</span>
+
+<span class="fc" id="L454">        assertEquals(1, parsed.size());</span>
+<span class="fc" id="L455">        assertEquals(&quot;article&quot;, entry.getType());</span>
+<span class="fc" id="L456">        assertEquals(Optional.of(&quot;test&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L457">        assertEquals(2, entry.getFieldNames().size());</span>
+<span class="fc" id="L458">        assertEquals(Optional.of(&quot;Test, Second Keyword, Third Keyword&quot;), entry.getField(&quot;keywords&quot;));</span>
+<span class="fc" id="L459">    }</span>
+
+    @Test
+    public void parseRecognizesHeaderButIgnoresEncoding() throws IOException {
+<span class="fc" id="L463">        ParserResult result = parser.parse(new StringReader(&quot;This file was created with JabRef 2.1 beta 2.&quot; + &quot;\n&quot;</span>
+                + &quot;Encoding: Cp1252&quot; + &quot;\n&quot; + &quot;&quot; + &quot;\n&quot; + &quot;@INPROCEEDINGS{CroAnnHow05,&quot; + &quot;\n&quot;
+                + &quot;  author = {Crowston, K. and Annabi, H. and Howison, J. and Masango, C.},&quot; + &quot;\n&quot;
+                + &quot;  title = {Effective work practices for floss development: A model and propositions},&quot; + &quot;\n&quot;
+                + &quot;  booktitle = {Hawaii International Conference On System Sciences (HICSS)},&quot; + &quot;\n&quot;
+                + &quot;  year = {2005},&quot; + &quot;\n&quot; + &quot;  owner = {oezbek},&quot; + &quot;\n&quot; + &quot;  timestamp = {2006.05.29},&quot; + &quot;\n&quot;
+                + &quot;  url = {http://james.howison.name/publications.html}&quot; + &quot;\n&quot; + &quot;}))&quot;));
+
+<span class="fc" id="L471">        Collection&lt;BibEntry&gt; parsed = result.getDatabase().getEntries();</span>
+<span class="fc" id="L472">        BibEntry entry = parsed.iterator().next();</span>
+
+<span class="fc" id="L474">        assertEquals(Optional.empty(), result.getMetaData().getEncoding());</span>
+<span class="fc" id="L475">        assertEquals(1, parsed.size());</span>
+<span class="fc" id="L476">        assertEquals(&quot;inproceedings&quot;, entry.getType());</span>
+<span class="fc" id="L477">        assertEquals(8, entry.getFieldNames().size());</span>
+<span class="fc" id="L478">        assertEquals(Optional.of(&quot;CroAnnHow05&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L479">        assertEquals(Optional.of(&quot;Crowston, K. and Annabi, H. and Howison, J. and Masango, C.&quot;), entry.getField(&quot;author&quot;));</span>
+<span class="fc" id="L480">        assertEquals(Optional.of(&quot;Effective work practices for floss development: A model and propositions&quot;),</span>
+<span class="fc" id="L481">                entry.getField(&quot;title&quot;));</span>
+<span class="fc" id="L482">        assertEquals(Optional.of(&quot;Hawaii International Conference On System Sciences (HICSS)&quot;),</span>
+<span class="fc" id="L483">                entry.getField(&quot;booktitle&quot;));</span>
+<span class="fc" id="L484">        assertEquals(Optional.of(&quot;2005&quot;), entry.getField(&quot;year&quot;));</span>
+<span class="fc" id="L485">        assertEquals(Optional.of(&quot;oezbek&quot;), entry.getField(&quot;owner&quot;));</span>
+<span class="fc" id="L486">        assertEquals(Optional.of(&quot;2006.05.29&quot;), entry.getField(&quot;timestamp&quot;));</span>
+<span class="fc" id="L487">        assertEquals(Optional.of(&quot;http://james.howison.name/publications.html&quot;), entry.getField(&quot;url&quot;));</span>
+<span class="fc" id="L488">    }</span>
+
+    @Test
+    public void parseRecognizesFormatedEntry() throws IOException {
+<span class="fc" id="L492">        ParserResult result = parser.parse(</span>
+<span class="fc" id="L493">                new StringReader(&quot;&quot; + &quot;@INPROCEEDINGS{CroAnnHow05,&quot; + &quot;\n&quot;</span>
+                        + &quot;  author = {Crowston, K. and Annabi, H. and Howison, J. and Masango, C.},&quot; + &quot;\n&quot;
+                        + &quot;  title = {Effective work practices for floss development: A model and propositions},&quot; + &quot;\n&quot;
+                        + &quot;  booktitle = {Hawaii International Conference On System Sciences (HICSS)},&quot; + &quot;\n&quot;
+                        + &quot;  year = {2005},&quot; + &quot;\n&quot; + &quot;  owner = {oezbek},&quot; + &quot;\n&quot; + &quot;  timestamp = {2006.05.29},&quot;
+                        + &quot;\n&quot; + &quot;  url = {http://james.howison.name/publications.html}&quot; + &quot;\n&quot; + &quot;}))&quot;));
+
+<span class="fc" id="L500">        Collection&lt;BibEntry&gt; parsed = result.getDatabase().getEntries();</span>
+<span class="fc" id="L501">        BibEntry entry = parsed.iterator().next();</span>
+
+<span class="fc" id="L503">        assertEquals(1, parsed.size());</span>
+<span class="fc" id="L504">        assertEquals(&quot;inproceedings&quot;, entry.getType());</span>
+<span class="fc" id="L505">        assertEquals(8, entry.getFieldNames().size());</span>
+<span class="fc" id="L506">        assertEquals(Optional.of(&quot;CroAnnHow05&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L507">        assertEquals(Optional.of(&quot;Crowston, K. and Annabi, H. and Howison, J. and Masango, C.&quot;), entry.getField(&quot;author&quot;));</span>
+<span class="fc" id="L508">        assertEquals(Optional.of(&quot;Effective work practices for floss development: A model and propositions&quot;),</span>
+<span class="fc" id="L509">                entry.getField(&quot;title&quot;));</span>
+<span class="fc" id="L510">        assertEquals(Optional.of(&quot;Hawaii International Conference On System Sciences (HICSS)&quot;),</span>
+<span class="fc" id="L511">                entry.getField(&quot;booktitle&quot;));</span>
+<span class="fc" id="L512">        assertEquals(Optional.of(&quot;2005&quot;), entry.getField(&quot;year&quot;));</span>
+<span class="fc" id="L513">        assertEquals(Optional.of(&quot;oezbek&quot;), entry.getField(&quot;owner&quot;));</span>
+<span class="fc" id="L514">        assertEquals(Optional.of(&quot;2006.05.29&quot;), entry.getField(&quot;timestamp&quot;));</span>
+<span class="fc" id="L515">        assertEquals(Optional.of(&quot;http://james.howison.name/publications.html&quot;), entry.getField(&quot;url&quot;));</span>
+<span class="fc" id="L516">    }</span>
+
+    @Test
+    public void parseRecognizesFieldValuesInQuotationMarks() throws IOException {
+<span class="fc" id="L520">        ParserResult result = parser</span>
+<span class="fc" id="L521">                .parse(new StringReader(&quot;@article{test,author=\&quot;Ed von Test\&quot;}&quot;));</span>
+
+<span class="fc" id="L523">        Collection&lt;BibEntry&gt; parsed = result.getDatabase().getEntries();</span>
+<span class="fc" id="L524">        BibEntry entry = parsed.iterator().next();</span>
+
+<span class="fc" id="L526">        assertEquals(1, parsed.size());</span>
+<span class="fc" id="L527">        assertEquals(&quot;article&quot;, entry.getType());</span>
+<span class="fc" id="L528">        assertEquals(Optional.of(&quot;test&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L529">        assertEquals(2, entry.getFieldNames().size());</span>
+<span class="fc" id="L530">        assertEquals(Optional.of(&quot;Ed von Test&quot;), entry.getField(&quot;author&quot;));</span>
+<span class="fc" id="L531">    }</span>
+
+    @Test
+    public void parseRecognizesNumbersWithoutBracketsOrQuotationMarks() throws IOException {
+<span class="fc" id="L535">        ParserResult result = parser</span>
+<span class="fc" id="L536">                .parse(new StringReader(&quot;@article{test,year = 2005}&quot;));</span>
+
+<span class="fc" id="L538">        Collection&lt;BibEntry&gt; parsed = result.getDatabase().getEntries();</span>
+<span class="fc" id="L539">        BibEntry entry = parsed.iterator().next();</span>
+
+<span class="fc" id="L541">        assertEquals(1, parsed.size());</span>
+<span class="fc" id="L542">        assertEquals(&quot;article&quot;, entry.getType());</span>
+<span class="fc" id="L543">        assertEquals(Optional.of(&quot;test&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L544">        assertEquals(2, entry.getFieldNames().size());</span>
+<span class="fc" id="L545">        assertEquals(Optional.of(&quot;2005&quot;), entry.getField(&quot;year&quot;));</span>
+<span class="fc" id="L546">    }</span>
+
+    @Test
+    public void parseRecognizesUppercaseFields() throws IOException {
+<span class="fc" id="L550">        ParserResult result = parser</span>
+<span class="fc" id="L551">                .parse(new StringReader(&quot;@article{test,AUTHOR={Ed von Test}}&quot;));</span>
+
+<span class="fc" id="L553">        Collection&lt;BibEntry&gt; parsed = result.getDatabase().getEntries();</span>
+<span class="fc" id="L554">        BibEntry entry = parsed.iterator().next();</span>
+
+<span class="fc" id="L556">        assertEquals(1, parsed.size());</span>
+<span class="fc" id="L557">        assertEquals(&quot;article&quot;, entry.getType());</span>
+<span class="fc" id="L558">        assertEquals(Optional.of(&quot;test&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L559">        assertEquals(2, entry.getFieldNames().size());</span>
+<span class="fc" id="L560">        assertEquals(Optional.of(&quot;Ed von Test&quot;), entry.getField(&quot;author&quot;));</span>
+<span class="fc" id="L561">    }</span>
+
+    @Test
+    public void parseRecognizesAbsoluteFile() throws IOException {
+<span class="fc" id="L565">        ParserResult result = parser</span>
+<span class="fc" id="L566">                .parse(new StringReader(&quot;@article{test,file = {D:\\Documents\\literature\\Tansel-PRL2006.pdf}}&quot;));</span>
+
+<span class="fc" id="L568">        Collection&lt;BibEntry&gt; parsed = result.getDatabase().getEntries();</span>
+<span class="fc" id="L569">        BibEntry entry = parsed.iterator().next();</span>
+
+<span class="fc" id="L571">        assertEquals(1, parsed.size());</span>
+<span class="fc" id="L572">        assertEquals(&quot;article&quot;, entry.getType());</span>
+<span class="fc" id="L573">        assertEquals(Optional.of(&quot;test&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L574">        assertEquals(2, entry.getFieldNames().size());</span>
+<span class="fc" id="L575">        assertEquals(Optional.of(&quot;D:\\Documents\\literature\\Tansel-PRL2006.pdf&quot;), entry.getField(&quot;file&quot;));</span>
+<span class="fc" id="L576">    }</span>
+
+    @Test
+    public void parseRecognizesDateFieldWithConcatenation() throws IOException {
+<span class="fc" id="L580">        ParserResult result = parser</span>
+<span class="fc" id="L581">                .parse(new StringReader(&quot;@article{test,date = {1-4~} # nov}&quot;));</span>
+
+<span class="fc" id="L583">        Collection&lt;BibEntry&gt; parsed = result.getDatabase().getEntries();</span>
+<span class="fc" id="L584">        BibEntry entry = parsed.iterator().next();</span>
+
+<span class="fc" id="L586">        assertEquals(1, parsed.size());</span>
+<span class="fc" id="L587">        assertEquals(&quot;article&quot;, entry.getType());</span>
+<span class="fc" id="L588">        assertEquals(Optional.of(&quot;test&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L589">        assertEquals(2, entry.getFieldNames().size());</span>
+<span class="fc" id="L590">        assertEquals(Optional.of(&quot;1-4~#nov#&quot;), entry.getField(&quot;date&quot;));</span>
+<span class="fc" id="L591">    }</span>
+
+    @Test
+    public void parseReturnsEmptyListIfNoEntryRecognized() throws IOException {
+<span class="fc" id="L595">        ParserResult result = parser.parse(</span>
+<span class="fc" id="L596">                new StringReader(&quot;  author = {Crowston, K. and Annabi, H. and Howison, J. and Masango, C.},&quot; + &quot;\n&quot;</span>
+                        + &quot;  title = {Effective work practices for floss development: A model and propositions},&quot; + &quot;\n&quot;
+                        + &quot;  booktitle = {Hawaii International Conference On System Sciences (HICSS)},&quot; + &quot;\n&quot;
+                        + &quot;  year = {2005},&quot; + &quot;\n&quot; + &quot;  owner = {oezbek},&quot; + &quot;\n&quot; + &quot;  timestamp = {2006.05.29},&quot;
+                        + &quot;\n&quot; + &quot;  url = {http://james.howison.name/publications.html}&quot; + &quot;\n&quot; + &quot;}))&quot;));
+
+<span class="fc" id="L602">        Collection&lt;BibEntry&gt; parsed = result.getDatabase().getEntries();</span>
+
+<span class="fc" id="L604">        assertEquals(0, parsed.size());</span>
+<span class="fc" id="L605">    }</span>
+
+    @Test
+    public void parseReturnsEmptyListIfNoEntryExistent() throws IOException {
+<span class="fc" id="L609">        ParserResult result = parser</span>
+<span class="fc" id="L610">                .parse(new StringReader(&quot;This was created with JabRef 2.1 beta 2.&quot; + &quot;\n&quot; + &quot;Encoding: Cp1252&quot; + &quot;\n&quot;));</span>
+
+<span class="fc" id="L612">        Collection&lt;BibEntry&gt; parsed = result.getDatabase().getEntries();</span>
+
+<span class="fc" id="L614">        assertEquals(0, parsed.size());</span>
+<span class="fc" id="L615">    }</span>
+
+    @Test
+    public void parseRecognizesDuplicateBibtexKeys() throws IOException {
+<span class="fc" id="L619">        ParserResult result = parser</span>
+<span class="fc" id="L620">                .parse(new StringReader(&quot;@article{canh05,&quot; + &quot;  author = {Crowston, K. and Annabi, H.},\n&quot;</span>
+                        + &quot;  title = {Title A}}\n&quot; + &quot;@inProceedings{canh05,&quot; + &quot;  author={Norton Bar}}&quot;));
+
+<span class="fc" id="L623">        List&lt;String&gt; duplicateKeys = result.getDuplicateKeys();</span>
+
+<span class="fc" id="L625">        assertEquals(1, duplicateKeys.size());</span>
+<span class="fc" id="L626">        assertEquals(&quot;canh05&quot;, duplicateKeys.get(0));</span>
+<span class="fc" id="L627">    }</span>
+
+    @Test
+    public void parseNotWarnsAboutEntryWithoutBibtexKey() throws IOException {
+<span class="fc" id="L631">        BibEntry expected = new BibEntry();</span>
+<span class="fc" id="L632">        expected.setField(&quot;author&quot;, &quot;Ed von Test&quot;);</span>
+<span class="fc" id="L633">        expected.setType(&quot;article&quot;);</span>
+
+<span class="fc" id="L635">        ParserResult result = parser</span>
+<span class="fc" id="L636">                .parse(new StringReader(&quot;@article{,author={Ed von Test}}&quot;));</span>
+<span class="fc" id="L637">        Collection&lt;BibEntry&gt; parsed = result.getDatabase().getEntries();</span>
+
+<span class="fc" id="L639">        assertFalse(result.hasWarnings());</span>
+<span class="fc" id="L640">        assertEquals(Collections.singletonList(expected), parsed);</span>
+<span class="fc" id="L641">    }</span>
+
+    @Test
+    public void parseIgnoresAndWarnsAboutEntryWithUnmatchedOpenBracket() throws IOException {
+<span class="fc" id="L645">        ParserResult result = parser</span>
+<span class="fc" id="L646">                .parse(new StringReader(&quot;@article{test,author={author missing bracket}&quot;));</span>
+
+<span class="fc" id="L648">        Collection&lt;BibEntry&gt; parsed = result.getDatabase().getEntries();</span>
+
+<span class="fc" id="L650">        assertEquals(0, parsed.size());</span>
+<span class="fc" id="L651">        assertTrue(result.hasWarnings());</span>
+<span class="fc" id="L652">    }</span>
+
+    @Test
+    public void parseAddsEscapedOpenBracketToFieldValue() throws IOException {
+<span class="fc" id="L656">        ParserResult result = parser</span>
+<span class="fc" id="L657">                .parse(new StringReader(&quot;@article{test,review={escaped \\{ bracket}}&quot;));</span>
+
+<span class="fc" id="L659">        Collection&lt;BibEntry&gt; parsed = result.getDatabase().getEntries();</span>
+<span class="fc" id="L660">        BibEntry entry = parsed.iterator().next();</span>
+
+<span class="fc" id="L662">        assertEquals(1, parsed.size());</span>
+<span class="fc" id="L663">        assertEquals(&quot;article&quot;, entry.getType());</span>
+<span class="fc" id="L664">        assertEquals(Optional.of(&quot;test&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L665">        assertEquals(Optional.of(&quot;escaped \\{ bracket&quot;), entry.getField(&quot;review&quot;));</span>
+<span class="fc" id="L666">        assertFalse(result.hasWarnings());</span>
+<span class="fc" id="L667">    }</span>
+
+    @Test
+    public void parseAddsEscapedClosingBracketToFieldValue() throws IOException {
+<span class="fc" id="L671">        ParserResult result = parser</span>
+<span class="fc" id="L672">                .parse(new StringReader(&quot;@article{test,review={escaped \\} bracket}}&quot;));</span>
+
+<span class="fc" id="L674">        Collection&lt;BibEntry&gt; parsed = result.getDatabase().getEntries();</span>
+<span class="fc" id="L675">        BibEntry entry = parsed.iterator().next();</span>
+
+<span class="fc" id="L677">        assertEquals(1, parsed.size());</span>
+<span class="fc" id="L678">        assertEquals(&quot;article&quot;, entry.getType());</span>
+<span class="fc" id="L679">        assertEquals(Optional.of(&quot;test&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L680">        assertEquals(Optional.of(&quot;escaped \\} bracket&quot;), entry.getField(&quot;review&quot;));</span>
+<span class="fc" id="L681">        assertFalse(result.hasWarnings());</span>
+<span class="fc" id="L682">    }</span>
+
+    @Test
+    public void parseIgnoresAndWarnsAboutEntryWithUnmatchedOpenBracketInQuotationMarks() throws IOException {
+<span class="fc" id="L686">        ParserResult result = parser</span>
+<span class="fc" id="L687">                .parse(new StringReader(&quot;@article{test,author=\&quot;author {missing bracket\&quot;}&quot;));</span>
+
+<span class="fc" id="L689">        Collection&lt;BibEntry&gt; parsed = result.getDatabase().getEntries();</span>
+
+<span class="fc" id="L691">        assertEquals(0, parsed.size());</span>
+<span class="fc" id="L692">        assertTrue(result.hasWarnings());</span>
+<span class="fc" id="L693">    }</span>
+
+    @Test
+    public void parseIgnoresArbitraryContentAfterEntry() throws IOException {
+<span class="fc" id="L697">        ParserResult result = parser</span>
+<span class="fc" id="L698">                .parse(new StringReader(&quot;@article{test,author={author bracket }}}&quot;));</span>
+
+<span class="fc" id="L700">        Collection&lt;BibEntry&gt; parsed = result.getDatabase().getEntries();</span>
+
+<span class="fc" id="L702">        assertEquals(&quot;Size should be one, but was &quot; + parsed.size(), 1, parsed.size());</span>
+<span class="fc" id="L703">        assertEquals(&quot;Epilog should be preserved&quot;, &quot;}&quot;, result.getDatabase().getEpilog());</span>
+<span class="fc" id="L704">    }</span>
+
+    @Test
+    public void parseWarnsAboutUnmatchedContentInEntryWithoutComma() throws IOException {
+<span class="fc" id="L708">        ParserResult result = parser.parse(new StringReader(&quot;@article{test,author={author bracket } too much}&quot;));</span>
+
+<span class="fc" id="L710">        List&lt;BibEntry&gt; entries = result.getDatabase().getEntries();</span>
+
+<span class="fc" id="L712">        assertEquals(Optional.of(&quot;author bracket #too##much#&quot;), entries.get(0).getField(&quot;author&quot;));</span>
+<span class="fc" id="L713">    }</span>
+
+    @Test
+    public void parseWarnsAboutUnmatchedContentInEntry() throws IOException {
+<span class="fc" id="L717">        ParserResult result = parser.parse(new StringReader(&quot;@article{test,author={author bracket }, too much}&quot;));</span>
+
+<span class="fc" id="L719">        List&lt;BibEntry&gt; entries = result.getDatabase().getEntries();</span>
+
+<span class="fc" id="L721">        assertTrue(&quot;There should be warnings&quot;, result.hasWarnings());</span>
+<span class="fc" id="L722">        assertEquals(&quot;Size should be zero, but was &quot; + entries.size(), 0, entries.size());</span>
+<span class="fc" id="L723">    }</span>
+
+    @Test
+    public void parseAcceptsEntryWithAtSymbolInBrackets() throws IOException {
+<span class="fc" id="L727">        ParserResult result = parser</span>
+<span class="fc" id="L728">                .parse(new StringReader(&quot;@article{test,author={author @ good}}&quot;));</span>
+
+<span class="fc" id="L730">        List&lt;BibEntry&gt; entries = result.getDatabase().getEntries();</span>
+
+<span class="fc" id="L732">        assertEquals(1, entries.size());</span>
+<span class="fc" id="L733">        assertEquals(Optional.of(&quot;author @ good&quot;), entries.get(0).getField(&quot;author&quot;));</span>
+<span class="fc" id="L734">    }</span>
+
+    @Test
+    public void parseRecognizesEntryWithAtSymbolInQuotationMarks() throws IOException {
+<span class="fc" id="L738">        ParserResult result = parser</span>
+<span class="fc" id="L739">                .parse(new StringReader(&quot;@article{test,author=\&quot;author @ good\&quot;}&quot;));</span>
+
+<span class="fc" id="L741">        Collection&lt;BibEntry&gt; parsed = result.getDatabase().getEntries();</span>
+<span class="fc" id="L742">        BibEntry entry = parsed.iterator().next();</span>
+
+<span class="fc" id="L744">        assertEquals(1, parsed.size());</span>
+<span class="fc" id="L745">        assertEquals(&quot;article&quot;, entry.getType());</span>
+<span class="fc" id="L746">        assertEquals(Optional.of(&quot;test&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L747">        assertEquals(2, entry.getFieldNames().size());</span>
+<span class="fc" id="L748">        assertEquals(Optional.of(&quot;author @ good&quot;), entry.getField(&quot;author&quot;));</span>
+<span class="fc" id="L749">    }</span>
+
+    @Test
+    public void parseRecognizesFieldsWithBracketsEnclosedInQuotationMarks() throws IOException {
+<span class="fc" id="L753">        ParserResult result = parser</span>
+<span class="fc" id="L754">                .parse(new StringReader(&quot;@article{test,author=\&quot;Test {Ed {von} Test}\&quot;}&quot;));</span>
+
+<span class="fc" id="L756">        Collection&lt;BibEntry&gt; parsed = result.getDatabase().getEntries();</span>
+<span class="fc" id="L757">        BibEntry entry = parsed.iterator().next();</span>
+
+<span class="fc" id="L759">        assertEquals(1, parsed.size());</span>
+<span class="fc" id="L760">        assertEquals(&quot;article&quot;, entry.getType());</span>
+<span class="fc" id="L761">        assertEquals(Optional.of(&quot;test&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L762">        assertEquals(2, entry.getFieldNames().size());</span>
+<span class="fc" id="L763">        assertEquals(Optional.of(&quot;Test {Ed {von} Test}&quot;), entry.getField(&quot;author&quot;));</span>
+<span class="fc" id="L764">    }</span>
+
+    @Test
+    public void parseRecognizesFieldsWithEscapedQuotationMarks() throws IOException {
+        // Quotes in fields of the form key = &quot;value&quot; have to be escaped by putting them into braces
+<span class="fc" id="L769">        ParserResult result = parser</span>
+<span class="fc" id="L770">                .parse(new StringReader(&quot;@article{test,author=\&quot;Test {\&quot; Test}\&quot;}&quot;));</span>
+
+<span class="fc" id="L772">        Collection&lt;BibEntry&gt; parsed = result.getDatabase().getEntries();</span>
+<span class="fc" id="L773">        BibEntry entry = parsed.iterator().next();</span>
+
+<span class="fc" id="L775">        assertEquals(1, parsed.size());</span>
+<span class="fc" id="L776">        assertEquals(&quot;article&quot;, entry.getType());</span>
+<span class="fc" id="L777">        assertEquals(Optional.of(&quot;test&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L778">        assertEquals(2, entry.getFieldNames().size());</span>
+<span class="fc" id="L779">        assertEquals(Optional.of(&quot;Test {\&quot; Test}&quot;), entry.getField(&quot;author&quot;));</span>
+<span class="fc" id="L780">    }</span>
+
+    @Test
+    public void parseIgnoresAndWarnsAboutEntryWithFieldsThatAreNotSeperatedByComma() throws IOException {
+<span class="fc" id="L784">        ParserResult result = parser</span>
+<span class="fc" id="L785">                .parse(new StringReader(&quot;@article{test,author={Ed von Test} year=2005}&quot;));</span>
+
+<span class="fc" id="L787">        Collection&lt;BibEntry&gt; parsed = result.getDatabase().getEntries();</span>
+
+<span class="fc" id="L789">        assertEquals(0, parsed.size());</span>
+<span class="fc" id="L790">        assertTrue(result.hasWarnings());</span>
+<span class="fc" id="L791">    }</span>
+
+    @Test
+    public void parseIgnoresAndWarnsAboutCorruptedEntryButRecognizeOthers() throws IOException {
+<span class="fc" id="L795">        ParserResult result = parser.parse(</span>
+<span class="fc" id="L796">                new StringReader(</span>
+<span class="fc" id="L797">                        &quot;@article{test,author={author missing bracket}&quot; + &quot;@article{test,author={Ed von Test}}&quot;));</span>
+
+<span class="fc" id="L799">        Collection&lt;BibEntry&gt; parsed = result.getDatabase().getEntries();</span>
+<span class="fc" id="L800">        BibEntry entry = parsed.iterator().next();</span>
+
+<span class="fc" id="L802">        assertEquals(1, parsed.size());</span>
+<span class="fc" id="L803">        assertEquals(&quot;article&quot;, entry.getType());</span>
+<span class="fc" id="L804">        assertEquals(Optional.of(&quot;test&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L805">        assertEquals(2, entry.getFieldNames().size());</span>
+<span class="fc" id="L806">        assertEquals(Optional.of(&quot;Ed von Test&quot;), entry.getField(&quot;author&quot;));</span>
+<span class="fc" id="L807">        assertTrue(result.hasWarnings());</span>
+<span class="fc" id="L808">    }</span>
+
+    @Test
+    public void parseRecognizesMonthFieldsWithFollowingComma() throws IOException {
+<span class="fc" id="L812">        ParserResult result = parser</span>
+<span class="fc" id="L813">                .parse(new StringReader(&quot;@article{test,author={Ed von Test},month={8,}},&quot;));</span>
+
+<span class="fc" id="L815">        Collection&lt;BibEntry&gt; parsed = result.getDatabase().getEntries();</span>
+<span class="fc" id="L816">        BibEntry entry = parsed.iterator().next();</span>
+
+<span class="fc" id="L818">        assertEquals(1, parsed.size());</span>
+<span class="fc" id="L819">        assertEquals(&quot;article&quot;, entry.getType());</span>
+<span class="fc" id="L820">        assertEquals(Optional.of(&quot;test&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L821">        assertEquals(3, entry.getFieldNames().size());</span>
+<span class="fc" id="L822">        assertEquals(Optional.of(&quot;Ed von Test&quot;), entry.getField(&quot;author&quot;));</span>
+<span class="fc" id="L823">        assertEquals(Optional.of(&quot;8,&quot;), entry.getField(&quot;month&quot;));</span>
+<span class="fc" id="L824">    }</span>
+
+    @Test
+    public void parseRecognizesPreamble() throws IOException {
+<span class="fc" id="L828">        ParserResult result = parser</span>
+<span class="fc" id="L829">                .parse(new StringReader(&quot;@preamble{some text and \\latex}&quot;));</span>
+
+<span class="fc" id="L831">        assertEquals(Optional.of(&quot;some text and \\latex&quot;), result.getDatabase().getPreamble());</span>
+<span class="fc" id="L832">    }</span>
+
+    @Test
+    public void parseRecognizesUppercasePreamble() throws IOException {
+<span class="fc" id="L836">        ParserResult result = parser</span>
+<span class="fc" id="L837">                .parse(new StringReader(&quot;@PREAMBLE{some text and \\latex}&quot;));</span>
+
+<span class="fc" id="L839">        assertEquals(Optional.of(&quot;some text and \\latex&quot;), result.getDatabase().getPreamble());</span>
+<span class="fc" id="L840">    }</span>
+
+    @Test
+    public void parseRecognizesPreambleWithWhitespace() throws IOException {
+<span class="fc" id="L844">        ParserResult result = parser</span>
+<span class="fc" id="L845">                .parse(new StringReader(&quot;@preamble {some text and \\latex}&quot;));</span>
+
+<span class="fc" id="L847">        assertEquals(Optional.of(&quot;some text and \\latex&quot;), result.getDatabase().getPreamble());</span>
+<span class="fc" id="L848">    }</span>
+
+    @Test
+    public void parseRecognizesPreambleInParenthesis() throws IOException {
+<span class="fc" id="L852">        ParserResult result = parser</span>
+<span class="fc" id="L853">                .parse(new StringReader(&quot;@preamble(some text and \\latex)&quot;));</span>
+
+<span class="fc" id="L855">        assertEquals(Optional.of(&quot;some text and \\latex&quot;), result.getDatabase().getPreamble());</span>
+<span class="fc" id="L856">    }</span>
+
+    @Test
+    public void parseRecognizesPreambleWithConcatenation() throws IOException {
+<span class="fc" id="L860">        ParserResult result = parser</span>
+<span class="fc" id="L861">                .parse(new StringReader(&quot;@preamble{\&quot;some text\&quot; # \&quot;and \\latex\&quot;}&quot;));</span>
+
+<span class="fc" id="L863">        assertEquals(Optional.of(&quot;\&quot;some text\&quot; # \&quot;and \\latex\&quot;&quot;), result.getDatabase().getPreamble());</span>
+<span class="fc" id="L864">    }</span>
+
+    @Test
+    public void parseRecognizesString() throws IOException {
+<span class="fc" id="L868">        ParserResult result = parser</span>
+<span class="fc" id="L869">                .parse(new StringReader(&quot;@string{bourdieu = {Bourdieu, Pierre}}&quot;));</span>
+
+<span class="fc" id="L871">        BibtexString string = result.getDatabase().getStringValues().iterator().next();</span>
+
+<span class="fc" id="L873">        assertEquals(1, result.getDatabase().getStringCount());</span>
+<span class="fc" id="L874">        assertEquals(&quot;bourdieu&quot;, string.getName());</span>
+<span class="fc" id="L875">        assertEquals(&quot;Bourdieu, Pierre&quot;, string.getContent());</span>
+<span class="fc" id="L876">    }</span>
+
+    @Test
+    public void parseSavesOneNewlineAfterStringInParsedSerialization() throws IOException {
+<span class="fc" id="L880">        String string = &quot;@string{bourdieu = {Bourdieu, Pierre}}&quot; + OS.NEWLINE;</span>
+<span class="fc" id="L881">        ParserResult result = parser</span>
+<span class="fc" id="L882">                .parse(new StringReader(string + OS.NEWLINE + OS.NEWLINE));</span>
+
+<span class="fc" id="L884">        BibtexString parsedString = result.getDatabase().getStringValues().iterator().next();</span>
+
+<span class="fc" id="L886">        assertEquals(1, result.getDatabase().getStringCount());</span>
+<span class="fc" id="L887">        assertEquals(string, parsedString.getParsedSerialization());</span>
+<span class="fc" id="L888">    }</span>
+
+    @Test
+    public void parseRecognizesStringWithWhitespace() throws IOException {
+<span class="fc" id="L892">        ParserResult result = parser</span>
+<span class="fc" id="L893">                .parse(new StringReader(&quot;@string {bourdieu = {Bourdieu, Pierre}}&quot;));</span>
+
+<span class="fc" id="L895">        BibtexString parsedString = result.getDatabase().getStringValues().iterator().next();</span>
+
+<span class="fc" id="L897">        assertEquals(1, result.getDatabase().getStringCount());</span>
+<span class="fc" id="L898">        assertEquals(&quot;bourdieu&quot;, parsedString.getName());</span>
+<span class="fc" id="L899">        assertEquals(&quot;Bourdieu, Pierre&quot;, parsedString.getContent());</span>
+<span class="fc" id="L900">    }</span>
+
+    @Test
+    public void parseRecognizesStringInParenthesis() throws IOException {
+<span class="fc" id="L904">        ParserResult result = parser</span>
+<span class="fc" id="L905">                .parse(new StringReader(&quot;@string(bourdieu = {Bourdieu, Pierre})&quot;));</span>
+
+<span class="fc" id="L907">        BibtexString parsedString = result.getDatabase().getStringValues().iterator().next();</span>
+
+<span class="fc" id="L909">        assertEquals(1, result.getDatabase().getStringCount());</span>
+<span class="fc" id="L910">        assertEquals(&quot;bourdieu&quot;, parsedString.getName());</span>
+<span class="fc" id="L911">        assertEquals(&quot;Bourdieu, Pierre&quot;, parsedString.getContent());</span>
+<span class="fc" id="L912">    }</span>
+
+    @Test
+    public void parseRecognizesMultipleStrings() throws IOException {
+<span class="fc" id="L916">        ParserResult result = parser</span>
+<span class="fc" id="L917">                .parse(new StringReader(&quot;@string{bourdieu = {Bourdieu, Pierre}}&quot; + &quot;@string{adieu = {Adieu, Pierre}}&quot;));</span>
+
+<span class="fc" id="L919">        Iterator&lt;BibtexString&gt; iterator = result.getDatabase().getStringValues().iterator();</span>
+<span class="fc" id="L920">        BibtexString first = iterator.next();</span>
+<span class="fc" id="L921">        BibtexString second = iterator.next();</span>
+        // Sort them because we can't be sure about the order
+<span class="pc bpc" id="L923" title="1 of 2 branches missed.">        if (first.getName().equals(&quot;adieu&quot;)) {</span>
+<span class="fc" id="L924">            BibtexString tmp = first;</span>
+<span class="fc" id="L925">            first = second;</span>
+<span class="fc" id="L926">            second = tmp;</span>
+        }
+
+<span class="fc" id="L929">        assertEquals(2, result.getDatabase().getStringCount());</span>
+<span class="fc" id="L930">        assertEquals(&quot;bourdieu&quot;, first.getName());</span>
+<span class="fc" id="L931">        assertEquals(&quot;Bourdieu, Pierre&quot;, first.getContent());</span>
+<span class="fc" id="L932">        assertEquals(&quot;adieu&quot;, second.getName());</span>
+<span class="fc" id="L933">        assertEquals(&quot;Adieu, Pierre&quot;, second.getContent());</span>
+<span class="fc" id="L934">    }</span>
+
+    @Test
+    public void parseRecognizesStringAndEntry() throws IOException {
+<span class="fc" id="L938">        ParserResult result = parser.parse(</span>
+<span class="fc" id="L939">                new StringReader(&quot;&quot; + &quot;@string{bourdieu = {Bourdieu, Pierre}}&quot;</span>
+                        + &quot;@book{bourdieu-2002-questions-sociologie, &quot; + &quot;	Address = {Paris},&quot; + &quot;	Author = bourdieu,&quot;
+                        + &quot;	Isbn = 2707318256,&quot; + &quot;	Publisher = {Minuit},&quot; + &quot;	Title = {Questions de sociologie},&quot;
+                        + &quot;	Year = 2002&quot; + &quot;}&quot;));
+
+
+<span class="fc" id="L945">        BibtexString parsedString = result.getDatabase().getStringValues().iterator().next();</span>
+<span class="fc" id="L946">        Collection&lt;BibEntry&gt; parsedEntries = result.getDatabase().getEntries();</span>
+<span class="fc" id="L947">        BibEntry parsedEntry = parsedEntries.iterator().next();</span>
+
+<span class="fc" id="L949">        assertEquals(1, result.getDatabase().getStringCount());</span>
+<span class="fc" id="L950">        assertEquals(&quot;bourdieu&quot;, parsedString.getName());</span>
+<span class="fc" id="L951">        assertEquals(&quot;Bourdieu, Pierre&quot;, parsedString.getContent());</span>
+<span class="fc" id="L952">        assertEquals(1, parsedEntries.size());</span>
+<span class="fc" id="L953">        assertEquals(&quot;book&quot;, parsedEntry.getType());</span>
+<span class="fc" id="L954">        assertEquals(Optional.of(&quot;bourdieu-2002-questions-sociologie&quot;), parsedEntry.getCiteKeyOptional());</span>
+<span class="fc" id="L955">        assertEquals(Optional.of(&quot;Paris&quot;), parsedEntry.getField(&quot;address&quot;));</span>
+<span class="fc" id="L956">        assertEquals(Optional.of(&quot;#bourdieu#&quot;), parsedEntry.getField(&quot;author&quot;));</span>
+<span class="fc" id="L957">        assertEquals(Optional.of(&quot;2707318256&quot;), parsedEntry.getField(&quot;isbn&quot;));</span>
+<span class="fc" id="L958">        assertEquals(Optional.of(&quot;Minuit&quot;), parsedEntry.getField(&quot;publisher&quot;));</span>
+<span class="fc" id="L959">        assertEquals(Optional.of(&quot;Questions de sociologie&quot;), parsedEntry.getField(&quot;title&quot;));</span>
+<span class="fc" id="L960">        assertEquals(Optional.of(&quot;2002&quot;), parsedEntry.getField(&quot;year&quot;));</span>
+<span class="fc" id="L961">    }</span>
+
+    @Test
+    public void parseWarnsAboutStringsWithSameNameAndOnlyKeepsOne() throws IOException {
+<span class="fc" id="L965">        ParserResult result = parser</span>
+<span class="fc" id="L966">                .parse(new StringReader(&quot;@string{bourdieu = {Bourdieu, Pierre}}&quot; + &quot;@string{bourdieu = {Other}}&quot;));</span>
+
+<span class="fc" id="L968">        assertTrue(result.hasWarnings());</span>
+<span class="fc" id="L969">        assertEquals(1, result.getDatabase().getStringCount());</span>
+<span class="fc" id="L970">    }</span>
+
+    @Test
+    public void parseIgnoresComments() throws IOException {
+<span class="fc" id="L974">        ParserResult result = parser</span>
+<span class="fc" id="L975">                .parse(new StringReader(&quot;@comment{some text and \\latex}&quot;));</span>
+
+<span class="fc" id="L977">        assertEquals(0, result.getDatabase().getEntries().size());</span>
+<span class="fc" id="L978">    }</span>
+
+    @Test
+    public void parseIgnoresUpercaseComments() throws IOException {
+<span class="fc" id="L982">        ParserResult result = parser</span>
+<span class="fc" id="L983">                .parse(new StringReader(&quot;@COMMENT{some text and \\latex}&quot;));</span>
+
+<span class="fc" id="L985">        assertEquals(0, result.getDatabase().getEntries().size());</span>
+<span class="fc" id="L986">    }</span>
+
+    @Test
+    public void parseIgnoresCommentsBeforeEntry() throws IOException {
+<span class="fc" id="L990">        ParserResult result = parser</span>
+<span class="fc" id="L991">                .parse(new StringReader(&quot;@comment{some text and \\latex}&quot; + &quot;@article{test,author={Ed von Test}}&quot;));</span>
+
+<span class="fc" id="L993">        Collection&lt;BibEntry&gt; parsedEntries = result.getDatabase().getEntries();</span>
+<span class="fc" id="L994">        BibEntry parsedEntry = parsedEntries.iterator().next();</span>
+
+<span class="fc" id="L996">        assertEquals(1, parsedEntries.size());</span>
+<span class="fc" id="L997">        assertEquals(&quot;article&quot;, parsedEntry.getType());</span>
+<span class="fc" id="L998">        assertEquals(Optional.of(&quot;test&quot;), parsedEntry.getCiteKeyOptional());</span>
+<span class="fc" id="L999">        assertEquals(2, parsedEntry.getFieldNames().size());</span>
+<span class="fc" id="L1000">        assertEquals(Optional.of(&quot;Ed von Test&quot;), parsedEntry.getField(&quot;author&quot;));</span>
+<span class="fc" id="L1001">    }</span>
+
+    @Test
+    public void parseIgnoresCommentsAfterEntry() throws IOException {
+<span class="fc" id="L1005">        ParserResult result = parser</span>
+<span class="fc" id="L1006">                .parse(new StringReader(&quot;@article{test,author={Ed von Test}}&quot; + &quot;@comment{some text and \\latex}&quot;));</span>
+
+<span class="fc" id="L1008">        Collection&lt;BibEntry&gt; parsedEntries = result.getDatabase().getEntries();</span>
+<span class="fc" id="L1009">        BibEntry parsedEntry = parsedEntries.iterator().next();</span>
+
+<span class="fc" id="L1011">        assertEquals(1, parsedEntries.size());</span>
+<span class="fc" id="L1012">        assertEquals(&quot;article&quot;, parsedEntry.getType());</span>
+<span class="fc" id="L1013">        assertEquals(Optional.of(&quot;test&quot;), parsedEntry.getCiteKeyOptional());</span>
+<span class="fc" id="L1014">        assertEquals(2, parsedEntry.getFieldNames().size());</span>
+<span class="fc" id="L1015">        assertEquals(Optional.of(&quot;Ed von Test&quot;), parsedEntry.getField(&quot;author&quot;));</span>
+<span class="fc" id="L1016">    }</span>
+
+    @Test
+    public void parseIgnoresText() throws IOException {
+<span class="fc" id="L1020">        ParserResult result = parser</span>
+<span class="fc" id="L1021">                .parse(new StringReader(&quot;comment{some text and \\latex&quot;));</span>
+
+<span class="fc" id="L1023">        assertEquals(0, result.getDatabase().getEntries().size());</span>
+<span class="fc" id="L1024">    }</span>
+
+    @Test
+    public void parseIgnoresTextBeforeEntry() throws IOException {
+<span class="fc" id="L1028">        ParserResult result = parser</span>
+<span class="fc" id="L1029">                .parse(new StringReader(&quot;comment{some text and \\latex&quot; + &quot;@article{test,author={Ed von Test}}&quot;));</span>
+
+<span class="fc" id="L1031">        Collection&lt;BibEntry&gt; parsedEntries = result.getDatabase().getEntries();</span>
+<span class="fc" id="L1032">        BibEntry parsedEntry = parsedEntries.iterator().next();</span>
+
+<span class="fc" id="L1034">        assertEquals(1, parsedEntries.size());</span>
+<span class="fc" id="L1035">        assertEquals(&quot;article&quot;, parsedEntry.getType());</span>
+<span class="fc" id="L1036">        assertEquals(Optional.of(&quot;test&quot;), parsedEntry.getCiteKeyOptional());</span>
+<span class="fc" id="L1037">        assertEquals(2, parsedEntry.getFieldNames().size());</span>
+<span class="fc" id="L1038">        assertEquals(Optional.of(&quot;Ed von Test&quot;), parsedEntry.getField(&quot;author&quot;));</span>
+<span class="fc" id="L1039">    }</span>
+
+    @Test
+    public void parseIgnoresTextAfterEntry() throws IOException {
+<span class="fc" id="L1043">        ParserResult result = parser</span>
+<span class="fc" id="L1044">                .parse(new StringReader(&quot;@article{test,author={Ed von Test}}&quot; + &quot;comment{some text and \\latex&quot;));</span>
+
+<span class="fc" id="L1046">        Collection&lt;BibEntry&gt; parsedEntries = result.getDatabase().getEntries();</span>
+<span class="fc" id="L1047">        BibEntry parsedEntry = parsedEntries.iterator().next();</span>
+
+<span class="fc" id="L1049">        assertEquals(1, parsedEntries.size());</span>
+<span class="fc" id="L1050">        assertEquals(&quot;article&quot;, parsedEntry.getType());</span>
+<span class="fc" id="L1051">        assertEquals(Optional.of(&quot;test&quot;), parsedEntry.getCiteKeyOptional());</span>
+<span class="fc" id="L1052">        assertEquals(2, parsedEntry.getFieldNames().size());</span>
+<span class="fc" id="L1053">        assertEquals(Optional.of(&quot;Ed von Test&quot;), parsedEntry.getField(&quot;author&quot;));</span>
+<span class="fc" id="L1054">    }</span>
+
+    @Test
+    public void parseConvertsNewlineToSpace() throws IOException {
+<span class="fc" id="L1058">        ParserResult result = parser</span>
+<span class="fc" id="L1059">                .parse(new StringReader(&quot;@article{test,a = {a\nb}}&quot;));</span>
+
+<span class="fc" id="L1061">        Collection&lt;BibEntry&gt; parsedEntries = result.getDatabase().getEntries();</span>
+<span class="fc" id="L1062">        BibEntry parsedEntry = parsedEntries.iterator().next();</span>
+
+<span class="fc" id="L1064">        assertEquals(Optional.of(&quot;a b&quot;), parsedEntry.getField(&quot;a&quot;));</span>
+<span class="fc" id="L1065">    }</span>
+
+    @Test
+    public void parseConvertsMultipleNewlinesToSpace() throws IOException {
+<span class="fc" id="L1069">        ParserResult result = parser</span>
+<span class="fc" id="L1070">                .parse(new StringReader(&quot;@article{test,a = {a\n\nb},&quot; + &quot;b = {a\n \nb},&quot; + &quot;c = {a \n \n b}}&quot;));</span>
+
+<span class="fc" id="L1072">        Collection&lt;BibEntry&gt; parsedEntries = result.getDatabase().getEntries();</span>
+<span class="fc" id="L1073">        BibEntry parsedEntry = parsedEntries.iterator().next();</span>
+
+<span class="fc" id="L1075">        assertEquals(Optional.of(&quot;a b&quot;), parsedEntry.getField(&quot;a&quot;));</span>
+<span class="fc" id="L1076">        assertEquals(Optional.of(&quot;a b&quot;), parsedEntry.getField(&quot;b&quot;));</span>
+<span class="fc" id="L1077">        assertEquals(Optional.of(&quot;a b&quot;), parsedEntry.getField(&quot;c&quot;));</span>
+<span class="fc" id="L1078">    }</span>
+
+    @Test
+    public void parseConvertsTabToSpace() throws IOException {
+<span class="fc" id="L1082">        ParserResult result = parser</span>
+<span class="fc" id="L1083">                .parse(new StringReader(&quot;@article{test,a = {a\tb}}&quot;));</span>
+
+<span class="fc" id="L1085">        Collection&lt;BibEntry&gt; parsedEntries = result.getDatabase().getEntries();</span>
+<span class="fc" id="L1086">        BibEntry parsedEntry = parsedEntries.iterator().next();</span>
+
+<span class="fc" id="L1088">        assertEquals(Optional.of(&quot;a b&quot;), parsedEntry.getField(&quot;a&quot;));</span>
+<span class="fc" id="L1089">    }</span>
+
+    @Test
+    public void parseConvertsMultipleTabsToSpace() throws IOException {
+<span class="fc" id="L1093">        ParserResult result = parser</span>
+<span class="fc" id="L1094">                .parse(new StringReader(&quot;@article{test,a = {a\t\tb},&quot; + &quot;b = {a\t \tb},&quot; + &quot;c = {a \t \t b}}&quot;));</span>
+
+<span class="fc" id="L1096">        Collection&lt;BibEntry&gt; parsedEntries = result.getDatabase().getEntries();</span>
+<span class="fc" id="L1097">        BibEntry parsedEntry = parsedEntries.iterator().next();</span>
+
+<span class="fc" id="L1099">        assertEquals(Optional.of(&quot;a b&quot;), parsedEntry.getField(&quot;a&quot;));</span>
+<span class="fc" id="L1100">        assertEquals(Optional.of(&quot;a b&quot;), parsedEntry.getField(&quot;b&quot;));</span>
+<span class="fc" id="L1101">        assertEquals(Optional.of(&quot;a b&quot;), parsedEntry.getField(&quot;c&quot;));</span>
+<span class="fc" id="L1102">    }</span>
+
+    /**
+     * Test for [2022983]
+     *
+     * @author Uwe Kuehn
+     * @author Andrei Haralevich
+     */
+    @Test
+    public void parsePreservesMultipleSpacesInNonWrappableField() throws IOException {
+<span class="fc" id="L1112">        when(importFormatPreferences.getFieldContentParserPreferences().getNonWrappableFields())</span>
+<span class="fc" id="L1113">                .thenReturn(Collections.singletonList(&quot;file&quot;));</span>
+<span class="fc" id="L1114">        BibtexParser parser = new BibtexParser(importFormatPreferences, fileMonitor);</span>
+<span class="fc" id="L1115">        ParserResult result = parser</span>
+<span class="fc" id="L1116">                .parse(new StringReader(&quot;@article{canh05,file = {ups  sala}}&quot;));</span>
+
+<span class="fc" id="L1118">        Collection&lt;BibEntry&gt; parsedEntries = result.getDatabase().getEntries();</span>
+<span class="fc" id="L1119">        BibEntry parsedEntry = parsedEntries.iterator().next();</span>
+
+<span class="fc" id="L1121">        assertEquals(Optional.of(&quot;ups  sala&quot;), parsedEntry.getField(&quot;file&quot;));</span>
+<span class="fc" id="L1122">    }</span>
+
+    @Test
+    public void parsePreservesTabsInAbstractField() throws IOException {
+<span class="fc" id="L1126">        ParserResult result = parser.parse(new StringReader(&quot;@article{canh05,abstract = {ups  \tsala}}&quot;));</span>
+
+<span class="fc" id="L1128">        Collection&lt;BibEntry&gt; parsedEntries = result.getDatabase().getEntries();</span>
+<span class="fc" id="L1129">        BibEntry parsedEntry = parsedEntries.iterator().next();</span>
+
+<span class="fc" id="L1131">        assertEquals(Optional.of(&quot;ups  \tsala&quot;), parsedEntry.getField(FieldName.ABSTRACT));</span>
+<span class="fc" id="L1132">    }</span>
+
+    @Test
+    public void parsePreservesNewlineInAbstractField() throws IOException {
+<span class="fc" id="L1136">        ParserResult result = parser.parse(new StringReader(&quot;@article{canh05,abstract = {ups \nsala}}&quot;));</span>
+
+<span class="fc" id="L1138">        Collection&lt;BibEntry&gt; parsedEntries = result.getDatabase().getEntries();</span>
+<span class="fc" id="L1139">        BibEntry parsedEntry = parsedEntries.iterator().next();</span>
+
+<span class="fc" id="L1141">        assertEquals(Optional.of(&quot;ups &quot; + OS.NEWLINE + &quot;sala&quot;), parsedEntry.getField(FieldName.ABSTRACT));</span>
+<span class="fc" id="L1142">    }</span>
+
+    @Test
+    public void parseHandlesAccentsCorrectly() throws IOException {
+<span class="fc" id="L1146">        ParserResult result = parser</span>
+<span class="fc" id="L1147">                .parse(new StringReader(&quot;@article{test,author = {H\'{e}lne Fiaux}}&quot;));</span>
+
+<span class="fc" id="L1149">        Collection&lt;BibEntry&gt; parsedEntries = result.getDatabase().getEntries();</span>
+<span class="fc" id="L1150">        BibEntry parsedEntry = parsedEntries.iterator().next();</span>
+
+<span class="fc" id="L1152">        assertFalse(result.hasWarnings());</span>
+<span class="fc" id="L1153">        assertEquals(1, parsedEntries.size());</span>
+<span class="fc" id="L1154">        assertEquals(&quot;article&quot;, parsedEntry.getType());</span>
+<span class="fc" id="L1155">        assertEquals(Optional.of(&quot;test&quot;), parsedEntry.getCiteKeyOptional());</span>
+<span class="fc" id="L1156">        assertEquals(Optional.of(&quot;H\'{e}lne Fiaux&quot;), parsedEntry.getField(&quot;author&quot;));</span>
+<span class="fc" id="L1157">    }</span>
+
+    /**
+     * Test for #669
+     */
+    @Test
+    public void parsePreambleAndEntryWithoutNewLine() throws IOException {
+<span class="fc" id="L1164">        ParserResult result = parser</span>
+<span class="fc" id="L1165">                .parse(new StringReader(&quot;@preamble{some text and \\latex}@article{test,author = {H\'{e}lne Fiaux}}&quot;));</span>
+
+<span class="fc" id="L1167">        Collection&lt;BibEntry&gt; parsedEntries = result.getDatabase().getEntries();</span>
+<span class="fc" id="L1168">        BibEntry parsedEntry = parsedEntries.iterator().next();</span>
+
+<span class="fc" id="L1170">        assertFalse(result.hasWarnings());</span>
+<span class="fc" id="L1171">        assertEquals(Optional.of(&quot;some text and \\latex&quot;), result.getDatabase().getPreamble());</span>
+<span class="fc" id="L1172">        assertEquals(1, parsedEntries.size());</span>
+<span class="fc" id="L1173">        assertEquals(&quot;article&quot;, parsedEntry.getType());</span>
+<span class="fc" id="L1174">        assertEquals(Optional.of(&quot;test&quot;), parsedEntry.getCiteKeyOptional());</span>
+<span class="fc" id="L1175">        assertEquals(Optional.of(&quot;H\'{e}lne Fiaux&quot;), parsedEntry.getField(&quot;author&quot;));</span>
+<span class="fc" id="L1176">    }</span>
+
+    @Test
+    public void parseFileHeaderAndPreambleWithoutNewLine() throws IOException {
+<span class="fc" id="L1180">        ParserResult result = parser</span>
+<span class="fc" id="L1181">                .parse(new StringReader(&quot;% Encoding: US-ASCII@preamble{some text and \\latex}&quot;));</span>
+
+<span class="fc" id="L1183">        assertFalse(result.hasWarnings());</span>
+<span class="fc" id="L1184">        assertEquals(Optional.of(&quot;some text and \\latex&quot;), result.getDatabase().getPreamble());</span>
+<span class="fc" id="L1185">    }</span>
+
+    @Test
+    public void parseSavesEntryInParsedSerialization() throws IOException {
+<span class="fc" id="L1189">        String testEntry = &quot;@article{test,author={Ed von Test}}&quot;;</span>
+<span class="fc" id="L1190">        ParserResult result = parser.parse(new StringReader(testEntry));</span>
+
+<span class="fc" id="L1192">        Collection&lt;BibEntry&gt; parsedEntries = result.getDatabase().getEntries();</span>
+<span class="fc" id="L1193">        BibEntry parsedEntry = parsedEntries.iterator().next();</span>
+
+<span class="fc" id="L1195">        assertEquals(1, parsedEntries.size());</span>
+<span class="fc" id="L1196">        assertEquals(testEntry, parsedEntry.getParsedSerialization());</span>
+<span class="fc" id="L1197">    }</span>
+
+    @Test
+    public void parseSavesOneNewlineAfterEntryInParsedSerialization() throws IOException {
+<span class="fc" id="L1201">        String testEntry = &quot;@article{test,author={Ed von Test}}&quot;;</span>
+<span class="fc" id="L1202">        ParserResult result = parser</span>
+<span class="fc" id="L1203">                .parse(new StringReader(testEntry + OS.NEWLINE + OS.NEWLINE));</span>
+
+<span class="fc" id="L1205">        Collection&lt;BibEntry&gt; parsedEntries = result.getDatabase().getEntries();</span>
+<span class="fc" id="L1206">        BibEntry parsedEntry = parsedEntries.iterator().next();</span>
+
+<span class="fc" id="L1208">        assertEquals(1, parsedEntries.size());</span>
+<span class="fc" id="L1209">        assertEquals(testEntry + OS.NEWLINE, parsedEntry.getParsedSerialization());</span>
+<span class="fc" id="L1210">    }</span>
+
+    @Test
+    public void parseSavesNewlinesBeforeEntryInParsedSerialization() throws IOException {
+<span class="fc" id="L1214">        String testEntry = &quot;@article{test,author={Ed von Test}}&quot;;</span>
+<span class="fc" id="L1215">        ParserResult result = parser</span>
+<span class="fc" id="L1216">                .parse(new StringReader(OS.NEWLINE + OS.NEWLINE + OS.NEWLINE + testEntry));</span>
+
+<span class="fc" id="L1218">        Collection&lt;BibEntry&gt; parsedEntries = result.getDatabase().getEntries();</span>
+<span class="fc" id="L1219">        BibEntry parsedEntry = parsedEntries.iterator().next();</span>
+
+<span class="fc" id="L1221">        assertEquals(1, parsedEntries.size());</span>
+<span class="fc" id="L1222">        assertEquals(OS.NEWLINE + OS.NEWLINE + OS.NEWLINE + testEntry, parsedEntry.getParsedSerialization());</span>
+<span class="fc" id="L1223">    }</span>
+
+    @Test
+    public void parseRemovesEncodingLineInParsedSerialization() throws IOException {
+<span class="fc" id="L1227">        String testEntry = &quot;@article{test,author={Ed von Test}}&quot;;</span>
+<span class="fc" id="L1228">        ParserResult result = parser.parse(</span>
+<span class="fc" id="L1229">                new StringReader(SavePreferences.ENCODING_PREFIX + OS.NEWLINE + OS.NEWLINE + OS.NEWLINE + testEntry));</span>
+
+<span class="fc" id="L1231">        Collection&lt;BibEntry&gt; parsedEntries = result.getDatabase().getEntries();</span>
+<span class="fc" id="L1232">        BibEntry parsedEntry = parsedEntries.iterator().next();</span>
+
+<span class="fc" id="L1234">        assertEquals(1, parsedEntries.size());</span>
+<span class="fc" id="L1235">        assertEquals(OS.NEWLINE + OS.NEWLINE + testEntry, parsedEntry.getParsedSerialization());</span>
+<span class="fc" id="L1236">    }</span>
+
+    @Test
+    public void parseSavesNewlinesBetweenEntriesInParsedSerialization() throws IOException {
+<span class="fc" id="L1240">        String testEntryOne = &quot;@article{test1,author={Ed von Test}}&quot;;</span>
+<span class="fc" id="L1241">        String testEntryTwo = &quot;@article{test2,author={Ed von Test}}&quot;;</span>
+<span class="fc" id="L1242">        ParserResult result = parser</span>
+<span class="fc" id="L1243">                .parse(new StringReader(testEntryOne + OS.NEWLINE + OS.NEWLINE + OS.NEWLINE + testEntryTwo));</span>
+
+<span class="fc" id="L1245">        Collection&lt;BibEntry&gt; parsedEntries = result.getDatabase().getEntries();</span>
+<span class="fc" id="L1246">        Iterator&lt;BibEntry&gt; iterator = parsedEntries.iterator();</span>
+<span class="fc" id="L1247">        BibEntry first = iterator.next();</span>
+<span class="fc" id="L1248">        BibEntry second = iterator.next();</span>
+        // Sort them because we can't be sure about the order
+<span class="pc bpc" id="L1250" title="1 of 2 branches missed.">        if (first.getCiteKeyOptional().equals(Optional.of(&quot;test2&quot;))) {</span>
+<span class="nc" id="L1251">            BibEntry tmp = first;</span>
+<span class="nc" id="L1252">            first = second;</span>
+<span class="nc" id="L1253">            second = tmp;</span>
+        }
+
+<span class="fc" id="L1256">        assertEquals(2, parsedEntries.size());</span>
+<span class="fc" id="L1257">        assertEquals(testEntryOne + OS.NEWLINE, first.getParsedSerialization());</span>
+<span class="fc" id="L1258">        assertEquals(OS.NEWLINE + OS.NEWLINE + testEntryTwo, second.getParsedSerialization());</span>
+<span class="fc" id="L1259">    }</span>
+
+    @Test
+    public void parseIgnoresWhitespaceInEpilogue() throws IOException {
+<span class="fc" id="L1263">        ParserResult result = parser.parse(new StringReader(&quot;   &quot; + OS.NEWLINE));</span>
+
+<span class="fc" id="L1265">        assertEquals(&quot;&quot;, result.getDatabase().getEpilog());</span>
+<span class="fc" id="L1266">    }</span>
+
+    @Test
+    public void parseIgnoresWhitespaceInEpilogueAfterEntry() throws IOException {
+<span class="fc" id="L1270">        String testEntry = &quot;@article{test,author={Ed von Test}}&quot;;</span>
+<span class="fc" id="L1271">        ParserResult result = parser</span>
+<span class="fc" id="L1272">                .parse(new StringReader(testEntry + OS.NEWLINE + OS.NEWLINE + OS.NEWLINE + &quot;  &quot; + OS.NEWLINE));</span>
+
+<span class="fc" id="L1274">        Collection&lt;BibEntry&gt; parsedEntries = result.getDatabase().getEntries();</span>
+<span class="fc" id="L1275">        BibEntry parsedEntry = parsedEntries.iterator().next();</span>
+
+<span class="fc" id="L1277">        assertEquals(1, parsedEntries.size());</span>
+<span class="fc" id="L1278">        assertEquals(testEntry + OS.NEWLINE, parsedEntry.getParsedSerialization());</span>
+<span class="fc" id="L1279">        assertEquals(&quot;&quot;, result.getDatabase().getEpilog());</span>
+<span class="fc" id="L1280">    }</span>
+
+    @Test
+    public void parseTrimsWhitespaceInEpilogueAfterEntry() throws IOException {
+<span class="fc" id="L1284">        String testEntry = &quot;@article{test,author={Ed von Test}}&quot;;</span>
+<span class="fc" id="L1285">        ParserResult result = parser</span>
+<span class="fc" id="L1286">                .parse(new StringReader(testEntry + OS.NEWLINE + OS.NEWLINE + OS.NEWLINE + &quot; epilogue &quot; + OS.NEWLINE));</span>
+
+<span class="fc" id="L1288">        Collection&lt;BibEntry&gt; parsedEntries = result.getDatabase().getEntries();</span>
+<span class="fc" id="L1289">        BibEntry parsedEntry = parsedEntries.iterator().next();</span>
+
+<span class="fc" id="L1291">        assertEquals(1, parsedEntries.size());</span>
+<span class="fc" id="L1292">        assertEquals(testEntry + OS.NEWLINE, parsedEntry.getParsedSerialization());</span>
+<span class="fc" id="L1293">        assertEquals(&quot;epilogue&quot;, result.getDatabase().getEpilog());</span>
+<span class="fc" id="L1294">    }</span>
+
+    @Test
+    public void parseRecognizesSaveActionsAfterEntry() throws IOException {
+<span class="fc" id="L1298">        ParserResult parserResult = parser.parse(</span>
+<span class="fc" id="L1299">                new StringReader(&quot;@InProceedings{6055279,\n&quot; + &quot;  Title                    = {Educational session 1},\n&quot;</span>
+                        + &quot;  Booktitle                = {Custom Integrated Circuits Conference (CICC), 2011 IEEE},\n&quot;
+                        + &quot;  Year                     = {2011},\n&quot; + &quot;  Month                    = {Sept},\n&quot;
+                        + &quot;  Pages                    = {1-7},\n&quot;
+                        + &quot;  Abstract                 = {Start of the above-titled section of the conference proceedings record.},\n&quot;
+                        + &quot;  DOI                      = {10.1109/CICC.2011.6055279},\n&quot;
+                        + &quot;  ISSN                     = {0886-5930}\n&quot; + &quot;}\n&quot; + &quot;\n&quot;
+                        + &quot;@comment{jabref-meta: saveActions:enabled;title[lower_case]}&quot;));
+
+<span class="fc" id="L1308">        FieldFormatterCleanups saveActions = parserResult.getMetaData().getSaveActions().get();</span>
+
+<span class="fc" id="L1310">        assertTrue(saveActions.isEnabled());</span>
+<span class="fc" id="L1311">        assertEquals(Collections.singletonList(new FieldFormatterCleanup(&quot;title&quot;, new LowerCaseFormatter())),</span>
+<span class="fc" id="L1312">                saveActions.getConfiguredActions());</span>
+<span class="fc" id="L1313">    }</span>
+
+    @Test
+    public void integrationTestSaveActions() throws IOException {
+<span class="fc" id="L1317">        ParserResult parserResult = parser</span>
+<span class="fc" id="L1318">                .parse(new StringReader(&quot;@comment{jabref-meta: saveActions:enabled;title[lower_case]}&quot;));</span>
+
+<span class="fc" id="L1320">        FieldFormatterCleanups saveActions = parserResult.getMetaData().getSaveActions().get();</span>
+
+<span class="fc" id="L1322">        assertTrue(saveActions.isEnabled());</span>
+<span class="fc" id="L1323">        assertEquals(Collections.singletonList(new FieldFormatterCleanup(&quot;title&quot;, new LowerCaseFormatter())),</span>
+<span class="fc" id="L1324">                saveActions.getConfiguredActions());</span>
+<span class="fc" id="L1325">    }</span>
+
+    @Test
+    public void integrationTestCustomEntryType() throws IOException {
+<span class="fc" id="L1329">        ParserResult result = parser.parse(</span>
+<span class="fc" id="L1330">                new StringReader(&quot;@comment{jabref-entrytype: Lecturenotes: req[author;title] opt[language;url]}&quot;));</span>
+
+<span class="fc" id="L1332">        Map&lt;String, EntryType&gt; customEntryTypes = result.getEntryTypes();</span>
+<span class="fc" id="L1333">        EntryType entryType = customEntryTypes.get(&quot;Lecturenotes&quot;);</span>
+
+<span class="fc" id="L1335">        assertEquals(1, customEntryTypes.size());</span>
+<span class="fc" id="L1336">        assertEquals(&quot;Lecturenotes&quot;, customEntryTypes.keySet().toArray()[0]);</span>
+<span class="fc" id="L1337">        assertEquals(&quot;Lecturenotes&quot;, entryType.getName());</span>
+<span class="fc" id="L1338">        assertEquals(new HashSet&lt;&gt;(Arrays.asList(&quot;author&quot;, &quot;title&quot;)), entryType.getRequiredFields());</span>
+<span class="fc" id="L1339">        assertEquals(new HashSet&lt;&gt;(Arrays.asList(&quot;language&quot;, &quot;url&quot;)), entryType.getOptionalFields());</span>
+<span class="fc" id="L1340">    }</span>
+
+    @Test
+    public void integrationTestSaveOrderConfig() throws IOException {
+<span class="fc" id="L1344">        ParserResult result = parser.parse(</span>
+<span class="fc" id="L1345">                new StringReader(</span>
+<span class="fc" id="L1346">                        &quot;@Comment{jabref-meta: saveOrderConfig:specified;author;false;year;true;abstract;false;}&quot;));</span>
+
+<span class="fc" id="L1348">        Optional&lt;SaveOrderConfig&gt; saveOrderConfig = result.getMetaData().getSaveOrderConfig();</span>
+
+<span class="fc" id="L1350">        assertEquals(new SaveOrderConfig(false, new SaveOrderConfig.SortCriterion(&quot;author&quot;, false),</span>
+<span class="fc" id="L1351">                new SaveOrderConfig.SortCriterion(&quot;year&quot;, true), new SaveOrderConfig.SortCriterion(&quot;abstract&quot;, false)),</span>
+<span class="fc" id="L1352">                saveOrderConfig.get());</span>
+<span class="fc" id="L1353">    }</span>
+
+    @Test
+    public void integrationTestCustomKeyPattern() throws IOException {
+<span class="fc" id="L1357">        ParserResult result = parser</span>
+<span class="fc" id="L1358">                .parse(new StringReader(&quot;@comment{jabref-meta: keypattern_article:articleTest;}&quot; + OS.NEWLINE</span>
+<span class="fc" id="L1359">                        + &quot;@comment{jabref-meta: keypatterndefault:test;}&quot;));</span>
+
+<span class="fc" id="L1361">        GlobalBibtexKeyPattern pattern = mock(GlobalBibtexKeyPattern.class);</span>
+<span class="fc" id="L1362">        AbstractBibtexKeyPattern bibtexKeyPattern = result.getMetaData().getCiteKeyPattern(pattern);</span>
+<span class="fc" id="L1363">        AbstractBibtexKeyPattern expectedPattern = new DatabaseBibtexKeyPattern(pattern);</span>
+<span class="fc" id="L1364">        expectedPattern.setDefaultValue(&quot;test&quot;);</span>
+<span class="fc" id="L1365">        expectedPattern.addBibtexKeyPattern(&quot;article&quot;, &quot;articleTest&quot;);</span>
+
+<span class="fc" id="L1367">        assertEquals(expectedPattern, bibtexKeyPattern);</span>
+<span class="fc" id="L1368">    }</span>
+
+    @Test
+    public void integrationTestBiblatexMode() throws IOException {
+<span class="fc" id="L1372">        ParserResult result = parser</span>
+<span class="fc" id="L1373">                .parse(new StringReader(&quot;@comment{jabref-meta: databaseType:biblatex;}&quot;));</span>
+
+<span class="fc" id="L1375">        Optional&lt;BibDatabaseMode&gt; mode = result.getMetaData().getMode();</span>
+
+<span class="fc" id="L1377">        assertEquals(BibDatabaseMode.BIBLATEX, mode.get());</span>
+<span class="fc" id="L1378">    }</span>
+
+    @Test
+    public void integrationTestGroupTree() throws IOException, ParseException {
+<span class="fc" id="L1382">        ParserResult result = parser.parse(new StringReader(&quot;@comment{jabref-meta: groupsversion:3;}&quot; + OS.NEWLINE</span>
+<span class="fc" id="L1383">                + &quot;@comment{jabref-meta: groupstree:&quot; + OS.NEWLINE + &quot;0 AllEntriesGroup:;&quot; + OS.NEWLINE</span>
+<span class="fc" id="L1384">                + &quot;1 KeywordGroup:Fréchet\\;0\\;keywords\\;FrechetSpace\\;0\\;1\\;;&quot; + OS.NEWLINE</span>
+<span class="fc" id="L1385">                + &quot;1 KeywordGroup:Invariant theory\\;0\\;keywords\\;GIT\\;0\\;0\\;;&quot; + OS.NEWLINE</span>
+<span class="fc" id="L1386">                + &quot;1 ExplicitGroup:TestGroup\\;0\\;Key1\\;Key2\\;;&quot; + &quot;}&quot;));</span>
+
+<span class="fc" id="L1388">        GroupTreeNode root = result.getMetaData().getGroups().get();</span>
+
+<span class="fc" id="L1390">        assertEquals(new AllEntriesGroup(&quot;All entries&quot;), root.getGroup());</span>
+<span class="fc" id="L1391">        assertEquals(3, root.getNumberOfChildren());</span>
+<span class="fc" id="L1392">        assertEquals(</span>
+<span class="fc" id="L1393">                new RegexKeywordGroup(&quot;Fréchet&quot;, GroupHierarchyType.INDEPENDENT, &quot;keywords&quot;, &quot;FrechetSpace&quot;, false),</span>
+<span class="fc" id="L1394">                root.getChildren().get(0).getGroup());</span>
+<span class="fc" id="L1395">        assertEquals(</span>
+<span class="fc" id="L1396">                new WordKeywordGroup(&quot;Invariant theory&quot;, GroupHierarchyType.INDEPENDENT, &quot;keywords&quot;, &quot;GIT&quot;, false, ',', false),</span>
+<span class="fc" id="L1397">                root.getChildren().get(1).getGroup());</span>
+<span class="fc" id="L1398">        assertEquals(Arrays.asList(&quot;Key1&quot;, &quot;Key2&quot;),</span>
+<span class="fc" id="L1399">                ((ExplicitGroup) root.getChildren().get(2).getGroup()).getLegacyEntryKeys());</span>
+<span class="fc" id="L1400">    }</span>
+
+    @Test
+    public void integrationTestProtectedFlag() throws IOException {
+<span class="fc" id="L1404">        ParserResult result = parser</span>
+<span class="fc" id="L1405">                .parse(new StringReader(&quot;@comment{jabref-meta: protectedFlag:true;}&quot;));</span>
+
+<span class="fc" id="L1407">        assertTrue(result.getMetaData().isProtected());</span>
+<span class="fc" id="L1408">    }</span>
+
+    @Test
+    public void integrationTestContentSelectors() throws IOException {
+<span class="fc" id="L1412">        ParserResult result = parser.parse(</span>
+<span class="fc" id="L1413">                new StringReader(&quot;@Comment{jabref-meta: selector_status:approved;captured;received;status;}&quot;));</span>
+
+<span class="fc" id="L1415">        List&lt;String&gt; values = new ArrayList(4);</span>
+<span class="fc" id="L1416">        values.add(&quot;approved&quot;);</span>
+<span class="fc" id="L1417">        values.add(&quot;captured&quot;);</span>
+<span class="fc" id="L1418">        values.add(&quot;received&quot;);</span>
+<span class="fc" id="L1419">        values.add(&quot;status&quot;);</span>
+
+<span class="fc" id="L1421">        assertEquals(values, result.getMetaData().getContentSelectors().getSelectorValuesForField(&quot;status&quot;));</span>
+<span class="fc" id="L1422">    }</span>
+
+    @Test
+    public void parseReallyUnknownType() throws Exception {
+<span class="fc" id="L1426">        String bibtexEntry = &quot;@ReallyUnknownType{test,&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L1427">                &quot; Comment                  = {testentry}&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L1428">                &quot;}&quot;;</span>
+
+<span class="fc" id="L1430">        Collection&lt;BibEntry&gt; entries = parser.parseEntries(bibtexEntry);</span>
+<span class="fc" id="L1431">        BibEntry expectedEntry = new BibEntry();</span>
+<span class="fc" id="L1432">        expectedEntry.setType(&quot;Reallyunknowntype&quot;);</span>
+<span class="fc" id="L1433">        expectedEntry.setCiteKey(&quot;test&quot;);</span>
+<span class="fc" id="L1434">        expectedEntry.setField(&quot;comment&quot;, &quot;testentry&quot;);</span>
+
+<span class="fc" id="L1436">        assertEquals(Collections.singletonList(expectedEntry), entries);</span>
+<span class="fc" id="L1437">    }</span>
+
+    @Test
+    public void parseOtherTypeTest() throws Exception {
+<span class="fc" id="L1441">        String bibtexEntry = &quot;@Other{test,&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L1442">                &quot; Comment                  = {testentry}&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L1443">                &quot;}&quot;;</span>
+
+<span class="fc" id="L1445">        Collection&lt;BibEntry&gt; entries = parser.parseEntries(bibtexEntry);</span>
+<span class="fc" id="L1446">        BibEntry expectedEntry = new BibEntry();</span>
+<span class="fc" id="L1447">        expectedEntry.setType(&quot;Other&quot;);</span>
+<span class="fc" id="L1448">        expectedEntry.setCiteKey(&quot;test&quot;);</span>
+<span class="fc" id="L1449">        expectedEntry.setField(&quot;comment&quot;, &quot;testentry&quot;);</span>
+
+<span class="fc" id="L1451">        assertEquals(Collections.singletonList(expectedEntry), entries);</span>
+<span class="fc" id="L1452">    }</span>
+
+
+    @Test
+    public void parseRecognizesDatabaseID() throws Exception {
+<span class="fc" id="L1457">        String expectedDatabaseID = &quot;q1w2e3r4t5z6&quot;;</span>
+<span class="fc" id="L1458">        StringBuilder sharedDatabaseFileContent = new StringBuilder()</span>
+<span class="fc" id="L1459">                .append(&quot;% DBID: &quot;).append(expectedDatabaseID)</span>
+<span class="fc" id="L1460">                .append(OS.NEWLINE)</span>
+<span class="fc" id="L1461">                .append(&quot;@Article{a}&quot;);</span>
+
+<span class="fc" id="L1463">        ParserResult parserResult = parser.parse(new StringReader(sharedDatabaseFileContent.toString()));</span>
+<span class="fc" id="L1464">        String actualDatabaseID = parserResult.getDatabase().getSharedDatabaseID().get();</span>
+
+<span class="fc" id="L1466">        assertEquals(expectedDatabaseID, actualDatabaseID);</span>
+<span class="fc" id="L1467">    }</span>
+
+    @Test
+    public void parseDoesNotRecognizeDatabaseIDasUserComment() throws Exception {
+<span class="fc" id="L1471">        StringBuilder sharedDatabaseFileContent = new StringBuilder()</span>
+<span class="fc" id="L1472">                .append(&quot;% Encoding: UTF-8&quot;).append(OS.NEWLINE)</span>
+<span class="fc" id="L1473">                .append(&quot;% DBID: q1w2e3r4t5z6&quot;).append(OS.NEWLINE)</span>
+<span class="fc" id="L1474">                .append(&quot;@Article{a}&quot;);</span>
+
+<span class="fc" id="L1476">        ParserResult parserResult = parser.parse(new StringReader(sharedDatabaseFileContent.toString()));</span>
+<span class="fc" id="L1477">        List&lt;BibEntry&gt; entries = parserResult.getDatabase().getEntries();</span>
+
+<span class="fc" id="L1479">        assertEquals(1, entries.size());</span>
+<span class="fc" id="L1480">        assertEquals(&quot;&quot;, entries.get(0).getUserComments());</span>
+<span class="fc" id="L1481">    }</span>
+
+    @Test
+    public void integrationTestFileDirectories() throws IOException {
+<span class="fc" id="L1485">        ParserResult result = parser.parse(</span>
+<span class="fc" id="L1486">                new StringReader(&quot;@comment{jabref-meta: fileDirectory:\\\\Literature\\\\;}&quot;</span>
+                        + &quot;@comment{jabref-meta: fileDirectory-defaultOwner-user:D:\\\\Documents;}&quot;));
+
+<span class="fc" id="L1489">        assertEquals(&quot;\\Literature\\&quot;, result.getMetaData().getDefaultFileDirectory().get());</span>
+<span class="fc" id="L1490">        assertEquals(&quot;D:\\Documents&quot;, result.getMetaData().getUserFileDirectory(&quot;defaultOwner-user&quot;).get());</span>
+<span class="fc" id="L1491">    }</span>
+
+    @Test
+    public void parseReturnsEntriesInSameOrder() throws IOException {
+<span class="fc" id="L1495">        List&lt;BibEntry&gt; expected = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L1496">        BibEntry first = new BibEntry();</span>
+<span class="fc" id="L1497">        first.setType(&quot;article&quot;);</span>
+<span class="fc" id="L1498">        first.setCiteKey(&quot;a&quot;);</span>
+<span class="fc" id="L1499">        expected.add(first);</span>
+
+<span class="fc" id="L1501">        BibEntry second = new BibEntry();</span>
+<span class="fc" id="L1502">        second.setType(&quot;article&quot;);</span>
+<span class="fc" id="L1503">        second.setCiteKey(&quot;b&quot;);</span>
+<span class="fc" id="L1504">        expected.add(second);</span>
+
+<span class="fc" id="L1506">        BibEntry third = new BibEntry();</span>
+<span class="fc" id="L1507">        third.setType(&quot;inproceedings&quot;);</span>
+<span class="fc" id="L1508">        third.setCiteKey(&quot;c&quot;);</span>
+<span class="fc" id="L1509">        expected.add(third);</span>
+
+<span class="fc" id="L1511">        ParserResult result = parser</span>
+<span class="fc" id="L1512">                .parse(new StringReader(&quot;@article{a}&quot; + OS.NEWLINE + &quot;@article{b}&quot; + OS.NEWLINE + &quot;@inProceedings{c}&quot;));</span>
+
+<span class="fc" id="L1514">        assertEquals(expected, result.getDatabase().getEntries());</span>
+<span class="fc" id="L1515">    }</span>
+
+    @Test
+    public void parsePrecedingComment() throws IOException {
+        // @formatter:off
+<span class="fc" id="L1520">        String bibtexEntry = &quot;% Some random comment that should stay here&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L1521">                &quot;@Article{test,&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L1522">                &quot;  Author                   = {Foo Bar},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L1523">                &quot;  Journal                  = {International Journal of Something},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L1524">                &quot;  Note                     = {some note},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L1525">                &quot;  Number                   = {1}&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L1526">                &quot;}&quot;;</span>
+        // @formatter:on
+
+        // read in bibtex string
+<span class="fc" id="L1530">        ParserResult result = parser.parse(new StringReader(bibtexEntry));</span>
+<span class="fc" id="L1531">        Collection&lt;BibEntry&gt; entries = result.getDatabase().getEntries();</span>
+<span class="fc" id="L1532">        BibEntry entry = entries.iterator().next();</span>
+
+<span class="fc" id="L1534">        assertEquals(1, entries.size());</span>
+<span class="fc" id="L1535">        assertEquals(Optional.of(&quot;test&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L1536">        assertEquals(5, entry.getFieldNames().size());</span>
+<span class="fc" id="L1537">        assertTrue(entry.getFieldNames().contains(&quot;author&quot;));</span>
+<span class="fc" id="L1538">        assertEquals(Optional.of(&quot;Foo Bar&quot;), entry.getField(&quot;author&quot;));</span>
+<span class="fc" id="L1539">        assertEquals(bibtexEntry, entry.getParsedSerialization());</span>
+<span class="fc" id="L1540">    }</span>
+
+    @Test
+    public void parseCommentAndEntryInOneLine() throws IOException {
+        // @formatter:off
+<span class="fc" id="L1545">        String bibtexEntry = &quot;Some random comment that should stay here @Article{test,&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L1546">                &quot;  Author                   = {Foo Bar},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L1547">                &quot;  Journal                  = {International Journal of Something},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L1548">                &quot;  Note                     = {some note},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L1549">                &quot;  Number                   = {1}&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L1550">                &quot;}&quot;;</span>
+        // @formatter:on
+
+        // read in bibtex string
+<span class="fc" id="L1554">        ParserResult result = parser.parse(new StringReader(bibtexEntry));</span>
+<span class="fc" id="L1555">        Collection&lt;BibEntry&gt; entries = result.getDatabase().getEntries();</span>
+<span class="fc" id="L1556">        BibEntry entry = entries.iterator().next();</span>
+
+<span class="fc" id="L1558">        assertEquals(1, entries.size());</span>
+<span class="fc" id="L1559">        assertEquals(Optional.of(&quot;test&quot;), entry.getCiteKeyOptional());</span>
+<span class="fc" id="L1560">        assertEquals(5, entry.getFieldNames().size());</span>
+<span class="fc" id="L1561">        assertTrue(entry.getFieldNames().contains(&quot;author&quot;));</span>
+<span class="fc" id="L1562">        assertEquals(Optional.of(&quot;Foo Bar&quot;), entry.getField(&quot;author&quot;));</span>
+<span class="fc" id="L1563">        assertEquals(bibtexEntry, entry.getParsedSerialization());</span>
+<span class="fc" id="L1564">    }</span>
+
+    @Test
+    public void preserveEncodingPrefixInsideEntry() throws ParseException {
+<span class="fc" id="L1568">        BibEntry expected = new BibEntry();</span>
+<span class="fc" id="L1569">        expected.setType(&quot;article&quot;);</span>
+<span class="fc" id="L1570">        expected.setCiteKey(&quot;test&quot;);</span>
+<span class="fc" id="L1571">        expected.setField(&quot;author&quot;, SavePreferences.ENCODING_PREFIX);</span>
+
+<span class="fc" id="L1573">        List&lt;BibEntry&gt; parsed = parser</span>
+<span class="fc" id="L1574">                .parseEntries(&quot;@article{test,author={&quot; + SavePreferences.ENCODING_PREFIX + &quot;}}&quot;);</span>
+
+<span class="fc" id="L1576">        assertEquals(Collections.singletonList(expected), parsed);</span>
+<span class="fc" id="L1577">    }</span>
+
+    @Test
+    public void parseBracketedComment() throws IOException {
+<span class="fc" id="L1581">        String commentText = &quot;@Comment{someComment}&quot;;</span>
+
+<span class="fc" id="L1583">        ParserResult result = parser.parse(new StringReader(commentText));</span>
+
+<span class="fc" id="L1585">        assertEquals(commentText, result.getDatabase().getEpilog());</span>
+<span class="fc" id="L1586">    }</span>
+
+    @Test
+    public void parseRegularCommentBeforeEntry() throws IOException {
+        // @formatter:off
+<span class="fc" id="L1591">        String bibtexEntry = &quot;@Comment{someComment} &quot; + OS.NEWLINE +</span>
+<span class="fc" id="L1592">                &quot;@Article{test,&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L1593">                &quot;  Author                   = {Foo Bar},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L1594">                &quot;  Journal                  = {International Journal of Something},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L1595">                &quot;  Note                     = {some note},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L1596">                &quot;  Number                   = {1}&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L1597">                &quot;}&quot;;</span>
+        // @formatter:on
+
+<span class="fc" id="L1600">        ParserResult result = parser.parse(new StringReader(bibtexEntry));</span>
+<span class="fc" id="L1601">        Collection&lt;BibEntry&gt; entries = result.getDatabase().getEntries();</span>
+<span class="fc" id="L1602">        BibEntry entry = entries.iterator().next();</span>
+
+<span class="fc" id="L1604">        assertEquals(bibtexEntry, entry.getParsedSerialization());</span>
+<span class="fc" id="L1605">    }</span>
+
+    @Test
+    public void parseCommentWithoutBrackets() throws IOException {
+<span class="fc" id="L1609">        String commentText = &quot;@Comment someComment&quot;;</span>
+
+<span class="fc" id="L1611">        ParserResult result = parser.parse(new StringReader(commentText));</span>
+
+<span class="fc" id="L1613">        assertEquals(commentText, result.getDatabase().getEpilog());</span>
+<span class="fc" id="L1614">    }</span>
+
+    @Test
+    public void parseCommentWithoutBracketsBeforeEntry() throws IOException {
+        // @formatter:off
+<span class="fc" id="L1619">        String bibtexEntry = &quot;@Comment someComment  &quot; + OS.NEWLINE +</span>
+<span class="fc" id="L1620">                &quot;@Article{test,&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L1621">                &quot;  Author                   = {Foo Bar},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L1622">                &quot;  Journal                  = {International Journal of Something},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L1623">                &quot;  Note                     = {some note},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L1624">                &quot;  Number                   = {1}&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L1625">                &quot;}&quot;;</span>
+        // @formatter:on
+
+<span class="fc" id="L1628">        ParserResult result = parser.parse(new StringReader(bibtexEntry));</span>
+<span class="fc" id="L1629">        Collection&lt;BibEntry&gt; entries = result.getDatabase().getEntries();</span>
+<span class="fc" id="L1630">        BibEntry entry = entries.iterator().next();</span>
+
+<span class="fc" id="L1632">        assertEquals(bibtexEntry, entry.getParsedSerialization());</span>
+<span class="fc" id="L1633">    }</span>
+
+    @Test
+    public void parseCommentContainingEntries() throws IOException {
+        // @formatter:off
+<span class="fc" id="L1638">        String bibtexEntry = &quot;@Comment{@article{myarticle,}&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L1639">                &quot;@inproceedings{blabla, title={the proceedings of blabla}; }&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L1640">                &quot;} &quot; + OS.NEWLINE +</span>
+<span class="fc" id="L1641">                &quot;@Article{test,&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L1642">                &quot;  Author                   = {Foo Bar},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L1643">                &quot;  Journal                  = {International Journal of Something},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L1644">                &quot;  Note                     = {some note},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L1645">                &quot;  Number                   = {1}&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L1646">                &quot;}&quot;;</span>
+        // @formatter:on
+
+<span class="fc" id="L1649">        ParserResult result = parser.parse(new StringReader(bibtexEntry));</span>
+<span class="fc" id="L1650">        Collection&lt;BibEntry&gt; entries = result.getDatabase().getEntries();</span>
+<span class="fc" id="L1651">        BibEntry entry = entries.iterator().next();</span>
+
+<span class="fc" id="L1653">        assertEquals(bibtexEntry, entry.getParsedSerialization());</span>
+<span class="fc" id="L1654">    }</span>
+
+    @Test
+    public void parseCommentContainingEntriesAndAtSymbols() throws IOException {
+        // @formatter:off
+<span class="fc" id="L1659">        String bibtexEntry = &quot;@Comment{@article{myarticle,}&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L1660">                &quot;@inproceedings{blabla, title={the proceedings of bl@bl@}; }&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L1661">                &quot;} &quot; + OS.NEWLINE +</span>
+<span class="fc" id="L1662">                &quot;@Article{test,&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L1663">                &quot;  Author                   = {Foo@Bar},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L1664">                &quot;  Journal                  = {International Journal of Something},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L1665">                &quot;  Note                     = {some note},&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L1666">                &quot;  Number                   = {1}&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L1667">                &quot;}&quot;;</span>
+        // @formatter:on
+
+<span class="fc" id="L1670">        ParserResult result = parser.parse(new StringReader(bibtexEntry));</span>
+<span class="fc" id="L1671">        Collection&lt;BibEntry&gt; entries = result.getDatabase().getEntries();</span>
+<span class="fc" id="L1672">        BibEntry entry = entries.iterator().next();</span>
+
+<span class="fc" id="L1674">        assertEquals(bibtexEntry, entry.getParsedSerialization());</span>
+<span class="fc" id="L1675">    }</span>
+
+    @Test
+    public void parseEmptyPreambleLeadsToEmpty() throws IOException {
+<span class="fc" id="L1679">        ParserResult result = parser.parse(new StringReader(&quot;@preamble{}&quot;));</span>
+
+<span class="fc" id="L1681">        assertFalse(result.hasWarnings());</span>
+<span class="fc" id="L1682">        assertEquals(Optional.empty(), result.getDatabase().getPreamble());</span>
+<span class="fc" id="L1683">    }</span>
+
+    @Test
+    public void parseEmptyFileLeadsToPreamble() throws IOException {
+<span class="fc" id="L1687">        ParserResult result = parser.parse(new StringReader(&quot;&quot;));</span>
+
+<span class="fc" id="L1689">        assertFalse(result.hasWarnings());</span>
+<span class="fc" id="L1690">        assertEquals(Optional.empty(), result.getDatabase().getPreamble());</span>
+<span class="fc" id="L1691">    }</span>
+
+    @Test
+    public void parseYearWithMonthString() throws Exception {
+<span class="fc" id="L1695">        Optional&lt;BibEntry&gt; result = parser.parseSingleEntry(&quot;@ARTICLE{HipKro03, year = {2003}, month = #FEB# }&quot;);</span>
+
+<span class="fc" id="L1697">        assertEquals(new Date(2003, 2), result.get().getPublicationDate().get());</span>
+<span class="fc" id="L1698">    }</span>
+
+    @Test
+    public void parseYearWithMonthNumber() throws Exception {
+<span class="fc" id="L1702">        Optional&lt;BibEntry&gt; result = parser.parseSingleEntry(&quot;@ARTICLE{HipKro03, year = {2003}, month = 2 }&quot;);</span>
+
+<span class="fc" id="L1704">        assertEquals(new Date(2003, 2), result.get().getPublicationDate().get());</span>
+<span class="fc" id="L1705">    }</span>
+
+    @Test
+    public void parseYear() throws Exception {
+<span class="fc" id="L1709">        Optional&lt;BibEntry&gt; result = parser.parseSingleEntry(&quot;@ARTICLE{HipKro03, year = {2003} }&quot;);</span>
+
+<span class="fc" id="L1711">        assertEquals(new Date(2003), result.get().getPublicationDate().get());</span>
+<span class="fc" id="L1712">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

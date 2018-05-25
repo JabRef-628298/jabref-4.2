@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>ZipFileChooser.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.importer</a> &gt; <span class="el_source">ZipFileChooser.java</span></div><h1>ZipFileChooser.java</h1><pre class="source lang-java linenums">package org.jabref.gui.importer;
+
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+
+import javax.swing.Box;
+import javax.swing.JButton;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.ListSelectionModel;
+import javax.swing.ScrollPaneConstants;
+import javax.swing.table.AbstractTableModel;
+import javax.swing.table.TableColumnModel;
+
+import org.jabref.gui.JabRefDialog;
+import org.jabref.logic.importer.fileformat.CustomImporter;
+import org.jabref.logic.l10n.Localization;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * Dialog to allow users to choose a file contained in a ZIP file.
+ */
+class ZipFileChooser extends JabRefDialog {
+
+<span class="nc" id="L41">    private static final Logger LOGGER = LoggerFactory.getLogger(ZipFileChooser.class);</span>
+
+
+    /**
+     * New ZIP file chooser.
+     *
+     * @param importCustomizationDialog  Owner of the file chooser
+     * @param zipFile  ZIP-Fle to choose from, must be readable
+     */
+    public ZipFileChooser(ImportCustomizationDialog importCustomizationDialog, ZipFile zipFile) {
+<span class="nc" id="L51">        super(importCustomizationDialog, Localization.lang(&quot;Select file from ZIP-archive&quot;), false, ZipFileChooser.class);</span>
+
+
+<span class="nc" id="L54">        ZipFileChooserTableModel tableModel = new ZipFileChooserTableModel(zipFile, getSelectableZipEntries(zipFile));</span>
+<span class="nc" id="L55">        JTable table = new JTable(tableModel);</span>
+<span class="nc" id="L56">        TableColumnModel cm = table.getColumnModel();</span>
+<span class="nc" id="L57">        cm.getColumn(0).setPreferredWidth(200);</span>
+<span class="nc" id="L58">        cm.getColumn(1).setPreferredWidth(150);</span>
+<span class="nc" id="L59">        cm.getColumn(2).setPreferredWidth(100);</span>
+<span class="nc" id="L60">        JScrollPane sp = new JScrollPane(table, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,</span>
+<span class="nc" id="L61">                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);</span>
+<span class="nc" id="L62">        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);</span>
+<span class="nc" id="L63">        table.setPreferredScrollableViewportSize(new Dimension(500, 150));</span>
+<span class="nc bnc" id="L64" title="All 2 branches missed.">        if (table.getRowCount() &gt; 0) {</span>
+<span class="nc" id="L65">            table.setRowSelectionInterval(0, 0);</span>
+        }
+
+        // cancel: no entry is selected
+<span class="nc" id="L69">        JButton cancelButton = new JButton(Localization.lang(&quot;Cancel&quot;));</span>
+<span class="nc" id="L70">        cancelButton.addActionListener(e -&gt; dispose());</span>
+        // ok: get selected class and check if it is instantiable as an importer
+<span class="nc" id="L72">        JButton okButton = new JButton(Localization.lang(&quot;OK&quot;));</span>
+<span class="nc" id="L73">        okButton.addActionListener(e -&gt; {</span>
+<span class="nc" id="L74">            int row = table.getSelectedRow();</span>
+<span class="nc bnc" id="L75" title="All 2 branches missed.">            if (row == -1) {</span>
+<span class="nc" id="L76">                JOptionPane.showMessageDialog(this, Localization.lang(&quot;Please select an importer.&quot;));</span>
+<span class="nc" id="L77">            } else {</span>
+<span class="nc" id="L78">                ZipFileChooserTableModel model = (ZipFileChooserTableModel) table.getModel();</span>
+<span class="nc" id="L79">                ZipEntry tempZipEntry = model.getZipEntry(row);</span>
+<span class="nc" id="L80">                String className = tempZipEntry.getName().substring(0, tempZipEntry.getName().lastIndexOf('.')).replace(</span>
+<span class="nc" id="L81">                        &quot;/&quot;, &quot;.&quot;);</span>
+
+                try {
+<span class="nc" id="L84">                    CustomImporter importer = new CustomImporter(model.getZipFile().getName(), className);</span>
+<span class="nc" id="L85">                    importCustomizationDialog.addOrReplaceImporter(importer);</span>
+<span class="nc" id="L86">                    dispose();</span>
+<span class="nc" id="L87">                } catch (ClassNotFoundException exc) {</span>
+<span class="nc" id="L88">                    LOGGER.warn(&quot;Could not instantiate importer: &quot; + className, exc);</span>
+<span class="nc" id="L89">                    JOptionPane.showMessageDialog(this, Localization.lang(&quot;Could not instantiate %0 %1&quot;,</span>
+<span class="nc" id="L90">                            className + &quot;:\n&quot;, exc.getMessage()));</span>
+                }
+            }
+<span class="nc" id="L93">        });</span>
+
+
+        // Key bindings:
+<span class="nc" id="L97">        JPanel mainPanel = new JPanel();</span>
+        //ActionMap am = mainPanel.getActionMap();
+        //InputMap im = mainPanel.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+        //im.put(Globals.getKeyPrefs().getKey(KeyBinds.CLOSE_DIALOG), &quot;close&quot;);
+        //am.put(&quot;close&quot;, closeAction);
+<span class="nc" id="L102">        mainPanel.setLayout(new BorderLayout());</span>
+<span class="nc" id="L103">        mainPanel.add(sp, BorderLayout.CENTER);</span>
+
+<span class="nc" id="L105">        JPanel optionsPanel = new JPanel();</span>
+<span class="nc" id="L106">        optionsPanel.add(okButton);</span>
+<span class="nc" id="L107">        optionsPanel.add(cancelButton);</span>
+<span class="nc" id="L108">        optionsPanel.add(Box.createHorizontalStrut(5));</span>
+
+<span class="nc" id="L110">        getContentPane().add(mainPanel, BorderLayout.CENTER);</span>
+<span class="nc" id="L111">        getContentPane().add(optionsPanel, BorderLayout.SOUTH);</span>
+<span class="nc" id="L112">        this.setSize(getSize());</span>
+<span class="nc" id="L113">        pack();</span>
+<span class="nc" id="L114">        this.setLocationRelativeTo(importCustomizationDialog);</span>
+<span class="nc" id="L115">        table.requestFocus();</span>
+<span class="nc" id="L116">    }</span>
+
+    /**
+     * Entries that can be selected with this dialog.
+     *
+     * @param zipFile  ZIP-File
+     * @return  entries that can be selected
+     */
+    private static List&lt;ZipEntry&gt; getSelectableZipEntries(ZipFile zipFile) {
+<span class="nc" id="L125">        List&lt;ZipEntry&gt; entries = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L126">        Enumeration&lt;? extends ZipEntry&gt; e = zipFile.entries();</span>
+<span class="nc bnc" id="L127" title="All 2 branches missed.">        for (ZipEntry entry : Collections.list(e)) {</span>
+<span class="nc bnc" id="L128" title="All 4 branches missed.">            if (!entry.isDirectory() &amp;&amp; entry.getName().endsWith(&quot;.class&quot;)) {</span>
+<span class="nc" id="L129">                entries.add(entry);</span>
+            }
+        }
+<span class="nc" id="L132">        return entries;</span>
+    }
+
+    /*
+     *  (non-Javadoc)
+     * @see java.awt.Component#getSize()
+     */
+    @Override
+    public Dimension getSize() {
+<span class="nc" id="L141">        return new Dimension(400, 300);</span>
+    }
+
+
+    /**
+     * Table model for the ZIP archive contents.
+     *
+     * &lt;p&gt;Contains one row for each entry.
+     * Does not contain rows for directory entries.&lt;/p&gt;
+     *
+     * &lt;p&gt;The columns contain information about ZIP file entries:
+     * &lt;ol&gt;&lt;li&gt;
+     *   name {@link String}
+     * &lt;/li&gt;&lt;li&gt;
+     *   time of last modification {@link Date}
+     * &lt;/li&gt;&lt;li&gt;
+     *   size (uncompressed) {@link Long}
+     * &lt;/li&gt;&lt;/ol&gt;&lt;/p&gt;
+     */
+    private static class ZipFileChooserTableModel extends AbstractTableModel {
+
+<span class="nc" id="L162">        private final List&lt;String&gt; columnNames = Arrays.asList(Localization.lang(&quot;Name&quot;),</span>
+<span class="nc" id="L163">                Localization.lang(&quot;Last modified&quot;), Localization.lang(&quot;Size&quot;));</span>
+        private final List&lt;ZipEntry&gt; rows;
+        private final ZipFile zipFile;
+
+
+        ZipFileChooserTableModel(ZipFile zipFile, List&lt;ZipEntry&gt; rows) {
+<span class="nc" id="L169">            super();</span>
+<span class="nc" id="L170">            this.rows = rows;</span>
+<span class="nc" id="L171">            this.zipFile = zipFile;</span>
+<span class="nc" id="L172">        }</span>
+
+        /*
+         *  (non-Javadoc)
+         * @see javax.swing.table.TableModel#getColumnCount()
+         */
+        @Override
+        public int getColumnCount() {
+<span class="nc" id="L180">            return columnNames.size();</span>
+        }
+
+        /*
+         *  (non-Javadoc)
+         * @see javax.swing.table.TableModel#getRowCount()
+         */
+        @Override
+        public int getRowCount() {
+<span class="nc" id="L189">            return this.rows.size();</span>
+        }
+
+        /*
+         *  (non-Javadoc)
+         * @see javax.swing.table.TableModel#getColumnName(int)
+         */
+        @Override
+        public String getColumnName(int col) {
+<span class="nc" id="L198">            return columnNames.get(col);</span>
+        }
+
+        /**
+         * ZIP-File entry at the given row index.
+         *
+         * @param rowIndex  row index
+         * @return  ZIP file entry
+         */
+        public ZipEntry getZipEntry(int rowIndex) {
+<span class="nc" id="L208">            return this.rows.get(rowIndex);</span>
+        }
+
+        /**
+         * ZIP file which contains all entries of this model.
+         *
+         * @return zip file
+         */
+        public ZipFile getZipFile() {
+<span class="nc" id="L217">            return this.zipFile;</span>
+        }
+
+        /*
+         *  (non-Javadoc)
+         * @see javax.swing.table.TableModel#getValueAt(int, int)
+         */
+        @Override
+        public Object getValueAt(int rowIndex, int columnIndex) {
+<span class="nc" id="L226">            Object value = null;</span>
+<span class="nc" id="L227">            ZipEntry entry = getZipEntry(rowIndex);</span>
+<span class="nc bnc" id="L228" title="All 2 branches missed.">            if (columnIndex == 0) {</span>
+<span class="nc" id="L229">                value = entry.getName();</span>
+<span class="nc bnc" id="L230" title="All 2 branches missed.">            } else if (columnIndex == 1) {</span>
+<span class="nc" id="L231">                value = ZonedDateTime.ofInstant(new Date(entry.getTime()).toInstant(),</span>
+<span class="nc" id="L232">                        ZoneId.systemDefault())</span>
+<span class="nc" id="L233">                        .format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM));</span>
+<span class="nc bnc" id="L234" title="All 2 branches missed.">            } else if (columnIndex == 2) {</span>
+<span class="nc" id="L235">                value = entry.getSize();</span>
+            }
+<span class="nc" id="L237">            return value;</span>
+        }
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

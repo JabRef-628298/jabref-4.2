@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>LocalizationEntry.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.l10n</a> &gt; <span class="el_source">LocalizationEntry.java</span></div><h1>LocalizationEntry.java</h1><pre class="source lang-java linenums">package org.jabref.logic.l10n;
+
+import java.nio.file.Path;
+import java.util.Objects;
+
+class LocalizationEntry implements Comparable&lt;LocalizationEntry&gt;{
+
+    private final Path path;
+    private final String key;
+    private final LocalizationBundleForTest bundle;
+
+<span class="fc" id="L12">    LocalizationEntry(Path path, String key, LocalizationBundleForTest bundle) {</span>
+<span class="fc" id="L13">        this.path = path;</span>
+<span class="fc" id="L14">        this.key = key;</span>
+<span class="fc" id="L15">        this.bundle = bundle;</span>
+<span class="fc" id="L16">    }</span>
+
+    public Path getPath() {
+<span class="nc" id="L19">        return path;</span>
+    }
+
+    public String getKey() {
+<span class="fc" id="L23">        return key;</span>
+    }
+
+    public String getId() {
+<span class="nc" id="L27">        return String.format(&quot;%s___%s&quot;, bundle, key);</span>
+    }
+
+    @Override
+    public boolean equals(Object o) {
+<span class="pc bpc" id="L32" title="1 of 2 branches missed.">        if (this == o) {</span>
+<span class="nc" id="L33">            return true;</span>
+        }
+<span class="pc bpc" id="L35" title="2 of 4 branches missed.">        if ((o == null) || (getClass() != o.getClass())) {</span>
+<span class="nc" id="L36">            return false;</span>
+        }
+
+<span class="fc" id="L39">        LocalizationEntry that = (LocalizationEntry) o;</span>
+
+<span class="pc bpc" id="L41" title="4 of 6 branches missed.">        if (key != null ? !key.equals(that.key) : that.key != null) {</span>
+<span class="nc" id="L42">            return false;</span>
+        }
+<span class="pc bpc" id="L44" title="1 of 2 branches missed.">        return bundle == that.bundle;</span>
+
+    }
+
+    @Override
+    public int hashCode() {
+<span class="fc" id="L50">        return Objects.hash(key, bundle);</span>
+    }
+
+    public LocalizationBundleForTest getBundle() {
+<span class="nc" id="L54">        return bundle;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L59">        return String.format(&quot;%s (%s %s)&quot;, key, path, bundle);</span>
+    }
+
+    @Override
+    public int compareTo(LocalizationEntry o) {
+<span class="nc" id="L64">        return getId().compareTo(o.getId());</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

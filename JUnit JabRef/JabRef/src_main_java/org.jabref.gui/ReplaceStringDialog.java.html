@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>ReplaceStringDialog.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui</a> &gt; <span class="el_source">ReplaceStringDialog.java</span></div><h1>ReplaceStringDialog.java</h1><pre class="source lang-java linenums"><span class="nc" id="L1">package org.jabref.gui;</span>
+
+import java.awt.BorderLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.Locale;
+
+import javax.swing.AbstractAction;
+import javax.swing.ActionMap;
+import javax.swing.BorderFactory;
+import javax.swing.ButtonGroup;
+import javax.swing.InputMap;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JRadioButton;
+import javax.swing.JTextField;
+
+import org.jabref.Globals;
+import org.jabref.gui.keyboard.KeyBinding;
+import org.jabref.gui.undo.NamedCompound;
+import org.jabref.gui.undo.UndoableFieldChange;
+import org.jabref.logic.l10n.Localization;
+import org.jabref.model.entry.BibEntry;
+
+/**
+ * Dialog for replacing strings.
+ */
+class ReplaceStringDialog extends JabRefDialog {
+
+<span class="nc" id="L36">    private final JTextField fieldsField = new JTextField(&quot;&quot;, 30);</span>
+<span class="nc" id="L37">    private final JTextField fromField = new JTextField(&quot;&quot;, 30);</span>
+<span class="nc" id="L38">    private final JTextField toField = new JTextField(&quot;&quot;, 30);</span>
+
+<span class="nc" id="L40">    private final JCheckBox selOnly = new JCheckBox(Localization.lang(&quot;Limit to selected entries&quot;), false);</span>
+<span class="nc" id="L41">    private final JRadioButton allFi = new JRadioButton(Localization.lang(&quot;All fields&quot;), true);</span>
+<span class="nc" id="L42">    private final JRadioButton field = new JRadioButton(Localization.lang(&quot;Limit to fields&quot;) + &quot;:&quot;, false);</span>
+    private boolean okPressed;
+    private String[] fieldStrings;
+    private String fromString;
+    private String toString;
+
+
+    public ReplaceStringDialog(JabRefFrame parent) {
+<span class="nc" id="L50">        super(parent, Localization.lang(&quot;Replace string&quot;), true, ReplaceStringDialog.class);</span>
+
+<span class="nc" id="L52">        ButtonGroup bg = new ButtonGroup();</span>
+<span class="nc" id="L53">        bg.add(allFi);</span>
+<span class="nc" id="L54">        bg.add(field);</span>
+<span class="nc" id="L55">        ActionListener okListener = e -&gt; {</span>
+<span class="nc" id="L56">            fromString = fromField.getText();</span>
+<span class="nc" id="L57">            toString = toField.getText();</span>
+<span class="nc bnc" id="L58" title="All 2 branches missed.">            if (&quot;&quot;.equals(fromString)) {</span>
+<span class="nc" id="L59">                return;</span>
+            }
+<span class="nc" id="L61">            okPressed = true;</span>
+<span class="nc" id="L62">            fieldStrings = fieldsField.getText().toLowerCase(Locale.ROOT).split(&quot;;&quot;);</span>
+<span class="nc" id="L63">            dispose();</span>
+<span class="nc" id="L64">        };</span>
+<span class="nc" id="L65">        JButton ok = new JButton(Localization.lang(&quot;OK&quot;));</span>
+<span class="nc" id="L66">        ok.addActionListener(okListener);</span>
+<span class="nc" id="L67">        toField.addActionListener(okListener);</span>
+<span class="nc" id="L68">        fieldsField.addActionListener(okListener);</span>
+<span class="nc" id="L69">        AbstractAction cancelAction = new AbstractAction() {</span>
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L73">                dispose();</span>
+<span class="nc" id="L74">            }</span>
+        };
+<span class="nc" id="L76">        JButton cancel = new JButton(Localization.lang(&quot;Cancel&quot;));</span>
+<span class="nc" id="L77">        cancel.addActionListener(cancelAction);</span>
+
+        // Key bindings:
+<span class="nc" id="L80">        JPanel settings = new JPanel();</span>
+<span class="nc" id="L81">        ActionMap am = settings.getActionMap();</span>
+<span class="nc" id="L82">        InputMap im = settings.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);</span>
+<span class="nc" id="L83">        im.put(Globals.getKeyPrefs().getKey(KeyBinding.CLOSE_DIALOG), &quot;close&quot;);</span>
+<span class="nc" id="L84">        am.put(&quot;close&quot;, cancelAction);</span>
+
+        // Layout starts here.
+<span class="nc" id="L87">        GridBagLayout gbl = new GridBagLayout();</span>
+<span class="nc" id="L88">        settings.setLayout(gbl);</span>
+<span class="nc" id="L89">        JPanel opt = new JPanel();</span>
+<span class="nc" id="L90">        opt.setLayout(gbl);</span>
+<span class="nc" id="L91">        JPanel main = new JPanel();</span>
+<span class="nc" id="L92">        main.setLayout(gbl);</span>
+
+<span class="nc" id="L94">        settings.setBorder(BorderFactory.createTitledBorder</span>
+<span class="nc" id="L95">                (BorderFactory.createEtchedBorder(),</span>
+<span class="nc" id="L96">                        Localization.lang(&quot;Replace string&quot;)));</span>
+<span class="nc" id="L97">        main.setBorder(BorderFactory.createTitledBorder</span>
+<span class="nc" id="L98">                (BorderFactory.createEtchedBorder(),</span>
+<span class="nc" id="L99">                        Localization.lang(&quot;Strings&quot;)));</span>
+
+        // Settings panel:
+<span class="nc" id="L102">        GridBagConstraints con = new GridBagConstraints();</span>
+<span class="nc" id="L103">        con.fill = GridBagConstraints.HORIZONTAL;</span>
+<span class="nc" id="L104">        con.gridwidth = 2;</span>
+<span class="nc" id="L105">        con.weightx = 0;</span>
+<span class="nc" id="L106">        con.anchor = GridBagConstraints.WEST;</span>
+<span class="nc" id="L107">        con.gridy = 0;</span>
+<span class="nc" id="L108">        con.gridx = 0;</span>
+<span class="nc" id="L109">        con.insets = new Insets(3, 5, 3, 5);</span>
+<span class="nc" id="L110">        gbl.setConstraints(selOnly, con);</span>
+<span class="nc" id="L111">        settings.add(selOnly);</span>
+<span class="nc" id="L112">        con.gridy = 1;</span>
+<span class="nc" id="L113">        con.insets = new Insets(13, 5, 3, 5);</span>
+<span class="nc" id="L114">        gbl.setConstraints(allFi, con);</span>
+<span class="nc" id="L115">        settings.add(allFi);</span>
+<span class="nc" id="L116">        con.gridwidth = 1;</span>
+<span class="nc" id="L117">        con.gridy = 2;</span>
+<span class="nc" id="L118">        con.gridx = 0;</span>
+<span class="nc" id="L119">        con.insets = new Insets(3, 5, 3, 5);</span>
+<span class="nc" id="L120">        gbl.setConstraints(field, con);</span>
+<span class="nc" id="L121">        settings.add(field);</span>
+<span class="nc" id="L122">        con.gridx = 1;</span>
+<span class="nc" id="L123">        con.weightx = 1;</span>
+<span class="nc" id="L124">        gbl.setConstraints(fieldsField, con);</span>
+<span class="nc" id="L125">        settings.add(fieldsField);</span>
+
+<span class="nc" id="L127">        con.weightx = 0;</span>
+<span class="nc" id="L128">        con.gridx = 0;</span>
+<span class="nc" id="L129">        con.gridy = 0;</span>
+<span class="nc" id="L130">        JLabel fl = new JLabel(Localization.lang(&quot;Search for&quot;) + &quot;:&quot;);</span>
+<span class="nc" id="L131">        gbl.setConstraints(fl, con);</span>
+<span class="nc" id="L132">        main.add(fl);</span>
+<span class="nc" id="L133">        con.gridy = 1;</span>
+<span class="nc" id="L134">        JLabel tl = new JLabel(Localization.lang(&quot;Replace with&quot;) + &quot;:&quot;);</span>
+<span class="nc" id="L135">        gbl.setConstraints(tl, con);</span>
+<span class="nc" id="L136">        main.add(tl);</span>
+<span class="nc" id="L137">        con.weightx = 1;</span>
+<span class="nc" id="L138">        con.gridx = 1;</span>
+<span class="nc" id="L139">        con.gridy = 0;</span>
+<span class="nc" id="L140">        gbl.setConstraints(fromField, con);</span>
+<span class="nc" id="L141">        main.add(fromField);</span>
+<span class="nc" id="L142">        con.gridy = 1;</span>
+<span class="nc" id="L143">        gbl.setConstraints(toField, con);</span>
+<span class="nc" id="L144">        main.add(toField);</span>
+
+        // Option buttons:
+<span class="nc" id="L147">        con.gridx = GridBagConstraints.RELATIVE;</span>
+<span class="nc" id="L148">        con.gridy = GridBagConstraints.RELATIVE;</span>
+<span class="nc" id="L149">        con.weightx = 1;</span>
+<span class="nc" id="L150">        con.gridwidth = 1;</span>
+<span class="nc" id="L151">        con.anchor = GridBagConstraints.EAST;</span>
+<span class="nc" id="L152">        con.fill = GridBagConstraints.NONE;</span>
+<span class="nc" id="L153">        gbl.setConstraints(ok, con);</span>
+<span class="nc" id="L154">        opt.add(ok);</span>
+<span class="nc" id="L155">        con.anchor = GridBagConstraints.WEST;</span>
+<span class="nc" id="L156">        con.gridwidth = GridBagConstraints.REMAINDER;</span>
+<span class="nc" id="L157">        gbl.setConstraints(cancel, con);</span>
+<span class="nc" id="L158">        opt.add(cancel);</span>
+
+<span class="nc" id="L160">        getContentPane().add(main, BorderLayout.NORTH);</span>
+<span class="nc" id="L161">        getContentPane().add(settings, BorderLayout.CENTER);</span>
+<span class="nc" id="L162">        getContentPane().add(opt, BorderLayout.SOUTH);</span>
+
+<span class="nc" id="L164">        pack();</span>
+
+<span class="nc" id="L166">        this.setLocationRelativeTo(parent);</span>
+<span class="nc" id="L167">    }</span>
+
+    public boolean okPressed() {
+<span class="nc" id="L170">        return okPressed;</span>
+    }
+
+    private boolean allFields() {
+<span class="nc" id="L174">        return allFi.isSelected();</span>
+    }
+
+    public boolean selOnly() {
+<span class="nc" id="L178">        return selOnly.isSelected();</span>
+    }
+
+    /**
+     * Does the actual operation on a Bibtex entry based on the
+     * settings specified in this same dialog. Returns the number of
+     * occurences replaced.
+     */
+    public int replace(BibEntry be, NamedCompound ce) {
+<span class="nc" id="L187">        int counter = 0;</span>
+<span class="nc bnc" id="L188" title="All 2 branches missed.">        if (allFields()) {</span>
+<span class="nc bnc" id="L189" title="All 2 branches missed.">            for (String s : be.getFieldNames()) {</span>
+<span class="nc" id="L190">                counter += replaceField(be, s, ce);</span>
+            }
+<span class="nc" id="L192">        } else {</span>
+<span class="nc bnc" id="L193" title="All 2 branches missed.">            for (String fld : fieldStrings) {</span>
+<span class="nc" id="L194">                    counter += replaceField(be, fld, ce);</span>
+            }
+        }
+<span class="nc" id="L197">        return counter;</span>
+    }
+
+    private int replaceField(BibEntry be, String fieldname, NamedCompound ce) {
+<span class="nc bnc" id="L201" title="All 2 branches missed.">        if (!be.hasField(fieldname)) {</span>
+<span class="nc" id="L202">            return 0;</span>
+        }
+<span class="nc" id="L204">        String txt = be.getField(fieldname).get();</span>
+<span class="nc" id="L205">        StringBuilder sb = new StringBuilder();</span>
+        int ind;
+<span class="nc" id="L207">        int piv = 0;</span>
+<span class="nc" id="L208">        int counter = 0;</span>
+<span class="nc" id="L209">        int len1 = fromString.length();</span>
+<span class="nc bnc" id="L210" title="All 2 branches missed.">        while ((ind = txt.indexOf(fromString, piv)) &gt;= 0) {</span>
+<span class="nc" id="L211">            counter++;</span>
+<span class="nc" id="L212">            sb.append(txt.substring(piv, ind)); // Text leading up to s1</span>
+<span class="nc" id="L213">            sb.append(toString); // Insert s2</span>
+<span class="nc" id="L214">            piv = ind + len1;</span>
+        }
+<span class="nc" id="L216">        sb.append(txt.substring(piv));</span>
+<span class="nc" id="L217">        String newStr = sb.toString();</span>
+<span class="nc" id="L218">        be.setField(fieldname, newStr);</span>
+<span class="nc" id="L219">        ce.addEdit(new UndoableFieldChange(be, fieldname, txt, newStr));</span>
+<span class="nc" id="L220">        return counter;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

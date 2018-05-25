@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>XmpPrefsTab.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.preftabs</a> &gt; <span class="el_source">XmpPrefsTab.java</span></div><h1>XmpPrefsTab.java</h1><pre class="source lang-java linenums"><span class="nc" id="L1">package org.jabref.gui.preftabs;</span>
+
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.event.ActionEvent;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+import javax.swing.AbstractAction;
+import javax.swing.Action;
+import javax.swing.BorderFactory;
+import javax.swing.JCheckBox;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.JToolBar;
+import javax.swing.ScrollPaneConstants;
+import javax.swing.SwingConstants;
+import javax.swing.table.AbstractTableModel;
+import javax.swing.table.TableColumnModel;
+import javax.swing.table.TableModel;
+
+import org.jabref.gui.IconTheme;
+import org.jabref.gui.OSXCompatibleToolbar;
+import org.jabref.logic.l10n.Localization;
+import org.jabref.preferences.JabRefPreferences;
+
+import com.jgoodies.forms.builder.DefaultFormBuilder;
+import com.jgoodies.forms.layout.FormLayout;
+
+/**
+ * Preference Tab for XMP.
+ *
+ * Allows the user to enable and configure the XMP privacy filter.
+ */
+class XmpPrefsTab extends JPanel implements PrefsTab {
+
+    private final JabRefPreferences prefs;
+    private boolean tableChanged;
+
+    private int rowCount;
+
+    private final JTable table;
+
+<span class="nc" id="L47">    private final JCheckBox privacyFilterCheckBox = new JCheckBox(</span>
+<span class="nc" id="L48">            Localization.lang(&quot;Do not write the following fields to XMP Metadata:&quot;));</span>
+
+<span class="nc" id="L50">    private final List&lt;Object&gt; tableRows = new ArrayList&lt;&gt;(10);</span>
+
+
+    /**
+     * Customization of external program paths.
+     */
+<span class="nc" id="L56">    public XmpPrefsTab(JabRefPreferences prefs) {</span>
+<span class="nc" id="L57">        this.prefs = Objects.requireNonNull(prefs);</span>
+<span class="nc" id="L58">        setLayout(new BorderLayout());</span>
+
+<span class="nc" id="L60">        TableModel tableModel = new AbstractTableModel() {</span>
+
+            @Override
+            public int getRowCount() {
+<span class="nc" id="L64">                return rowCount;</span>
+            }
+
+            @Override
+            public int getColumnCount() {
+<span class="nc" id="L69">                return 1;</span>
+            }
+
+            @Override
+            public Object getValueAt(int row, int column) {
+<span class="nc bnc" id="L74" title="All 2 branches missed.">                if (row &gt;= tableRows.size()) {</span>
+<span class="nc" id="L75">                    return &quot;&quot;;</span>
+                }
+<span class="nc" id="L77">                Object rowContent = tableRows.get(row);</span>
+<span class="nc bnc" id="L78" title="All 2 branches missed.">                if (rowContent == null) {</span>
+<span class="nc" id="L79">                    return &quot;&quot;;</span>
+                }
+<span class="nc" id="L81">                return rowContent;</span>
+            }
+
+            @Override
+            public String getColumnName(int col) {
+<span class="nc" id="L86">                return Localization.lang(&quot;Field to filter&quot;);</span>
+            }
+
+            @Override
+            public Class&lt;?&gt; getColumnClass(int column) {
+<span class="nc" id="L91">                return String.class;</span>
+            }
+
+            @Override
+            public boolean isCellEditable(int row, int col) {
+<span class="nc" id="L96">                return true;</span>
+            }
+
+            @Override
+            public void setValueAt(Object value, int row, int col) {
+<span class="nc" id="L101">                tableChanged = true;</span>
+
+<span class="nc bnc" id="L103" title="All 2 branches missed.">                if (tableRows.size() &lt;= row) {</span>
+<span class="nc" id="L104">                    ((ArrayList&lt;Object&gt;) tableRows).ensureCapacity(row + 1);</span>
+                }
+
+<span class="nc" id="L107">                tableRows.set(row, value);</span>
+<span class="nc" id="L108">            }</span>
+
+        };
+
+<span class="nc" id="L112">        table = new JTable(tableModel);</span>
+
+<span class="nc" id="L114">        TableColumnModel columnModel = table.getColumnModel();</span>
+<span class="nc" id="L115">        columnModel.getColumn(0).setPreferredWidth(140);</span>
+
+<span class="nc" id="L117">        FormLayout layout = new FormLayout(&quot;1dlu, 8dlu, left:pref, 4dlu, fill:pref&quot;, &quot;&quot;);</span>
+<span class="nc" id="L118">        DefaultFormBuilder builder = new DefaultFormBuilder(layout);</span>
+<span class="nc" id="L119">        JPanel pan = new JPanel();</span>
+
+<span class="nc" id="L121">        JPanel tablePanel = new JPanel();</span>
+<span class="nc" id="L122">        tablePanel.setLayout(new BorderLayout());</span>
+<span class="nc" id="L123">        JScrollPane scrollPane = new JScrollPane(table, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,</span>
+<span class="nc" id="L124">                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);</span>
+<span class="nc" id="L125">        table.setPreferredScrollableViewportSize(new Dimension(250, 200));</span>
+<span class="nc" id="L126">        scrollPane.setMinimumSize(new Dimension(250, 300));</span>
+<span class="nc" id="L127">        tablePanel.add(scrollPane, BorderLayout.CENTER);</span>
+
+<span class="nc" id="L129">        JToolBar toolbar = new OSXCompatibleToolbar(SwingConstants.VERTICAL);</span>
+<span class="nc" id="L130">        toolbar.setFloatable(false);</span>
+<span class="nc" id="L131">        toolbar.setBorder(null);</span>
+<span class="nc" id="L132">        toolbar.add(new AddRowAction());</span>
+<span class="nc" id="L133">        toolbar.add(new DeleteRowAction());</span>
+
+<span class="nc" id="L135">        tablePanel.add(toolbar, BorderLayout.EAST);</span>
+
+        // Build Prefs Tabs
+<span class="nc" id="L138">        builder.appendSeparator(Localization.lang(&quot;XMP export privacy settings&quot;));</span>
+<span class="nc" id="L139">        builder.nextLine();</span>
+
+<span class="nc" id="L141">        builder.append(pan);</span>
+<span class="nc" id="L142">        builder.append(privacyFilterCheckBox);</span>
+<span class="nc" id="L143">        builder.nextLine();</span>
+
+<span class="nc" id="L145">        builder.append(pan);</span>
+<span class="nc" id="L146">        builder.append(tablePanel);</span>
+<span class="nc" id="L147">        builder.nextLine();</span>
+
+<span class="nc" id="L149">        pan = builder.getPanel();</span>
+<span class="nc" id="L150">        pan.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));</span>
+<span class="nc" id="L151">        add(pan, BorderLayout.CENTER);</span>
+<span class="nc" id="L152">    }</span>
+
+    class DeleteRowAction extends AbstractAction {
+
+<span class="nc" id="L156">        public DeleteRowAction() {</span>
+<span class="nc" id="L157">            super(&quot;Delete row&quot;, IconTheme.JabRefIcon.REMOVE_NOBOX.getIcon());</span>
+<span class="nc" id="L158">            putValue(Action.SHORT_DESCRIPTION, Localization.lang(&quot;Delete rows&quot;));</span>
+<span class="nc" id="L159">        }</span>
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L163">            int[] rows = table.getSelectedRows();</span>
+<span class="nc bnc" id="L164" title="All 2 branches missed.">            if (rows.length == 0) {</span>
+<span class="nc" id="L165">                return;</span>
+            }
+
+<span class="nc bnc" id="L168" title="All 2 branches missed.">            for (int i = rows.length - 1; i &gt;= 0; i--) {</span>
+<span class="nc bnc" id="L169" title="All 2 branches missed.">                if (rows[i] &lt; tableRows.size()) {</span>
+<span class="nc" id="L170">                    tableRows.remove(rows[i]);</span>
+                }
+            }
+<span class="nc" id="L173">            rowCount -= rows.length;</span>
+<span class="nc bnc" id="L174" title="All 2 branches missed.">            if (rows.length &gt; 1) {</span>
+<span class="nc" id="L175">                table.clearSelection();</span>
+            }
+<span class="nc" id="L177">            table.revalidate();</span>
+<span class="nc" id="L178">            table.repaint();</span>
+<span class="nc" id="L179">            tableChanged = true;</span>
+<span class="nc" id="L180">        }</span>
+    }
+
+    class AddRowAction extends AbstractAction {
+
+<span class="nc" id="L185">        public AddRowAction() {</span>
+<span class="nc" id="L186">            super(&quot;Add row&quot;, IconTheme.JabRefIcon.ADD_NOBOX.getIcon());</span>
+<span class="nc" id="L187">            putValue(Action.SHORT_DESCRIPTION, Localization.lang(&quot;Insert rows&quot;));</span>
+<span class="nc" id="L188">        }</span>
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L192">            int[] rows = table.getSelectedRows();</span>
+<span class="nc bnc" id="L193" title="All 2 branches missed.">            if (rows.length == 0) {</span>
+                // No rows selected, so we just add one at the end.
+<span class="nc" id="L195">                rowCount++;</span>
+<span class="nc" id="L196">                table.revalidate();</span>
+<span class="nc" id="L197">                table.repaint();</span>
+<span class="nc" id="L198">                return;</span>
+            }
+<span class="nc bnc" id="L200" title="All 2 branches missed.">            for (int i = 0; i &lt; rows.length; i++) {</span>
+<span class="nc bnc" id="L201" title="All 2 branches missed.">                if ((rows[i] + i) &lt; tableRows.size()) {</span>
+<span class="nc" id="L202">                    tableRows.add(rows[i] + i, &quot;&quot;);</span>
+                }
+            }
+<span class="nc" id="L205">            rowCount += rows.length;</span>
+<span class="nc bnc" id="L206" title="All 2 branches missed.">            if (rows.length &gt; 1) {</span>
+<span class="nc" id="L207">                table.clearSelection();</span>
+            }
+<span class="nc" id="L209">            table.revalidate();</span>
+<span class="nc" id="L210">            table.repaint();</span>
+<span class="nc" id="L211">            tableChanged = true;</span>
+<span class="nc" id="L212">        }</span>
+    }
+
+
+    /**
+     * Load settings from the preferences and initialize the table.
+     */
+    @Override
+    public void setValues() {
+<span class="nc" id="L221">        tableRows.clear();</span>
+<span class="nc" id="L222">        List&lt;String&gt; names = JabRefPreferences.getInstance().getStringList(JabRefPreferences.XMP_PRIVACY_FILTERS);</span>
+<span class="nc" id="L223">        tableRows.addAll(names);</span>
+<span class="nc" id="L224">        rowCount = tableRows.size() + 5;</span>
+
+<span class="nc" id="L226">        privacyFilterCheckBox.setSelected(JabRefPreferences.getInstance().getBoolean(</span>
+<span class="nc" id="L227">                JabRefPreferences.USE_XMP_PRIVACY_FILTER));</span>
+<span class="nc" id="L228">    }</span>
+
+    /**
+     * Store changes to table preferences. This method is called when the user
+     * clicks Ok.
+     *
+     */
+    @Override
+    public void storeSettings() {
+
+<span class="nc bnc" id="L238" title="All 2 branches missed.">        if (table.isEditing()) {</span>
+<span class="nc" id="L239">            int col = table.getEditingColumn();</span>
+<span class="nc" id="L240">            int row = table.getEditingRow();</span>
+<span class="nc" id="L241">            table.getCellEditor(row, col).stopCellEditing();</span>
+        }
+
+        // Now we need to make sense of the contents the user has made to the
+        // table setup table. This needs to be done either if changes were made, or
+        // if the checkbox is checked and no field values have been stored previously:
+<span class="nc bnc" id="L247" title="All 2 branches missed.">        if (tableChanged ||</span>
+<span class="nc bnc" id="L248" title="All 4 branches missed.">                (privacyFilterCheckBox.isSelected() &amp;&amp; !prefs.hasKey(JabRefPreferences.XMP_PRIVACY_FILTERS))) {</span>
+
+            // First we remove all rows with empty names.
+<span class="nc bnc" id="L251" title="All 2 branches missed.">            for (int i = tableRows.size() - 1; i &gt;= 0; i--) {</span>
+<span class="nc bnc" id="L252" title="All 4 branches missed.">                if ((tableRows.get(i) == null) || tableRows.get(i).toString().isEmpty()) {</span>
+<span class="nc" id="L253">                    tableRows.remove(i);</span>
+                }
+            }
+            // Finally, we store the new preferences.
+<span class="nc" id="L257">            JabRefPreferences.getInstance().putStringList(JabRefPreferences.XMP_PRIVACY_FILTERS,</span>
+<span class="nc" id="L258">                    tableRows.stream().map(Object::toString).collect(Collectors.toList()));</span>
+        }
+
+<span class="nc" id="L261">        JabRefPreferences.getInstance().putBoolean(JabRefPreferences.USE_XMP_PRIVACY_FILTER, privacyFilterCheckBox.isSelected());</span>
+<span class="nc" id="L262">    }</span>
+
+    @Override
+    public boolean validateSettings() {
+<span class="nc" id="L266">        return true;</span>
+    }
+
+    @Override
+    public String getTabName() {
+<span class="nc" id="L271">        return Localization.lang(&quot;XMP-metadata&quot;);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

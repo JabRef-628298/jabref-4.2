@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>NormalizeNamesFormatterTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.formatter.bibtexfields</a> &gt; <span class="el_source">NormalizeNamesFormatterTest.java</span></div><h1>NormalizeNamesFormatterTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.formatter.bibtexfields;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+/**
+ * Tests in addition to the general tests from {@link org.jabref.logic.formatter.FormatterTest}
+ */
+<span class="fc" id="L11">public class NormalizeNamesFormatterTest {</span>
+
+    private NormalizeNamesFormatter formatter;
+
+    @BeforeEach
+    public void setUp() {
+<span class="fc" id="L17">        formatter = new NormalizeNamesFormatter();</span>
+<span class="fc" id="L18">    }</span>
+
+    @Test
+    public void testNormalizeAuthorList() {
+<span class="fc" id="L22">        assertEquals(&quot;Bilbo, Staci D.&quot;, formatter.format(&quot;Staci D Bilbo&quot;));</span>
+<span class="fc" id="L23">        assertEquals(&quot;Bilbo, Staci D.&quot;, formatter.format(&quot;Staci D. Bilbo&quot;));</span>
+
+<span class="fc" id="L25">        assertEquals(&quot;Bilbo, Staci D. and Smith, S. H. and Schwarz, Jaclyn M.&quot;, formatter.format(&quot;Staci D Bilbo and Smith SH and Jaclyn M Schwarz&quot;));</span>
+
+<span class="fc" id="L27">        assertEquals(&quot;Ølver, M. A.&quot;, formatter.format(&quot;Ølver MA&quot;));</span>
+
+<span class="fc" id="L29">        assertEquals(&quot;Ølver, M. A. and Øie, G. G. and Øie, G. G. and Alfredsen, J. Å. Å. and Alfredsen, Jo and Olsen, Y. Y. and Olsen, Y. Y.&quot;,</span>
+<span class="fc" id="L30">                formatter.format(&quot;Ølver MA; GG Øie; Øie GG; Alfredsen JÅÅ; Jo Alfredsen; Olsen Y.Y. and Olsen YY.&quot;));</span>
+
+<span class="fc" id="L32">        assertEquals(&quot;Ølver, M. A. and Øie, G. G. and Øie, G. G. and Alfredsen, J. Å. Å. and Alfredsen, Jo and Olsen, Y. Y. and Olsen, Y. Y.&quot;,</span>
+<span class="fc" id="L33">                formatter.format(&quot;Ølver MA; GG Øie; Øie GG; Alfredsen JÅÅ; Jo Alfredsen; Olsen Y.Y.; Olsen YY.&quot;));</span>
+
+<span class="fc" id="L35">        assertEquals(&quot;Alver, Morten and Alver, Morten O. and Alfredsen, J. A. and Olsen, Y. Y.&quot;, formatter.format(&quot;Alver, Morten and Alver, Morten O and Alfredsen, JA and Olsen, Y.Y.&quot;));</span>
+
+<span class="fc" id="L37">        assertEquals(&quot;Alver, M. A. and Alfredsen, J. A. and Olsen, Y. Y.&quot;, formatter.format(&quot;Alver, MA; Alfredsen, JA; Olsen Y.Y.&quot;));</span>
+
+<span class="fc" id="L39">        assertEquals(&quot;Kolb, Stefan and Lenhard, J{\\\&quot;o}rg and Wirtz, Guido&quot;, formatter.format(&quot;Kolb, Stefan and J{\\\&quot;o}rg Lenhard and Wirtz, Guido&quot;));</span>
+<span class="fc" id="L40">    }</span>
+
+    @Test
+    public void twoAuthorsSeperatedByColon() {
+<span class="fc" id="L44">        assertEquals(&quot;Bilbo, Staci and Alver, Morten&quot;, formatter.format(&quot;Staci Bilbo; Morten Alver&quot;));</span>
+<span class="fc" id="L45">    }</span>
+
+    @Test
+    public void threeAuthorsSeperatedByColon() {
+<span class="fc" id="L49">        assertEquals(&quot;Bilbo, Staci and Alver, Morten and Name, Test&quot;, formatter.format(&quot;Staci Bilbo; Morten Alver; Test Name&quot;));</span>
+<span class="fc" id="L50">    }</span>
+
+    // Test for https://github.com/JabRef/jabref/issues/318
+    @Test
+    public void threeAuthorsSeperatedByAnd() {
+<span class="fc" id="L55">        assertEquals(&quot;Kolb, Stefan and Lenhard, J{\\\&quot;o}rg and Wirtz, Guido&quot;, formatter.format(&quot;Stefan Kolb and J{\\\&quot;o}rg Lenhard and Guido Wirtz&quot;));</span>
+<span class="fc" id="L56">    }</span>
+
+    // Test for https://github.com/JabRef/jabref/issues/318
+    @Test
+    public void threeAuthorsSeperatedByAndWithDash() {
+<span class="fc" id="L61">        assertEquals(&quot;Jian, Heng-Yu and Xu, Z. and Chang, M.-C. F.&quot;, formatter.format(&quot;Heng-Yu Jian and Xu, Z. and Chang, M.-C.F.&quot;));</span>
+<span class="fc" id="L62">    }</span>
+
+    // Test for https://github.com/JabRef/jabref/issues/318
+    @Test
+    public void threeAuthorsSeperatedByAndWithLatex() {
+<span class="fc" id="L67">        assertEquals(&quot;Gustafsson, Oscar and DeBrunner, Linda S. and DeBrunner, Victor and Johansson, H{\\aa}kan&quot;,</span>
+<span class="fc" id="L68">                formatter.format(&quot;Oscar Gustafsson and Linda S. DeBrunner and Victor DeBrunner and H{\\aa}kan Johansson&quot;));</span>
+<span class="fc" id="L69">    }</span>
+
+    @Test
+    public void lastThenInitial() {
+<span class="fc" id="L73">        assertEquals(&quot;Smith, S.&quot;, formatter.format(&quot;Smith S&quot;));</span>
+<span class="fc" id="L74">    }</span>
+
+    @Test
+    public void lastThenInitials() {
+<span class="fc" id="L78">        assertEquals(&quot;Smith, S. H.&quot;, formatter.format(&quot;Smith SH&quot;));</span>
+<span class="fc" id="L79">    }</span>
+
+    @Test
+    public void initialThenLast() {
+<span class="fc" id="L83">        assertEquals(&quot;Smith, S.&quot;, formatter.format(&quot;S Smith&quot;));</span>
+<span class="fc" id="L84">    }</span>
+
+    @Test
+    public void initialDotThenLast() {
+<span class="fc" id="L88">        assertEquals(&quot;Smith, S.&quot;, formatter.format(&quot;S. Smith&quot;));</span>
+<span class="fc" id="L89">    }</span>
+
+    @Test
+    public void initialsThenLast() {
+<span class="fc" id="L93">        assertEquals(&quot;Smith, S. H.&quot;, formatter.format(&quot;SH Smith&quot;));</span>
+<span class="fc" id="L94">    }</span>
+
+    @Test
+    public void lastThenJuniorThenFirst() {
+<span class="fc" id="L98">        assertEquals(&quot;Name, della, first&quot;, formatter.format(&quot;Name, della, first&quot;));</span>
+<span class="fc" id="L99">    }</span>
+
+    @Test
+    public void testConcatenationOfAuthorsWithCommas() {
+<span class="fc" id="L103">        assertEquals(&quot;Ali Babar, M. and Dingsøyr, T. and Lago, P. and van der Vliet, H.&quot;, formatter.format(&quot;Ali Babar, M., Dingsøyr, T., Lago, P., van der Vliet, H.&quot;));</span>
+<span class="fc" id="L104">        assertEquals(&quot;Ali Babar, M.&quot;, formatter.format(&quot;Ali Babar, M.&quot;));</span>
+<span class="fc" id="L105">    }</span>
+
+    @Test
+    public void testOddCountOfCommas() {
+<span class="fc" id="L109">        assertEquals(&quot;Ali Babar, M., Dingsøyr T. Lago P.&quot;, formatter.format(&quot;Ali Babar, M., Dingsøyr, T., Lago P.&quot;));</span>
+<span class="fc" id="L110">    }</span>
+
+    @Test
+    public void formatExample() {
+<span class="fc" id="L114">        assertEquals(&quot;Einstein, Albert and Turing, Alan&quot;, formatter.format(formatter.getExampleInput()));</span>
+<span class="fc" id="L115">    }</span>
+
+    @Test
+    public void testNameAffixe() {
+<span class="fc" id="L119">        assertEquals(&quot;Surname, jr, First and Surname2, First2&quot;, formatter.format(&quot;Surname, jr, First, Surname2, First2&quot;));</span>
+<span class="fc" id="L120">    }</span>
+
+    @Test
+    public void testAvoidSpecialCharacter() {
+<span class="fc" id="L124">        assertEquals(&quot;Surname, {, First; Surname2, First2&quot;, formatter.format(&quot;Surname, {, First; Surname2, First2&quot;));</span>
+<span class="fc" id="L125">    }</span>
+
+    @Test
+    public void testAndInName() {
+<span class="fc" id="L129">        assertEquals(&quot;Surname and , First, Surname2 First2&quot;, formatter.format(&quot;Surname, and , First, Surname2, First2&quot;));</span>
+<span class="fc" id="L130">    }</span>
+
+    @Test
+    public void testMultipleNameAffixes() {
+<span class="fc" id="L134">        assertEquals(&quot;Mair, Jr, Daniel and Brühl, Sr, Daniel&quot;, formatter.format(&quot;Mair, Jr, Daniel, Brühl, Sr, Daniel&quot;));</span>
+<span class="fc" id="L135">    }</span>
+
+    @Test
+    public void testCommaSeperatedNames() {
+<span class="fc" id="L139">        assertEquals(&quot;Bosoi, Cristina and Oliveira, Mariana and Sanchez, Rafael Ochoa and Tremblay, Mélanie and TenHave, Gabrie and Deutz, Nicoolas and Rose, Christopher F. and Bemeur, Chantal&quot;,</span>
+<span class="fc" id="L140">                formatter.format(&quot;Cristina Bosoi, Mariana Oliveira, Rafael Ochoa Sanchez, Mélanie Tremblay, Gabrie TenHave, Nicoolas Deutz, Christopher F. Rose, Chantal Bemeur&quot;));</span>
+<span class="fc" id="L141">    }</span>
+
+    @Test
+    public void testMultipleSpaces() {
+<span class="fc" id="L145">        assertEquals(&quot;Bosoi, Cristina and Oliveira, Mariana and Sanchez, Rafael Ochoa and Tremblay, Mélanie and TenHave, Gabrie and Deutz, Nicoolas and Rose, Christopher F. and Bemeur, Chantal&quot;,</span>
+<span class="fc" id="L146">                formatter.format(&quot;Cristina    Bosoi,    Mariana Oliveira, Rafael Ochoa Sanchez   ,   Mélanie Tremblay  , Gabrie TenHave, Nicoolas Deutz, Christopher F. Rose, Chantal Bemeur&quot;));</span>
+<span class="fc" id="L147">    }</span>
+
+    @Test
+    public void testAvoidPreposition() {
+<span class="fc" id="L151">        assertEquals(&quot;von Zimmer, Hans and van Oberbergern, Michael and zu Berger, Kevin&quot;, formatter.format(&quot;Hans von Zimmer, Michael van Oberbergern, Kevin zu Berger&quot;));</span>
+<span class="fc" id="L152">    }</span>
+
+    @Test
+    public void testPreposition() {
+<span class="fc" id="L156">        assertEquals(&quot;von Zimmer, Hans and van Oberbergern, Michael and zu Berger, Kevin&quot;, formatter.format(&quot;Hans von Zimmer, Michael van Oberbergern, Kevin zu Berger&quot;));</span>
+<span class="fc" id="L157">    }</span>
+
+    @Test
+    public void testOneCommaUntouched() {
+<span class="fc" id="L161">        assertEquals(&quot;Canon der Barbar, Alexander der Große&quot;, formatter.format(&quot;Canon der Barbar, Alexander der Große&quot;));</span>
+<span class="fc" id="L162">    }</span>
+
+    @Test
+    public void testAvoidNameAffixes() {
+<span class="fc" id="L166">        assertEquals(&quot;der Barbar, Canon and der Große, Alexander and der Alexander, Peter&quot;, formatter.format(&quot;Canon der Barbar, Alexander der Große, Peter der Alexander&quot;));</span>
+<span class="fc" id="L167">    }</span>
+
+    @Test
+    public void testUpperCaseSensitiveList() {
+<span class="fc" id="L171">        assertEquals(&quot;der Barbar, Canon and der Große, Alexander&quot;, formatter.format(&quot;Canon der Barbar AND Alexander der Große&quot;));</span>
+<span class="fc" id="L172">        assertEquals(&quot;der Barbar, Canon and der Große, Alexander&quot;, formatter.format(&quot;Canon der Barbar aNd Alexander der Große&quot;));</span>
+<span class="fc" id="L173">        assertEquals(&quot;der Barbar, Canon and der Große, Alexander&quot;, formatter.format(&quot;Canon der Barbar AnD Alexander der Große&quot;));</span>
+<span class="fc" id="L174">    }</span>
+
+    @Test
+    public void testSemiCorrectNamesWithSemicolon() {
+<span class="fc" id="L178">        assertEquals(&quot;Last, First and Last2, First2 and Last3, First3&quot;, formatter.format(&quot;Last, First; Last2, First2; Last3, First3&quot;));</span>
+<span class="fc" id="L179">        assertEquals(&quot;Last, Jr, First and Last2, First2&quot;, formatter.format(&quot;Last, Jr, First; Last2, First2&quot;));</span>
+<span class="fc" id="L180">        assertEquals(&quot;Last, First and Last2, First2 and Last3, First3 and Last4, First4&quot;, formatter.format(&quot;Last, First; Last2, First2; Last3, First3; First4 Last4&quot;));</span>
+<span class="fc" id="L181">        assertEquals(&quot;Last and Last2, First2 and Last3, First3 and Last4, First4&quot;, formatter.format(&quot;Last; Last2, First2; Last3, First3; Last4, First4&quot;));</span>
+<span class="fc" id="L182">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

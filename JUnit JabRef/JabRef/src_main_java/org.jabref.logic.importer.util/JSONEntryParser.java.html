@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>JSONEntryParser.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.importer.util</a> &gt; <span class="el_source">JSONEntryParser.java</span></div><h1>JSONEntryParser.java</h1><pre class="source lang-java linenums">package org.jabref.logic.importer.util;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.FieldName;
+import org.jabref.model.entry.Month;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+<span class="fc" id="L16">public class JSONEntryParser {</span>
+
+<span class="fc" id="L18">    private static final Logger LOGGER = LoggerFactory.getLogger(JSONEntryParser.class);</span>
+
+    /**
+     * Convert a JSONObject containing a bibJSON entry to a BibEntry
+     *
+     * @param bibJsonEntry The JSONObject to convert
+     * @return the converted BibEntry
+     */
+    public BibEntry parseBibJSONtoBibtex(JSONObject bibJsonEntry, Character keywordSeparator) {
+        // Fields that are directly accessible at the top level BibJson object
+<span class="fc" id="L28">        String[] singleFieldStrings = {FieldName.YEAR, FieldName.TITLE, FieldName.ABSTRACT, FieldName.MONTH};</span>
+
+        // Fields that are accessible in the journal part of the BibJson object
+<span class="fc" id="L31">        String[] journalSingleFieldStrings = {FieldName.PUBLISHER, FieldName.NUMBER, FieldName.VOLUME};</span>
+
+<span class="fc" id="L33">        BibEntry entry = new BibEntry();</span>
+<span class="fc" id="L34">        entry.setType(&quot;article&quot;);</span>
+
+        // Authors
+<span class="pc bpc" id="L37" title="1 of 2 branches missed.">        if (bibJsonEntry.has(&quot;author&quot;)) {</span>
+<span class="fc" id="L38">            JSONArray authors = bibJsonEntry.getJSONArray(&quot;author&quot;);</span>
+<span class="fc" id="L39">            List&lt;String&gt; authorList = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L40" title="All 2 branches covered.">            for (int i = 0; i &lt; authors.length(); i++) {</span>
+<span class="pc bpc" id="L41" title="1 of 2 branches missed.">                if (authors.getJSONObject(i).has(&quot;name&quot;)) {</span>
+<span class="fc" id="L42">                    authorList.add(authors.getJSONObject(i).getString(&quot;name&quot;));</span>
+<span class="fc" id="L43">                } else {</span>
+<span class="nc" id="L44">                    LOGGER.info(&quot;Empty author name.&quot;);</span>
+                }
+            }
+<span class="fc" id="L47">            entry.setField(FieldName.AUTHOR, String.join(&quot; and &quot;, authorList));</span>
+<span class="fc" id="L48">        } else {</span>
+<span class="nc" id="L49">            LOGGER.info(&quot;No author found.&quot;);</span>
+        }
+
+        // Direct accessible fields
+<span class="fc bfc" id="L53" title="All 2 branches covered.">        for (String field : singleFieldStrings) {</span>
+<span class="fc bfc" id="L54" title="All 2 branches covered.">            if (bibJsonEntry.has(field)) {</span>
+<span class="fc" id="L55">                entry.setField(field, bibJsonEntry.getString(field));</span>
+            }
+        }
+
+        // Page numbers
+<span class="pc bpc" id="L60" title="1 of 2 branches missed.">        if (bibJsonEntry.has(&quot;start_page&quot;)) {</span>
+<span class="nc bnc" id="L61" title="All 2 branches missed.">            if (bibJsonEntry.has(&quot;end_page&quot;)) {</span>
+<span class="nc" id="L62">                entry.setField(FieldName.PAGES,</span>
+<span class="nc" id="L63">                        bibJsonEntry.getString(&quot;start_page&quot;) + &quot;--&quot; + bibJsonEntry.getString(&quot;end_page&quot;));</span>
+<span class="nc" id="L64">            } else {</span>
+<span class="nc" id="L65">                entry.setField(FieldName.PAGES, bibJsonEntry.getString(&quot;start_page&quot;));</span>
+            }
+        }
+
+        // Journal
+<span class="pc bpc" id="L70" title="1 of 2 branches missed.">        if (bibJsonEntry.has(&quot;journal&quot;)) {</span>
+<span class="fc" id="L71">            JSONObject journal = bibJsonEntry.getJSONObject(&quot;journal&quot;);</span>
+            // Journal title
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">            if (journal.has(&quot;title&quot;)) {</span>
+<span class="fc" id="L74">                entry.setField(FieldName.JOURNAL, journal.getString(&quot;title&quot;));</span>
+<span class="fc" id="L75">            } else {</span>
+<span class="nc" id="L76">                LOGGER.info(&quot;No journal title found.&quot;);</span>
+            }
+            // Other journal related fields
+<span class="fc bfc" id="L79" title="All 2 branches covered.">            for (String field : journalSingleFieldStrings) {</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">                if (journal.has(field)) {</span>
+<span class="fc" id="L81">                    entry.setField(field, journal.getString(field));</span>
+                }
+            }
+<span class="fc" id="L84">        } else {</span>
+<span class="nc" id="L85">            LOGGER.info(&quot;No journal information found.&quot;);</span>
+        }
+
+        // Keywords
+<span class="pc bpc" id="L89" title="1 of 2 branches missed.">        if (bibJsonEntry.has(&quot;keywords&quot;)) {</span>
+<span class="nc" id="L90">            JSONArray keywords = bibJsonEntry.getJSONArray(&quot;keywords&quot;);</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">            for (int i = 0; i &lt; keywords.length(); i++) {</span>
+<span class="nc bnc" id="L92" title="All 2 branches missed.">                if (!keywords.isNull(i)) {</span>
+<span class="nc" id="L93">                    entry.addKeyword(keywords.getString(i), keywordSeparator);</span>
+                }
+            }
+        }
+
+        // Identifiers
+<span class="pc bpc" id="L99" title="1 of 2 branches missed.">        if (bibJsonEntry.has(&quot;identifier&quot;)) {</span>
+<span class="fc" id="L100">            JSONArray identifiers = bibJsonEntry.getJSONArray(&quot;identifier&quot;);</span>
+<span class="fc bfc" id="L101" title="All 2 branches covered.">            for (int i = 0; i &lt; identifiers.length(); i++) {</span>
+<span class="fc" id="L102">                String type = identifiers.getJSONObject(i).getString(&quot;type&quot;);</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">                if (&quot;doi&quot;.equals(type)) {</span>
+<span class="fc" id="L104">                    entry.setField(FieldName.DOI, identifiers.getJSONObject(i).getString(&quot;id&quot;));</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">                } else if (&quot;pissn&quot;.equals(type)) {</span>
+<span class="fc" id="L106">                    entry.setField(FieldName.ISSN, identifiers.getJSONObject(i).getString(&quot;id&quot;));</span>
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">                } else if (&quot;eissn&quot;.equals(type)) {</span>
+<span class="fc" id="L108">                    entry.setField(FieldName.ISSN, identifiers.getJSONObject(i).getString(&quot;id&quot;));</span>
+                }
+            }
+        }
+
+        // Links
+<span class="pc bpc" id="L114" title="1 of 2 branches missed.">        if (bibJsonEntry.has(&quot;link&quot;)) {</span>
+<span class="fc" id="L115">            JSONArray links = bibJsonEntry.getJSONArray(&quot;link&quot;);</span>
+<span class="fc bfc" id="L116" title="All 2 branches covered.">            for (int i = 0; i &lt; links.length(); i++) {</span>
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">                if (links.getJSONObject(i).has(&quot;type&quot;)) {</span>
+<span class="fc" id="L118">                    String type = links.getJSONObject(i).getString(&quot;type&quot;);</span>
+<span class="pc bpc" id="L119" title="2 of 4 branches missed.">                    if (&quot;fulltext&quot;.equals(type) &amp;&amp; links.getJSONObject(i).has(&quot;url&quot;)) {</span>
+<span class="fc" id="L120">                        entry.setField(FieldName.URL, links.getJSONObject(i).getString(&quot;url&quot;));</span>
+                    }
+                }
+            }
+        }
+
+<span class="fc" id="L126">        return entry;</span>
+    }
+
+    /**
+     * Convert a JSONObject obtained from http://api.springer.com/metadata/json to a BibEntry
+     *
+     * @param springerJsonEntry the JSONObject from search results
+     * @return the converted BibEntry
+     */
+    public static BibEntry parseSpringerJSONtoBibtex(JSONObject springerJsonEntry) {
+        // Fields that are directly accessible at the top level Json object
+<span class="fc" id="L137">        String[] singleFieldStrings = {FieldName.ISSN, FieldName.VOLUME, FieldName.ABSTRACT, FieldName.DOI, FieldName.TITLE, FieldName.NUMBER,</span>
+<span class="fc" id="L138">                FieldName.PUBLISHER};</span>
+
+<span class="fc" id="L140">        BibEntry entry = new BibEntry();</span>
+        String nametype;
+
+        // Guess publication type
+<span class="fc" id="L144">        String isbn = springerJsonEntry.optString(&quot;isbn&quot;);</span>
+<span class="pc bpc" id="L145" title="1 of 2 branches missed.">        if (com.google.common.base.Strings.isNullOrEmpty(isbn)) {</span>
+            // Probably article
+<span class="fc" id="L147">            entry.setType(&quot;article&quot;);</span>
+<span class="fc" id="L148">            nametype = FieldName.JOURNAL;</span>
+<span class="fc" id="L149">        } else {</span>
+            // Probably book chapter or from proceeding, go for book chapter
+<span class="nc" id="L151">            entry.setType(&quot;incollection&quot;);</span>
+<span class="nc" id="L152">            nametype = FieldName.BOOKTITLE;</span>
+<span class="nc" id="L153">            entry.setField(FieldName.ISBN, isbn);</span>
+        }
+
+        // Authors
+<span class="pc bpc" id="L157" title="1 of 2 branches missed.">        if (springerJsonEntry.has(&quot;creators&quot;)) {</span>
+<span class="nc" id="L158">            JSONArray authors = springerJsonEntry.getJSONArray(&quot;creators&quot;);</span>
+<span class="nc" id="L159">            List&lt;String&gt; authorList = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L160" title="All 2 branches missed.">            for (int i = 0; i &lt; authors.length(); i++) {</span>
+<span class="nc bnc" id="L161" title="All 2 branches missed.">                if (authors.getJSONObject(i).has(&quot;creator&quot;)) {</span>
+<span class="nc" id="L162">                    authorList.add(authors.getJSONObject(i).getString(&quot;creator&quot;));</span>
+<span class="nc" id="L163">                } else {</span>
+<span class="nc" id="L164">                    LOGGER.info(&quot;Empty author name.&quot;);</span>
+                }
+            }
+<span class="nc" id="L167">            entry.setField(FieldName.AUTHOR, String.join(&quot; and &quot;, authorList));</span>
+<span class="nc" id="L168">        } else {</span>
+<span class="fc" id="L169">            LOGGER.info(&quot;No author found.&quot;);</span>
+        }
+
+        // Direct accessible fields
+<span class="fc bfc" id="L173" title="All 2 branches covered.">        for (String field : singleFieldStrings) {</span>
+<span class="fc bfc" id="L174" title="All 2 branches covered.">            if (springerJsonEntry.has(field)) {</span>
+<span class="fc" id="L175">                String text = springerJsonEntry.getString(field);</span>
+<span class="pc bpc" id="L176" title="1 of 2 branches missed.">                if (!text.isEmpty()) {</span>
+<span class="fc" id="L177">                    entry.setField(field, text);</span>
+                }
+            }
+        }
+
+        // Page numbers
+<span class="pc bpc" id="L183" title="2 of 4 branches missed.">        if (springerJsonEntry.has(&quot;startingPage&quot;) &amp;&amp; !(springerJsonEntry.getString(&quot;startingPage&quot;).isEmpty())) {</span>
+<span class="pc bpc" id="L184" title="3 of 4 branches missed.">            if (springerJsonEntry.has(&quot;endPage&quot;) &amp;&amp; !(springerJsonEntry.getString(&quot;endPage&quot;).isEmpty())) {</span>
+<span class="nc" id="L185">                entry.setField(FieldName.PAGES,</span>
+<span class="nc" id="L186">                        springerJsonEntry.getString(&quot;startingPage&quot;) + &quot;--&quot; + springerJsonEntry.getString(&quot;endPage&quot;));</span>
+<span class="nc" id="L187">            } else {</span>
+<span class="fc" id="L188">                entry.setField(FieldName.PAGES, springerJsonEntry.getString(&quot;startingPage&quot;));</span>
+            }
+        }
+
+        // Journal
+<span class="pc bpc" id="L193" title="1 of 2 branches missed.">        if (springerJsonEntry.has(&quot;publicationName&quot;)) {</span>
+<span class="fc" id="L194">            entry.setField(nametype, springerJsonEntry.getString(&quot;publicationName&quot;));</span>
+        }
+
+        // URL
+<span class="pc bpc" id="L198" title="1 of 2 branches missed.">        if (springerJsonEntry.has(&quot;url&quot;)) {</span>
+<span class="fc" id="L199">            JSONArray urlarray = springerJsonEntry.optJSONArray(&quot;url&quot;);</span>
+<span class="pc bpc" id="L200" title="1 of 2 branches missed.">            if (urlarray == null) {</span>
+<span class="fc" id="L201">                entry.setField(FieldName.URL, springerJsonEntry.optString(&quot;url&quot;));</span>
+<span class="fc" id="L202">            } else {</span>
+<span class="nc" id="L203">                entry.setField(FieldName.URL, urlarray.getJSONObject(0).optString(&quot;value&quot;));</span>
+            }
+        }
+
+        // Date
+<span class="pc bpc" id="L208" title="1 of 2 branches missed.">        if (springerJsonEntry.has(&quot;publicationDate&quot;)) {</span>
+<span class="fc" id="L209">            String date = springerJsonEntry.getString(&quot;publicationDate&quot;);</span>
+<span class="fc" id="L210">            entry.setField(FieldName.DATE, date); // For biblatex</span>
+<span class="fc" id="L211">            String[] dateparts = date.split(&quot;-&quot;);</span>
+<span class="fc" id="L212">            entry.setField(FieldName.YEAR, dateparts[0]);</span>
+<span class="fc" id="L213">            Optional&lt;Month&gt; month = Month.getMonthByNumber(Integer.parseInt(dateparts[1]));</span>
+<span class="fc" id="L214">            month.ifPresent(entry::setMonth);</span>
+        }
+
+        // Clean up abstract (often starting with Abstract)
+<span class="fc" id="L218">        entry.getField(FieldName.ABSTRACT).ifPresent(abstractContents -&gt; {</span>
+<span class="nc bnc" id="L219" title="All 2 branches missed.">            if (abstractContents.startsWith(&quot;Abstract&quot;)) {</span>
+<span class="nc" id="L220">                entry.setField(FieldName.ABSTRACT, abstractContents.substring(8));</span>
+            }
+<span class="nc" id="L222">        });</span>
+
+<span class="fc" id="L224">        return entry;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

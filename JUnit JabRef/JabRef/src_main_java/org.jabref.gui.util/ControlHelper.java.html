@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>ControlHelper.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.util</a> &gt; <span class="el_source">ControlHelper.java</span></div><h1>ControlHelper.java</h1><pre class="source lang-java linenums">package org.jabref.gui.util;
+
+import java.io.IOException;
+
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+
+import org.jabref.gui.AbstractView;
+import org.jabref.logic.l10n.Localization;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+<span class="nc" id="L14">public class ControlHelper {</span>
+<span class="nc" id="L15">    private static final Logger LOGGER = LoggerFactory.getLogger(ControlHelper.class);</span>
+
+    /**
+     * Loads the FXML file associated to the passed control.
+     * The FMXL file should have the same name as the control with ending &quot;.fxml&quot; appended
+     */
+    public static void loadFXMLForControl(Parent control) {
+<span class="nc" id="L22">        Class&lt;?&gt; clazz = control.getClass();</span>
+<span class="nc" id="L23">        String clazzName = clazz.getSimpleName();</span>
+
+<span class="nc" id="L25">        FXMLLoader fxmlLoader = new FXMLLoader(clazz.getResource(clazzName + &quot;.fxml&quot;), Localization.getMessages());</span>
+<span class="nc" id="L26">        fxmlLoader.setController(control);</span>
+<span class="nc" id="L27">        fxmlLoader.setRoot(control);</span>
+        try {
+<span class="nc" id="L29">            fxmlLoader.load();</span>
+
+            // Add our base css file
+<span class="nc" id="L32">            control.getStylesheets().add(0, AbstractView.class.getResource(&quot;Main.css&quot;).toExternalForm());</span>
+
+            // Add language resource
+
+<span class="nc" id="L36">        } catch (IOException exception) {</span>
+<span class="nc" id="L37">            LOGGER.error(&quot;Problem loading fxml for control&quot;, exception);</span>
+        }
+<span class="nc" id="L39">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

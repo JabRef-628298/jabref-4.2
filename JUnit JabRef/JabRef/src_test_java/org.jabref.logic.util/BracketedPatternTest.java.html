@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>BracketedPatternTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.util</a> &gt; <span class="el_source">BracketedPatternTest.java</span></div><h1>BracketedPatternTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.util;
+
+import org.jabref.logic.bibtexkeypattern.BracketedPattern;
+import org.jabref.model.database.BibDatabase;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.BibtexEntryTypes;
+import org.jabref.model.entry.BibtexString;
+import org.jabref.model.entry.FieldName;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+<span class="fc" id="L17">public class BracketedPatternTest {</span>
+
+    private BibEntry bibentry;
+    private BibDatabase database;
+    private BibEntry dbentry;
+
+    @BeforeEach
+    public void setUp() throws Exception {
+<span class="fc" id="L25">        bibentry = new BibEntry();</span>
+<span class="fc" id="L26">        bibentry.setField(&quot;author&quot;, &quot;O. Kitsune&quot;);</span>
+<span class="fc" id="L27">        bibentry.setField(&quot;year&quot;, &quot;2017&quot;);</span>
+<span class="fc" id="L28">        bibentry.setField(&quot;pages&quot;, &quot;213--216&quot;);</span>
+
+<span class="fc" id="L30">        dbentry = new BibEntry();</span>
+<span class="fc" id="L31">        dbentry.setType(BibtexEntryTypes.ARTICLE);</span>
+<span class="fc" id="L32">        dbentry.setCiteKey(&quot;HipKro03&quot;);</span>
+<span class="fc" id="L33">        dbentry.setField(&quot;author&quot;, &quot;Eric von Hippel and Georg von Krogh&quot;);</span>
+<span class="fc" id="L34">        dbentry.setField(&quot;title&quot;, &quot;Open Source Software and the \&quot;Private-Collective\&quot; Innovation Model: Issues for Organization Science&quot;);</span>
+<span class="fc" id="L35">        dbentry.setField(&quot;journal&quot;, &quot;Organization Science&quot;);</span>
+<span class="fc" id="L36">        dbentry.setField(&quot;year&quot;, &quot;2003&quot;);</span>
+<span class="fc" id="L37">        dbentry.setField(&quot;volume&quot;, &quot;14&quot;);</span>
+<span class="fc" id="L38">        dbentry.setField(&quot;pages&quot;, &quot;209--223&quot;);</span>
+<span class="fc" id="L39">        dbentry.setField(&quot;number&quot;, &quot;2&quot;);</span>
+<span class="fc" id="L40">        dbentry.setField(&quot;address&quot;, &quot;Institute for Operations Research and the Management Sciences (INFORMS), Linthicum, Maryland, USA&quot;);</span>
+<span class="fc" id="L41">        dbentry.setField(&quot;doi&quot;, &quot;http://dx.doi.org/10.1287/orsc.14.2.209.14992&quot;);</span>
+<span class="fc" id="L42">        dbentry.setField(&quot;issn&quot;, &quot;1526-5455&quot;);</span>
+<span class="fc" id="L43">        dbentry.setField(&quot;publisher&quot;, &quot;INFORMS&quot;);</span>
+
+<span class="fc" id="L45">        database = new BibDatabase();</span>
+<span class="fc" id="L46">        database.insertEntry(dbentry);</span>
+<span class="fc" id="L47">    }</span>
+
+    @Test
+    public void bibentryExpansionTest() {
+<span class="fc" id="L51">        BracketedPattern pattern = new BracketedPattern(&quot;[year]_[auth]_[firstpage]&quot;);</span>
+<span class="fc" id="L52">        assertEquals(&quot;2017_Kitsune_213&quot;, pattern.expand(bibentry));</span>
+<span class="fc" id="L53">    }</span>
+
+    @Test
+    public void nullDatabaseExpansionTest() {
+<span class="fc" id="L57">        BibDatabase another_database = null;</span>
+<span class="fc" id="L58">        BracketedPattern pattern = new BracketedPattern(&quot;[year]_[auth]_[firstpage]&quot;);</span>
+<span class="fc" id="L59">        assertEquals(&quot;2017_Kitsune_213&quot;, pattern.expand(bibentry, another_database));</span>
+<span class="fc" id="L60">    }</span>
+
+    @Test
+    public void pureauthReturnsAuthorIfEditorIsAbsent() {
+<span class="fc" id="L64">        BibDatabase emptyDatabase = new BibDatabase();</span>
+<span class="fc" id="L65">        BracketedPattern pattern = new BracketedPattern(&quot;[pureauth]&quot;);</span>
+<span class="fc" id="L66">        assertEquals(&quot;Kitsune&quot;, pattern.expand(bibentry, emptyDatabase));</span>
+<span class="fc" id="L67">    }</span>
+
+    @Test
+    public void pureauthReturnsAuthorIfEditorIsPresent() {
+<span class="fc" id="L71">        BibDatabase emptyDatabase = new BibDatabase();</span>
+<span class="fc" id="L72">        BracketedPattern pattern = new BracketedPattern(&quot;[pureauth]&quot;);</span>
+<span class="fc" id="L73">        bibentry.setField(FieldName.EDITOR, &quot;Editorlastname, Editorfirstname&quot;);</span>
+<span class="fc" id="L74">        assertEquals(&quot;Kitsune&quot;, pattern.expand(bibentry, emptyDatabase));</span>
+<span class="fc" id="L75">    }</span>
+
+    @Test
+    public void pureauthReturnsEmptyStringIfAuthorIsAbsent() {
+<span class="fc" id="L79">        BibDatabase emptyDatabase = new BibDatabase();</span>
+<span class="fc" id="L80">        BracketedPattern pattern = new BracketedPattern(&quot;[pureauth]&quot;);</span>
+<span class="fc" id="L81">        bibentry.clearField(FieldName.AUTHOR);</span>
+<span class="fc" id="L82">        assertEquals(&quot;&quot;, pattern.expand(bibentry, emptyDatabase));</span>
+<span class="fc" id="L83">    }</span>
+
+    @Test
+    public void pureauthReturnsEmptyStringIfAuthorIsAbsentAndEditorIsPresent() {
+<span class="fc" id="L87">        BibDatabase emptyDatabase = new BibDatabase();</span>
+<span class="fc" id="L88">        BracketedPattern pattern = new BracketedPattern(&quot;[pureauth]&quot;);</span>
+<span class="fc" id="L89">        bibentry.clearField(FieldName.AUTHOR);</span>
+<span class="fc" id="L90">        bibentry.setField(FieldName.EDITOR, &quot;Editorlastname, Editorfirstname&quot;);</span>
+<span class="fc" id="L91">        assertEquals(&quot;&quot;, pattern.expand(bibentry, emptyDatabase));</span>
+<span class="fc" id="L92">    }</span>
+
+    @Test
+    public void emptyDatabaseExpansionTest() {
+<span class="fc" id="L96">        BibDatabase another_database = new BibDatabase();</span>
+<span class="fc" id="L97">        BracketedPattern pattern = new BracketedPattern(&quot;[year]_[auth]_[firstpage]&quot;);</span>
+<span class="fc" id="L98">        assertEquals(&quot;2017_Kitsune_213&quot;, pattern.expand(bibentry, another_database));</span>
+<span class="fc" id="L99">    }</span>
+
+    @Test
+    public void databaseWithStringsExpansionTest() {
+<span class="fc" id="L103">        BibDatabase another_database = new BibDatabase();</span>
+<span class="fc" id="L104">        BibtexString string = new BibtexString(&quot;sgr&quot;, &quot;Saulius Gražulis&quot;);</span>
+<span class="fc" id="L105">        another_database.addString(string);</span>
+<span class="fc" id="L106">        bibentry = new BibEntry();</span>
+<span class="fc" id="L107">        bibentry.setField(&quot;author&quot;, &quot;#sgr#&quot;);</span>
+<span class="fc" id="L108">        bibentry.setField(&quot;year&quot;, &quot;2017&quot;);</span>
+<span class="fc" id="L109">        bibentry.setField(&quot;pages&quot;, &quot;213--216&quot;);</span>
+<span class="fc" id="L110">        BracketedPattern pattern = new BracketedPattern(&quot;[year]_[auth]_[firstpage]&quot;);</span>
+<span class="fc" id="L111">        assertEquals(&quot;2017_Gražulis_213&quot;, pattern.expand(bibentry,</span>
+<span class="fc" id="L112">                another_database));</span>
+<span class="fc" id="L113">    }</span>
+
+    @Test
+    public void unbalancedBracketsExpandToSomething() {
+<span class="fc" id="L117">        BracketedPattern pattern = new BracketedPattern(&quot;[year]_[auth_[firstpage]&quot;);</span>
+<span class="fc" id="L118">        assertNotEquals(&quot;&quot;, pattern.expand(bibentry));</span>
+<span class="fc" id="L119">    }</span>
+
+    @Test
+    public void unbalancedLastBracketExpandsToSomething() {
+<span class="fc" id="L123">        BracketedPattern pattern = new BracketedPattern(&quot;[year]_[auth]_[firstpage&quot;);</span>
+<span class="fc" id="L124">        assertNotEquals(&quot;&quot;, pattern.expand(bibentry));</span>
+<span class="fc" id="L125">    }</span>
+
+    @Test
+    public void entryTypeExpansionTest() {
+<span class="fc" id="L129">        BracketedPattern pattern = new BracketedPattern(&quot;[entrytype]:[year]_[auth]_[pages]&quot;);</span>
+<span class="fc" id="L130">        assertEquals(&quot;Misc:2017_Kitsune_213--216&quot;, pattern.expand(bibentry));</span>
+<span class="fc" id="L131">    }</span>
+
+    @Test
+    public void entryTypeExpansionLowercaseTest() {
+<span class="fc" id="L135">        BracketedPattern pattern = new BracketedPattern(&quot;[entrytype:lower]:[year]_[auth]_[firstpage]&quot;);</span>
+<span class="fc" id="L136">        assertEquals(&quot;misc:2017_Kitsune_213&quot;, pattern.expand(bibentry));</span>
+<span class="fc" id="L137">    }</span>
+
+    @Test
+    public void suppliedBibentryBracketExpansionTest() {
+<span class="fc" id="L141">        BibDatabase another_database = null;</span>
+<span class="fc" id="L142">        BracketedPattern pattern = new BracketedPattern(&quot;[year]_[auth]_[firstpage]&quot;);</span>
+<span class="fc" id="L143">        BibEntry another_bibentry = new BibEntry();</span>
+<span class="fc" id="L144">        another_bibentry.setField(&quot;author&quot;, &quot;Gražulis, Saulius&quot;);</span>
+<span class="fc" id="L145">        another_bibentry.setField(&quot;year&quot;, &quot;2017&quot;);</span>
+<span class="fc" id="L146">        another_bibentry.setField(&quot;pages&quot;, &quot;213--216&quot;);</span>
+<span class="fc" id="L147">        assertEquals(&quot;2017_Gražulis_213&quot;, pattern.expand(another_bibentry, ';', another_database));</span>
+<span class="fc" id="L148">    }</span>
+
+    @Test
+    public void nullBibentryBracketExpansionTest() {
+<span class="fc" id="L152">        BibDatabase another_database = null;</span>
+<span class="fc" id="L153">        BibEntry another_bibentry = null;</span>
+<span class="fc" id="L154">        BracketedPattern pattern = new BracketedPattern(&quot;[year]_[auth]_[firstpage]&quot;);</span>
+<span class="pc" id="L155">        assertThrows(NullPointerException.class, () -&gt; pattern.expand(another_bibentry, ';', another_database));</span>
+<span class="fc" id="L156">    }</span>
+
+    @Test
+    public void bracketedExpressionDefaultConstructorTest() {
+<span class="fc" id="L160">        BibDatabase another_database = null;</span>
+<span class="fc" id="L161">        BracketedPattern pattern = new BracketedPattern();</span>
+<span class="pc" id="L162">        assertThrows(NullPointerException.class, () -&gt; pattern.expand(bibentry, ';', another_database));</span>
+<span class="fc" id="L163">    }</span>
+
+    @Test
+    public void unknownKeyExpandsToEmptyString() {
+<span class="fc" id="L167">        Character separator = ';';</span>
+<span class="fc" id="L168">        assertEquals(&quot;&quot;, BracketedPattern.expandBrackets(&quot;[unknownkey]&quot;, separator, dbentry, database));</span>
+<span class="fc" id="L169">    }</span>
+
+    @Test
+    public void emptyPatternAndEmptyModifierExpandsToEmptyString() {
+<span class="fc" id="L173">        Character separator = ';';</span>
+<span class="fc" id="L174">        assertEquals(&quot;&quot;, BracketedPattern.expandBrackets(&quot;[:]&quot;, separator, dbentry, database));</span>
+<span class="fc" id="L175">    }</span>
+
+    @Test
+    public void emptyPatternAndValidModifierExpandsToEmptyString() {
+<span class="fc" id="L179">        Character separator = ';';</span>
+<span class="fc" id="L180">        assertEquals(&quot;&quot;, BracketedPattern.expandBrackets(&quot;[:lower]&quot;, separator, dbentry, database));</span>
+<span class="fc" id="L181">    }</span>
+
+    @Test
+    public void bibtexkeyPatternExpandsToBibTeXKey() {
+<span class="fc" id="L185">        Character separator = ';';</span>
+<span class="fc" id="L186">        assertEquals(&quot;HipKro03&quot;, BracketedPattern.expandBrackets(&quot;[bibtexkey]&quot;, separator, dbentry, database));</span>
+<span class="fc" id="L187">    }</span>
+
+    @Test
+    public void bibtexkeyPatternWithEmptyModifierExpandsToBibTeXKey() {
+<span class="fc" id="L191">        Character separator = ';';</span>
+<span class="fc" id="L192">        assertEquals(&quot;HipKro03&quot;, BracketedPattern.expandBrackets(&quot;[bibtexkey:]&quot;, separator, dbentry, database));</span>
+<span class="fc" id="L193">    }</span>
+
+    @Test
+    public void authorPatternTreatsVonNamePrefixCorrectly() {
+<span class="fc" id="L197">        Character separator = ';';</span>
+<span class="fc" id="L198">        assertEquals(&quot;Eric von Hippel and Georg von Krogh&quot;,</span>
+<span class="fc" id="L199">                BracketedPattern.expandBrackets(&quot;[author]&quot;, separator, dbentry, database));</span>
+<span class="fc" id="L200">    }</span>
+
+    @Test
+    public void lowerFormatterWorksOnVonNamePrefixes() {
+<span class="fc" id="L204">        Character separator = ';';</span>
+<span class="fc" id="L205">        assertEquals(&quot;eric von hippel and georg von krogh&quot;,</span>
+<span class="fc" id="L206">                BracketedPattern.expandBrackets(&quot;[author:lower]&quot;, separator, dbentry, database));</span>
+<span class="fc" id="L207">    }</span>
+
+    @Test
+    public void testResolvedFieldAndFormat() {
+<span class="fc" id="L211">        BibEntry child = new BibEntry();</span>
+<span class="fc" id="L212">        child.setField(FieldName.CROSSREF, &quot;HipKro03&quot;);</span>
+<span class="fc" id="L213">        database.insertEntry(child);</span>
+
+<span class="fc" id="L215">        Character separator = ';';</span>
+<span class="fc" id="L216">        assertEquals(&quot;Eric von Hippel and Georg von Krogh&quot;,</span>
+<span class="fc" id="L217">                BracketedPattern.expandBrackets(&quot;[author]&quot;, separator, child, database));</span>
+
+<span class="fc" id="L219">        assertEquals(&quot;&quot;, BracketedPattern.expandBrackets(&quot;[unknownkey]&quot;, separator, child, database));</span>
+
+<span class="fc" id="L221">        assertEquals(&quot;&quot;, BracketedPattern.expandBrackets(&quot;[:]&quot;, separator, child, database));</span>
+
+<span class="fc" id="L223">        assertEquals(&quot;&quot;, BracketedPattern.expandBrackets(&quot;[:lower]&quot;, separator, child, database));</span>
+
+<span class="fc" id="L225">        assertEquals(&quot;eric von hippel and georg von krogh&quot;,</span>
+<span class="fc" id="L226">                BracketedPattern.expandBrackets(&quot;[author:lower]&quot;, separator, child, database));</span>
+
+        // the bibtexkey is not inherited
+<span class="fc" id="L229">        assertEquals(&quot;&quot;, BracketedPattern.expandBrackets(&quot;[bibtexkey]&quot;, separator, child, database));</span>
+
+<span class="fc" id="L231">        assertEquals(&quot;&quot;, BracketedPattern.expandBrackets(&quot;[bibtexkey:]&quot;, separator, child, database));</span>
+<span class="fc" id="L232">    }</span>
+
+    @Test
+    public void testResolvedParentNotInDatabase() {
+<span class="fc" id="L236">        BibEntry child = new BibEntry();</span>
+<span class="fc" id="L237">        child.setField(FieldName.CROSSREF, &quot;HipKro03&quot;);</span>
+<span class="fc" id="L238">        database.removeEntry(dbentry);</span>
+<span class="fc" id="L239">        database.insertEntry(child);</span>
+
+<span class="fc" id="L241">        assertEquals(&quot;&quot;, BracketedPattern.expandBrackets(&quot;[author]&quot;, ';', child, database));</span>
+<span class="fc" id="L242">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

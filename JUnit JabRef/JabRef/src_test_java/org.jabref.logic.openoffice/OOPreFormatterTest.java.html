@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>OOPreFormatterTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.openoffice</a> &gt; <span class="el_source">OOPreFormatterTest.java</span></div><h1>OOPreFormatterTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.openoffice;
+
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+
+<span class="fc" id="L8">public class OOPreFormatterTest {</span>
+
+    @Test
+    public void testPlainFormat() {
+<span class="fc" id="L12">        assertEquals(&quot;aaa&quot;, new OOPreFormatter().format(&quot;aaa&quot;));</span>
+<span class="fc" id="L13">        assertEquals(&quot;$&quot;, new OOPreFormatter().format(&quot;\\$&quot;));</span>
+<span class="fc" id="L14">        assertEquals(&quot;%&quot;, new OOPreFormatter().format(&quot;\\%&quot;));</span>
+<span class="fc" id="L15">        assertEquals(&quot;\\&quot;, new OOPreFormatter().format(&quot;\\\\&quot;));</span>
+<span class="fc" id="L16">    }</span>
+
+    @Test
+    public void testFormatAccents() {
+<span class="fc" id="L20">        assertEquals(&quot;ä&quot;, new OOPreFormatter().format(&quot;{\\\&quot;{a}}&quot;));</span>
+<span class="fc" id="L21">        assertEquals(&quot;Ä&quot;, new OOPreFormatter().format(&quot;{\\\&quot;{A}}&quot;));</span>
+<span class="fc" id="L22">        assertEquals(&quot;Ç&quot;, new OOPreFormatter().format(&quot;{\\c{C}}&quot;));</span>
+<span class="fc" id="L23">    }</span>
+
+    @Test
+    public void testSpecialCommands() {
+<span class="fc" id="L27">        assertEquals(&quot;å&quot;, new OOPreFormatter().format(&quot;{\\aa}&quot;));</span>
+<span class="fc" id="L28">        assertEquals(&quot;bb&quot;, new OOPreFormatter().format(&quot;{\\bb}&quot;));</span>
+<span class="fc" id="L29">        assertEquals(&quot;å a&quot;, new OOPreFormatter().format(&quot;\\aa a&quot;));</span>
+<span class="fc" id="L30">        assertEquals(&quot;å a&quot;, new OOPreFormatter().format(&quot;{\\aa a}&quot;));</span>
+<span class="fc" id="L31">        assertEquals(&quot;åÅ&quot;, new OOPreFormatter().format(&quot;\\aa\\AA&quot;));</span>
+<span class="fc" id="L32">        assertEquals(&quot;bb a&quot;, new OOPreFormatter().format(&quot;\\bb a&quot;));</span>
+<span class="fc" id="L33">    }</span>
+
+    @Test
+    public void testUnsupportedSpecialCommands() {
+<span class="fc" id="L37">        assertEquals(&quot;ftmch&quot;, new OOPreFormatter().format(&quot;\\ftmch&quot;));</span>
+<span class="fc" id="L38">        assertEquals(&quot;ftmch&quot;, new OOPreFormatter().format(&quot;{\\ftmch}&quot;));</span>
+<span class="fc" id="L39">        assertEquals(&quot;ftmchaaa&quot;, new OOPreFormatter().format(&quot;{\\ftmch\\aaa}&quot;));</span>
+<span class="fc" id="L40">    }</span>
+
+
+    @Test
+    public void testEquations() {
+<span class="fc" id="L45">        assertEquals(&quot;Σ&quot;, new OOPreFormatter().format(&quot;$\\Sigma$&quot;));</span>
+<span class="fc" id="L46">    }</span>
+
+    @Test
+    public void testFormatStripLatexCommands() {
+<span class="fc" id="L50">        assertEquals(&quot;-&quot;, new OOPreFormatter().format(&quot;\\mbox{-}&quot;));</span>
+<span class="fc" id="L51">    }</span>
+
+    @Test
+    public void testFormatting() {
+<span class="fc" id="L55">        assertEquals(&quot;&lt;i&gt;kkk&lt;/i&gt;&quot;, new OOPreFormatter().format(&quot;\\textit{kkk}&quot;));</span>
+<span class="fc" id="L56">        assertEquals(&quot;&lt;i&gt;kkk&lt;/i&gt;&quot;, new OOPreFormatter().format(&quot;{\\it kkk}&quot;));</span>
+<span class="fc" id="L57">        assertEquals(&quot;&lt;i&gt;kkk&lt;/i&gt;&quot;, new OOPreFormatter().format(&quot;\\emph{kkk}&quot;));</span>
+<span class="fc" id="L58">        assertEquals(&quot;&lt;b&gt;kkk&lt;/b&gt;&quot;, new OOPreFormatter().format(&quot;\\textbf{kkk}&quot;));</span>
+<span class="fc" id="L59">        assertEquals(&quot;&lt;smallcaps&gt;kkk&lt;/smallcaps&gt;&quot;, new OOPreFormatter().format(&quot;\\textsc{kkk}&quot;));</span>
+<span class="fc" id="L60">        assertEquals(&quot;&lt;s&gt;kkk&lt;/s&gt;&quot;, new OOPreFormatter().format(&quot;\\sout{kkk}&quot;));</span>
+<span class="fc" id="L61">        assertEquals(&quot;&lt;u&gt;kkk&lt;/u&gt;&quot;, new OOPreFormatter().format(&quot;\\underline{kkk}&quot;));</span>
+<span class="fc" id="L62">        assertEquals(&quot;&lt;tt&gt;kkk&lt;/tt&gt;&quot;, new OOPreFormatter().format(&quot;\\texttt{kkk}&quot;));</span>
+<span class="fc" id="L63">        assertEquals(&quot;&lt;sup&gt;kkk&lt;/sup&gt;&quot;, new OOPreFormatter().format(&quot;\\textsuperscript{kkk}&quot;));</span>
+<span class="fc" id="L64">        assertEquals(&quot;&lt;sub&gt;kkk&lt;/sub&gt;&quot;, new OOPreFormatter().format(&quot;\\textsubscript{kkk}&quot;));</span>
+<span class="fc" id="L65">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

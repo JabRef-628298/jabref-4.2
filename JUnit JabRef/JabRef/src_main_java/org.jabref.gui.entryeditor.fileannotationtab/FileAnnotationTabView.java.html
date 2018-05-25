@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>FileAnnotationTabView.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.entryeditor.fileannotationtab</a> &gt; <span class="el_source">FileAnnotationTabView.java</span></div><h1>FileAnnotationTabView.java</h1><pre class="source lang-java linenums">package org.jabref.gui.entryeditor.fileannotationtab;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Function;
+
+import org.jabref.gui.AbstractView;
+import org.jabref.logic.pdf.FileAnnotationCache;
+import org.jabref.model.entry.BibEntry;
+
+public class FileAnnotationTabView extends AbstractView {
+
+    public FileAnnotationTabView(BibEntry entry, FileAnnotationCache fileAnnotationCache) {
+<span class="nc" id="L14">        super(createContext(entry, fileAnnotationCache));</span>
+<span class="nc" id="L15">    }</span>
+
+    private static Function&lt;String, Object&gt; createContext(BibEntry entry, FileAnnotationCache fileAnnotationCache) {
+<span class="nc" id="L18">        Map&lt;String, Object&gt; context = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L19">        context.put(&quot;entry&quot;, entry);</span>
+<span class="nc" id="L20">        context.put(&quot;fileAnnotationCache&quot;, fileAnnotationCache);</span>
+<span class="nc" id="L21">        return context::get;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

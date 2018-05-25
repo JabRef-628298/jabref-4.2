@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>GUITest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui</a> &gt; <span class="el_source">GUITest.java</span></div><h1>GUITest.java</h1><pre class="source lang-java linenums"><span class="nc" id="L1">package org.jabref.gui;</span>
+
+import java.io.IOException;
+
+import javax.swing.JButton;
+
+import org.jabref.gui.dbproperties.DatabasePropertiesDialog;
+import org.jabref.gui.preftabs.PreferencesDialog;
+
+import org.assertj.swing.core.GenericTypeMatcher;
+import org.assertj.swing.dependency.jsr305.Nonnull;
+import org.assertj.swing.fixture.DialogFixture;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
+
+import static org.assertj.swing.finder.WindowFinder.findDialog;
+
+@Category(org.jabref.testutils.category.GUITest.class)
+<span class="fc" id="L19">public class GUITest extends AbstractUITest {</span>
+
+    @Test
+    public void testExit() {
+<span class="nc" id="L23">        exitJabRef();</span>
+<span class="nc" id="L24">    }</span>
+
+    @Test
+    public void testNewFile() {
+<span class="nc" id="L28">        newDatabase();</span>
+<span class="nc" id="L29">        closeDatabase();</span>
+<span class="nc" id="L30">        exitJabRef();</span>
+<span class="nc" id="L31">    }</span>
+
+    @Test
+    public void testCreateBibtexEntry() throws IOException {
+<span class="nc" id="L35">        newDatabase();</span>
+
+<span class="nc" id="L37">        mainFrame.menuItemWithPath(&quot;BibTeX&quot;, &quot;New entry...&quot;).click();</span>
+<span class="nc" id="L38">        findDialog(EntryTypeDialog.class).withTimeout(10_000).using(robot())</span>
+<span class="nc" id="L39">                .button(new GenericTypeMatcher&lt;JButton&gt;(JButton.class) {</span>
+                    @Override
+                    protected boolean isMatching(@Nonnull JButton jButton) {
+<span class="nc" id="L42">                        return &quot;Book&quot;.equals(jButton.getText());</span>
+                    }
+<span class="nc" id="L44">                }).click();</span>
+<span class="nc" id="L45">        takeScreenshot(mainFrame, &quot;MainWindowWithOneDatabase&quot;);</span>
+<span class="nc" id="L46">    }</span>
+
+    @Test
+    public void testOpenAndSavePreferences() throws IOException {
+<span class="nc" id="L50">        mainFrame.menuItemWithPath(&quot;Options&quot;, &quot;Preferences&quot;).click();</span>
+
+<span class="nc" id="L52">        robot().waitForIdle();</span>
+
+<span class="nc" id="L54">        DialogFixture preferencesDialog = findDialog(PreferencesDialog.class).withTimeout(10_000).using(robot());</span>
+<span class="nc" id="L55">        takeScreenshot(preferencesDialog, &quot;PreferencesDialog&quot;);</span>
+<span class="nc" id="L56">        preferencesDialog.button(new GenericTypeMatcher&lt;JButton&gt;(JButton.class) {</span>
+                    @Override
+                    protected boolean isMatching(@Nonnull JButton jButton) {
+<span class="nc" id="L59">                        return &quot;OK&quot;.equals(jButton.getText());</span>
+                    }
+<span class="nc" id="L61">                }).click();</span>
+
+<span class="nc" id="L63">        exitJabRef();</span>
+<span class="nc" id="L64">    }</span>
+
+    /**
+     * tests different buttons
+     * sometimes this test clicks some buttons twice to reverse their effect and leaves JabRef as it was before
+     */
+    @Test
+    public void testViewChanges() {
+<span class="nc" id="L72">        newDatabase();</span>
+
+<span class="nc" id="L74">        mainFrame.menuItemWithPath(&quot;View&quot;, &quot;Increase table font size&quot;).click();</span>
+<span class="nc" id="L75">        mainFrame.menuItemWithPath(&quot;View&quot;, &quot;Decrease table font size&quot;).click();</span>
+
+<span class="nc" id="L77">        mainFrame.menuItemWithPath(&quot;View&quot;, &quot;Web search&quot;).click();</span>
+<span class="nc" id="L78">        mainFrame.menuItemWithPath(&quot;View&quot;, &quot;Web search&quot;).click();</span>
+
+<span class="nc" id="L80">        mainFrame.menuItemWithPath(&quot;View&quot;, &quot;Toggle groups interface&quot;).click();</span>
+<span class="nc" id="L81">        mainFrame.menuItemWithPath(&quot;View&quot;, &quot;Toggle groups interface&quot;).click();</span>
+
+<span class="nc" id="L83">        mainFrame.menuItemWithPath(&quot;View&quot;, &quot;Toggle entry preview&quot;).click();</span>
+<span class="nc" id="L84">        mainFrame.menuItemWithPath(&quot;View&quot;, &quot;Toggle entry preview&quot;).click();</span>
+
+<span class="nc" id="L86">        mainFrame.menuItemWithPath(&quot;View&quot;, &quot;Next preview layout&quot;).click();</span>
+<span class="nc" id="L87">        mainFrame.menuItemWithPath(&quot;View&quot;, &quot;Previous preview layout&quot;).click();</span>
+
+<span class="nc" id="L89">        mainFrame.menuItemWithPath(&quot;View&quot;, &quot;Hide/show toolbar&quot;).click();</span>
+<span class="nc" id="L90">        mainFrame.menuItemWithPath(&quot;View&quot;, &quot;Hide/show toolbar&quot;).click();</span>
+
+<span class="nc" id="L92">        mainFrame.menuItemWithPath(&quot;View&quot;, &quot;Focus entry table&quot;).click();</span>
+
+<span class="nc" id="L94">        closeDatabase();</span>
+<span class="nc" id="L95">        exitJabRef();</span>
+<span class="nc" id="L96">    }</span>
+
+    @Test
+    public void testDatabasePropertiesDialog() throws IOException {
+<span class="nc" id="L100">        newDatabase();</span>
+
+<span class="nc" id="L102">        mainFrame.menuItemWithPath(&quot;File&quot;, &quot;Library properties&quot;).click();</span>
+
+<span class="nc" id="L104">        robot().waitForIdle();</span>
+
+<span class="nc" id="L106">        DialogFixture databasePropertiesDialog = findDialog(DatabasePropertiesDialog.class).withTimeout(10_000).using(robot());</span>
+<span class="nc" id="L107">        takeScreenshot(databasePropertiesDialog, &quot;DatabasePropertiesDialog&quot;);</span>
+<span class="nc" id="L108">        databasePropertiesDialog.button(new GenericTypeMatcher&lt;JButton&gt;(JButton.class) {</span>
+                    @Override
+                    protected boolean isMatching(@Nonnull JButton jButton) {
+<span class="nc" id="L111">                        return &quot;OK&quot;.equals(jButton.getText());</span>
+                    }
+<span class="nc" id="L113">                }).click();</span>
+
+<span class="nc" id="L115">        closeDatabase();</span>
+<span class="nc" id="L116">        exitJabRef();</span>
+<span class="nc" id="L117">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

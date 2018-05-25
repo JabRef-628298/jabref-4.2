@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>DialogTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui</a> &gt; <span class="el_source">DialogTest.java</span></div><h1>DialogTest.java</h1><pre class="source lang-java linenums"><span class="nc" id="L1">package org.jabref.gui;</span>
+
+import javax.swing.JButton;
+import javax.swing.JDialog;
+
+import org.jabref.testutils.category.GUITest;
+
+import org.assertj.swing.core.GenericTypeMatcher;
+import org.assertj.swing.dependency.jsr305.Nonnull;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
+
+import static org.assertj.swing.finder.WindowFinder.findDialog;
+/**
+ * This test has been split to work, the other part can be found at DialogTest2
+ */
+@Category(GUITest.class)
+<span class="fc" id="L18">public class DialogTest extends AbstractUITest {</span>
+
+    @Test
+    public void testCancelStyleSelectDialog() {
+<span class="nc" id="L22">        mainFrame.menuItemWithPath(&quot;Tools&quot;, &quot;OpenOffice/LibreOffice connection&quot;).click();</span>
+
+<span class="nc" id="L24">        GenericTypeMatcher&lt;JButton&gt; buttonMatcher = new GenericTypeMatcher&lt;JButton&gt;(JButton.class) {</span>
+
+            @Override
+            protected boolean isMatching(@Nonnull JButton jButton) {
+<span class="nc" id="L28">                return &quot;Select style&quot;.equals(jButton.getText());</span>
+            }
+        };
+
+<span class="nc" id="L32">        mainFrame.button(buttonMatcher).click();</span>
+
+<span class="nc" id="L34">        GenericTypeMatcher&lt;JDialog&gt; styleDialogMatcher = new GenericTypeMatcher&lt;JDialog&gt;(JDialog.class) {</span>
+
+            @Override
+            protected boolean isMatching(JDialog dialog) {
+<span class="nc" id="L38">                return &quot;Select style&quot;.equals(dialog.getTitle()); // Only a single SidePane</span>
+            }
+        };
+
+<span class="nc" id="L42">        GenericTypeMatcher&lt;JButton&gt; buttonMatcher2 = new GenericTypeMatcher&lt;JButton&gt;(JButton.class) {</span>
+
+            @Override
+            protected boolean isMatching(@Nonnull JButton jButton) {
+<span class="nc" id="L46">                return &quot;Cancel&quot;.equals(jButton.getText());</span>
+            }
+        };
+<span class="nc" id="L49">        findDialog(styleDialogMatcher).withTimeout(10_000).using(robot()).button(buttonMatcher2).click();</span>
+<span class="nc" id="L50">        exitJabRef();</span>
+<span class="nc" id="L51">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

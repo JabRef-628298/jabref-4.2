@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>BibtexDatabaseWriter.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.exporter</a> &gt; <span class="el_source">BibtexDatabaseWriter.java</span></div><h1>BibtexDatabaseWriter.java</h1><pre class="source lang-java linenums">package org.jabref.logic.exporter;
+
+import java.io.IOException;
+import java.io.Writer;
+import java.nio.charset.Charset;
+import java.util.Map;
+
+import org.jabref.logic.bibtex.BibEntryWriter;
+import org.jabref.logic.bibtex.InvalidFieldValueException;
+import org.jabref.logic.bibtex.LatexFieldFormatter;
+import org.jabref.logic.bibtex.LatexFieldFormatterPreferences;
+import org.jabref.logic.util.OS;
+import org.jabref.model.database.BibDatabaseContext;
+import org.jabref.model.database.BibDatabaseMode;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.BibtexString;
+import org.jabref.model.entry.CustomEntryType;
+import org.jabref.model.metadata.MetaData;
+import org.jabref.model.strings.StringUtil;
+
+public class BibtexDatabaseWriter&lt;E extends SaveSession&gt; extends BibDatabaseWriter&lt;E&gt; {
+
+    public static final String DATABASE_ID_PREFIX = &quot;DBID:&quot;;
+    private static final String STRING_PREFIX = &quot;@String&quot;;
+    private static final String COMMENT_PREFIX = &quot;@Comment&quot;;
+    private static final String PREAMBLE_PREFIX = &quot;@Preamble&quot;;
+
+    public BibtexDatabaseWriter(SaveSessionFactory&lt;E&gt; saveSessionFactory) {
+<span class="fc" id="L29">        super(saveSessionFactory);</span>
+<span class="fc" id="L30">    }</span>
+
+    @Override
+    protected void writeEpilogue(String epilogue) throws SaveException {
+<span class="fc bfc" id="L34" title="All 2 branches covered.">        if (!StringUtil.isNullOrEmpty(epilogue)) {</span>
+            try {
+<span class="fc" id="L36">                getWriter().write(OS.NEWLINE);</span>
+<span class="fc" id="L37">                getWriter().write(epilogue);</span>
+<span class="fc" id="L38">                getWriter().write(OS.NEWLINE);</span>
+<span class="pc" id="L39">            } catch (IOException e) {</span>
+<span class="nc" id="L40">                throw new SaveException(e);</span>
+            }
+        }
+<span class="fc" id="L43">    }</span>
+
+    @Override
+    protected void writeMetaDataItem(Map.Entry&lt;String, String&gt; metaItem) throws SaveException {
+<span class="fc" id="L47">        StringBuilder stringBuilder = new StringBuilder();</span>
+<span class="fc" id="L48">        stringBuilder.append(OS.NEWLINE);</span>
+<span class="fc" id="L49">        stringBuilder.append(COMMENT_PREFIX + &quot;{&quot;).append(MetaData.META_FLAG).append(metaItem.getKey()).append(&quot;:&quot;);</span>
+<span class="fc" id="L50">        stringBuilder.append(metaItem.getValue());</span>
+<span class="fc" id="L51">        stringBuilder.append(&quot;}&quot;);</span>
+<span class="fc" id="L52">        stringBuilder.append(OS.NEWLINE);</span>
+
+        try {
+<span class="fc" id="L55">            getWriter().write(stringBuilder.toString());</span>
+<span class="pc" id="L56">        } catch (IOException e) {</span>
+<span class="nc" id="L57">            throw new SaveException(e);</span>
+        }
+<span class="fc" id="L59">    }</span>
+
+    @Override
+    protected void writePreamble(String preamble) throws SaveException {
+<span class="fc bfc" id="L63" title="All 2 branches covered.">        if (!StringUtil.isNullOrEmpty(preamble)) {</span>
+            try {
+<span class="fc" id="L65">                getWriter().write(OS.NEWLINE);</span>
+<span class="fc" id="L66">                getWriter().write(PREAMBLE_PREFIX + &quot;{&quot;);</span>
+<span class="fc" id="L67">                getWriter().write(preamble);</span>
+<span class="fc" id="L68">                getWriter().write('}' + OS.NEWLINE);</span>
+<span class="pc" id="L69">            } catch (IOException e) {</span>
+<span class="nc" id="L70">                throw new SaveException(e);</span>
+            }
+        }
+<span class="fc" id="L73">    }</span>
+
+    @Override
+    protected void writeString(BibtexString bibtexString, boolean isFirstString, int maxKeyLength, Boolean reformatFile,
+            LatexFieldFormatterPreferences latexFieldFormatterPreferences) throws SaveException {
+        try {
+            // If the string has not been modified, write it back as it was
+<span class="fc bfc" id="L80" title="All 4 branches covered.">            if (!reformatFile &amp;&amp; !bibtexString.hasChanged()) {</span>
+<span class="fc" id="L81">                getWriter().write(bibtexString.getParsedSerialization());</span>
+<span class="fc" id="L82">                return;</span>
+            }
+
+            // Write user comments
+<span class="fc" id="L86">            String userComments = bibtexString.getUserComments();</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">            if (!userComments.isEmpty()) {</span>
+<span class="fc" id="L88">                getWriter().write(userComments + OS.NEWLINE);</span>
+            }
+
+<span class="fc bfc" id="L91" title="All 2 branches covered.">            if (isFirstString) {</span>
+<span class="fc" id="L92">                getWriter().write(OS.NEWLINE);</span>
+            }
+
+<span class="fc" id="L95">            getWriter().write(STRING_PREFIX + &quot;{&quot; + bibtexString.getName() + StringUtil</span>
+<span class="fc" id="L96">                    .repeatSpaces(maxKeyLength - bibtexString.getName().length()) + &quot; = &quot;);</span>
+<span class="fc bfc" id="L97" title="All 2 branches covered.">            if (bibtexString.getContent().isEmpty()) {</span>
+<span class="fc" id="L98">                getWriter().write(&quot;{}&quot;);</span>
+<span class="fc" id="L99">            } else {</span>
+                try {
+<span class="fc" id="L101">                    String formatted = new LatexFieldFormatter(latexFieldFormatterPreferences)</span>
+<span class="fc" id="L102">                                    .format(bibtexString.getContent(),</span>
+<span class="fc" id="L103">                            LatexFieldFormatter.BIBTEX_STRING);</span>
+<span class="fc" id="L104">                    getWriter().write(formatted);</span>
+<span class="pc" id="L105">                } catch (InvalidFieldValueException ex) {</span>
+<span class="nc" id="L106">                    throw new SaveException(ex);</span>
+                }
+            }
+
+<span class="fc" id="L110">            getWriter().write(&quot;}&quot; + OS.NEWLINE);</span>
+<span class="pc" id="L111">        } catch (IOException e) {</span>
+<span class="nc" id="L112">            throw new SaveException(e);</span>
+        }
+<span class="fc" id="L114">    }</span>
+
+    @Override
+    protected void writeEntryTypeDefinition(CustomEntryType customType) throws SaveException {
+        try {
+<span class="fc" id="L119">            getWriter().write(OS.NEWLINE);</span>
+<span class="fc" id="L120">            getWriter().write(COMMENT_PREFIX + &quot;{&quot;);</span>
+<span class="fc" id="L121">            getWriter().write(customType.getAsString());</span>
+<span class="fc" id="L122">            getWriter().write(&quot;}&quot;);</span>
+<span class="fc" id="L123">            getWriter().write(OS.NEWLINE);</span>
+<span class="pc" id="L124">        } catch (IOException e) {</span>
+<span class="nc" id="L125">            throw new SaveException(e);</span>
+        }
+<span class="fc" id="L127">    }</span>
+
+    @Override
+    protected void writePrelogue(BibDatabaseContext bibDatabaseContext, Charset encoding) throws SaveException {
+<span class="fc bfc" id="L131" title="All 2 branches covered.">        if (encoding == null) {</span>
+<span class="fc" id="L132">            return;</span>
+        }
+
+        // Writes the file encoding information.
+        try {
+<span class="fc" id="L137">            getWriter().write(&quot;% &quot;);</span>
+<span class="fc" id="L138">            getWriter().write(SavePreferences.ENCODING_PREFIX + encoding);</span>
+<span class="fc" id="L139">            getWriter().write(OS.NEWLINE);</span>
+
+<span class="pc" id="L141">        } catch (IOException e) {</span>
+<span class="nc" id="L142">            throw new SaveException(e);</span>
+        }
+<span class="fc" id="L144">    }</span>
+
+    @Override
+    protected void writeDatabaseID(String sharedDatabaseID) throws SaveException {
+        try {
+<span class="nc" id="L149">            StringBuilder stringBuilder = new StringBuilder()</span>
+<span class="nc" id="L150">                    .append(&quot;% &quot;)</span>
+<span class="nc" id="L151">                    .append(DATABASE_ID_PREFIX)</span>
+<span class="nc" id="L152">                    .append(&quot; &quot;)</span>
+<span class="nc" id="L153">                    .append(sharedDatabaseID)</span>
+<span class="nc" id="L154">                    .append(OS.NEWLINE);</span>
+<span class="nc" id="L155">            getWriter().write(stringBuilder.toString());</span>
+<span class="nc" id="L156">        } catch (IOException e) {</span>
+<span class="nc" id="L157">            throw new SaveException(e);</span>
+        }
+<span class="nc" id="L159">    }</span>
+
+    @Override
+    protected void writeEntry(BibEntry entry, BibDatabaseMode mode, Boolean isReformatFile,
+            LatexFieldFormatterPreferences latexFieldFormatterPreferences) throws SaveException {
+<span class="fc" id="L164">        BibEntryWriter bibtexEntryWriter = new BibEntryWriter(</span>
+<span class="fc" id="L165">                new LatexFieldFormatter(latexFieldFormatterPreferences), true);</span>
+        try {
+<span class="fc" id="L167">            bibtexEntryWriter.write(entry, getWriter(), mode, isReformatFile);</span>
+<span class="pc" id="L168">        } catch (IOException e) {</span>
+<span class="nc" id="L169">            throw new SaveException(e, entry);</span>
+        }
+<span class="fc" id="L171">    }</span>
+
+    private Writer getWriter() {
+<span class="fc" id="L174">        return getActiveSession().getWriter();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

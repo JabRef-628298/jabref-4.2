@@ -1,0 +1,671 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>TestVM.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.bst</a> &gt; <span class="el_source">TestVM.java</span></div><h1>TestVM.java</h1><pre class="source lang-java linenums">package org.jabref.logic.bst;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+
+import org.jabref.logic.bst.VM.BstEntry;
+import org.jabref.logic.bst.VM.StackFunction;
+import org.jabref.logic.importer.ImportFormatPreferences;
+import org.jabref.logic.importer.ParserResult;
+import org.jabref.logic.importer.fileformat.BibtexParser;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.util.DummyFileUpdateMonitor;
+
+import org.antlr.runtime.RecognitionException;
+import org.junit.jupiter.api.Test;
+import org.mockito.Answers;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.Mockito.mock;
+
+<span class="fc" id="L28">public class TestVM {</span>
+
+    @Test
+    public void testAbbrv() throws RecognitionException, IOException {
+<span class="fc" id="L32">        VM vm = new VM(new File(&quot;src/test/resources/org/jabref/logic/bst/abbrv.bst&quot;));</span>
+<span class="fc" id="L33">        List&lt;BibEntry&gt; v = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L34">        v.add(t1BibtexEntry());</span>
+
+<span class="fc" id="L36">        String expected = &quot;\\begin{thebibliography}{1}\\bibitem{canh05}K.~Crowston, H.~Annabi, J.~Howison, and C.~Masango.\\newblock Effective work practices for floss development: A model and  propositions.\\newblock In {\\em Hawaii International Conference On System Sciences (HICSS)}, 2005.\\end{thebibliography}&quot;;</span>
+
+<span class="fc" id="L38">        assertEquals(expected.replaceAll(&quot;\\s&quot;, &quot;&quot;), vm.run(v).replaceAll(&quot;\\s&quot;, &quot;&quot;));</span>
+<span class="fc" id="L39">    }</span>
+
+    @Test
+    public void testVMSimple() throws RecognitionException, IOException {
+
+<span class="fc" id="L44">        VM vm = new VM(&quot;ENTRY  { &quot; + &quot;  address &quot; + &quot;  author &quot; + &quot;  title &quot; + &quot;  type &quot;</span>
+                + &quot;}  {}  { label }&quot; + &quot;INTEGERS { output.state before.all&quot;
+                + &quot; mid.sentence after.sentence after.block }&quot;
+                + &quot;FUNCTION {init.state.consts}{ #0 'before.all := &quot;
+                + &quot; #1 'mid.sentence :=  #2 'after.sentence :=  #3 'after.block := } &quot;
+                + &quot;STRINGS { s t } &quot; + &quot;READ&quot;);
+
+<span class="fc" id="L51">        List&lt;BibEntry&gt; v = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L52">        v.add(t1BibtexEntry());</span>
+
+<span class="fc" id="L54">        vm.run(v);</span>
+
+<span class="fc" id="L56">        assertEquals(2, vm.getStrings().size());</span>
+<span class="fc" id="L57">        assertEquals(7, vm.getIntegers().size());</span>
+<span class="fc" id="L58">        assertEquals(1, vm.getEntries().size());</span>
+<span class="fc" id="L59">        assertEquals(5, vm.getEntries().get(0).getFields().size());</span>
+<span class="fc" id="L60">        assertEquals(38, vm.getFunctions().size());</span>
+
+<span class="fc" id="L62">    }</span>
+
+    @Test
+    public void testLabel() throws RecognitionException, IOException {
+
+<span class="fc" id="L67">        VM vm = new VM(&quot;ENTRY  { title }  {}  { label } &quot;</span>
+                + &quot;FUNCTION { test } { label #0 = title 'label := #5 label #6 pop$ } &quot; + &quot;READ &quot;
+                + &quot;ITERATE { test }&quot;);
+
+<span class="fc" id="L71">        List&lt;BibEntry&gt; v = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L72">        v.add(t1BibtexEntry());</span>
+
+<span class="fc" id="L74">        vm.run(v);</span>
+
+<span class="fc" id="L76">        assertEquals(&quot;Effective work practices for floss development: A model and propositions&quot;, vm</span>
+<span class="fc" id="L77">                .getStack()</span>
+<span class="fc" id="L78">                .pop());</span>
+
+<span class="fc" id="L80">    }</span>
+
+    @Test
+    public void testQuote() throws RecognitionException {
+
+<span class="fc" id="L85">        VM vm = new VM(&quot;FUNCTION {a}{ quote$ quote$ * } EXECUTE {a}&quot;);</span>
+
+<span class="fc" id="L87">        List&lt;BibEntry&gt; v = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L88">        vm.run(v);</span>
+
+<span class="fc" id="L90">        assertEquals(&quot;\&quot;\&quot;&quot;, vm.getStack().pop());</span>
+<span class="fc" id="L91">    }</span>
+
+    @Test
+    public void testVMFunction1() throws RecognitionException {
+
+<span class="fc" id="L96">        VM vm = new VM(&quot;FUNCTION {init.state.consts}{ #0 'before.all := } &quot;);</span>
+
+<span class="fc" id="L98">        List&lt;BibEntry&gt; v = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L99">        vm.run(v);</span>
+
+<span class="fc" id="L101">        assertEquals(38, vm.getFunctions().size());</span>
+
+<span class="fc" id="L103">        assertTrue(vm.getFunctions().get(&quot;init.state.consts&quot;) instanceof StackFunction);</span>
+
+<span class="fc" id="L105">        StackFunction fun = (StackFunction) vm.getFunctions().get(&quot;init.state.consts&quot;);</span>
+<span class="fc" id="L106">        assertEquals(3, fun.getTree().getChildCount());</span>
+<span class="fc" id="L107">    }</span>
+
+    @Test
+    public void testVMExecuteSimple() throws RecognitionException {
+<span class="fc" id="L111">        VM vm = new VM(&quot;INTEGERS { variable.a } &quot; + &quot;FUNCTION {init.state.consts}{ #5 'variable.a := } &quot;</span>
+                + &quot;EXECUTE {init.state.consts}&quot;);
+
+<span class="fc" id="L114">        List&lt;BibEntry&gt; v = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L115">        vm.run(v);</span>
+<span class="fc" id="L116">        assertEquals(Integer.valueOf(5), vm.getIntegers().get(&quot;variable.a&quot;));</span>
+<span class="fc" id="L117">    }</span>
+
+    @Test
+    public void testVMExecuteSimple2() throws RecognitionException {
+<span class="fc" id="L121">        VM vm = new VM(&quot;FUNCTION {a}{ #5 #5 = &quot; + &quot;#1 #2 = &quot; + &quot;#3 #4 &lt; &quot; + &quot;#4 #3 &lt; &quot;</span>
+                + &quot;#4 #4 &lt; &quot; + &quot;#3 #4 &gt; &quot; + &quot;#4 #3 &gt; &quot; + &quot;#4 #4 &gt; &quot; + &quot;\&quot;H\&quot; \&quot;H\&quot; = &quot;
+                + &quot;\&quot;H\&quot; \&quot;Ha\&quot; = } &quot; + &quot;EXECUTE {a}&quot;);
+
+<span class="fc" id="L125">        List&lt;BibEntry&gt; v = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L126">        vm.run(v);</span>
+
+<span class="fc" id="L128">        assertEquals(VM.FALSE, vm.getStack().pop());</span>
+<span class="fc" id="L129">        assertEquals(VM.TRUE, vm.getStack().pop());</span>
+<span class="fc" id="L130">        assertEquals(VM.FALSE, vm.getStack().pop());</span>
+<span class="fc" id="L131">        assertEquals(VM.TRUE, vm.getStack().pop());</span>
+<span class="fc" id="L132">        assertEquals(VM.FALSE, vm.getStack().pop());</span>
+<span class="fc" id="L133">        assertEquals(VM.FALSE, vm.getStack().pop());</span>
+<span class="fc" id="L134">        assertEquals(VM.FALSE, vm.getStack().pop());</span>
+<span class="fc" id="L135">        assertEquals(VM.TRUE, vm.getStack().pop());</span>
+<span class="fc" id="L136">        assertEquals(VM.FALSE, vm.getStack().pop());</span>
+<span class="fc" id="L137">        assertEquals(VM.TRUE, vm.getStack().pop());</span>
+<span class="fc" id="L138">        assertEquals(0, vm.getStack().size());</span>
+<span class="fc" id="L139">    }</span>
+
+    @Test
+    public void testVMIfSkipPop() throws RecognitionException {
+<span class="fc" id="L143">        VM vm = new VM(&quot;FUNCTION {not}	{   { #0 }	    { #1 }  if$	}&quot;</span>
+                + &quot;FUNCTION {and}	{   'skip$	    { pop$ #0 }	  if$	}&quot;
+                + &quot;FUNCTION {or}	{   { pop$ #1 }	    'skip$	  if$	}&quot; + &quot;FUNCTION {test} { &quot;
+                + &quot;#1 #1 and #0 #1 and #1 #0 and #0 #0 and &quot; + &quot;#0 not #1 not &quot;
+                + &quot;#1 #1 or #0 #1 or #1 #0 or #0 #0 or }&quot; + &quot;EXECUTE {test}&quot;);
+
+<span class="fc" id="L149">        List&lt;BibEntry&gt; v = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L150">        vm.run(v);</span>
+<span class="fc" id="L151">        assertEquals(VM.FALSE, vm.getStack().pop());</span>
+<span class="fc" id="L152">        assertEquals(VM.TRUE, vm.getStack().pop());</span>
+<span class="fc" id="L153">        assertEquals(VM.TRUE, vm.getStack().pop());</span>
+<span class="fc" id="L154">        assertEquals(VM.TRUE, vm.getStack().pop());</span>
+<span class="fc" id="L155">        assertEquals(VM.FALSE, vm.getStack().pop());</span>
+<span class="fc" id="L156">        assertEquals(VM.TRUE, vm.getStack().pop());</span>
+<span class="fc" id="L157">        assertEquals(VM.FALSE, vm.getStack().pop());</span>
+<span class="fc" id="L158">        assertEquals(VM.FALSE, vm.getStack().pop());</span>
+<span class="fc" id="L159">        assertEquals(VM.FALSE, vm.getStack().pop());</span>
+<span class="fc" id="L160">        assertEquals(VM.TRUE, vm.getStack().pop());</span>
+<span class="fc" id="L161">        assertEquals(0, vm.getStack().size());</span>
+<span class="fc" id="L162">    }</span>
+
+    @Test
+    public void testVMArithmetic() throws RecognitionException {
+
+<span class="fc" id="L167">        VM vm = new VM(&quot;FUNCTION {test} { &quot; + &quot;#1 #1 + #5 #2 - }&quot; + &quot;EXECUTE {test}&quot;);</span>
+
+<span class="fc" id="L169">        List&lt;BibEntry&gt; v = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L170">        vm.run(v);</span>
+<span class="fc" id="L171">        assertEquals(3, vm.getStack().pop());</span>
+<span class="fc" id="L172">        assertEquals(2, vm.getStack().pop());</span>
+<span class="fc" id="L173">        assertEquals(0, vm.getStack().size());</span>
+
+<span class="fc" id="L175">    }</span>
+    @Test
+    public void testVMArithmetic2() throws RecognitionException {
+<span class="fc" id="L178">        VM vm = new VM(&quot;FUNCTION {test} { &quot; + &quot;#1 \&quot;HELLO\&quot; + #5 #2 - }&quot; + &quot;EXECUTE {test}&quot;);</span>
+
+<span class="fc" id="L180">        List&lt;BibEntry&gt; v = new ArrayList&lt;&gt;();</span>
+
+        try {
+<span class="nc" id="L183">            vm.run(v);</span>
+<span class="nc" id="L184">            fail(&quot;fail&quot;);</span>
+<span class="pc" id="L185">        } catch (VMException ignored) {</span>
+            // Ignored
+        }
+<span class="fc" id="L188">    }</span>
+
+    @Test
+    public void testNumNames() throws RecognitionException {
+<span class="fc" id="L192">        VM vm = new VM(&quot;FUNCTION {test} { \&quot;Johnny Foo and Mary Bar\&quot; num.names$ }&quot; + &quot;EXECUTE {test}&quot;);</span>
+
+<span class="fc" id="L194">        List&lt;BibEntry&gt; v = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L195">        vm.run(v);</span>
+<span class="fc" id="L196">        assertEquals(2, vm.getStack().pop());</span>
+<span class="fc" id="L197">        assertEquals(0, vm.getStack().size());</span>
+<span class="fc" id="L198">    }</span>
+
+    @Test
+    public void testNumNames2() throws RecognitionException {
+<span class="fc" id="L202">        VM vm = new VM(&quot;FUNCTION {test} { \&quot;Johnny Foo { and } Mary Bar\&quot; num.names$ }&quot;</span>
+                + &quot;EXECUTE {test}&quot;);
+
+<span class="fc" id="L205">        List&lt;BibEntry&gt; v = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L206">        vm.run(v);</span>
+<span class="fc" id="L207">        assertEquals(1, vm.getStack().pop());</span>
+<span class="fc" id="L208">        assertEquals(0, vm.getStack().size());</span>
+<span class="fc" id="L209">    }</span>
+
+    @Test
+    public void testVMStringOps1() throws RecognitionException {
+<span class="fc" id="L213">        VM vm = new VM(</span>
+<span class="fc" id="L214">                &quot;FUNCTION {test} { \&quot;H\&quot; \&quot;allo\&quot; * \&quot;Johnny\&quot; add.period$ \&quot;Johnny.\&quot; add.period$&quot;</span>
+                        + &quot;\&quot;Johnny!\&quot; add.period$ \&quot;Johnny?\&quot; add.period$ \&quot;Johnny} }}}\&quot; add.period$&quot;
+                        + &quot;\&quot;Johnny!}\&quot; add.period$ \&quot;Johnny?}\&quot; add.period$ \&quot;Johnny.}\&quot; add.period$ }&quot;
+                        + &quot;EXECUTE {test}&quot;);
+
+<span class="fc" id="L219">        List&lt;BibEntry&gt; v = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L220">        vm.run(v);</span>
+<span class="fc" id="L221">        assertEquals(&quot;Johnny.}&quot;, vm.getStack().pop());</span>
+<span class="fc" id="L222">        assertEquals(&quot;Johnny?}&quot;, vm.getStack().pop());</span>
+<span class="fc" id="L223">        assertEquals(&quot;Johnny!}&quot;, vm.getStack().pop());</span>
+<span class="fc" id="L224">        assertEquals(&quot;Johnny.}&quot;, vm.getStack().pop());</span>
+<span class="fc" id="L225">        assertEquals(&quot;Johnny?&quot;, vm.getStack().pop());</span>
+<span class="fc" id="L226">        assertEquals(&quot;Johnny!&quot;, vm.getStack().pop());</span>
+<span class="fc" id="L227">        assertEquals(&quot;Johnny.&quot;, vm.getStack().pop());</span>
+<span class="fc" id="L228">        assertEquals(&quot;Johnny.&quot;, vm.getStack().pop());</span>
+<span class="fc" id="L229">        assertEquals(&quot;Hallo&quot;, vm.getStack().pop());</span>
+<span class="fc" id="L230">        assertEquals(0, vm.getStack().size());</span>
+<span class="fc" id="L231">    }</span>
+
+    @Test
+    public void testSubstring() throws RecognitionException {
+<span class="fc" id="L235">        VM vm = new VM(&quot;FUNCTION {test} &quot; + &quot;{ \&quot;123456789\&quot; #2  #1  substring$ &quot; + // 2</span>
+                &quot;  \&quot;123456789\&quot; #4 global.max$ substring$ &quot; + // 456789
+                &quot;  \&quot;123456789\&quot; #1  #9  substring$ &quot; + // 123456789
+                &quot;  \&quot;123456789\&quot; #1  #10 substring$ &quot; + // 123456789
+                &quot;  \&quot;123456789\&quot; #1  #99 substring$ &quot; + // 123456789
+
+                &quot;  \&quot;123456789\&quot; #-7 #3  substring$ &quot; + // 123
+                &quot;  \&quot;123456789\&quot; #-1 #1  substring$ &quot; + // 9
+                &quot;  \&quot;123456789\&quot; #-1 #3  substring$ &quot; + // 789
+                &quot;  \&quot;123456789\&quot; #-2 #2  substring$ &quot; + // 78
+
+                &quot;} EXECUTE {test} &quot;);
+
+<span class="fc" id="L248">        List&lt;BibEntry&gt; v = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L249">        vm.run(v);</span>
+<span class="fc" id="L250">        assertEquals(&quot;78&quot;, vm.getStack().pop());</span>
+<span class="fc" id="L251">        assertEquals(&quot;789&quot;, vm.getStack().pop());</span>
+<span class="fc" id="L252">        assertEquals(&quot;9&quot;, vm.getStack().pop());</span>
+<span class="fc" id="L253">        assertEquals(&quot;123&quot;, vm.getStack().pop());</span>
+
+<span class="fc" id="L255">        assertEquals(&quot;123456789&quot;, vm.getStack().pop());</span>
+<span class="fc" id="L256">        assertEquals(&quot;123456789&quot;, vm.getStack().pop());</span>
+<span class="fc" id="L257">        assertEquals(&quot;123456789&quot;, vm.getStack().pop());</span>
+<span class="fc" id="L258">        assertEquals(&quot;456789&quot;, vm.getStack().pop());</span>
+<span class="fc" id="L259">        assertEquals(&quot;2&quot;, vm.getStack().pop());</span>
+<span class="fc" id="L260">        assertEquals(0, vm.getStack().size());</span>
+<span class="fc" id="L261">    }</span>
+
+    @Test
+    public void testEmpty() throws RecognitionException, IOException {
+<span class="fc" id="L265">        VM vm = new VM(&quot;ENTRY {title}{}{} READ STRINGS { s } FUNCTION {test} &quot; + &quot;{ s empty$ &quot; + // FALSE</span>
+                &quot;\&quot;\&quot; empty$ &quot; + // FALSE
+                &quot;\&quot;   \&quot; empty$ &quot; + // FALSE
+                &quot; title empty$ &quot; + // FALSE
+                &quot; \&quot; HALLO \&quot; empty$ } ITERATE {test} &quot;);
+
+<span class="fc" id="L271">        List&lt;BibEntry&gt; v = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L272">        v.add(TestVM.bibtexString2BibtexEntry(&quot;@article{a, author=\&quot;AAA\&quot;}&quot;));</span>
+<span class="fc" id="L273">        vm.run(v);</span>
+<span class="fc" id="L274">        assertEquals(VM.FALSE, vm.getStack().pop());</span>
+<span class="fc" id="L275">        assertEquals(VM.TRUE, vm.getStack().pop());</span>
+<span class="fc" id="L276">        assertEquals(VM.TRUE, vm.getStack().pop());</span>
+<span class="fc" id="L277">        assertEquals(VM.TRUE, vm.getStack().pop());</span>
+<span class="fc" id="L278">        assertEquals(VM.TRUE, vm.getStack().pop());</span>
+<span class="fc" id="L279">        assertEquals(0, vm.getStack().size());</span>
+<span class="fc" id="L280">    }</span>
+
+    @Test
+    public void testDuplicateEmptyPopSwapIf() throws RecognitionException {
+<span class="fc" id="L284">        VM vm = new VM(&quot;FUNCTION {emphasize} &quot; + &quot;{ duplicate$ empty$ &quot; + &quot;  { pop$ \&quot;\&quot; } &quot;</span>
+                + &quot;  { \&quot;{\\em \&quot; swap$ * \&quot;}\&quot; * } &quot; + &quot;  if$ &quot; + &quot;} &quot; + &quot;FUNCTION {test} {&quot;
+                + &quot;  \&quot;\&quot; emphasize &quot; + &quot;  \&quot;Hello\&quot; emphasize &quot; + &quot;}&quot; + &quot;EXECUTE {test} &quot;);
+
+<span class="fc" id="L288">        List&lt;BibEntry&gt; v = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L289">        vm.run(v);</span>
+<span class="fc" id="L290">        assertEquals(&quot;{\\em Hello}&quot;, vm.getStack().pop());</span>
+<span class="fc" id="L291">        assertEquals(&quot;&quot;, vm.getStack().pop());</span>
+<span class="fc" id="L292">        assertEquals(0, vm.getStack().size());</span>
+<span class="fc" id="L293">    }</span>
+
+    @Test
+    public void testChangeCase() throws RecognitionException {
+<span class="fc" id="L297">        VM vm = new VM(</span>
+<span class="fc" id="L298">                &quot;STRINGS { title } &quot;</span>
+                        + &quot;READ &quot;
+                        + &quot;FUNCTION {format.title}&quot;
+                        + &quot; { duplicate$ empty$ &quot;
+                        + &quot;    { pop$ \&quot;\&quot; } &quot;
+                        + &quot;    { \&quot;t\&quot; change.case$ } &quot;
+                        + &quot;  if$ &quot;
+                        + &quot;} &quot;
+                        + &quot;FUNCTION {test} {&quot;
+                        + &quot;  \&quot;hello world\&quot; \&quot;u\&quot; change.case$ format.title &quot;
+                        + &quot;  \&quot;Hello World\&quot; format.title &quot;
+                        + &quot;  \&quot;\&quot; format.title &quot;
+                        + &quot;  \&quot;{A}{D}/{C}ycle: {I}{B}{M}'s {F}ramework for {A}pplication {D}evelopment and {C}ase\&quot; \&quot;u\&quot; change.case$ format.title &quot;
+                        + &quot;}&quot; + &quot;EXECUTE {test} &quot;);
+
+<span class="fc" id="L313">        List&lt;BibEntry&gt; v = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L314">        vm.run(v);</span>
+<span class="fc" id="L315">        assertEquals(</span>
+<span class="fc" id="L316">                &quot;{A}{D}/{C}ycle: {I}{B}{M}'s {F}ramework for {A}pplication {D}evelopment and {C}ase&quot;,</span>
+<span class="fc" id="L317">                vm.getStack().pop());</span>
+<span class="fc" id="L318">        assertEquals(&quot;&quot;, vm.getStack().pop());</span>
+<span class="fc" id="L319">        assertEquals(&quot;Hello world&quot;, vm.getStack().pop());</span>
+<span class="fc" id="L320">        assertEquals(&quot;Hello world&quot;, vm.getStack().pop());</span>
+<span class="fc" id="L321">        assertEquals(0, vm.getStack().size());</span>
+<span class="fc" id="L322">    }</span>
+
+    @Test
+    public void testTextLength() throws RecognitionException {
+<span class="fc" id="L326">        VM vm = new VM(&quot;FUNCTION {test} {&quot; + &quot;  \&quot;hello world\&quot; text.length$ &quot;</span>
+                + &quot;  \&quot;Hello {W}orld\&quot; text.length$ &quot; + &quot;  \&quot;\&quot; text.length$ &quot;
+                + &quot;  \&quot;{A}{D}/{Cycle}\&quot; text.length$ &quot;
+                + &quot;  \&quot;{\\This is one character}\&quot; text.length$ &quot;
+                + &quot;  \&quot;{\\This {is} {one} {c{h}}aracter as well}\&quot; text.length$ &quot;
+                + &quot;  \&quot;{\\And this too\&quot; text.length$ &quot; + &quot;  \&quot;These are {\\11}\&quot; text.length$ &quot; + &quot;} &quot;
+                + &quot;EXECUTE {test} &quot;);
+
+<span class="fc" id="L334">        List&lt;BibEntry&gt; v = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L335">        vm.run(v);</span>
+<span class="fc" id="L336">        assertEquals(11, vm.getStack().pop());</span>
+<span class="fc" id="L337">        assertEquals(1, vm.getStack().pop());</span>
+<span class="fc" id="L338">        assertEquals(1, vm.getStack().pop());</span>
+<span class="fc" id="L339">        assertEquals(1, vm.getStack().pop());</span>
+<span class="fc" id="L340">        assertEquals(8, vm.getStack().pop());</span>
+<span class="fc" id="L341">        assertEquals(0, vm.getStack().pop());</span>
+<span class="fc" id="L342">        assertEquals(11, vm.getStack().pop());</span>
+<span class="fc" id="L343">        assertEquals(11, vm.getStack().pop());</span>
+<span class="fc" id="L344">        assertEquals(0, vm.getStack().size());</span>
+<span class="fc" id="L345">    }</span>
+
+    @Test
+    public void testVMIntToStr() throws RecognitionException {
+<span class="fc" id="L349">        VM vm = new VM(&quot;FUNCTION {test} { #3 int.to.str$ #9999 int.to.str$}&quot; + &quot;EXECUTE {test}&quot;);</span>
+
+<span class="fc" id="L351">        List&lt;BibEntry&gt; v = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L352">        vm.run(v);</span>
+<span class="fc" id="L353">        assertEquals(&quot;9999&quot;, vm.getStack().pop());</span>
+<span class="fc" id="L354">        assertEquals(&quot;3&quot;, vm.getStack().pop());</span>
+<span class="fc" id="L355">        assertEquals(0, vm.getStack().size());</span>
+<span class="fc" id="L356">    }</span>
+
+    @Test
+    public void testVMChrToInt() throws RecognitionException {
+<span class="fc" id="L360">        VM vm = new VM(&quot;FUNCTION {test} { \&quot;H\&quot; chr.to.int$ }&quot; + &quot;EXECUTE {test}&quot;);</span>
+
+<span class="fc" id="L362">        List&lt;BibEntry&gt; v = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L363">        vm.run(v);</span>
+<span class="fc" id="L364">        assertEquals(72, vm.getStack().pop());</span>
+<span class="fc" id="L365">        assertEquals(0, vm.getStack().size());</span>
+<span class="fc" id="L366">    }</span>
+
+    @Test
+    public void testVMChrToIntIntToChr() throws RecognitionException {
+<span class="fc" id="L370">        VM vm = new VM(&quot;FUNCTION {test} { \&quot;H\&quot; chr.to.int$ int.to.chr$ }&quot; + &quot;EXECUTE {test}&quot;);</span>
+
+<span class="fc" id="L372">        List&lt;BibEntry&gt; v = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L373">        vm.run(v);</span>
+<span class="fc" id="L374">        assertEquals(&quot;H&quot;, vm.getStack().pop());</span>
+<span class="fc" id="L375">        assertEquals(0, vm.getStack().size());</span>
+<span class="fc" id="L376">    }</span>
+
+    @Test
+    public void testSort() throws RecognitionException, IOException {
+
+<span class="fc" id="L381">        VM vm = new VM(&quot;ENTRY  { title }  { }  { label }&quot;</span>
+                + &quot;FUNCTION {presort} { cite$ 'sort.key$ := } ITERATE { presort } SORT&quot;);
+
+<span class="fc" id="L384">        List&lt;BibEntry&gt; v = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L385">        v.add(TestVM.bibtexString2BibtexEntry(&quot;@article{a, author=\&quot;AAA\&quot;}&quot;));</span>
+<span class="fc" id="L386">        v.add(TestVM.bibtexString2BibtexEntry(&quot;@article{b, author=\&quot;BBB\&quot;}&quot;));</span>
+<span class="fc" id="L387">        v.add(TestVM.bibtexString2BibtexEntry(&quot;@article{d, author=\&quot;DDD\&quot;}&quot;));</span>
+<span class="fc" id="L388">        v.add(TestVM.bibtexString2BibtexEntry(&quot;@article{c, author=\&quot;CCC\&quot;}&quot;));</span>
+<span class="fc" id="L389">        vm.run(v);</span>
+
+<span class="fc" id="L391">        List&lt;BstEntry&gt; v2 = vm.getEntries();</span>
+<span class="fc" id="L392">        assertEquals(Optional.of(&quot;a&quot;), v2.get(0).getBibtexEntry().getCiteKeyOptional());</span>
+<span class="fc" id="L393">        assertEquals(Optional.of(&quot;b&quot;), v2.get(1).getBibtexEntry().getCiteKeyOptional());</span>
+<span class="fc" id="L394">        assertEquals(Optional.of(&quot;c&quot;), v2.get(2).getBibtexEntry().getCiteKeyOptional());</span>
+<span class="fc" id="L395">        assertEquals(Optional.of(&quot;d&quot;), v2.get(3).getBibtexEntry().getCiteKeyOptional());</span>
+<span class="fc" id="L396">    }</span>
+
+    @Test
+    public void testBuildIn() throws RecognitionException {
+<span class="fc" id="L400">        VM vm = new VM(&quot;EXECUTE {global.max$}&quot;);</span>
+
+<span class="fc" id="L402">        List&lt;BibEntry&gt; v = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L403">        vm.run(v);</span>
+
+<span class="fc" id="L405">        assertEquals(Integer.MAX_VALUE, vm.getStack().pop());</span>
+<span class="fc" id="L406">        assertTrue(vm.getStack().empty());</span>
+<span class="fc" id="L407">    }</span>
+
+    @Test
+    public void testVariables() throws RecognitionException {
+
+<span class="fc" id="L412">        VM vm = new VM(&quot; STRINGS { t }                          &quot;</span>
+                + &quot; FUNCTION {not}	{ { #0 } { #1 }  if$ } &quot;
+                + &quot; FUNCTION {n.dashify} { \&quot;HELLO-WORLD\&quot; 't := t empty$ not } &quot;
+                + &quot; EXECUTE {n.dashify}                    &quot;);
+
+<span class="fc" id="L417">        vm.run(new ArrayList&lt;&gt;());</span>
+
+<span class="fc" id="L419">        assertEquals(VM.TRUE, vm.getStack().pop());</span>
+<span class="fc" id="L420">    }</span>
+
+    @Test
+    public void testWhile() throws RecognitionException {
+
+<span class="fc" id="L425">        VM vm = new VM(</span>
+<span class="fc" id="L426">                &quot;STRINGS { t }            &quot;</span>
+                        + &quot;FUNCTION {not}	{   &quot;
+                        + &quot; { #0 } { #1 }  if$ } &quot;
+                        + &quot;FUNCTION {n.dashify}              &quot;
+                        + &quot;{ \&quot;HELLO-WORLD\&quot;                 &quot;
+                        + &quot;  't :=                           &quot;
+                        + &quot; \&quot;\&quot;                                                 &quot;
+                        + &quot;	   { t empty$ not }                 &quot;
+                        + &quot;	   { t #1 #1 substring$ \&quot;-\&quot; =                      &quot;
+                        + &quot;	     { t #1 #2 substring$ \&quot;--\&quot; = not &quot;
+                        + &quot;	          { \&quot;--\&quot; *                                       &quot;
+                        + &quot;	            t #2 global.max$ substring$ 't :=                 &quot;
+                        + &quot;	          }                                                    &quot;
+                        + &quot;	          {   { t #1 #1 substring$ \&quot;-\&quot; = }                &quot;
+                        + &quot;	              { \&quot;-\&quot; *                                         &quot;
+                        + &quot;	                t #2 global.max$ substring$ 't :=               &quot;
+                        + &quot;	              }                                                  &quot;
+                        + &quot;	            while$                                                                  &quot;
+                        + &quot;	          }                                                                  &quot;
+                        + &quot;	        if$                                                                  &quot;
+                        + &quot;	      }                                                                  &quot;
+                        + &quot;	      { t #1 #1 substring$ *                                       &quot;
+                        + &quot;	        t #2 global.max$ substring$ 't :=                          &quot;
+                        + &quot;	      }                                                                  &quot;
+                        + &quot;	      if$                                                                  &quot;
+                        + &quot;	    }                                                                  &quot;
+                        + &quot;	  while$                                                                  &quot;
+                        + &quot;	}                                                                  &quot;
+                        + &quot; EXECUTE {n.dashify} &quot;);
+
+<span class="fc" id="L456">        List&lt;BibEntry&gt; v = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L457">        vm.run(v);</span>
+
+<span class="fc" id="L459">        assertEquals(1, vm.getStack().size());</span>
+<span class="fc" id="L460">        assertEquals(&quot;HELLO--WORLD&quot;, vm.getStack().pop());</span>
+<span class="fc" id="L461">    }</span>
+
+    @Test
+    public void testType() throws RecognitionException, IOException {
+
+<span class="fc" id="L466">        VM vm = new VM(&quot;ENTRY  { title }  { }  { label }&quot;</span>
+                + &quot;FUNCTION {presort} { cite$ 'sort.key$ := } ITERATE { presort } SORT FUNCTION {test} { type$ } ITERATE { test }&quot;);
+
+<span class="fc" id="L469">        List&lt;BibEntry&gt; v = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L470">        v.add(TestVM.bibtexString2BibtexEntry(&quot;@article{a, author=\&quot;AAA\&quot;}&quot;));</span>
+<span class="fc" id="L471">        v.add(TestVM.bibtexString2BibtexEntry(&quot;@book{b, author=\&quot;BBB\&quot;}&quot;));</span>
+<span class="fc" id="L472">        v.add(TestVM.bibtexString2BibtexEntry(&quot;@misc{c, author=\&quot;CCC\&quot;}&quot;));</span>
+<span class="fc" id="L473">        v.add(TestVM.bibtexString2BibtexEntry(&quot;@inproceedings{d, author=\&quot;DDD\&quot;}&quot;));</span>
+<span class="fc" id="L474">        vm.run(v);</span>
+
+<span class="fc" id="L476">        assertEquals(4, vm.getStack().size());</span>
+<span class="fc" id="L477">        assertEquals(&quot;inproceedings&quot;, vm.getStack().pop());</span>
+<span class="fc" id="L478">        assertEquals(&quot;misc&quot;, vm.getStack().pop());</span>
+<span class="fc" id="L479">        assertEquals(&quot;book&quot;, vm.getStack().pop());</span>
+<span class="fc" id="L480">        assertEquals(&quot;article&quot;, vm.getStack().pop());</span>
+<span class="fc" id="L481">    }</span>
+
+    @Test
+    public void testMissing() throws RecognitionException, IOException {
+
+<span class="fc" id="L486">        VM vm = new VM( //</span>
+<span class="fc" id="L487">                &quot;ENTRY    { title }  { }  { label } &quot; + //</span>
+                        &quot;FUNCTION {presort} { cite$ 'sort.key$ := } &quot; + //
+                        &quot;ITERATE  {presort} &quot; + //
+                        &quot;READ SORT &quot; + //
+                        &quot;FUNCTION {test}{ title missing$ cite$ } &quot; + //
+                        &quot;ITERATE  { test }&quot;);
+
+<span class="fc" id="L494">        List&lt;BibEntry&gt; v = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L495">        v.add(t1BibtexEntry());</span>
+<span class="fc" id="L496">        v.add(TestVM.bibtexString2BibtexEntry(&quot;@article{test, author=\&quot;No title\&quot;}&quot;));</span>
+<span class="fc" id="L497">        vm.run(v);</span>
+
+<span class="fc" id="L499">        assertEquals(4, vm.getStack().size());</span>
+
+<span class="fc" id="L501">        assertEquals(&quot;test&quot;, vm.getStack().pop());</span>
+<span class="fc" id="L502">        assertEquals(1, vm.getStack().pop());</span>
+<span class="fc" id="L503">        assertEquals(&quot;canh05&quot;, vm.getStack().pop());</span>
+<span class="fc" id="L504">        assertEquals(0, vm.getStack().pop());</span>
+<span class="fc" id="L505">    }</span>
+
+    @Test
+    public void testFormatName() throws RecognitionException {
+<span class="fc" id="L509">        VM vm = new VM(</span>
+<span class="fc" id="L510">                &quot;FUNCTION {format}{ \&quot;Charles Louis Xavier Joseph de la Vall{\\'e}e Poussin\&quot; #1 \&quot;{vv~}{ll}{, jj}{, f}?\&quot; format.name$ }&quot;</span>
+                        + &quot;EXECUTE {format}&quot;);
+
+<span class="fc" id="L513">        List&lt;BibEntry&gt; v = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L514">        vm.run(v);</span>
+<span class="fc" id="L515">        assertEquals(&quot;de~la Vall{\\'e}e~Poussin, C.~L. X.~J?&quot;, vm.getStack().pop());</span>
+<span class="fc" id="L516">        assertEquals(0, vm.getStack().size());</span>
+<span class="fc" id="L517">    }</span>
+
+    @Test
+    public void testFormatName2() throws RecognitionException, IOException {
+<span class="fc" id="L521">        VM vm = new VM(&quot;ENTRY  { author }  { }  { label } &quot; + &quot;FUNCTION {presort} { cite$ 'sort.key$ := } &quot;</span>
+                + &quot;ITERATE { presort } &quot; + &quot;READ &quot; + &quot;SORT &quot;
+                + &quot;FUNCTION {format}{ author #2 \&quot;{vv~}{ll}{, jj}{, f}?\&quot; format.name$ }&quot; + &quot;ITERATE {format}&quot;);
+
+<span class="fc" id="L525">        List&lt;BibEntry&gt; v = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L526">        v.add(t1BibtexEntry());</span>
+<span class="fc" id="L527">        v.add(TestVM.bibtexString2BibtexEntry(</span>
+<span class="fc" id="L528">                &quot;@book{test, author=\&quot;Jonathan Meyer and Charles Louis Xavier Joseph de la Vall{\\'e}e Poussin\&quot;}&quot;));</span>
+<span class="fc" id="L529">        vm.run(v);</span>
+<span class="fc" id="L530">        assertEquals(&quot;de~la Vall{\\'e}e~Poussin, C.~L. X.~J?&quot;, vm.getStack().pop());</span>
+<span class="fc" id="L531">        assertEquals(&quot;Annabi, H?&quot;, vm.getStack().pop());</span>
+<span class="fc" id="L532">        assertEquals(0, vm.getStack().size());</span>
+<span class="fc" id="L533">    }</span>
+
+    @Test
+    public void testCallType() throws RecognitionException, IOException {
+
+<span class="fc" id="L538">        VM vm = new VM(</span>
+<span class="fc" id="L539">                &quot;ENTRY  { title }  { }  { label } FUNCTION {presort} { cite$ 'sort.key$ := } ITERATE { presort } READ SORT &quot;</span>
+                        + &quot;FUNCTION {inproceedings}{ \&quot;InProceedings called on \&quot; title * } &quot;
+                        + &quot;FUNCTION {book}{ \&quot;Book called on \&quot; title * } &quot; + &quot; ITERATE { call.type$ }&quot;);
+
+<span class="fc" id="L543">        List&lt;BibEntry&gt; v = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L544">        v.add(t1BibtexEntry());</span>
+<span class="fc" id="L545">        v.add(TestVM.bibtexString2BibtexEntry(&quot;@book{test, title=\&quot;Test\&quot;}&quot;));</span>
+<span class="fc" id="L546">        vm.run(v);</span>
+
+<span class="fc" id="L548">        assertEquals(2, vm.getStack().size());</span>
+
+<span class="fc" id="L550">        assertEquals(&quot;Book called on Test&quot;, vm.getStack().pop());</span>
+<span class="fc" id="L551">        assertEquals(</span>
+<span class="fc" id="L552">                &quot;InProceedings called on Effective work practices for floss development: A model and propositions&quot;,</span>
+<span class="fc" id="L553">                vm.getStack().pop());</span>
+<span class="fc" id="L554">        assertEquals(0, vm.getStack().size());</span>
+<span class="fc" id="L555">    }</span>
+
+    @Test
+    public void testIterate() throws RecognitionException, IOException {
+
+<span class="fc" id="L560">        VM vm = new VM(&quot;ENTRY  { &quot; + &quot;  address &quot; + &quot;  author &quot; + &quot;  title &quot; + &quot;  type &quot;</span>
+                + &quot;}  {}  { label } &quot; + &quot;FUNCTION {test}{ cite$ } &quot; + &quot;READ &quot; + &quot;ITERATE { test }&quot;);
+
+<span class="fc" id="L563">        List&lt;BibEntry&gt; v = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L564">        v.add(t1BibtexEntry());</span>
+
+<span class="fc" id="L566">        v.add(TestVM.bibtexString2BibtexEntry(&quot;@article{test, title=\&quot;BLA\&quot;}&quot;));</span>
+
+<span class="fc" id="L568">        vm.run(v);</span>
+
+<span class="fc" id="L570">        assertEquals(2, vm.getStack().size());</span>
+
+<span class="fc" id="L572">        String s1 = (String) vm.getStack().pop();</span>
+<span class="fc" id="L573">        String s2 = (String) vm.getStack().pop();</span>
+
+<span class="pc bpc" id="L575" title="1 of 2 branches missed.">        if (&quot;canh05&quot;.equals(s1)) {</span>
+<span class="nc" id="L576">            assertEquals(&quot;test&quot;, s2);</span>
+<span class="nc" id="L577">        } else {</span>
+<span class="fc" id="L578">            assertEquals(&quot;canh05&quot;, s2);</span>
+<span class="fc" id="L579">            assertEquals(&quot;test&quot;, s1);</span>
+        }
+<span class="fc" id="L581">    }</span>
+
+    @Test
+    public void testWidth() throws RecognitionException, IOException {
+
+<span class="fc" id="L586">        VM vm = new VM(&quot;ENTRY  { &quot; + &quot;  address &quot; + &quot;  author &quot; + &quot;  title &quot; + &quot;  type &quot;</span>
+                + &quot;}  {}  { label } &quot; + //
+                &quot;STRINGS { longest.label } &quot; + //
+                &quot;INTEGERS { number.label longest.label.width } &quot; + //
+                &quot;FUNCTION {initialize.longest.label} &quot; + //
+                &quot;{ \&quot;\&quot; 'longest.label := &quot; + //
+                &quot;  #1 'number.label := &quot; + //
+                &quot;  #0 'longest.label.width := &quot; + //
+                &quot;} &quot; + //
+                &quot; &quot; + //
+                &quot;		FUNCTION {longest.label.pass} &quot; + //
+                &quot;		{ number.label int.to.str$ 'label := &quot; + //
+                &quot;		  number.label #1 + 'number.label := &quot; + //
+                &quot;		  label width$ longest.label.width &gt; &quot; + //
+                &quot;		    { label 'longest.label := &quot; + //
+                &quot;		      label width$ 'longest.label.width := &quot; + //
+                &quot;		    } &quot; + //
+                &quot;		    'skip$ &quot; + //
+                &quot;		  if$ &quot; + //
+                &quot;		} &quot; + //
+                &quot; &quot; + //
+                &quot;		EXECUTE {initialize.longest.label} &quot; + //
+                &quot; &quot; + //
+                &quot;		ITERATE {longest.label.pass} &quot; + //
+                &quot;FUNCTION {begin.bib} &quot; + //
+                &quot;{ preamble$ empty$&quot; + //
+                &quot;    'skip$&quot; + //
+                &quot;    { preamble$ write$ newline$ }&quot; + //
+                &quot;  if$&quot; + //
+                &quot;  \&quot;\\begin{thebibliography}{\&quot;  longest.label  * \&quot;}\&quot; *&quot; + //
+                &quot;}&quot; + //
+                &quot;EXECUTE {begin.bib}&quot;);//
+
+<span class="fc" id="L619">        List&lt;BibEntry&gt; v = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L620">        v.add(t1BibtexEntry());</span>
+
+<span class="fc" id="L622">        vm.run(v);</span>
+
+<span class="fc" id="L624">        assertTrue(vm.getIntegers().containsKey(&quot;longest.label.width&quot;));</span>
+<span class="fc" id="L625">        assertEquals(&quot;\\begin{thebibliography}{1}&quot;, vm.getStack().pop());</span>
+<span class="fc" id="L626">    }</span>
+
+    @Test
+    public void testVMSwap() throws RecognitionException {
+
+<span class="fc" id="L631">        VM vm = new VM(&quot;FUNCTION {a}{ #3 \&quot;Hallo\&quot; swap$ } EXECUTE { a }&quot;);</span>
+
+<span class="fc" id="L633">        List&lt;BibEntry&gt; v = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L634">        vm.run(v);</span>
+
+<span class="fc" id="L636">        assertEquals(2, vm.getStack().size());</span>
+<span class="fc" id="L637">        assertEquals(3, vm.getStack().pop());</span>
+<span class="fc" id="L638">        assertEquals(&quot;Hallo&quot;, vm.getStack().pop());</span>
+<span class="fc" id="L639">    }</span>
+
+    private static BibEntry bibtexString2BibtexEntry(String s) throws IOException {
+<span class="fc" id="L642">        ParserResult result = new BibtexParser(mock(ImportFormatPreferences.class, Answers.RETURNS_DEEP_STUBS), new DummyFileUpdateMonitor()).parse(new StringReader(s));</span>
+<span class="fc" id="L643">        Collection&lt;BibEntry&gt; c = result.getDatabase().getEntries();</span>
+<span class="fc" id="L644">        assertEquals(1, c.size());</span>
+<span class="fc" id="L645">        return c.iterator().next();</span>
+    }
+
+    /* TEST DATA */
+    private String t1BibtexString() {
+<span class="fc" id="L650">        return &quot;@inproceedings{canh05,\n&quot;</span>
+                + &quot;  author = {Crowston, K. and Annabi, H. and Howison, J. and Masango, C.},\n&quot;
+                + &quot;  title = {Effective work practices for floss development: A model and propositions},\n&quot;
+                + &quot;  booktitle = {Hawaii International Conference On System Sciences (HICSS)},\n&quot;
+                + &quot;  year = {2005},\n&quot; + &quot;  owner = {oezbek},\n&quot; + &quot;  timestamp = {2006.05.29},\n&quot;
+                + &quot;  url = {http://james.howison.name/publications.html}}\n&quot;;
+    }
+
+    @Test
+    public void testHypthenatedName() throws RecognitionException, IOException {
+<span class="fc" id="L660">        VM vm = new VM(new File(&quot;src/test/resources/org/jabref/logic/bst/abbrv.bst&quot;));</span>
+<span class="fc" id="L661">        List&lt;BibEntry&gt; v = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L662">        v.add(TestVM.bibtexString2BibtexEntry(&quot;@article{canh05, author = \&quot;Jean-Paul Sartre\&quot; }&quot;));</span>
+<span class="fc" id="L663">        assertTrue(vm.run(v).contains(&quot;J.-P. Sartre&quot;));</span>
+<span class="fc" id="L664">    }</span>
+
+    private BibEntry t1BibtexEntry() throws IOException {
+<span class="fc" id="L667">        return TestVM.bibtexString2BibtexEntry(t1BibtexString());</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

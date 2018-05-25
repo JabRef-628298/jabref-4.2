@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>VersionTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.util</a> &gt; <span class="el_source">VersionTest.java</span></div><h1>VersionTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.util;
+
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+<span class="fc" id="L14">public class VersionTest {</span>
+
+    @Test
+    public void unknownVersionAsString() {
+<span class="fc" id="L18">        Version version = Version.parse(BuildInfo.UNKNOWN_VERSION);</span>
+<span class="fc" id="L19">        assertEquals(BuildInfo.UNKNOWN_VERSION, version.getFullVersion());</span>
+<span class="fc" id="L20">    }</span>
+
+    @Test
+    public void unknownVersionAsNull() {
+<span class="fc" id="L24">        Version version = Version.parse(null);</span>
+<span class="fc" id="L25">        assertEquals(BuildInfo.UNKNOWN_VERSION, version.getFullVersion());</span>
+<span class="fc" id="L26">    }</span>
+
+    @Test
+    public void unknownVersionAsEmptyString() {
+<span class="fc" id="L30">        Version version = Version.parse(&quot;&quot;);</span>
+<span class="fc" id="L31">        assertEquals(BuildInfo.UNKNOWN_VERSION, version.getFullVersion());</span>
+<span class="fc" id="L32">    }</span>
+
+    @Test
+    public void initVersionFromWrongStringResultsInUnknownVersion() {
+<span class="fc" id="L36">        Version version = Version.parse(&quot;${version}&quot;);</span>
+<span class="fc" id="L37">        assertEquals(BuildInfo.UNKNOWN_VERSION, version.getFullVersion());</span>
+<span class="fc" id="L38">    }</span>
+
+    @Test
+    public void versionOneDigit() {
+<span class="fc" id="L42">        String versionText = &quot;1&quot;;</span>
+<span class="fc" id="L43">        Version version = Version.parse(versionText);</span>
+<span class="fc" id="L44">        assertEquals(versionText, version.getFullVersion());</span>
+<span class="fc" id="L45">        assertEquals(1, version.getMajor());</span>
+<span class="fc" id="L46">        assertEquals(0, version.getMinor());</span>
+<span class="fc" id="L47">        assertEquals(0, version.getPatch());</span>
+<span class="fc" id="L48">        assertFalse(version.isDevelopmentVersion());</span>
+<span class="fc" id="L49">    }</span>
+
+    @Test
+    public void versionTwoDigits() {
+<span class="fc" id="L53">        String versionText = &quot;1.2&quot;;</span>
+<span class="fc" id="L54">        Version version = Version.parse(versionText);</span>
+<span class="fc" id="L55">        assertEquals(versionText, version.getFullVersion());</span>
+<span class="fc" id="L56">        assertEquals(1, version.getMajor());</span>
+<span class="fc" id="L57">        assertEquals(2, version.getMinor());</span>
+<span class="fc" id="L58">        assertEquals(0, version.getPatch());</span>
+<span class="fc" id="L59">        assertFalse(version.isDevelopmentVersion());</span>
+<span class="fc" id="L60">    }</span>
+
+    @Test
+    public void versionThreeDigits() {
+<span class="fc" id="L64">        String versionText = &quot;1.2.3&quot;;</span>
+<span class="fc" id="L65">        Version version = Version.parse(versionText);</span>
+<span class="fc" id="L66">        assertEquals(versionText, version.getFullVersion());</span>
+<span class="fc" id="L67">        assertEquals(1, version.getMajor());</span>
+<span class="fc" id="L68">        assertEquals(2, version.getMinor());</span>
+<span class="fc" id="L69">        assertEquals(3, version.getPatch());</span>
+<span class="fc" id="L70">        assertFalse(version.isDevelopmentVersion());</span>
+<span class="fc" id="L71">    }</span>
+
+    @Test
+    public void versionOneDigitDevVersion() {
+<span class="fc" id="L75">        String versionText = &quot;1dev&quot;;</span>
+<span class="fc" id="L76">        Version version = Version.parse(versionText);</span>
+<span class="fc" id="L77">        assertEquals(versionText, version.getFullVersion());</span>
+<span class="fc" id="L78">        assertEquals(1, version.getMajor());</span>
+<span class="fc" id="L79">        assertEquals(0, version.getMinor());</span>
+<span class="fc" id="L80">        assertEquals(0, version.getPatch());</span>
+<span class="fc" id="L81">        assertTrue(version.isDevelopmentVersion());</span>
+<span class="fc" id="L82">    }</span>
+
+    @Test
+    public void versionTwoDigitDevVersion() {
+<span class="fc" id="L86">        String versionText = &quot;1.2dev&quot;;</span>
+<span class="fc" id="L87">        Version version = Version.parse(versionText);</span>
+<span class="fc" id="L88">        assertEquals(versionText, version.getFullVersion());</span>
+<span class="fc" id="L89">        assertEquals(1, version.getMajor());</span>
+<span class="fc" id="L90">        assertEquals(2, version.getMinor());</span>
+<span class="fc" id="L91">        assertEquals(0, version.getPatch());</span>
+<span class="fc" id="L92">        assertTrue(version.isDevelopmentVersion());</span>
+<span class="fc" id="L93">    }</span>
+
+    @Test
+    public void versionThreeDigitDevVersion() {
+<span class="fc" id="L97">        String versionText = &quot;1.2.3dev&quot;;</span>
+<span class="fc" id="L98">        Version version = Version.parse(versionText);</span>
+<span class="fc" id="L99">        assertEquals(versionText, version.getFullVersion());</span>
+<span class="fc" id="L100">        assertEquals(1, version.getMajor());</span>
+<span class="fc" id="L101">        assertEquals(2, version.getMinor());</span>
+<span class="fc" id="L102">        assertEquals(3, version.getPatch());</span>
+<span class="fc" id="L103">        assertTrue(version.isDevelopmentVersion());</span>
+<span class="fc" id="L104">    }</span>
+
+    @Test
+    public void validVersionIsNotNewerThanUnknownVersion() {
+        // Reason: unknown version should only happen for developer builds where we don't want an update notification
+<span class="fc" id="L109">        Version unknownVersion = Version.parse(BuildInfo.UNKNOWN_VERSION);</span>
+<span class="fc" id="L110">        Version validVersion = Version.parse(&quot;4.2&quot;);</span>
+<span class="fc" id="L111">        assertFalse(validVersion.isNewerThan(unknownVersion));</span>
+<span class="fc" id="L112">    }</span>
+
+    @Test
+    public void unknownVersionIsNotNewerThanValidVersion() {
+<span class="fc" id="L116">        Version unknownVersion = Version.parse(BuildInfo.UNKNOWN_VERSION);</span>
+<span class="fc" id="L117">        Version validVersion = Version.parse(&quot;4.2&quot;);</span>
+<span class="fc" id="L118">        assertFalse(unknownVersion.isNewerThan(validVersion));</span>
+<span class="fc" id="L119">    }</span>
+
+    @Test
+    public void versionNewerThan() {
+<span class="fc" id="L123">        Version olderVersion = Version.parse(&quot;2.4&quot;);</span>
+<span class="fc" id="L124">        Version newerVersion = Version.parse(&quot;4.2&quot;);</span>
+<span class="fc" id="L125">        assertTrue(newerVersion.isNewerThan(olderVersion));</span>
+<span class="fc" id="L126">    }</span>
+
+    @Test
+    public void versionNotNewerThan() {
+<span class="fc" id="L130">        Version olderVersion = Version.parse(&quot;2.4&quot;);</span>
+<span class="fc" id="L131">        Version newerVersion = Version.parse(&quot;4.2&quot;);</span>
+<span class="fc" id="L132">        assertFalse(olderVersion.isNewerThan(newerVersion));</span>
+<span class="fc" id="L133">    }</span>
+
+    @Test
+    public void versionNotNewerThanSameVersion() {
+<span class="fc" id="L137">        Version version1 = Version.parse(&quot;4.2&quot;);</span>
+<span class="fc" id="L138">        Version version2 = Version.parse(&quot;4.2&quot;);</span>
+<span class="fc" id="L139">        assertFalse(version1.isNewerThan(version2));</span>
+<span class="fc" id="L140">    }</span>
+
+    @Test
+    public void versionNewerThanDevTwoDigits() {
+<span class="fc" id="L144">        Version older = Version.parse(&quot;4.2&quot;);</span>
+<span class="fc" id="L145">        Version newer = Version.parse(&quot;4.3dev&quot;);</span>
+<span class="fc" id="L146">        assertTrue(newer.isNewerThan(older));</span>
+<span class="fc" id="L147">    }</span>
+
+    @Test
+    public void versionNewerThanDevVersion() {
+<span class="fc" id="L151">        Version older = Version.parse(&quot;1.2dev&quot;);</span>
+<span class="fc" id="L152">        Version newer = Version.parse(&quot;1.2&quot;);</span>
+<span class="fc" id="L153">        assertTrue(newer.isNewerThan(older));</span>
+<span class="fc" id="L154">        assertFalse(older.isNewerThan(newer));</span>
+<span class="fc" id="L155">    }</span>
+
+    @Test
+    public void versionNewerThanDevThreeDigits() {
+<span class="fc" id="L159">        Version older = Version.parse(&quot;4.2.1&quot;);</span>
+<span class="fc" id="L160">        Version newer = Version.parse(&quot;4.3dev&quot;);</span>
+<span class="fc" id="L161">        assertTrue(newer.isNewerThan(older));</span>
+<span class="fc" id="L162">    }</span>
+
+    @Test
+    public void versionNewerMinor() {
+<span class="fc" id="L166">        Version older = Version.parse(&quot;4.1&quot;);</span>
+<span class="fc" id="L167">        Version newer = Version.parse(&quot;4.2.1&quot;);</span>
+<span class="fc" id="L168">        assertTrue(newer.isNewerThan(older));</span>
+<span class="fc" id="L169">    }</span>
+
+    @Test
+    public void versionNotNewerMinor() {
+<span class="fc" id="L173">        Version older = Version.parse(&quot;4.1&quot;);</span>
+<span class="fc" id="L174">        Version newer = Version.parse(&quot;4.2.1&quot;);</span>
+<span class="fc" id="L175">        assertFalse(older.isNewerThan(newer));</span>
+<span class="fc" id="L176">    }</span>
+
+    @Test
+    public void versionNewerPatch() {
+<span class="fc" id="L180">        Version older = Version.parse(&quot;4.2.1&quot;);</span>
+<span class="fc" id="L181">        Version newer = Version.parse(&quot;4.2.2&quot;);</span>
+<span class="fc" id="L182">        assertTrue(newer.isNewerThan(older));</span>
+<span class="fc" id="L183">    }</span>
+
+    @Test
+    public void versionNotNewerPatch() {
+<span class="fc" id="L187">        Version older = Version.parse(&quot;4.2.1&quot;);</span>
+<span class="fc" id="L188">        Version newer = Version.parse(&quot;4.2.2&quot;);</span>
+<span class="fc" id="L189">        assertFalse(older.isNewerThan(newer));</span>
+<span class="fc" id="L190">    }</span>
+
+    @Test
+    public void equalVersionsNotNewer() {
+<span class="fc" id="L194">        Version version1 = Version.parse(&quot;4.2.2&quot;);</span>
+<span class="fc" id="L195">        Version version2 = Version.parse(&quot;4.2.2&quot;);</span>
+<span class="fc" id="L196">        assertFalse(version1.isNewerThan(version2));</span>
+<span class="fc" id="L197">    }</span>
+
+    @Test
+    public void changelogOfDevelopmentVersionWithDash() {
+<span class="fc" id="L201">        Version version = Version.parse(&quot;4.0-dev&quot;);</span>
+<span class="fc" id="L202">        assertEquals(&quot;https://github.com/JabRef/jabref/blob/master/CHANGELOG.md#unreleased&quot;, version.getChangelogUrl());</span>
+<span class="fc" id="L203">    }</span>
+
+    @Test
+    public void changelogOfDevelopmentVersionWithoutDash() {
+<span class="fc" id="L207">        Version version = Version.parse(&quot;3.7dev&quot;);</span>
+<span class="fc" id="L208">        assertEquals(&quot;https://github.com/JabRef/jabref/blob/master/CHANGELOG.md#unreleased&quot;, version.getChangelogUrl());</span>
+<span class="fc" id="L209">    }</span>
+
+    @Test
+    public void changelogWithTwoDigits() {
+<span class="fc" id="L213">        Version version = Version.parse(&quot;3.4&quot;);</span>
+<span class="fc" id="L214">        assertEquals(&quot;https://github.com/JabRef/jabref/blob/v3.4/CHANGELOG.md&quot;, version.getChangelogUrl());</span>
+<span class="fc" id="L215">    }</span>
+
+    @Test
+    public void changelogWithThreeDigits() {
+<span class="fc" id="L219">        Version version = Version.parse(&quot;3.4.1&quot;);</span>
+<span class="fc" id="L220">        assertEquals(&quot;https://github.com/JabRef/jabref/blob/v3.4.1/CHANGELOG.md&quot;, version.getChangelogUrl());</span>
+<span class="fc" id="L221">    }</span>
+
+    @Test
+    public void versionNull() {
+<span class="fc" id="L225">        String versionText = null;</span>
+<span class="fc" id="L226">        Version version = Version.parse(versionText);</span>
+<span class="fc" id="L227">        assertEquals(BuildInfo.UNKNOWN_VERSION, version.getFullVersion());</span>
+<span class="fc" id="L228">    }</span>
+
+    @Test
+    public void versionEmpty() {
+<span class="fc" id="L232">        String versionText = &quot;&quot;;</span>
+<span class="fc" id="L233">        Version version = Version.parse(versionText);</span>
+<span class="fc" id="L234">        assertEquals(BuildInfo.UNKNOWN_VERSION, version.getFullVersion());</span>
+<span class="fc" id="L235">    }</span>
+
+    @Test
+    public void betaNewerThanAlpha() {
+<span class="fc" id="L239">        Version older = Version.parse(&quot;2.7-alpha&quot;);</span>
+<span class="fc" id="L240">        Version newer = Version.parse(&quot;2.7-beta&quot;);</span>
+<span class="fc" id="L241">        assertTrue(newer.isNewerThan(older));</span>
+<span class="fc" id="L242">    }</span>
+
+    @Test
+    public void stableNewerThanBeta() {
+<span class="fc" id="L246">        Version older = Version.parse(&quot;2.8-alpha&quot;);</span>
+<span class="fc" id="L247">        Version newer = Version.parse(&quot;2.8&quot;);</span>
+<span class="fc" id="L248">        assertTrue(newer.isNewerThan(older));</span>
+<span class="fc" id="L249">    }</span>
+
+    @Test
+    public void alphaShouldBeUpdatedToBeta() {
+<span class="fc" id="L253">        Version alpha = Version.parse(&quot;2.8-alpha&quot;);</span>
+<span class="fc" id="L254">        Version beta = Version.parse(&quot;2.8-beta&quot;);</span>
+<span class="fc" id="L255">        assertTrue(alpha.shouldBeUpdatedTo(beta));</span>
+<span class="fc" id="L256">    }</span>
+
+    @Test
+    public void betaShouldBeUpdatedToStable() {
+<span class="fc" id="L260">        Version beta = Version.parse(&quot;2.8-beta&quot;);</span>
+<span class="fc" id="L261">        Version stable = Version.parse(&quot;2.8&quot;);</span>
+<span class="fc" id="L262">        assertTrue(beta.shouldBeUpdatedTo(stable));</span>
+<span class="fc" id="L263">    }</span>
+
+    @Test
+    public void stableShouldNotBeUpdatedToAlpha() {
+<span class="fc" id="L267">        Version stable = Version.parse(&quot;2.8&quot;);</span>
+<span class="fc" id="L268">        Version alpha = Version.parse(&quot;2.9-alpha&quot;);</span>
+<span class="fc" id="L269">        assertFalse(stable.shouldBeUpdatedTo(alpha));</span>
+<span class="fc" id="L270">    }</span>
+
+    @Test
+    public void stableShouldNotBeUpdatedToBeta() {
+<span class="fc" id="L274">        Version stable = Version.parse(&quot;3.8.2&quot;);</span>
+<span class="fc" id="L275">        Version beta = Version.parse(&quot;4.0-beta&quot;);</span>
+<span class="fc" id="L276">        assertFalse(stable.shouldBeUpdatedTo(beta));</span>
+<span class="fc" id="L277">    }</span>
+
+    @Test
+    public void alphaShouldBeUpdatedToStables() {
+<span class="fc" id="L281">        Version alpha = Version.parse(&quot;2.8-alpha&quot;);</span>
+<span class="fc" id="L282">        Version stable = Version.parse(&quot;2.8&quot;);</span>
+<span class="fc" id="L283">        List&lt;Version&gt; availableVersions = Arrays.asList(Version.parse(&quot;2.8-beta&quot;), stable);</span>
+<span class="fc" id="L284">        assertEquals(Optional.of(stable), alpha.shouldBeUpdatedTo(availableVersions));</span>
+<span class="fc" id="L285">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

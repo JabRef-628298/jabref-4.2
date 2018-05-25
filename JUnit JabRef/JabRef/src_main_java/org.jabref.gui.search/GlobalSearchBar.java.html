@@ -1,0 +1,505 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>GlobalSearchBar.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.search</a> &gt; <span class="el_source">GlobalSearchBar.java</span></div><h1>GlobalSearchBar.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">package org.jabref.gui.search;</span>
+
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import javax.swing.AbstractAction;
+import javax.swing.JButton;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JToggleButton;
+import javax.swing.JToolBar;
+import javax.swing.SwingUtilities;
+
+import javafx.css.PseudoClass;
+import javafx.embed.swing.JFXPanel;
+import javafx.scene.Scene;
+import javafx.scene.control.ContentDisplay;
+import javafx.scene.control.TextField;
+import javafx.scene.control.Tooltip;
+import javafx.scene.text.TextFlow;
+
+import org.jabref.Globals;
+import org.jabref.gui.AbstractView;
+import org.jabref.gui.BasePanel;
+import org.jabref.gui.GUIGlobals;
+import org.jabref.gui.IconTheme;
+import org.jabref.gui.JabRefFrame;
+import org.jabref.gui.OSXCompatibleToolbar;
+import org.jabref.gui.autocompleter.AppendPersonNamesStrategy;
+import org.jabref.gui.autocompleter.AutoCompleteFirstNameMode;
+import org.jabref.gui.autocompleter.AutoCompleteSuggestionProvider;
+import org.jabref.gui.autocompleter.AutoCompletionTextInputBinding;
+import org.jabref.gui.autocompleter.PersonNameStringConverter;
+import org.jabref.gui.customjfx.CustomJFXPanel;
+import org.jabref.gui.help.HelpAction;
+import org.jabref.gui.keyboard.KeyBinding;
+import org.jabref.gui.maintable.MainTable;
+import org.jabref.gui.maintable.MainTableDataModel;
+import org.jabref.gui.util.DefaultTaskExecutor;
+import org.jabref.logic.help.HelpFile;
+import org.jabref.logic.l10n.Localization;
+import org.jabref.logic.search.SearchQuery;
+import org.jabref.logic.search.SearchQueryHighlightObservable;
+import org.jabref.model.entry.Author;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.preferences.SearchPreferences;
+
+import org.reactfx.util.FxTimer;
+import org.reactfx.util.Timer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+@SuppressWarnings(&quot;Duplicates&quot;)
+public class GlobalSearchBar extends JPanel {
+
+<span class="fc" id="L67">    private static final Logger LOGGER = LoggerFactory.getLogger(GlobalSearchBar.class);</span>
+
+    private static final int SEARCH_DELAY = 400;
+<span class="fc" id="L70">    private static final PseudoClass CLASS_NO_RESULTS = PseudoClass.getPseudoClass(&quot;emptyResult&quot;);</span>
+<span class="fc" id="L71">    private static final PseudoClass CLASS_RESULTS_FOUND = PseudoClass.getPseudoClass(&quot;emptyResult&quot;);</span>
+
+    private final JabRefFrame frame;
+
+<span class="fc" id="L75">    private final TextField searchField = SearchTextField.create();</span>
+    private final JToggleButton caseSensitive;
+    private final JToggleButton regularExp;
+<span class="fc" id="L78">    private final JButton searchModeButton = new JButton();</span>
+<span class="fc" id="L79">    private final JLabel currentResults = new JLabel(&quot;&quot;);</span>
+<span class="fc" id="L80">    private final SearchQueryHighlightObservable searchQueryHighlightObservable = new SearchQueryHighlightObservable();</span>
+<span class="fc" id="L81">    private final JButton openCurrentResultsInDialog = new JButton(IconTheme.JabRefIcon.OPEN_IN_NEW_WINDOW.getSmallIcon());</span>
+    private final JFXPanel container;
+    private SearchWorker searchWorker;
+    private GlobalSearchWorker globalSearchWorker;
+
+    private SearchResultFrame searchResultFrame;
+
+    private SearchDisplayMode searchDisplayMode;
+
+<span class="fc" id="L90">    private final JLabel searchIcon = new JLabel(IconTheme.JabRefIcon.SEARCH.getIcon());</span>
+
+    /**
+     * if this flag is set the searchbar won't be selected after the next search
+     */
+    private boolean dontSelectSearchBar;
+
+    public GlobalSearchBar(JabRefFrame frame) {
+<span class="fc" id="L98">        super();</span>
+<span class="fc" id="L99">        this.frame = Objects.requireNonNull(frame);</span>
+<span class="fc" id="L100">        SearchPreferences searchPreferences = new SearchPreferences(Globals.prefs);</span>
+<span class="fc" id="L101">        searchDisplayMode = searchPreferences.getSearchMode();</span>
+
+        // fits the standard &quot;found x entries&quot;-message thus hinders the searchbar to jump around while searching if the frame width is too small
+<span class="fc" id="L104">        currentResults.setPreferredSize(new Dimension(150, 5));</span>
+<span class="fc" id="L105">        currentResults.setFont(currentResults.getFont().deriveFont(Font.BOLD));</span>
+
+<span class="fc" id="L107">        JToggleButton globalSearch = new JToggleButton(IconTheme.JabRefIcon.GLOBAL_SEARCH.getSmallIcon(), searchPreferences.isGlobalSearch());</span>
+<span class="fc" id="L108">        globalSearch.setToolTipText(Localization.lang(&quot;Search in all open libraries&quot;));</span>
+
+        // default action to be performed for toggling globalSearch
+<span class="fc" id="L111">        AbstractAction globalSearchStandardAction = new AbstractAction() {</span>
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L115">                searchPreferences.setGlobalSearch(globalSearch.isSelected());</span>
+<span class="nc" id="L116">                updateOpenCurrentResultsTooltip(globalSearch.isSelected());</span>
+<span class="nc" id="L117">            }</span>
+        };
+
+        // additional action for global search shortcut
+<span class="fc" id="L121">        AbstractAction globalSearchShortCutAction = new AbstractAction() {</span>
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+<span class="nc" id="L125">                globalSearch.setSelected(true);</span>
+<span class="nc" id="L126">                globalSearchStandardAction.actionPerformed(new ActionEvent(this, 0, &quot;fire standard action&quot;));</span>
+<span class="nc" id="L127">                focus();</span>
+<span class="nc" id="L128">            }</span>
+        };
+        //TODO: These have to be somehow converted
+        /*
+        String endSearch = &quot;endSearch&quot;;
+        searchField.getInputMap().put(Globals.getKeyPrefs().getKey(KeyBinding.CLEAR_SEARCH), endSearch);
+        searchField.getActionMap().put(endSearch, new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent event) {
+                if (autoCompleteSupport.isVisible()) {
+                    autoCompleteSupport.setVisible(false);
+                } else {
+                    endSearch();
+                }
+            }
+        });
+        */
+
+        /*
+        String acceptSearch = &quot;acceptSearch&quot;;
+        searchField.getInputMap().put(Globals.getKeyPrefs().getKey(KeyBinding.ACCEPT), acceptSearch);
+        searchField.getActionMap().put(acceptSearch, new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                autoCompleteSupport.setVisible(false);
+                BasePanel currentBasePanel = frame.getCurrentBasePanel();
+                Globals.getFocusListener().setFocused(currentBasePanel.getMainTable());
+                currentBasePanel.getMainTable().requestFocus();
+            }
+        });
+        */
+
+<span class="fc" id="L160">        String searchGlobalByKey = &quot;searchGlobalByKey&quot;;</span>
+<span class="fc" id="L161">        globalSearch.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(Globals.getKeyPrefs().getKey(KeyBinding.GLOBAL_SEARCH), searchGlobalByKey);</span>
+<span class="fc" id="L162">        globalSearch.getActionMap().put(searchGlobalByKey, globalSearchShortCutAction);</span>
+
+<span class="fc" id="L164">        globalSearch.addActionListener(globalSearchStandardAction);</span>
+
+<span class="fc" id="L166">        openCurrentResultsInDialog.setDisabledIcon(IconTheme.JabRefIcon.OPEN_IN_NEW_WINDOW.getSmallIcon().createDisabledIcon());</span>
+<span class="fc" id="L167">        openCurrentResultsInDialog.addActionListener(event -&gt; {</span>
+<span class="nc bnc" id="L168" title="All 2 branches missed.">            if (globalSearch.isSelected()) {</span>
+<span class="nc" id="L169">                performGlobalSearch();</span>
+<span class="nc" id="L170">            } else {</span>
+<span class="nc" id="L171">                openLocalFindingsInExternalPanel();</span>
+            }
+<span class="nc" id="L173">        });</span>
+<span class="fc" id="L174">        openCurrentResultsInDialog.setEnabled(false);</span>
+<span class="fc" id="L175">        updateOpenCurrentResultsTooltip(globalSearch.isSelected());</span>
+
+<span class="fc" id="L177">        regularExp = new JToggleButton(IconTheme.JabRefIcon.REG_EX.getSmallIcon(),</span>
+<span class="fc" id="L178">                searchPreferences.isRegularExpression());</span>
+<span class="fc" id="L179">        regularExp.setToolTipText(Localization.lang(&quot;regular expression&quot;));</span>
+<span class="fc" id="L180">        regularExp.addActionListener(event -&gt; {</span>
+<span class="nc" id="L181">            searchPreferences.setRegularExpression(regularExp.isSelected());</span>
+<span class="nc" id="L182">            performSearch();</span>
+<span class="nc" id="L183">        });</span>
+
+<span class="fc" id="L185">        caseSensitive = new JToggleButton(IconTheme.JabRefIcon.CASE_SENSITIVE.getSmallIcon(),</span>
+<span class="fc" id="L186">                searchPreferences.isCaseSensitive());</span>
+<span class="fc" id="L187">        caseSensitive.setToolTipText(Localization.lang(&quot;Case sensitive&quot;));</span>
+<span class="fc" id="L188">        caseSensitive.addActionListener(event -&gt; {</span>
+<span class="nc" id="L189">            searchPreferences.setCaseSensitive(caseSensitive.isSelected());</span>
+<span class="nc" id="L190">            performSearch();</span>
+<span class="nc" id="L191">        });</span>
+
+<span class="fc" id="L193">        updateSearchModeButtonText();</span>
+<span class="pc" id="L194">        searchModeButton.addActionListener(event -&gt; toggleSearchModeAndSearch());</span>
+
+        //Add a delay of SEARCH_DELAY milliseconds before starting search
+<span class="fc" id="L197">        Timer searchTask = FxTimer.create(Duration.ofMillis(SEARCH_DELAY), () -&gt; {</span>
+<span class="nc" id="L198">            LOGGER.debug(&quot;Run search &quot; + searchField.getText());</span>
+<span class="nc" id="L199">            performSearch();</span>
+<span class="nc" id="L200">        });</span>
+<span class="pc" id="L201">        searchField.textProperty().addListener((observable, oldValue, newValue) -&gt; searchTask.restart());</span>
+
+<span class="fc" id="L203">        container = CustomJFXPanel.create();</span>
+<span class="fc" id="L204">        DefaultTaskExecutor.runInJavaFXThread(() -&gt; {</span>
+<span class="fc" id="L205">            Scene scene = new Scene(searchField);</span>
+<span class="fc" id="L206">            scene.getStylesheets().add(AbstractView.class.getResource(&quot;Main.css&quot;).toExternalForm());</span>
+<span class="fc" id="L207">            container.setScene(scene);</span>
+<span class="fc" id="L208">            container.addKeyListener(new SearchKeyAdapter());</span>
+<span class="fc" id="L209">        });</span>
+
+<span class="fc" id="L211">        setLayout(new FlowLayout(FlowLayout.RIGHT));</span>
+<span class="fc" id="L212">        JToolBar toolBar = new OSXCompatibleToolbar();</span>
+<span class="fc" id="L213">        toolBar.setFloatable(false);</span>
+<span class="fc" id="L214">        toolBar.add(searchIcon);</span>
+<span class="fc" id="L215">        toolBar.add(container);</span>
+<span class="fc" id="L216">        toolBar.add(openCurrentResultsInDialog);</span>
+<span class="fc" id="L217">        toolBar.addSeparator();</span>
+<span class="fc" id="L218">        toolBar.add(globalSearch);</span>
+<span class="fc" id="L219">        toolBar.add(regularExp);</span>
+<span class="fc" id="L220">        toolBar.add(caseSensitive);</span>
+<span class="fc" id="L221">        toolBar.add(searchModeButton);</span>
+<span class="fc" id="L222">        toolBar.addSeparator();</span>
+<span class="fc" id="L223">        toolBar.add(new HelpAction(HelpFile.SEARCH));</span>
+<span class="fc" id="L224">        toolBar.addSeparator();</span>
+<span class="fc" id="L225">        toolBar.add(currentResults);</span>
+<span class="fc" id="L226">        this.add(toolBar);</span>
+<span class="fc" id="L227">    }</span>
+
+    public void performGlobalSearch() {
+<span class="nc" id="L230">        BasePanel currentBasePanel = frame.getCurrentBasePanel();</span>
+<span class="nc bnc" id="L231" title="All 4 branches missed.">        if ((currentBasePanel == null) || validateSearchResultFrame(true)) {</span>
+<span class="nc" id="L232">            return;</span>
+        }
+
+<span class="nc bnc" id="L235" title="All 2 branches missed.">        if (globalSearchWorker != null) {</span>
+<span class="nc" id="L236">            globalSearchWorker.cancel(true);</span>
+        }
+
+<span class="nc bnc" id="L239" title="All 2 branches missed.">        if (searchField.getText().isEmpty()) {</span>
+<span class="nc" id="L240">            focus();</span>
+<span class="nc" id="L241">            return;</span>
+        }
+
+<span class="nc" id="L244">        globalSearchWorker = new GlobalSearchWorker(currentBasePanel.frame(), getSearchQuery());</span>
+<span class="nc" id="L245">        globalSearchWorker.execute();</span>
+<span class="nc" id="L246">    }</span>
+
+    private void openLocalFindingsInExternalPanel() {
+<span class="nc" id="L249">        BasePanel currentBasePanel = frame.getCurrentBasePanel();</span>
+<span class="nc bnc" id="L250" title="All 4 branches missed.">        if ((currentBasePanel == null) || validateSearchResultFrame(false)) {</span>
+<span class="nc" id="L251">            return;</span>
+        }
+
+<span class="nc bnc" id="L254" title="All 2 branches missed.">        if (searchField.getText().isEmpty()) {</span>
+<span class="nc" id="L255">            focus();</span>
+<span class="nc" id="L256">            return;</span>
+        }
+
+<span class="nc" id="L259">        SearchResultFrame searchDialog = new SearchResultFrame(currentBasePanel.frame(),</span>
+<span class="nc" id="L260">                Localization.lang(&quot;Search results in library %0 for %1&quot;, currentBasePanel.getBibDatabaseContext()</span>
+<span class="nc" id="L261">                        .getDatabasePath()</span>
+<span class="nc" id="L262">                        .map(Path::getFileName)</span>
+<span class="nc" id="L263">                        .map(Path::toString)</span>
+<span class="nc" id="L264">                        .orElse(GUIGlobals.UNTITLED_TITLE),</span>
+<span class="nc" id="L265">                        this.getSearchQuery().localize()),</span>
+<span class="nc" id="L266">                getSearchQuery(), false);</span>
+<span class="nc" id="L267">        List&lt;BibEntry&gt; entries = currentBasePanel.getDatabase()</span>
+<span class="nc" id="L268">                .getEntries()</span>
+<span class="nc" id="L269">                .stream()</span>
+<span class="nc" id="L270">                .filter(BibEntry::isSearchHit)</span>
+<span class="nc" id="L271">                .collect(Collectors.toList());</span>
+<span class="nc" id="L272">        searchDialog.addEntries(entries, currentBasePanel);</span>
+<span class="nc" id="L273">        searchDialog.selectFirstEntry();</span>
+<span class="nc" id="L274">        searchDialog.setVisible(true);</span>
+<span class="nc" id="L275">    }</span>
+
+    private boolean validateSearchResultFrame(boolean globalSearch) {
+<span class="nc bnc" id="L278" title="All 2 branches missed.">        if (searchResultFrame != null) {</span>
+<span class="nc bnc" id="L279" title="All 4 branches missed.">            if ((searchResultFrame.isGlobalSearch() == globalSearch) &amp;&amp; isStillValidQuery(searchResultFrame.getSearchQuery())) {</span>
+<span class="nc" id="L280">                searchResultFrame.focus();</span>
+<span class="nc" id="L281">                return true;</span>
+            } else {
+<span class="nc" id="L283">                searchResultFrame.dispose();</span>
+<span class="nc" id="L284">                return false;</span>
+            }
+        }
+
+<span class="nc" id="L288">        return false;</span>
+    }
+
+    private void toggleSearchModeAndSearch() {
+<span class="nc" id="L292">        int nextSearchMode = (searchDisplayMode.ordinal() + 1) % SearchDisplayMode.values().length;</span>
+<span class="nc" id="L293">        searchDisplayMode = SearchDisplayMode.values()[nextSearchMode];</span>
+<span class="nc" id="L294">        new SearchPreferences(Globals.prefs).setSearchMode(searchDisplayMode);</span>
+<span class="nc" id="L295">        updateSearchModeButtonText();</span>
+<span class="nc" id="L296">        performSearch();</span>
+<span class="nc" id="L297">    }</span>
+
+    private void updateSearchModeButtonText() {
+<span class="fc" id="L300">        searchModeButton.setText(searchDisplayMode.getDisplayName());</span>
+<span class="fc" id="L301">        searchModeButton.setToolTipText(searchDisplayMode.getToolTipText());</span>
+<span class="fc" id="L302">    }</span>
+
+    public void endSearch() {
+<span class="nc" id="L305">        BasePanel currentBasePanel = frame.getCurrentBasePanel();</span>
+<span class="nc bnc" id="L306" title="All 2 branches missed.">        if (currentBasePanel != null) {</span>
+<span class="nc" id="L307">            clearSearch(currentBasePanel);</span>
+<span class="nc" id="L308">            MainTable mainTable = frame.getCurrentBasePanel().getMainTable();</span>
+<span class="nc" id="L309">            Globals.getFocusListener().setFocused(mainTable);</span>
+<span class="nc" id="L310">            mainTable.requestFocus();</span>
+<span class="nc" id="L311">            SwingUtilities.invokeLater(() -&gt; mainTable.ensureVisible(mainTable.getSelectedRow()));</span>
+        }
+<span class="nc" id="L313">    }</span>
+
+    /**
+     * Focuses the search field if it is not focused.
+     */
+    public void focus() {
+<span class="nc bnc" id="L319" title="All 2 branches missed.">        if (!searchField.isFocused()) {</span>
+<span class="nc" id="L320">            container.requestFocus();</span>
+<span class="nc" id="L321">            searchField.requestFocus();</span>
+        }
+<span class="nc" id="L323">        searchField.selectAll();</span>
+<span class="nc" id="L324">    }</span>
+
+    private void clearSearch(BasePanel currentBasePanel) {
+<span class="nc" id="L327">        currentResults.setText(&quot;&quot;);</span>
+<span class="nc" id="L328">        searchField.setText(&quot;&quot;);</span>
+<span class="nc" id="L329">        searchQueryHighlightObservable.reset();</span>
+<span class="nc" id="L330">        openCurrentResultsInDialog.setEnabled(false);</span>
+
+<span class="nc bnc" id="L332" title="All 2 branches missed.">        if (currentBasePanel != null) {</span>
+<span class="nc" id="L333">            currentBasePanel.getMainTable().getTableModel().updateSearchState(MainTableDataModel.DisplayOption.DISABLED);</span>
+<span class="nc" id="L334">            currentBasePanel.setCurrentSearchQuery(null);</span>
+        }
+
+<span class="nc bnc" id="L337" title="All 2 branches missed.">        if (dontSelectSearchBar) {</span>
+<span class="nc" id="L338">            dontSelectSearchBar = false;</span>
+<span class="nc" id="L339">            return;</span>
+        }
+<span class="nc" id="L341">        focus();</span>
+<span class="nc" id="L342">    }</span>
+
+    public void performSearch() {
+<span class="nc" id="L345">        BasePanel currentBasePanel = frame.getCurrentBasePanel();</span>
+<span class="nc bnc" id="L346" title="All 2 branches missed.">        if (currentBasePanel == null) {</span>
+<span class="nc" id="L347">            return;</span>
+        }
+
+<span class="nc bnc" id="L350" title="All 2 branches missed.">        if (searchWorker != null) {</span>
+<span class="nc" id="L351">            searchWorker.cancel(true);</span>
+        }
+
+        // An empty search field should cause the search to be cleared
+<span class="nc bnc" id="L355" title="All 2 branches missed.">        if (searchField.getText().isEmpty()) {</span>
+<span class="nc" id="L356">            clearSearch(currentBasePanel);</span>
+            // also make sure the search icon has the standard color
+<span class="nc" id="L358">            searchIcon.setIcon(IconTheme.JabRefIcon.SEARCH.getIcon());</span>
+<span class="nc" id="L359">            return;</span>
+        }
+
+<span class="nc" id="L362">        SearchQuery searchQuery = getSearchQuery();</span>
+<span class="nc bnc" id="L363" title="All 2 branches missed.">        if (!searchQuery.isValid()) {</span>
+<span class="nc" id="L364">            informUserAboutInvalidSearchQuery();</span>
+<span class="nc" id="L365">            return;</span>
+        }
+
+<span class="nc" id="L368">        searchWorker = new SearchWorker(currentBasePanel, searchQuery, searchDisplayMode);</span>
+<span class="nc" id="L369">        searchWorker.execute();</span>
+<span class="nc" id="L370">    }</span>
+
+    private void informUserAboutInvalidSearchQuery() {
+<span class="nc" id="L373">        searchField.pseudoClassStateChanged(CLASS_NO_RESULTS, true);</span>
+
+<span class="nc" id="L375">        searchQueryHighlightObservable.reset();</span>
+
+<span class="nc" id="L377">        BasePanel currentBasePanel = frame.getCurrentBasePanel();</span>
+<span class="nc" id="L378">        currentBasePanel.getMainTable().getTableModel().updateSearchState(MainTableDataModel.DisplayOption.DISABLED);</span>
+
+<span class="nc" id="L380">        String illegalSearch = Localization.lang(&quot;Search failed: illegal search expression&quot;);</span>
+<span class="nc" id="L381">        currentResults.setText(illegalSearch);</span>
+<span class="nc" id="L382">        openCurrentResultsInDialog.setEnabled(false);</span>
+<span class="nc" id="L383">    }</span>
+
+    public void setAutoCompleter(AutoCompleteSuggestionProvider&lt;Author&gt; searchCompleter) {
+<span class="nc bnc" id="L386" title="All 2 branches missed.">        if (Globals.prefs.getAutoCompletePreferences().shouldAutoComplete()) {</span>
+<span class="nc" id="L387">            AutoCompletionTextInputBinding.autoComplete(searchField,</span>
+<span class="nc" id="L388">                    searchCompleter,</span>
+<span class="nc" id="L389">                    new PersonNameStringConverter(false, false, AutoCompleteFirstNameMode.BOTH),</span>
+<span class="nc" id="L390">                    new AppendPersonNamesStrategy());</span>
+        }
+<span class="nc" id="L392">    }</span>
+
+    public SearchQueryHighlightObservable getSearchQueryHighlightObservable() {
+<span class="nc" id="L395">        return searchQueryHighlightObservable;</span>
+    }
+
+    public boolean isStillValidQuery(SearchQuery query) {
+<span class="nc bnc" id="L399" title="All 2 branches missed.">        return query.getQuery().equals(this.searchField.getText())</span>
+<span class="nc bnc" id="L400" title="All 2 branches missed.">                &amp;&amp; (query.isRegularExpression() == regularExp.isSelected())</span>
+<span class="nc bnc" id="L401" title="All 2 branches missed.">                &amp;&amp; (query.isCaseSensitive() == caseSensitive.isSelected());</span>
+    }
+
+    private SearchQuery getSearchQuery() {
+<span class="nc" id="L405">        SearchQuery searchQuery = new SearchQuery(this.searchField.getText(), this.caseSensitive.isSelected(), this.regularExp.isSelected());</span>
+<span class="nc" id="L406">        this.frame.getCurrentBasePanel().setCurrentSearchQuery(searchQuery);</span>
+<span class="nc" id="L407">        return searchQuery;</span>
+    }
+
+    public void updateResults(int matched, TextFlow description, boolean grammarBasedSearch) {
+<span class="nc bnc" id="L411" title="All 2 branches missed.">        if (matched == 0) {</span>
+<span class="nc" id="L412">            currentResults.setText(Localization.lang(&quot;No results found.&quot;));</span>
+<span class="nc" id="L413">            searchField.pseudoClassStateChanged(CLASS_NO_RESULTS, true);</span>
+<span class="nc" id="L414">        } else {</span>
+<span class="nc" id="L415">            currentResults.setText(Localization.lang(&quot;Found %0 results.&quot;, String.valueOf(matched)));</span>
+<span class="nc" id="L416">            searchField.pseudoClassStateChanged(CLASS_RESULTS_FOUND, true);</span>
+        }
+<span class="nc bnc" id="L418" title="All 2 branches missed.">        if (grammarBasedSearch) {</span>
+<span class="nc" id="L419">            searchIcon.setIcon(IconTheme.JabRefIcon.ADVANCED_SEARCH.getIcon());</span>
+<span class="nc" id="L420">        } else {</span>
+<span class="nc" id="L421">            searchIcon.setIcon(IconTheme.JabRefIcon.SEARCH.getIcon());</span>
+        }
+<span class="nc" id="L423">        Tooltip tooltip = new Tooltip();</span>
+<span class="nc" id="L424">        tooltip.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);</span>
+<span class="nc" id="L425">        tooltip.setGraphic(description);</span>
+<span class="nc" id="L426">        tooltip.setMaxHeight(10);</span>
+<span class="nc" id="L427">        DefaultTaskExecutor.runInJavaFXThread(() -&gt; searchField.setTooltip(tooltip));</span>
+<span class="nc" id="L428">        openCurrentResultsInDialog.setEnabled(true);</span>
+<span class="nc" id="L429">    }</span>
+
+    public void setSearchResultFrame(SearchResultFrame searchResultFrame) {
+<span class="nc" id="L432">        this.searchResultFrame = searchResultFrame;</span>
+<span class="nc" id="L433">    }</span>
+
+    public void setSearchTerm(String searchTerm) {
+<span class="nc bnc" id="L436" title="All 2 branches missed.">        if (searchTerm.equals(searchField.getText())) {</span>
+<span class="nc" id="L437">            return;</span>
+        }
+
+<span class="nc" id="L440">        setDontSelectSearchBar();</span>
+<span class="nc" id="L441">        DefaultTaskExecutor.runInJavaFXThread(() -&gt; searchField.setText(searchTerm));</span>
+<span class="nc" id="L442">    }</span>
+
+    public void setDontSelectSearchBar() {
+<span class="nc" id="L445">        this.dontSelectSearchBar = true;</span>
+<span class="nc" id="L446">    }</span>
+
+    private void updateOpenCurrentResultsTooltip(boolean globalSearchEnabled) {
+<span class="pc bpc" id="L449" title="1 of 2 branches missed.">        if (globalSearchEnabled) {</span>
+<span class="nc" id="L450">            openCurrentResultsInDialog.setToolTipText(Localization.lang(&quot;Show global search results in a window&quot;));</span>
+<span class="nc" id="L451">        } else {</span>
+<span class="fc" id="L452">            openCurrentResultsInDialog.setToolTipText(Localization.lang(&quot;Show search results in a window&quot;));</span>
+        }
+<span class="fc" id="L454">    }</span>
+
+<span class="fc" id="L456">    private class SearchKeyAdapter extends KeyAdapter {</span>
+
+        @Override
+        public void keyPressed(KeyEvent e) {
+<span class="nc bnc" id="L460" title="All 3 branches missed.">            switch (e.getKeyCode()) {</span>
+
+                // Clear search bar and select first entry, if available
+                case KeyEvent.VK_ESCAPE:
+<span class="nc" id="L464">                    clearOnEsc();</span>
+<span class="nc" id="L465">                    break;</span>
+
+                //This &quot;hack&quot; prevents that the focus moves out of the field
+                case KeyEvent.VK_RIGHT:
+                case KeyEvent.VK_LEFT:
+                case KeyEvent.VK_UP:
+                case KeyEvent.VK_DOWN:
+<span class="nc" id="L472">                    e.consume();</span>
+                    break;
+                default:
+                    //do nothing
+            }
+
+            //We need to consume this event here to prevent the propgation of keybinding events back to the JFrame
+<span class="nc" id="L479">            Optional&lt;KeyBinding&gt; keyBinding = Globals.getKeyPrefs().mapToKeyBinding(e);</span>
+<span class="nc bnc" id="L480" title="All 2 branches missed.">            if (keyBinding.isPresent()) {</span>
+<span class="nc bnc" id="L481" title="All 2 branches missed.">                switch (keyBinding.get()) {</span>
+                    case CUT:
+                    case COPY:
+                    case PASTE:
+                    case DELETE_ENTRY:
+                    case SELECT_ALL:
+<span class="nc" id="L487">                        e.consume();</span>
+                        break;
+                    default:
+                        //do nothing
+                }
+            }
+<span class="nc" id="L493">        }</span>
+
+        /**
+         * Clears the search bar and select first entry, if available
+         */
+        private void clearOnEsc() {
+<span class="nc" id="L499">            MainTable currentTable = frame.getCurrentBasePanel().getMainTable();</span>
+<span class="nc" id="L500">            clearSearch(frame.getCurrentBasePanel());</span>
+<span class="nc" id="L501">            currentTable.setSelected(0);</span>
+<span class="nc" id="L502">        }</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

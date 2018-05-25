@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>CreateDocBookAuthors.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.layout.format</a> &gt; <span class="el_source">CreateDocBookAuthors.java</span></div><h1>CreateDocBookAuthors.java</h1><pre class="source lang-java linenums">package org.jabref.logic.layout.format;
+
+import org.jabref.logic.layout.LayoutFormatter;
+import org.jabref.model.entry.Author;
+import org.jabref.model.entry.AuthorList;
+import org.jabref.model.entry.FieldName;
+
+/**
+ * Create DocBook authors formatter.
+ */
+<span class="nc" id="L11">public class CreateDocBookAuthors implements LayoutFormatter {</span>
+
+<span class="nc" id="L13">    private static final XMLChars XML_CHARS = new XMLChars();</span>
+
+    @Override
+    public String format(String fieldText) {
+
+<span class="nc" id="L18">        StringBuilder sb = new StringBuilder(100);</span>
+
+<span class="nc" id="L20">        AuthorList al = AuthorList.parse(fieldText);</span>
+
+<span class="nc" id="L22">        addBody(sb, al, FieldName.AUTHOR);</span>
+<span class="nc" id="L23">        return sb.toString();</span>
+
+    }
+
+    public void addBody(StringBuilder sb, AuthorList al, String tagName) {
+<span class="nc bnc" id="L28" title="All 2 branches missed.">        for (int i = 0; i &lt; al.getNumberOfAuthors(); i++) {</span>
+<span class="nc" id="L29">            sb.append('&lt;').append(tagName).append('&gt;');</span>
+<span class="nc" id="L30">            Author a = al.getAuthor(i);</span>
+<span class="nc bnc" id="L31" title="All 2 branches missed.">            a.getFirst().filter(first -&gt; !first.isEmpty()).ifPresent(first -&gt; sb.append(&quot;&lt;firstname&gt;&quot;)</span>
+<span class="nc" id="L32">                    .append(CreateDocBookAuthors.XML_CHARS.format(first)).append(&quot;&lt;/firstname&gt;&quot;));</span>
+<span class="nc bnc" id="L33" title="All 2 branches missed.">            a.getVon().filter(von -&gt; !von.isEmpty()).ifPresent(von -&gt; sb.append(&quot;&lt;othername&gt;&quot;)</span>
+<span class="nc" id="L34">                    .append(CreateDocBookAuthors.XML_CHARS.format(von)).append(&quot;&lt;/othername&gt;&quot;));</span>
+<span class="nc bnc" id="L35" title="All 2 branches missed.">            a.getLast().filter(last -&gt; !last.isEmpty()).ifPresent(last -&gt; {</span>
+<span class="nc" id="L36">                sb.append(&quot;&lt;surname&gt;&quot;).append(CreateDocBookAuthors.XML_CHARS.format(last));</span>
+<span class="nc bnc" id="L37" title="All 2 branches missed.">                a.getJr().filter(jr -&gt; !jr.isEmpty())</span>
+<span class="nc" id="L38">                        .ifPresent(jr -&gt; sb.append(' ').append(CreateDocBookAuthors.XML_CHARS.format(jr)));</span>
+<span class="nc" id="L39">                sb.append(&quot;&lt;/surname&gt;&quot;);</span>
+<span class="nc" id="L40">            });</span>
+
+<span class="nc bnc" id="L42" title="All 2 branches missed.">            if (i &lt; (al.getNumberOfAuthors() - 1)) {</span>
+<span class="nc" id="L43">                sb.append(&quot;&lt;/&quot;).append(tagName).append(&quot;&gt;\n       &quot;);</span>
+<span class="nc" id="L44">            } else {</span>
+<span class="nc" id="L45">                sb.append(&quot;&lt;/&quot;).append(tagName).append('&gt;');</span>
+            }
+        }
+<span class="nc" id="L48">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

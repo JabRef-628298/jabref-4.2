@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>SortTabsAction.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.actions</a> &gt; <span class="el_source">SortTabsAction.java</span></div><h1>SortTabsAction.java</h1><pre class="source lang-java linenums">package org.jabref.gui.actions;
+
+import java.awt.event.ActionEvent;
+import java.util.Comparator;
+import java.util.Locale;
+import java.util.Map;
+import java.util.TreeMap;
+
+import javax.swing.Action;
+
+import org.jabref.gui.BasePanel;
+import org.jabref.gui.JabRefFrame;
+import org.jabref.logic.l10n.Localization;
+
+/**
+ * This action rearranges all tabs in the main tabbed pane of the given JabRefFrame
+ * in alphabetical order.
+ */
+public class SortTabsAction extends MnemonicAwareAction implements Comparator&lt;String&gt; {
+    private final JabRefFrame frame;
+
+<span class="fc" id="L22">    public SortTabsAction(JabRefFrame frame) {</span>
+<span class="fc" id="L23">        putValue(Action.NAME, Localization.menuTitle(&quot;Sort tabs&quot;));</span>
+<span class="fc" id="L24">        putValue(Action.SHORT_DESCRIPTION, Localization.lang(&quot;Rearrange tabs alphabetically by title&quot;));</span>
+<span class="fc" id="L25">        this.frame = frame;</span>
+<span class="fc" id="L26">    }</span>
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        // Make a sorted Map that compares case-insensitively:
+<span class="nc" id="L31">        Map&lt;String, BasePanel&gt; map = new TreeMap&lt;&gt;(this);</span>
+
+<span class="nc bnc" id="L33" title="All 2 branches missed.">        for (BasePanel panel : frame.getBasePanelList()) {</span>
+<span class="nc" id="L34">            map.put(panel.getTabTitle(), panel);</span>
+        }
+
+<span class="nc" id="L37">        frame.getTabbedPane().removeAll();</span>
+<span class="nc bnc" id="L38" title="All 2 branches missed.">        for (Map.Entry&lt;String, BasePanel&gt; entry : map.entrySet()) {</span>
+<span class="nc" id="L39">            frame.addTab(entry.getValue(), false);</span>
+        }
+<span class="nc" id="L41">    }</span>
+
+    @Override
+    public int compare(String o1, String o2) {
+<span class="nc" id="L45">        return o1.toLowerCase(Locale.ROOT).compareTo(o2.toLowerCase(Locale.ROOT));</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

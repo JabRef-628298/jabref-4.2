@@ -1,0 +1,568 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>DroppedFileHandler.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.externalfiles</a> &gt; <span class="el_source">DroppedFileHandler.java</span></div><h1>DroppedFileHandler.java</h1><pre class="source lang-java linenums">package org.jabref.gui.externalfiles;
+
+import java.awt.BorderLayout;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.Optional;
+
+import javax.swing.BoxLayout;
+import javax.swing.ButtonGroup;
+import javax.swing.JCheckBox;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JRadioButton;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+
+import org.jabref.Globals;
+import org.jabref.gui.BasePanel;
+import org.jabref.gui.JabRefFrame;
+import org.jabref.gui.externalfiletype.ExternalFileType;
+import org.jabref.gui.externalfiletype.ExternalFileTypes;
+import org.jabref.gui.filelist.FileListEntry;
+import org.jabref.gui.filelist.FileListTableModel;
+import org.jabref.gui.maintable.MainTable;
+import org.jabref.gui.undo.NamedCompound;
+import org.jabref.gui.undo.UndoableFieldChange;
+import org.jabref.gui.undo.UndoableInsertEntry;
+import org.jabref.gui.util.DefaultTaskExecutor;
+import org.jabref.logic.l10n.Localization;
+import org.jabref.logic.util.io.FileUtil;
+import org.jabref.logic.xmp.XmpUtilReader;
+import org.jabref.model.database.BibDatabase;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.FieldName;
+import org.jabref.model.entry.IdGenerator;
+import org.jabref.model.util.FileHelper;
+import org.jabref.preferences.JabRefPreferences;
+
+import com.jgoodies.forms.builder.FormBuilder;
+import com.jgoodies.forms.layout.FormLayout;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * This class holds the functionality of autolinking to a file that's dropped
+ * onto an entry.
+ * &lt;p&gt;
+ * Options for handling the files are:
+ * &lt;p&gt;
+ * 1) Link to the file in its current position (disabled if the file is remote)
+ * &lt;p&gt;
+ * 2) Copy the file to ??? directory, rename after bibtex key, and extension
+ * &lt;p&gt;
+ * 3) Move the file to ??? directory, rename after bibtex key, and extension
+ */
+public class DroppedFileHandler {
+
+<span class="nc" id="L65">    private static final Logger LOGGER = LoggerFactory.getLogger(DroppedFileHandler.class);</span>
+
+    private final JabRefFrame frame;
+
+    private final BasePanel panel;
+
+<span class="nc" id="L71">    private final JRadioButton linkInPlace = new JRadioButton();</span>
+<span class="nc" id="L72">    private final JRadioButton copyRadioButton = new JRadioButton();</span>
+<span class="nc" id="L73">    private final JRadioButton moveRadioButton = new JRadioButton();</span>
+
+<span class="nc" id="L75">    private final JLabel destDirLabel = new JLabel();</span>
+
+<span class="nc" id="L77">    private final JCheckBox renameCheckBox = new JCheckBox();</span>
+
+<span class="nc" id="L79">    private final JTextField renameToTextBox = new JTextField(50);</span>
+
+<span class="nc" id="L81">    private final JPanel optionsPanel = new JPanel();</span>
+
+<span class="nc" id="L83">    public DroppedFileHandler(JabRefFrame frame, BasePanel panel) {</span>
+
+<span class="nc" id="L85">        this.frame = frame;</span>
+<span class="nc" id="L86">        this.panel = panel;</span>
+
+<span class="nc" id="L88">        ButtonGroup grp = new ButtonGroup();</span>
+<span class="nc" id="L89">        grp.add(linkInPlace);</span>
+<span class="nc" id="L90">        grp.add(copyRadioButton);</span>
+<span class="nc" id="L91">        grp.add(moveRadioButton);</span>
+
+<span class="nc" id="L93">        FormLayout layout = new FormLayout(&quot;left:15dlu,pref,pref,pref&quot;, &quot;bottom:14pt,pref,pref,pref,pref&quot;);</span>
+<span class="nc" id="L94">        layout.setRowGroups(new int[][] {{1, 2, 3, 4, 5}});</span>
+<span class="nc" id="L95">        FormBuilder builder = FormBuilder.create().layout(layout);</span>
+
+<span class="nc" id="L97">        builder.add(linkInPlace).xyw(1, 1, 4);</span>
+<span class="nc" id="L98">        builder.add(destDirLabel).xyw(1, 2, 4);</span>
+<span class="nc" id="L99">        builder.add(copyRadioButton).xyw(2, 3, 3);</span>
+<span class="nc" id="L100">        builder.add(moveRadioButton).xyw(2, 4, 3);</span>
+<span class="nc" id="L101">        builder.add(renameCheckBox).xyw(2, 5, 1);</span>
+<span class="nc" id="L102">        builder.add(renameToTextBox).xyw(4, 5, 1);</span>
+<span class="nc" id="L103">        optionsPanel.add(builder.getPanel());</span>
+<span class="nc" id="L104">    }</span>
+
+    /**
+     * Offer copy/move/linking options for a dragged external file. Perform the
+     * chosen operation, if any.
+     *
+     * @param fileName  The name of the dragged file.
+     * @param fileType  The FileType associated with the file.
+     * @param mainTable The MainTable the file was dragged to.
+     * @param dropRow   The row where the file was dropped.
+     */
+    public void handleDroppedfile(String fileName, ExternalFileType fileType, MainTable mainTable, int dropRow) {
+
+<span class="nc" id="L117">        BibEntry entry = mainTable.getEntryAt(dropRow);</span>
+<span class="nc" id="L118">        handleDroppedfile(fileName, fileType, entry);</span>
+<span class="nc" id="L119">    }</span>
+
+    /**
+     * @param fileName  The name of the dragged file.
+     * @param fileType  The FileType associated with the file.
+     * @param entry     The target entry for the drop.
+     */
+    public void handleDroppedfile(String fileName, ExternalFileType fileType, BibEntry entry) {
+<span class="nc" id="L127">        NamedCompound edits = new NamedCompound(Localization.lang(&quot;Drop %0&quot;, fileType.getExtension()));</span>
+
+<span class="nc bnc" id="L129" title="All 2 branches missed.">        if (tryXmpImport(fileName, fileType, edits)) {</span>
+<span class="nc" id="L130">            edits.end();</span>
+<span class="nc" id="L131">            panel.getUndoManager().addEdit(edits);</span>
+<span class="nc" id="L132">            return;</span>
+        }
+
+        // Show dialog
+<span class="nc bnc" id="L136" title="All 2 branches missed.">        if (!showLinkMoveCopyRenameDialog(fileName, fileType, entry, panel.getDatabase())) {</span>
+<span class="nc" id="L137">            return;</span>
+        }
+
+        /*
+         * Ok, we're ready to go. See first if we need to do a file copy before
+         * linking:
+         */
+
+<span class="nc" id="L145">        boolean success = true;</span>
+        String destFilename;
+
+<span class="nc bnc" id="L148" title="All 2 branches missed.">        if (linkInPlace.isSelected()) {</span>
+<span class="nc" id="L149">            destFilename = FileUtil.shortenFileName(Paths.get(fileName),</span>
+<span class="nc" id="L150">                    panel.getBibDatabaseContext().getFileDirectoriesAsPaths(Globals.prefs.getFileDirectoryPreferences()))</span>
+<span class="nc" id="L151">                    .toString();</span>
+<span class="nc" id="L152">        } else {</span>
+<span class="nc bnc" id="L153" title="All 2 branches missed.">            destFilename = renameCheckBox.isSelected() ? renameToTextBox.getText() : Paths.get(fileName).toString();</span>
+<span class="nc bnc" id="L154" title="All 2 branches missed.">            if (copyRadioButton.isSelected()) {</span>
+<span class="nc" id="L155">                success = doCopy(fileName, destFilename, edits);</span>
+<span class="nc bnc" id="L156" title="All 2 branches missed.">            } else if (moveRadioButton.isSelected()) {</span>
+<span class="nc" id="L157">                success = doMove(fileName, destFilename, edits);</span>
+            }
+        }
+
+<span class="nc bnc" id="L161" title="All 2 branches missed.">        if (success) {</span>
+<span class="nc" id="L162">            doLink(entry, fileType, destFilename, false, edits);</span>
+<span class="nc" id="L163">            panel.markBaseChanged();</span>
+<span class="nc" id="L164">            panel.updateEntryEditorIfShowing();</span>
+        }
+<span class="nc" id="L166">        edits.end();</span>
+<span class="nc" id="L167">        panel.getUndoManager().addEdit(edits);</span>
+
+<span class="nc" id="L169">    }</span>
+
+    // Done by MrDlib
+    public void linkPdfToEntry(String fileName, MainTable entryTable, int dropRow) {
+<span class="nc" id="L173">        BibEntry entry = entryTable.getEntryAt(dropRow);</span>
+<span class="nc" id="L174">        linkPdfToEntry(fileName, entry);</span>
+<span class="nc" id="L175">    }</span>
+
+    public void linkPdfToEntry(String fileName, BibEntry entry) {
+<span class="nc" id="L178">        Optional&lt;ExternalFileType&gt; optFileType = ExternalFileTypes.getInstance().getExternalFileTypeByExt(&quot;pdf&quot;);</span>
+
+<span class="nc bnc" id="L180" title="All 2 branches missed.">        if (!optFileType.isPresent()) {</span>
+<span class="nc" id="L181">            LOGGER.warn(&quot;No file type with extension 'pdf' registered.&quot;);</span>
+<span class="nc" id="L182">            return;</span>
+        }
+
+<span class="nc" id="L185">        ExternalFileType fileType = optFileType.get();</span>
+        // Show dialog
+<span class="nc bnc" id="L187" title="All 2 branches missed.">        if (!showLinkMoveCopyRenameDialog(fileName, fileType, entry, panel.getDatabase())) {</span>
+<span class="nc" id="L188">            return;</span>
+        }
+
+        /*
+         * Ok, we're ready to go. See first if we need to do a file copy before
+         * linking:
+         */
+
+<span class="nc" id="L196">        boolean success = true;</span>
+        String destFilename;
+<span class="nc" id="L198">        NamedCompound edits = new NamedCompound(Localization.lang(&quot;Drop %0&quot;, fileType.getExtension()));</span>
+
+<span class="nc bnc" id="L200" title="All 2 branches missed.">        if (linkInPlace.isSelected()) {</span>
+<span class="nc" id="L201">            destFilename = FileUtil.shortenFileName(Paths.get(fileName),</span>
+<span class="nc" id="L202">                    panel.getBibDatabaseContext().getFileDirectoriesAsPaths(Globals.prefs.getFileDirectoryPreferences()))</span>
+<span class="nc" id="L203">                    .toString();</span>
+<span class="nc" id="L204">        } else {</span>
+<span class="nc bnc" id="L205" title="All 2 branches missed.">            destFilename = renameCheckBox.isSelected() ? renameToTextBox.getText() : new File(fileName).getName();</span>
+<span class="nc bnc" id="L206" title="All 2 branches missed.">            if (copyRadioButton.isSelected()) {</span>
+<span class="nc" id="L207">                success = doCopy(fileName, destFilename, edits);</span>
+<span class="nc bnc" id="L208" title="All 2 branches missed.">            } else if (moveRadioButton.isSelected()) {</span>
+<span class="nc" id="L209">                success = doMove(fileName, destFilename, edits);</span>
+            }
+        }
+
+<span class="nc bnc" id="L213" title="All 2 branches missed.">        if (success) {</span>
+<span class="nc" id="L214">            doLink(entry, fileType, destFilename, false, edits);</span>
+<span class="nc" id="L215">            panel.markBaseChanged();</span>
+        }
+<span class="nc" id="L217">        edits.end();</span>
+<span class="nc" id="L218">        panel.getUndoManager().addEdit(edits);</span>
+<span class="nc" id="L219">    }</span>
+
+    // Done by MrDlib
+
+    private boolean tryXmpImport(String fileName, ExternalFileType fileType, NamedCompound edits) {
+
+<span class="nc bnc" id="L225" title="All 2 branches missed.">        if (!&quot;pdf&quot;.equals(fileType.getExtension())) {</span>
+<span class="nc" id="L226">            return false;</span>
+        }
+
+        List&lt;BibEntry&gt; xmpEntriesInFile;
+        try {
+<span class="nc" id="L231">            xmpEntriesInFile = XmpUtilReader.readXmp(fileName, Globals.prefs.getXMPPreferences());</span>
+<span class="nc" id="L232">        } catch (IOException e) {</span>
+<span class="nc" id="L233">            LOGGER.warn(&quot;Problem reading XMP&quot;, e);</span>
+<span class="nc" id="L234">            return false;</span>
+        }
+
+<span class="nc bnc" id="L237" title="All 4 branches missed.">        if ((xmpEntriesInFile == null) || xmpEntriesInFile.isEmpty()) {</span>
+<span class="nc" id="L238">            return false;</span>
+        }
+
+<span class="nc" id="L241">        JLabel confirmationMessage = new JLabel(Localization.lang(&quot;The PDF contains one or several BibTeX-records.&quot;)</span>
+<span class="nc" id="L242">                + &quot;\n&quot; + Localization.lang(&quot;Do you want to import these as new entries into the current library?&quot;));</span>
+<span class="nc" id="L243">        JPanel entriesPanel = new JPanel();</span>
+<span class="nc" id="L244">        entriesPanel.setLayout(new BoxLayout(entriesPanel, BoxLayout.Y_AXIS));</span>
+<span class="nc" id="L245">        xmpEntriesInFile.forEach(entry -&gt; {</span>
+<span class="nc" id="L246">            JTextArea entryArea = new JTextArea(entry.toString());</span>
+<span class="nc" id="L247">            entryArea.setEditable(false);</span>
+<span class="nc" id="L248">            entriesPanel.add(entryArea);</span>
+<span class="nc" id="L249">        });</span>
+
+<span class="nc" id="L251">        JPanel contentPanel = new JPanel(new BorderLayout());</span>
+<span class="nc" id="L252">        contentPanel.add(confirmationMessage, BorderLayout.NORTH);</span>
+<span class="nc" id="L253">        contentPanel.add(entriesPanel, BorderLayout.CENTER);</span>
+
+<span class="nc" id="L255">        int reply = JOptionPane.showConfirmDialog(frame, contentPanel,</span>
+<span class="nc" id="L256">                Localization.lang(&quot;XMP-metadata found in PDF: %0&quot;, fileName), JOptionPane.YES_NO_CANCEL_OPTION,</span>
+<span class="nc" id="L257">                JOptionPane.QUESTION_MESSAGE);</span>
+
+<span class="nc bnc" id="L259" title="All 2 branches missed.">        if (reply == JOptionPane.CANCEL_OPTION) {</span>
+<span class="nc" id="L260">            return true; // The user canceled thus that we are done.</span>
+        }
+<span class="nc bnc" id="L262" title="All 2 branches missed.">        if (reply == JOptionPane.NO_OPTION) {</span>
+<span class="nc" id="L263">            return false;</span>
+        }
+
+        // reply == JOptionPane.YES_OPTION)
+
+        /*
+         * TODO Extract Import functionality from ImportMenuItem then we could
+         * do:
+         *
+         * ImportMenuItem importer = new ImportMenuItem(frame, (mainTable ==
+         * null), new PdfXmpImporter());
+         *
+         * importer.automatedImport(new String[] { fileName });
+         */
+
+<span class="nc bnc" id="L278" title="All 2 branches missed.">        boolean isSingle = xmpEntriesInFile.size() == 1;</span>
+<span class="nc bnc" id="L279" title="All 2 branches missed.">        BibEntry single = isSingle ? xmpEntriesInFile.get(0) : null;</span>
+
+<span class="nc" id="L281">        boolean success = true;</span>
+
+        String destFilename;
+
+<span class="nc bnc" id="L285" title="All 2 branches missed.">        if (linkInPlace.isSelected()) {</span>
+<span class="nc" id="L286">            destFilename = FileUtil.shortenFileName(Paths.get(fileName),</span>
+<span class="nc" id="L287">                    panel.getBibDatabaseContext().getFileDirectoriesAsPaths(Globals.prefs.getFileDirectoryPreferences()))</span>
+<span class="nc" id="L288">                    .toString();</span>
+<span class="nc" id="L289">        } else {</span>
+<span class="nc bnc" id="L290" title="All 4 branches missed.">            if (renameCheckBox.isSelected() || (single == null)) {</span>
+<span class="nc" id="L291">                destFilename = fileName;</span>
+<span class="nc" id="L292">            } else {</span>
+<span class="nc" id="L293">                destFilename = single.getCiteKey() + &quot;.&quot; + fileType.getExtension();</span>
+            }
+
+<span class="nc bnc" id="L296" title="All 2 branches missed.">            if (copyRadioButton.isSelected()) {</span>
+<span class="nc" id="L297">                success = doCopy(fileName, destFilename, edits);</span>
+<span class="nc bnc" id="L298" title="All 2 branches missed.">            } else if (moveRadioButton.isSelected()) {</span>
+<span class="nc" id="L299">                success = doMove(fileName, destFilename, edits);</span>
+            }
+        }
+<span class="nc bnc" id="L302" title="All 2 branches missed.">        if (success) {</span>
+
+<span class="nc bnc" id="L304" title="All 2 branches missed.">            for (BibEntry aXmpEntriesInFile : xmpEntriesInFile) {</span>
+
+<span class="nc" id="L306">                aXmpEntriesInFile.setId(IdGenerator.next());</span>
+<span class="nc" id="L307">                edits.addEdit(new UndoableInsertEntry(panel.getDatabase(), aXmpEntriesInFile, panel));</span>
+<span class="nc" id="L308">                panel.getDatabase().insertEntry(aXmpEntriesInFile);</span>
+<span class="nc" id="L309">                doLink(aXmpEntriesInFile, fileType, destFilename, true, edits);</span>
+
+            }
+<span class="nc" id="L312">            panel.markBaseChanged();</span>
+<span class="nc" id="L313">            panel.updateEntryEditorIfShowing();</span>
+        }
+<span class="nc" id="L315">        return true;</span>
+    }
+
+    //
+    // @return true if user pushed &quot;OK&quot;, false otherwise
+    //
+    private boolean showLinkMoveCopyRenameDialog(String linkFileName, ExternalFileType fileType, BibEntry entry,
+            BibDatabase database) {
+
+<span class="nc" id="L324">        String dialogTitle = Localization.lang(&quot;Link to file %0&quot;, linkFileName);</span>
+
+<span class="nc" id="L326">        Optional&lt;Path&gt; dir = panel.getBibDatabaseContext()</span>
+<span class="nc" id="L327">                .getFirstExistingFileDir(Globals.prefs.getFileDirectoryPreferences());</span>
+
+<span class="nc bnc" id="L329" title="All 2 branches missed.">        if (!dir.isPresent()) {</span>
+<span class="nc" id="L330">            destDirLabel.setText(Localization.lang(&quot;File directory is not set or does not exist!&quot;));</span>
+<span class="nc" id="L331">            copyRadioButton.setEnabled(false);</span>
+<span class="nc" id="L332">            moveRadioButton.setEnabled(false);</span>
+<span class="nc" id="L333">            renameToTextBox.setEnabled(false);</span>
+<span class="nc" id="L334">            renameCheckBox.setEnabled(false);</span>
+<span class="nc" id="L335">            linkInPlace.setSelected(true);</span>
+<span class="nc" id="L336">        } else {</span>
+<span class="nc" id="L337">            destDirLabel.setText(Localization.lang(&quot;File directory is '%0':&quot;, dir.get().toString()));</span>
+<span class="nc" id="L338">            copyRadioButton.setEnabled(true);</span>
+<span class="nc" id="L339">            moveRadioButton.setEnabled(true);</span>
+<span class="nc" id="L340">            renameToTextBox.setEnabled(true);</span>
+<span class="nc" id="L341">            renameCheckBox.setEnabled(true);</span>
+        }
+
+<span class="nc" id="L344">        ChangeListener cl = arg0 -&gt; {</span>
+<span class="nc bnc" id="L345" title="All 2 branches missed.">            renameCheckBox.setEnabled(!linkInPlace.isSelected());</span>
+<span class="nc bnc" id="L346" title="All 2 branches missed.">            renameToTextBox.setEnabled(!linkInPlace.isSelected());</span>
+<span class="nc" id="L347">        };</span>
+
+<span class="nc" id="L349">        linkInPlace.setText(Localization.lang(&quot;Leave file in its current directory&quot;));</span>
+<span class="nc" id="L350">        copyRadioButton.setText(Localization.lang(&quot;Copy file to file directory&quot;));</span>
+<span class="nc" id="L351">        moveRadioButton.setText(Localization.lang(&quot;Move file to file directory&quot;));</span>
+<span class="nc" id="L352">        renameCheckBox.setText(Localization.lang(&quot;Rename file to&quot;).concat(&quot;: &quot;));</span>
+
+        // Determine which name to suggest:
+<span class="nc" id="L355">        String targetName = FileUtil.createFileNameFromPattern(database, entry,</span>
+<span class="nc" id="L356">                Globals.prefs.get(JabRefPreferences.IMPORT_FILENAMEPATTERN));</span>
+
+<span class="nc" id="L358">        String fileDirPattern = Globals.prefs.get(JabRefPreferences.IMPORT_FILEDIRPATTERN);</span>
+
+<span class="nc" id="L360">        String targetDirName = &quot;&quot;;</span>
+<span class="nc bnc" id="L361" title="All 2 branches missed.">        if (!fileDirPattern.isEmpty()) {</span>
+<span class="nc" id="L362">            targetDirName = FileUtil.createDirNameFromPattern(database, entry, fileDirPattern);</span>
+        }
+
+<span class="nc bnc" id="L365" title="All 2 branches missed.">        if (targetDirName.isEmpty()) {</span>
+<span class="nc" id="L366">            renameToTextBox.setText(targetName.concat(&quot;.&quot;).concat(fileType.getExtension()));</span>
+<span class="nc" id="L367">        } else {</span>
+<span class="nc" id="L368">            renameToTextBox</span>
+<span class="nc" id="L369">                    .setText(targetDirName.concat(&quot;/&quot;).concat(targetName.concat(&quot;.&quot;).concat(fileType.getExtension())));</span>
+        }
+<span class="nc" id="L371">        linkInPlace.setSelected(frame.prefs().getBoolean(JabRefPreferences.DROPPEDFILEHANDLER_LEAVE));</span>
+<span class="nc" id="L372">        copyRadioButton.setSelected(frame.prefs().getBoolean(JabRefPreferences.DROPPEDFILEHANDLER_COPY));</span>
+<span class="nc" id="L373">        moveRadioButton.setSelected(frame.prefs().getBoolean(JabRefPreferences.DROPPEDFILEHANDLER_MOVE));</span>
+<span class="nc" id="L374">        renameCheckBox.setSelected(frame.prefs().getBoolean(JabRefPreferences.DROPPEDFILEHANDLER_RENAME));</span>
+
+<span class="nc" id="L376">        linkInPlace.addChangeListener(cl);</span>
+<span class="nc" id="L377">        cl.stateChanged(new ChangeEvent(linkInPlace));</span>
+
+        try {
+<span class="nc" id="L380">            Object[] messages = {Localization.lang(&quot;How would you like to link to '%0'?&quot;, linkFileName), optionsPanel};</span>
+<span class="nc" id="L381">            int reply = JOptionPane.showConfirmDialog(frame, messages, dialogTitle, JOptionPane.OK_CANCEL_OPTION,</span>
+<span class="nc" id="L382">                    JOptionPane.QUESTION_MESSAGE);</span>
+<span class="nc bnc" id="L383" title="All 2 branches missed.">            if (reply == JOptionPane.OK_OPTION) {</span>
+                // store user's choice
+<span class="nc" id="L385">                frame.prefs().putBoolean(JabRefPreferences.DROPPEDFILEHANDLER_LEAVE, linkInPlace.isSelected());</span>
+<span class="nc" id="L386">                frame.prefs().putBoolean(JabRefPreferences.DROPPEDFILEHANDLER_COPY, copyRadioButton.isSelected());</span>
+<span class="nc" id="L387">                frame.prefs().putBoolean(JabRefPreferences.DROPPEDFILEHANDLER_MOVE, moveRadioButton.isSelected());</span>
+<span class="nc" id="L388">                frame.prefs().putBoolean(JabRefPreferences.DROPPEDFILEHANDLER_RENAME, renameCheckBox.isSelected());</span>
+<span class="nc" id="L389">                return true;</span>
+            } else {
+<span class="nc" id="L391">                return false;</span>
+            }
+<span class="nc" id="L393">        } finally {</span>
+<span class="nc" id="L394">            linkInPlace.removeChangeListener(cl);</span>
+<span class="nc" id="L395">        }</span>
+    }
+
+    /**
+     * Make a extension to the file.
+     *
+     * @param entry    The entry to extension from.
+     * @param fileType The FileType associated with the file.
+     * @param filename The path to the file.
+     * @param edits    An NamedCompound action this action is to be added to. If none
+     *                 is given, the edit is added to the panel's undoManager.
+     */
+    private void doLink(BibEntry entry, ExternalFileType fileType, String filename, boolean avoidDuplicate,
+            NamedCompound edits) {
+
+<span class="nc" id="L410">        Optional&lt;String&gt; oldValue = entry.getField(FieldName.FILE);</span>
+<span class="nc" id="L411">        FileListTableModel tm = new FileListTableModel();</span>
+<span class="nc" id="L412">        oldValue.ifPresent(tm::setContent);</span>
+
+        // If avoidDuplicate==true, we should check if this file is already linked:
+<span class="nc bnc" id="L415" title="All 2 branches missed.">        if (avoidDuplicate) {</span>
+            // For comparison, find the absolute filename:
+<span class="nc" id="L417">            List&lt;Path&gt; dirs = panel.getBibDatabaseContext()</span>
+<span class="nc" id="L418">                    .getFileDirectoriesAsPaths(Globals.prefs.getFileDirectoryPreferences());</span>
+            String absFilename;
+<span class="nc bnc" id="L420" title="All 4 branches missed.">            if (new File(filename).isAbsolute() || dirs.isEmpty()) {</span>
+<span class="nc" id="L421">                absFilename = filename;</span>
+<span class="nc" id="L422">            } else {</span>
+<span class="nc" id="L423">                Optional&lt;Path&gt; file = FileHelper.expandFilenameAsPath(filename, dirs);</span>
+<span class="nc bnc" id="L424" title="All 2 branches missed.">                if (file.isPresent()) {</span>
+<span class="nc" id="L425">                    absFilename = file.get().toAbsolutePath().toString();</span>
+<span class="nc" id="L426">                } else {</span>
+<span class="nc" id="L427">                    absFilename = &quot;&quot;; // This shouldn't happen based on the old code, so maybe one should set it something else?</span>
+                }
+            }
+
+<span class="nc" id="L431">            LOGGER.debug(&quot;absFilename: &quot; + absFilename);</span>
+
+<span class="nc bnc" id="L433" title="All 2 branches missed.">            for (int i = 0; i &lt; tm.getRowCount(); i++) {</span>
+<span class="nc" id="L434">                FileListEntry flEntry = tm.getEntry(i);</span>
+                // Find the absolute filename for this existing link:
+<span class="nc" id="L436">                String absName = flEntry.toParsedFileField()</span>
+<span class="nc" id="L437">                        .findIn(dirs)</span>
+<span class="nc" id="L438">                        .map(Path::toAbsolutePath)</span>
+<span class="nc" id="L439">                        .map(Path::toString)</span>
+<span class="nc" id="L440">                        .orElse(null);</span>
+
+<span class="nc" id="L442">                LOGGER.debug(&quot;absName: &quot; + absName);</span>
+                // If the filenames are equal, we don't need to link, so we simply return:
+<span class="nc bnc" id="L444" title="All 2 branches missed.">                if (absFilename.equals(absName)) {</span>
+<span class="nc" id="L445">                    return;</span>
+                }
+            }
+        }
+
+<span class="nc" id="L450">        tm.addEntry(tm.getRowCount(), new FileListEntry(&quot;&quot;, filename, fileType));</span>
+<span class="nc" id="L451">        String newValue = tm.getStringRepresentation();</span>
+<span class="nc" id="L452">        UndoableFieldChange edit = new UndoableFieldChange(entry, FieldName.FILE, oldValue.orElse(null), newValue);</span>
+
+        // make sure that the update runs in the Java FX thread to avoid exception in listeners
+<span class="nc" id="L455">        DefaultTaskExecutor.runInJavaFXThread(() -&gt; {</span>
+<span class="nc" id="L456">            entry.setField(FieldName.FILE, newValue);</span>
+<span class="nc" id="L457">        });</span>
+
+<span class="nc bnc" id="L459" title="All 2 branches missed.">        if (edits == null) {</span>
+<span class="nc" id="L460">            panel.getUndoManager().addEdit(edit);</span>
+<span class="nc" id="L461">        } else {</span>
+<span class="nc" id="L462">            edits.addEdit(edit);</span>
+        }
+<span class="nc" id="L464">    }</span>
+
+    /**
+     * Move the given file to the base directory for its file type, and rename
+     * it to the given filename.
+     *
+     * @param fileName     The name of the source file.
+     * @param destFilename The destination filename.
+     * @param edits        TODO we should be able to undo this action
+     * @return true if the operation succeeded.
+     */
+    private boolean doMove(String fileName, String destFilename, NamedCompound edits) {
+<span class="nc" id="L476">        Optional&lt;Path&gt; dir = panel.getBibDatabaseContext()</span>
+<span class="nc" id="L477">                .getFirstExistingFileDir(Globals.prefs.getFileDirectoryPreferences());</span>
+
+<span class="nc bnc" id="L479" title="All 2 branches missed.">        if (dir.isPresent()) {</span>
+<span class="nc" id="L480">            Path destFile = dir.get().resolve(destFilename);</span>
+
+<span class="nc bnc" id="L482" title="All 2 branches missed.">            if (Files.exists(destFile)) {</span>
+<span class="nc" id="L483">                int answer = JOptionPane.showConfirmDialog(frame,</span>
+<span class="nc" id="L484">                        Localization.lang(&quot;'%0' exists. Overwrite file?&quot;, destFile.toString()),</span>
+<span class="nc" id="L485">                        Localization.lang(&quot;Overwrite file?&quot;), JOptionPane.YES_NO_OPTION);</span>
+<span class="nc bnc" id="L486" title="All 2 branches missed.">                if (answer == JOptionPane.NO_OPTION) {</span>
+<span class="nc" id="L487">                    return false;</span>
+                }
+            }
+
+<span class="nc" id="L491">            Path fromFile = Paths.get(fileName);</span>
+            try {
+<span class="nc bnc" id="L493" title="All 2 branches missed.">                if (!Files.exists(destFile)) {</span>
+<span class="nc" id="L494">                    Files.createDirectories(destFile);</span>
+                }
+<span class="nc" id="L496">            } catch (IOException e) {</span>
+<span class="nc" id="L497">                LOGGER.error(&quot;Problem creating target directories&quot;, e);</span>
+            }
+<span class="nc bnc" id="L499" title="All 2 branches missed.">            if (FileUtil.renameFile(fromFile, destFile, true)) {</span>
+<span class="nc" id="L500">                return true;</span>
+            } else {
+<span class="nc" id="L502">                JOptionPane.showMessageDialog(frame,</span>
+<span class="nc" id="L503">                        Localization.lang(&quot;Could not move file '%0'.&quot;, destFile.toString())</span>
+<span class="nc" id="L504">                                + Localization.lang(&quot;Please move the file manually and link in place.&quot;),</span>
+<span class="nc" id="L505">                        Localization.lang(&quot;Move file failed&quot;), JOptionPane.ERROR_MESSAGE);</span>
+<span class="nc" id="L506">                return false;</span>
+            }
+        }
+<span class="nc" id="L509">        return false;</span>
+    }
+
+    /**
+     * Copy the given file to the base directory for its file type, and give it
+     * the given name.
+     *
+     * @param fileName The name of the source file.
+     * @param toFile   The destination filename. An existing path-component will be removed.
+     * @param edits    TODO we should be able to undo this!
+     * @return true if the operation succeeded.
+     */
+    private boolean doCopy(String fileName, String toFile, NamedCompound edits) {
+
+<span class="nc" id="L523">        List&lt;String&gt; dirs = panel.getBibDatabaseContext()</span>
+<span class="nc" id="L524">                .getFileDirectories(Globals.prefs.getFileDirectoryPreferences());</span>
+<span class="nc" id="L525">        int found = -1;</span>
+<span class="nc bnc" id="L526" title="All 2 branches missed.">        for (int i = 0; i &lt; dirs.size(); i++) {</span>
+<span class="nc bnc" id="L527" title="All 2 branches missed.">            if (new File(dirs.get(i)).exists()) {</span>
+<span class="nc" id="L528">                found = i;</span>
+<span class="nc" id="L529">                break;</span>
+            }
+        }
+<span class="nc bnc" id="L532" title="All 2 branches missed.">        if (found &lt; 0) {</span>
+            // OOps, we don't know which directory to put it in, or the given
+            // dir doesn't exist....
+            // This should not happen!!
+<span class="nc" id="L536">            LOGGER.warn(&quot;Cannot determine destination directory or destination directory does not exist&quot;);</span>
+<span class="nc" id="L537">            return false;</span>
+        }
+
+<span class="nc" id="L540">        Path destFile = Paths.get(dirs.get(found)).resolve(toFile);</span>
+<span class="nc bnc" id="L541" title="All 2 branches missed.">        if (destFile.toString().equals(fileName)) {</span>
+            // File is already in the correct position. Don't override!
+<span class="nc" id="L543">            return true;</span>
+        }
+
+<span class="nc bnc" id="L546" title="All 2 branches missed.">        if (Files.exists(destFile)) {</span>
+<span class="nc" id="L547">            int answer = JOptionPane.showConfirmDialog(frame,</span>
+<span class="nc" id="L548">                    Localization.lang(&quot;'%0' exists. Overwrite file?&quot;, destFile.toString()),</span>
+<span class="nc" id="L549">                    Localization.lang(&quot;File exists&quot;), JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);</span>
+<span class="nc bnc" id="L550" title="All 2 branches missed.">            if (answer == JOptionPane.NO_OPTION) {</span>
+<span class="nc" id="L551">                return false;</span>
+            }
+        }
+        try {
+            //copy does not create directories, therefore we have to create them manually
+<span class="nc bnc" id="L556" title="All 2 branches missed.">            if (!Files.exists(destFile)) {</span>
+<span class="nc" id="L557">                Files.createDirectories(destFile);</span>
+            }
+<span class="nc" id="L559">            FileUtil.copyFile(Paths.get(fileName), destFile, true);</span>
+<span class="nc" id="L560">        } catch (IOException e) {</span>
+<span class="nc" id="L561">            LOGGER.error(&quot;Problem copying file&quot;, e);</span>
+<span class="nc" id="L562">            return false;</span>
+        }
+<span class="nc" id="L564">        return true;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

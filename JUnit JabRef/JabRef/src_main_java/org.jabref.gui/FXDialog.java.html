@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>FXDialog.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui</a> &gt; <span class="el_source">FXDialog.java</span></div><h1>FXDialog.java</h1><pre class="source lang-java linenums"><span class="nc" id="L1">package org.jabref.gui;</span>
+
+import java.awt.Window;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+
+import javafx.application.Platform;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Dialog;
+import javafx.scene.control.DialogPane;
+import javafx.scene.image.Image;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+
+import org.jabref.Globals;
+import org.jabref.JabRefGUI;
+import org.jabref.gui.keyboard.KeyBinding;
+import org.jabref.gui.keyboard.KeyBindingRepository;
+
+/**
+ * This class provides a super class for all dialogs implemented in JavaFX.
+ * It mimics the behavior of a Swing JDialog which means once a object of this class
+ * is shown all Swing windows will be blocked and stay in the background. Since this
+ * class extends from a JavaFX {@link Alert} it behaves as a normal dialog towards all
+ * windows in the JavaFX thread.
+ * &lt;p&gt;
+ * To create a custom JavaFX dialog one should create an instance of this class and set a dialog
+ * pane through the inherited {@link Dialog#setDialogPane(DialogPane)} method.
+ * The dialog can be shown via {@link Dialog#show()} or {@link Dialog#showAndWait()}.
+ *
+ * The layout of the pane should be defined in an external fxml file and loaded it via the
+ * {@link FXMLLoader}.
+ */
+public class FXDialog extends Alert {
+
+    /**
+     * The WindowAdapter will be added to all Swing windows once an instance
+     * of this class is shown and redirects the focus towards this instance.
+     * The WindowAdapter will be removed once the instance of this class gets hidden.
+     *
+     */
+<span class="nc" id="L43">    private final WindowAdapter fxOverSwingHelper = new WindowAdapter() {</span>
+
+        @Override
+        public void windowActivated(WindowEvent e) {
+<span class="nc" id="L47">            Platform.runLater(() -&gt; {</span>
+<span class="nc" id="L48">                Stage fxDialogWindow = getDialogWindow();</span>
+<span class="nc" id="L49">                fxDialogWindow.toFront();</span>
+<span class="nc" id="L50">                fxDialogWindow.requestFocus();</span>
+<span class="nc" id="L51">            });</span>
+<span class="nc" id="L52">        }</span>
+
+        @Override
+        public void windowGainedFocus(WindowEvent e) {
+<span class="nc" id="L56">            Platform.runLater(() -&gt; {</span>
+<span class="nc" id="L57">                Stage fxDialogWindow = getDialogWindow();</span>
+<span class="nc" id="L58">                fxDialogWindow.toFront();</span>
+<span class="nc" id="L59">                fxDialogWindow.requestFocus();</span>
+<span class="nc" id="L60">            });</span>
+<span class="nc" id="L61">        }</span>
+    };
+
+    public FXDialog(AlertType type, String title, Image image, boolean isModal) {
+<span class="nc" id="L65">        this(type, title, isModal);</span>
+<span class="nc" id="L66">        setDialogIcon(image);</span>
+<span class="nc" id="L67">    }</span>
+
+    public FXDialog(AlertType type, String title, Image image) {
+<span class="nc" id="L70">        this(type, title, true);</span>
+<span class="nc" id="L71">        setDialogIcon(image);</span>
+<span class="nc" id="L72">    }</span>
+
+    public FXDialog(AlertType type, String title, boolean isModal) {
+<span class="nc" id="L75">        this(type, isModal);</span>
+<span class="nc" id="L76">        setTitle(title);</span>
+<span class="nc" id="L77">    }</span>
+
+    public FXDialog(AlertType type, String title) {
+<span class="nc" id="L80">        this(type);</span>
+<span class="nc" id="L81">        setTitle(title);</span>
+<span class="nc" id="L82">    }</span>
+
+    public FXDialog(AlertType type, boolean isModal) {
+<span class="nc" id="L85">        super(type);</span>
+
+<span class="nc" id="L87">        setDialogIcon(IconTheme.getJabRefImageFX());</span>
+
+<span class="nc" id="L89">        Stage dialogWindow = getDialogWindow();</span>
+<span class="nc" id="L90">        dialogWindow.setOnCloseRequest(evt -&gt; this.close());</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">        if (isModal) {</span>
+<span class="nc" id="L92">            initModality(Modality.APPLICATION_MODAL);</span>
+<span class="nc" id="L93">        } else {</span>
+<span class="nc" id="L94">            initModality(Modality.NONE);</span>
+        }
+<span class="nc" id="L96">        dialogWindow.setOnShown(evt -&gt; {</span>
+<span class="nc bnc" id="L97" title="All 2 branches missed.">            setSwingWindowsEnabledAndFocusable(!isModal);</span>
+<span class="nc" id="L98">            setLocationRelativeToMainWindow();</span>
+<span class="nc" id="L99">        });</span>
+<span class="nc" id="L100">        dialogWindow.setOnHiding(evt -&gt; setSwingWindowsEnabledAndFocusable(true));</span>
+
+<span class="nc" id="L102">        dialogWindow.setOnCloseRequest(evt -&gt; this.close());</span>
+
+<span class="nc" id="L104">        dialogWindow.getScene().setOnKeyPressed(event -&gt; {</span>
+<span class="nc" id="L105">            KeyBindingRepository keyBindingRepository = Globals.getKeyPrefs();</span>
+<span class="nc bnc" id="L106" title="All 2 branches missed.">            if (keyBindingRepository.checkKeyCombinationEquality(KeyBinding.CLOSE_DIALOG, event)) {</span>
+<span class="nc" id="L107">                dialogWindow.close();</span>
+            }
+<span class="nc" id="L109">        });</span>
+<span class="nc" id="L110">    }</span>
+
+    public FXDialog(AlertType type) {
+<span class="nc" id="L113">        this(type, true);</span>
+<span class="nc" id="L114">    }</span>
+
+    public void setDialogIcon(Image image) {
+<span class="nc" id="L117">        Stage fxDialogWindow = getDialogWindow();</span>
+<span class="nc" id="L118">        fxDialogWindow.getIcons().add(image);</span>
+<span class="nc" id="L119">    }</span>
+
+    private Stage getDialogWindow() {
+<span class="nc" id="L122">        return (Stage) getDialogPane().getScene().getWindow();</span>
+    }
+
+    private void setSwingWindowsEnabledAndFocusable(boolean enabled) {
+<span class="nc bnc" id="L126" title="All 2 branches missed.">        for (Window swingWindow : Window.getWindows()) {</span>
+<span class="nc" id="L127">            swingWindow.setEnabled(enabled);</span>
+<span class="nc bnc" id="L128" title="All 2 branches missed.">            if (!enabled) {</span>
+<span class="nc" id="L129">                swingWindow.addWindowListener(fxOverSwingHelper);</span>
+<span class="nc" id="L130">            } else {</span>
+<span class="nc" id="L131">                swingWindow.removeWindowListener(fxOverSwingHelper);</span>
+            }
+        }
+<span class="nc" id="L134">    }</span>
+
+    private void setLocationRelativeToMainWindow() {
+<span class="nc" id="L137">        double mainWindowX = JabRefGUI.getMainFrame().getLocationOnScreen().getX();</span>
+<span class="nc" id="L138">        double mainWindowY = JabRefGUI.getMainFrame().getLocationOnScreen().getY();</span>
+<span class="nc" id="L139">        double mainWindowWidth = JabRefGUI.getMainFrame().getSize().getWidth();</span>
+<span class="nc" id="L140">        double mainWindowHeight = JabRefGUI.getMainFrame().getSize().getHeight();</span>
+
+<span class="nc" id="L142">        setX((mainWindowX + (mainWindowWidth / 2)) - (getWidth() / 2));</span>
+<span class="nc" id="L143">        setY((mainWindowY + (mainWindowHeight / 2)) - (getHeight() / 2));</span>
+<span class="nc" id="L144">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

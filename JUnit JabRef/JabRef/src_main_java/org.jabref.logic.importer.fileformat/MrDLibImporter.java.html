@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MrDLibImporter.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.importer.fileformat</a> &gt; <span class="el_source">MrDLibImporter.java</span></div><h1>MrDLibImporter.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/**</span>
+ *
+ */
+package org.jabref.logic.importer.fileformat;
+
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.stream.Collectors;
+
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
+
+import org.jabref.logic.importer.Importer;
+import org.jabref.logic.importer.ParserResult;
+import org.jabref.logic.util.FileType;
+import org.jabref.model.database.BibDatabase;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.FieldName;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.xml.sax.Attributes;
+import org.xml.sax.SAXException;
+import org.xml.sax.helpers.DefaultHandler;
+
+/**
+ *
+ *
+ */
+<span class="fc" id="L36">public class MrDLibImporter extends Importer {</span>
+
+<span class="fc" id="L38">    private static final Logger LOGGER = LoggerFactory.getLogger(MrDLibImporter.class);</span>
+    public ParserResult parserResult;
+
+    @Override
+    public boolean isRecognizedFormat(BufferedReader input) throws IOException {
+<span class="fc" id="L43">        String recommendationsAsString = convertToString(input);</span>
+        // check for valid format
+        try {
+<span class="fc" id="L46">            SAXParserFactory factory = SAXParserFactory.newInstance();</span>
+<span class="fc" id="L47">            SAXParser saxParser = factory.newSAXParser();</span>
+<span class="fc" id="L48">            DefaultHandler handler = new DefaultHandler() {</span>
+                // No Processing here. Just check for valid xml.
+                // Later here will be the check against the XML schema.
+            };
+
+<span class="fc" id="L53">            try (InputStream stream = new ByteArrayInputStream(recommendationsAsString.getBytes())) {</span>
+<span class="fc" id="L54">                saxParser.parse(stream, handler);</span>
+<span class="pc bpc" id="L55" title="7 of 8 branches missed.">            } catch (Exception e) {</span>
+<span class="nc" id="L56">                return false;</span>
+            }
+<span class="nc" id="L58">        } catch (ParserConfigurationException | SAXException e) {</span>
+<span class="nc" id="L59">            return false;</span>
+        }
+<span class="fc" id="L61">        return true;</span>
+    }
+
+    @Override
+    public ParserResult importDatabase(BufferedReader input) throws IOException {
+<span class="fc" id="L66">        parse(input);</span>
+<span class="fc" id="L67">        return parserResult;</span>
+    }
+
+    @Override
+    public String getName() {
+<span class="fc" id="L72">        return &quot;MrDLibImporter&quot;;</span>
+    }
+
+    @Override
+    public FileType getFileType() {
+<span class="fc" id="L77">        return FileType.XML;</span>
+    }
+
+    @Override
+    public String getDescription() {
+<span class="fc" id="L82">        return &quot;Takes valid xml documents. Parses from MrDLib API a BibEntry&quot;;</span>
+    }
+
+    /**
+     * The SaxParser needs this String. So I convert it here.
+     * @param Takes a BufferedReader with a reference to the XML document delivered by mdl server.
+     * @return Returns an String containing the XML file.
+     * @throws IOException
+     */
+    private String convertToString(BufferedReader input) throws IOException {
+        String line;
+<span class="fc" id="L93">        StringBuilder stringBuilder = new StringBuilder();</span>
+        try {
+<span class="fc bfc" id="L95" title="All 2 branches covered.">            while ((line = input.readLine()) != null) {</span>
+<span class="fc" id="L96">                stringBuilder.append(line);</span>
+            }
+<span class="pc" id="L98">        } catch (Exception e) {</span>
+<span class="nc" id="L99">            LOGGER.error(e.getMessage());</span>
+        }
+<span class="fc" id="L101">        return stringBuilder.toString();</span>
+    }
+
+    /**
+     * Small pair-class to ensure the right order of the recommendations.
+     */
+    private class RankedBibEntry {
+
+        public BibEntry entry;
+        public Integer rank;
+
+<span class="fc" id="L112">        public RankedBibEntry(BibEntry entry, Integer rank) {</span>
+<span class="fc" id="L113">            this.rank = rank;</span>
+<span class="fc" id="L114">            this.entry = entry;</span>
+<span class="fc" id="L115">        }</span>
+    }
+
+    /**
+     * Parses the input from the server to a ParserResult
+     * @param input A BufferedReader with a reference to a string with the servers response
+     * @throws IOException
+     */
+    private void parse(BufferedReader input) throws IOException {
+        // The Bibdatabase that gets returned in the ParserResult.
+<span class="fc" id="L125">        BibDatabase bibDatabase = new BibDatabase();</span>
+        // The document to parse
+<span class="fc" id="L127">        String recommendations = convertToString(input);</span>
+        // The sorted BibEntries gets stored here later
+<span class="fc" id="L129">        List&lt;BibEntry&gt; bibEntries = new ArrayList&lt;&gt;();</span>
+        //Parsing the response with a SAX parser
+        try {
+<span class="fc" id="L132">            SAXParserFactory factory = SAXParserFactory.newInstance();</span>
+<span class="fc" id="L133">            SAXParser saxParser = factory.newSAXParser();</span>
+<span class="fc" id="L134">            MrDlibImporterHandler handler = new MrDlibImporterHandler();</span>
+<span class="fc" id="L135">            try (InputStream stream = new ByteArrayInputStream(recommendations.getBytes())) {</span>
+<span class="fc" id="L136">                saxParser.parse(stream, handler);</span>
+<span class="pc bpc" id="L137" title="7 of 8 branches missed.">            } catch (SAXException e) {</span>
+<span class="nc" id="L138">                LOGGER.error(e.getMessage(), e);</span>
+            }
+<span class="fc" id="L140">            List&lt;RankedBibEntry&gt; rankedBibEntries = handler.getRankedBibEntries();</span>
+<span class="fc" id="L141">            rankedBibEntries.sort((RankedBibEntry rankedBibEntry1,</span>
+<span class="fc" id="L142">                    RankedBibEntry rankedBibEntry2) -&gt; rankedBibEntry1.rank.compareTo(rankedBibEntry2.rank));</span>
+<span class="fc" id="L143">            bibEntries = rankedBibEntries.stream().map(e -&gt; e.entry).collect(Collectors.toList());</span>
+<span class="pc" id="L144">        } catch (ParserConfigurationException | SAXException e) {</span>
+<span class="nc" id="L145">            LOGGER.error(e.getMessage(), e);</span>
+        }
+
+<span class="fc bfc" id="L148" title="All 2 branches covered.">        for (BibEntry bibentry : bibEntries) {</span>
+<span class="fc" id="L149">            bibDatabase.insertEntry(bibentry);</span>
+        }
+
+<span class="fc" id="L152">        parserResult = new ParserResult(bibDatabase);</span>
+<span class="fc" id="L153">    }</span>
+
+    public ParserResult getParserResult() {
+<span class="nc" id="L156">        return parserResult;</span>
+    }
+
+    /**
+     * Handler that parses the response from Mr. DLib to BibEntries
+     */
+<span class="fc" id="L162">    private class MrDlibImporterHandler extends DefaultHandler {</span>
+
+        // The list ob BibEntries with its associated rank
+<span class="fc" id="L165">        private final List&lt;RankedBibEntry&gt; rankedBibEntries = new ArrayList&lt;&gt;();</span>
+
+        private boolean authors;
+        private boolean published_in;
+        private boolean title;
+        private boolean year;
+        private boolean snippet;
+        private boolean rank;
+        private boolean type;
+        private String htmlSnippetSingle;
+<span class="fc" id="L175">        private int htmlSnippetSingleRank = -1;</span>
+        private BibEntry currentEntry;
+
+        public List&lt;RankedBibEntry&gt; getRankedBibEntries() {
+<span class="fc" id="L179">            return rankedBibEntries;</span>
+        }
+
+        @Override
+        public void startElement(String uri, String localName, String qName, Attributes attributes)
+                throws SAXException {
+
+<span class="pc bpc" id="L186" title="9 of 22 branches missed.">            switch (qName.toLowerCase(Locale.ROOT)) {</span>
+            case &quot;related_article&quot;:
+<span class="fc" id="L188">                currentEntry = new BibEntry();</span>
+<span class="fc" id="L189">                htmlSnippetSingle = null;</span>
+<span class="fc" id="L190">                htmlSnippetSingleRank = -1;</span>
+<span class="fc" id="L191">                break;</span>
+            case &quot;authors&quot;:
+<span class="fc" id="L193">                authors = true;</span>
+<span class="fc" id="L194">                break;</span>
+            case &quot;published_in&quot;:
+<span class="fc" id="L196">                published_in = true;</span>
+<span class="fc" id="L197">                break;</span>
+            case &quot;title&quot;:
+<span class="fc" id="L199">                title = true;</span>
+<span class="fc" id="L200">                break;</span>
+            case &quot;year&quot;:
+<span class="fc" id="L202">                year = true;</span>
+<span class="fc" id="L203">                break;</span>
+            case &quot;type&quot;:
+<span class="nc" id="L205">                type = true;</span>
+<span class="nc" id="L206">                break;</span>
+            case &quot;suggested_rank&quot;:
+<span class="fc" id="L208">                rank = true;</span>
+<span class="fc" id="L209">                break;</span>
+            default:
+                break;
+            }
+<span class="fc bfc" id="L213" title="All 2 branches covered.">            if (qName.equalsIgnoreCase(&quot;snippet&quot;)</span>
+<span class="fc bfc" id="L214" title="All 2 branches covered.">                    &amp;&amp; attributes.getValue(0).equalsIgnoreCase(&quot;html_fully_formatted&quot;)) {</span>
+<span class="fc" id="L215">                snippet = true;</span>
+            }
+<span class="fc" id="L217">        }</span>
+
+        @Override
+        public void endElement(String uri, String localName, String qName) throws SAXException {
+<span class="fc bfc" id="L221" title="All 2 branches covered.">            if (qName.equalsIgnoreCase(&quot;related_article&quot;)) {</span>
+<span class="fc" id="L222">                rankedBibEntries.add(new RankedBibEntry(currentEntry, htmlSnippetSingleRank));</span>
+<span class="fc" id="L223">                currentEntry = new BibEntry();</span>
+            }
+<span class="fc" id="L225">        }</span>
+
+        @Override
+        public void characters(char ch[], int start, int length) throws SAXException {
+
+<span class="fc bfc" id="L230" title="All 2 branches covered.">            if (authors) {</span>
+<span class="fc" id="L231">                currentEntry.setField(FieldName.AUTHOR, new String(ch, start, length));</span>
+<span class="fc" id="L232">                authors = false;</span>
+            }
+<span class="fc bfc" id="L234" title="All 2 branches covered.">            if (published_in) {</span>
+<span class="fc" id="L235">                currentEntry.setField(FieldName.JOURNAL, new String(ch, start, length));</span>
+<span class="fc" id="L236">                published_in = false;</span>
+            }
+<span class="fc bfc" id="L238" title="All 2 branches covered.">            if (title) {</span>
+<span class="fc" id="L239">                currentEntry.setField(FieldName.TITLE, new String(ch, start, length));</span>
+<span class="fc" id="L240">                title = false;</span>
+            }
+<span class="fc bfc" id="L242" title="All 2 branches covered.">            if (year) {</span>
+<span class="fc" id="L243">                currentEntry.setField(FieldName.YEAR, new String(ch, start, length));</span>
+<span class="fc" id="L244">                year = false;</span>
+            }
+<span class="fc bfc" id="L246" title="All 2 branches covered.">            if (rank) {</span>
+<span class="fc" id="L247">                htmlSnippetSingleRank = Integer.parseInt(new String(ch, start, length));</span>
+<span class="fc" id="L248">                rank = false;</span>
+            }
+<span class="fc bfc" id="L250" title="All 2 branches covered.">            if (snippet) {</span>
+<span class="fc" id="L251">                currentEntry.setField(&quot;html_representation&quot;, new String(ch, start, length));</span>
+<span class="fc" id="L252">                snippet = false;</span>
+            }
+
+<span class="fc" id="L255">        }</span>
+
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

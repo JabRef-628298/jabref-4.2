@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>SynchronizationTestSimulator.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.shared</a> &gt; <span class="el_source">SynchronizationTestSimulator.java</span></div><h1>SynchronizationTestSimulator.java</h1><pre class="source lang-java linenums">package org.jabref.logic.shared;
+
+import java.sql.SQLException;
+import java.util.Collection;
+
+import org.jabref.logic.shared.exception.InvalidDBMSConnectionPropertiesException;
+import org.jabref.model.Defaults;
+import org.jabref.model.bibtexkeypattern.GlobalBibtexKeyPattern;
+import org.jabref.model.database.BibDatabaseContext;
+import org.jabref.model.database.BibDatabaseMode;
+import org.jabref.model.database.shared.DBMSType;
+import org.jabref.model.database.shared.DatabaseNotSupportedException;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.util.DummyFileUpdateMonitor;
+import org.jabref.testutils.category.DatabaseTest;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+@DatabaseTest
+<span class="fc" id="L30">public class SynchronizationTestSimulator {</span>
+
+    private BibDatabaseContext clientContextA;
+    private BibDatabaseContext clientContextB;
+
+    private SynchronizationTestEventListener eventListenerB; // used to monitor occurring events
+
+    private DBMSConnection dbmsConnection;
+
+    @Parameter
+    public DBMSType dbmsType;
+
+    @BeforeEach
+    public void setUp() throws SQLException, DatabaseNotSupportedException, InvalidDBMSConnectionPropertiesException {
+<span class="nc" id="L44">        this.dbmsConnection = TestConnector.getTestDBMSConnection(dbmsType);</span>
+
+<span class="nc" id="L46">        GlobalBibtexKeyPattern pattern = GlobalBibtexKeyPattern.fromPattern(&quot;[auth][year]&quot;);</span>
+<span class="nc" id="L47">        clientContextA = new BibDatabaseContext(new Defaults(BibDatabaseMode.BIBTEX));</span>
+<span class="nc" id="L48">        DBMSSynchronizer synchronizerA = new DBMSSynchronizer(clientContextA, ',', pattern, new DummyFileUpdateMonitor());</span>
+<span class="nc" id="L49">        clientContextA.convertToSharedDatabase(synchronizerA);</span>
+<span class="nc" id="L50">        clientContextA.getDBMSSynchronizer().openSharedDatabase(dbmsConnection);</span>
+
+<span class="nc" id="L52">        clientContextB = new BibDatabaseContext(new Defaults(BibDatabaseMode.BIBTEX));</span>
+<span class="nc" id="L53">        DBMSSynchronizer synchronizerB = new DBMSSynchronizer(clientContextA, ',', pattern, new DummyFileUpdateMonitor());</span>
+<span class="nc" id="L54">        clientContextB.convertToSharedDatabase(synchronizerB);</span>
+<span class="nc" id="L55">        clientContextB.getDBMSSynchronizer().openSharedDatabase(dbmsConnection);</span>
+<span class="nc" id="L56">        eventListenerB = new SynchronizationTestEventListener();</span>
+<span class="nc" id="L57">        clientContextB.getDBMSSynchronizer().registerListener(eventListenerB);</span>
+<span class="nc" id="L58">    }</span>
+
+    @Parameters(name = &quot;Test with {0} database system&quot;)
+    public static Collection&lt;DBMSType&gt; getTestingDatabaseSystems() {
+<span class="nc" id="L62">        return TestManager.getDBMSTypeTestParameter();</span>
+    }
+
+    @Test
+    public void simulateEntryInsertionAndManualPull() {
+        //client A inserts an entry
+<span class="nc" id="L68">        clientContextA.getDatabase().insertEntry(getBibEntryExample(1));</span>
+        //client A inserts another entry
+<span class="nc" id="L70">        clientContextA.getDatabase().insertEntry(getBibEntryExample(2));</span>
+        //client B pulls the changes
+<span class="nc" id="L72">        clientContextB.getDBMSSynchronizer().pullChanges();</span>
+
+<span class="nc" id="L74">        assertEquals(clientContextA.getDatabase().getEntries(), clientContextB.getDatabase().getEntries());</span>
+<span class="nc" id="L75">    }</span>
+
+    @Test
+    public void simulateEntryUpdateAndManualPull() {
+<span class="nc" id="L79">        BibEntry bibEntry = getBibEntryExample(1);</span>
+        //client A inserts an entry
+<span class="nc" id="L81">        clientContextA.getDatabase().insertEntry(bibEntry);</span>
+        //client A changes the entry
+<span class="nc" id="L83">        bibEntry.setField(&quot;custom&quot;, &quot;custom value&quot;);</span>
+        //client B pulls the changes
+<span class="nc" id="L85">        bibEntry.clearField(&quot;author&quot;);</span>
+
+<span class="nc" id="L87">        clientContextB.getDBMSSynchronizer().pullChanges();</span>
+
+<span class="nc" id="L89">        assertEquals(clientContextA.getDatabase().getEntries(), clientContextB.getDatabase().getEntries());</span>
+<span class="nc" id="L90">    }</span>
+
+    @Test
+    public void simulateEntryDelitionAndManualPull() {
+<span class="nc" id="L94">        BibEntry bibEntry = getBibEntryExample(1);</span>
+        //client A inserts an entry
+<span class="nc" id="L96">        clientContextA.getDatabase().insertEntry(bibEntry);</span>
+        //client B pulls the entry
+<span class="nc" id="L98">        clientContextB.getDBMSSynchronizer().pullChanges();</span>
+
+<span class="nc" id="L100">        assertFalse(clientContextA.getDatabase().getEntries().isEmpty());</span>
+<span class="nc" id="L101">        assertFalse(clientContextB.getDatabase().getEntries().isEmpty());</span>
+<span class="nc" id="L102">        assertEquals(clientContextA.getDatabase().getEntries(), clientContextB.getDatabase().getEntries());</span>
+
+        //client A removes the entry
+<span class="nc" id="L105">        clientContextA.getDatabase().removeEntry(bibEntry);</span>
+        //client B pulls the change
+<span class="nc" id="L107">        clientContextB.getDBMSSynchronizer().pullChanges();</span>
+
+<span class="nc" id="L109">        assertTrue(clientContextA.getDatabase().getEntries().isEmpty());</span>
+<span class="nc" id="L110">        assertTrue(clientContextB.getDatabase().getEntries().isEmpty());</span>
+<span class="nc" id="L111">    }</span>
+
+    @Test
+    public void simulateUpdateOnNoLongerExistingEntry() {
+<span class="nc" id="L115">        BibEntry bibEntryOfClientA = getBibEntryExample(1);</span>
+        //client A inserts an entry
+<span class="nc" id="L117">        clientContextA.getDatabase().insertEntry(bibEntryOfClientA);</span>
+        //client B pulls the entry
+<span class="nc" id="L119">        clientContextB.getDBMSSynchronizer().pullChanges();</span>
+
+<span class="nc" id="L121">        assertFalse(clientContextA.getDatabase().getEntries().isEmpty());</span>
+<span class="nc" id="L122">        assertFalse(clientContextB.getDatabase().getEntries().isEmpty());</span>
+<span class="nc" id="L123">        assertEquals(clientContextA.getDatabase().getEntries(), clientContextB.getDatabase().getEntries());</span>
+
+        //client A removes the entry
+<span class="nc" id="L126">        clientContextA.getDatabase().removeEntry(bibEntryOfClientA);</span>
+
+<span class="nc" id="L128">        assertFalse(clientContextB.getDatabase().getEntries().isEmpty());</span>
+<span class="nc" id="L129">        assertNull(eventListenerB.getSharedEntryNotPresentEvent());</span>
+        //client B tries to update the entry
+<span class="nc" id="L131">        BibEntry bibEntryOfClientB = clientContextB.getDatabase().getEntries().get(0);</span>
+<span class="nc" id="L132">        bibEntryOfClientB.setField(&quot;year&quot;, &quot;2009&quot;);</span>
+
+        // here a new SharedEntryNotPresentEvent has been thrown. In this case the user B would get an pop-up window.
+<span class="nc" id="L135">        assertNotNull(eventListenerB.getSharedEntryNotPresentEvent());</span>
+<span class="nc" id="L136">        assertEquals(bibEntryOfClientB, eventListenerB.getSharedEntryNotPresentEvent().getBibEntry());</span>
+<span class="nc" id="L137">    }</span>
+
+    @Test
+    public void simulateEntryChangeConflicts() {
+<span class="nc" id="L141">        BibEntry bibEntryOfClientA = getBibEntryExample(1);</span>
+        //client A inserts an entry
+<span class="nc" id="L143">        clientContextA.getDatabase().insertEntry(bibEntryOfClientA);</span>
+        //client B pulls the entry
+<span class="nc" id="L145">        clientContextB.getDBMSSynchronizer().pullChanges();</span>
+
+        //A now increases the version number
+<span class="nc" id="L148">        bibEntryOfClientA.setField(&quot;year&quot;, &quot;2001&quot;);</span>
+
+        // B does nothing here, so there is no event occurrence
+        // B now tries to update the entry
+<span class="nc" id="L152">        assertFalse(clientContextB.getDatabase().getEntries().isEmpty());</span>
+
+<span class="nc" id="L154">        assertNull(eventListenerB.getUpdateRefusedEvent());</span>
+
+<span class="nc" id="L156">        BibEntry bibEntryOfClientB = clientContextB.getDatabase().getEntries().get(0);</span>
+        //B also tries to change something
+<span class="nc" id="L158">        bibEntryOfClientB.setField(&quot;year&quot;, &quot;2016&quot;);</span>
+
+        // B now cannot update the shared entry, due to optimistic offline lock.
+        // In this case an BibEntry merge dialog pops up.
+<span class="nc" id="L162">        assertNotNull(eventListenerB.getUpdateRefusedEvent());</span>
+<span class="nc" id="L163">    }</span>
+
+    private BibEntry getBibEntryExample(int index) {
+<span class="nc" id="L166">        BibEntry bibEntry = new BibEntry();</span>
+<span class="nc" id="L167">        bibEntry.setType(&quot;inproceedings&quot;);</span>
+<span class="nc" id="L168">        bibEntry.setField(&quot;author&quot;, &quot;Wirthlin, Michael J and Hutchings, Brad L and Gilson, Kent L &quot; + index);</span>
+<span class="nc" id="L169">        bibEntry.setField(&quot;title&quot;, &quot;The nano processor: a low resource reconfigurable processor &quot; + index);</span>
+<span class="nc" id="L170">        bibEntry.setField(&quot;booktitle&quot;, &quot;FPGAs for Custom Computing Machines, 1994. Proceedings. IEEE Workshop on &quot; + index);</span>
+<span class="nc" id="L171">        bibEntry.setField(&quot;year&quot;, &quot;199&quot; + index);</span>
+<span class="nc" id="L172">        bibEntry.setCiteKey(&quot;nanoproc199&quot; + index);</span>
+<span class="nc" id="L173">        return bibEntry;</span>
+    }
+
+    @AfterEach
+    public void clear() throws SQLException {
+<span class="nc" id="L178">        TestManager.clearTables(dbmsConnection);</span>
+<span class="nc" id="L179">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

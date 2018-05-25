@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>ShippedJournalAbbreviationDuplicateTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.journals</a> &gt; <span class="el_source">ShippedJournalAbbreviationDuplicateTest.java</span></div><h1>ShippedJournalAbbreviationDuplicateTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.journals;
+
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
+<span class="fc" id="L7">public class ShippedJournalAbbreviationDuplicateTest {</span>
+
+    @Test
+    public void noDuplicatesInShippedIEEEOfficialJournalAbbreviations() {
+<span class="fc" id="L11">        JournalAbbreviationRepository repoBuiltIn = new JournalAbbreviationRepository();</span>
+<span class="fc" id="L12">        repoBuiltIn.addEntries(JournalAbbreviationLoader.getBuiltInAbbreviations());</span>
+
+<span class="fc" id="L14">        JournalAbbreviationLoader.getOfficialIEEEAbbreviations().parallelStream().forEach(abbreviation -&gt; {</span>
+<span class="fc" id="L15">            assertFalse(repoBuiltIn.getAbbreviation(abbreviation.getName()).isPresent());</span>
+<span class="fc" id="L16">            assertFalse(repoBuiltIn.getAbbreviation(abbreviation.getIsoAbbreviation()).isPresent(), &quot;duplicate iso &quot; + abbreviation.toString());</span>
+<span class="fc" id="L17">            assertFalse(repoBuiltIn.getAbbreviation(abbreviation.getMedlineAbbreviation()).isPresent(), &quot;duplicate medline &quot; + abbreviation.toString());</span>
+<span class="fc" id="L18">        });</span>
+<span class="fc" id="L19">    }</span>
+
+    @Test
+    public void noDuplicatesInShippedIEEEStandardJournalAbbreviations() {
+<span class="fc" id="L23">        JournalAbbreviationRepository repoBuiltIn = new JournalAbbreviationRepository();</span>
+<span class="fc" id="L24">        repoBuiltIn.addEntries(JournalAbbreviationLoader.getBuiltInAbbreviations());</span>
+
+<span class="fc" id="L26">        JournalAbbreviationLoader.getStandardIEEEAbbreviations().parallelStream().forEach(abbreviation -&gt; {</span>
+<span class="fc" id="L27">            assertFalse(repoBuiltIn.getAbbreviation(abbreviation.getName()).isPresent(), &quot;duplicate name &quot; + abbreviation.toString());</span>
+<span class="fc" id="L28">            assertFalse(repoBuiltIn.getAbbreviation(abbreviation.getIsoAbbreviation()).isPresent(), &quot;duplicate iso &quot; + abbreviation.toString());</span>
+<span class="fc" id="L29">            assertFalse(repoBuiltIn.getAbbreviation(abbreviation.getMedlineAbbreviation()).isPresent(), &quot;duplicate medline &quot; + abbreviation.toString());</span>
+<span class="fc" id="L30">        });</span>
+<span class="fc" id="L31">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

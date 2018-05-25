@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>AstrophysicsDataSystemTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.importer.fetcher</a> &gt; <span class="el_source">AstrophysicsDataSystemTest.java</span></div><h1>AstrophysicsDataSystemTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.importer.fetcher;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+
+import org.jabref.logic.bibtex.FieldContentParserPreferences;
+import org.jabref.logic.importer.ImportFormatPreferences;
+import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.BiblatexEntryTypes;
+import org.jabref.model.entry.BibtexEntryTypes;
+import org.jabref.model.entry.FieldName;
+import org.jabref.testutils.category.FetcherTest;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+@FetcherTest
+<span class="fc" id="L24">public class AstrophysicsDataSystemTest {</span>
+
+    private AstrophysicsDataSystem fetcher;
+    private BibEntry diezSliceTheoremEntry, famaeyMcGaughEntry, sunWelchEntry, xiongSunEntry, ingersollPollardEntry, luceyPaulEntry;
+
+    @BeforeEach
+    public void setUp() throws Exception {
+<span class="fc" id="L31">        ImportFormatPreferences importFormatPreferences = mock(ImportFormatPreferences.class);</span>
+<span class="fc" id="L32">        when(importFormatPreferences.getFieldContentParserPreferences()).thenReturn(</span>
+<span class="fc" id="L33">                mock(FieldContentParserPreferences.class));</span>
+<span class="fc" id="L34">        fetcher = new AstrophysicsDataSystem(importFormatPreferences);</span>
+
+<span class="fc" id="L36">        diezSliceTheoremEntry = new BibEntry();</span>
+<span class="fc" id="L37">        diezSliceTheoremEntry.setType(BibtexEntryTypes.ARTICLE);</span>
+<span class="fc" id="L38">        diezSliceTheoremEntry.setCiteKey(&quot;2014arXiv1405.2249D&quot;);</span>
+<span class="fc" id="L39">        diezSliceTheoremEntry.setField(&quot;author&quot;, &quot;Diez, T.&quot;);</span>
+<span class="fc" id="L40">        diezSliceTheoremEntry.setField(&quot;title&quot;, &quot;Slice theorem for Fr$\\backslash$'echet group actions and covariant symplectic field theory&quot;);</span>
+<span class="fc" id="L41">        diezSliceTheoremEntry.setField(&quot;year&quot;, &quot;2014&quot;);</span>
+<span class="fc" id="L42">        diezSliceTheoremEntry.setField(&quot;archiveprefix&quot;, &quot;arXiv&quot;);</span>
+<span class="fc" id="L43">        diezSliceTheoremEntry.setField(&quot;eprint&quot;, &quot;1405.2249&quot;);</span>
+<span class="fc" id="L44">        diezSliceTheoremEntry.setField(&quot;journal&quot;, &quot;ArXiv e-prints&quot;);</span>
+<span class="fc" id="L45">        diezSliceTheoremEntry.setField(&quot;keywords&quot;, &quot;Mathematical Physics, Mathematics - Differential Geometry, Mathematics - Symplectic Geometry, 58B99, 58Z05, 58B25, 22E65, 58D19, 53D20, 53D42&quot;);</span>
+<span class="fc" id="L46">        diezSliceTheoremEntry.setField(&quot;month&quot;, &quot;#may#&quot;);</span>
+<span class="fc" id="L47">        diezSliceTheoremEntry.setField(&quot;primaryclass&quot;, &quot;math-ph&quot;);</span>
+<span class="fc" id="L48">        diezSliceTheoremEntry.setField(&quot;url&quot;, &quot;http://adsabs.harvard.edu/abs/2014arXiv1405.2249D&quot;);</span>
+<span class="fc" id="L49">        diezSliceTheoremEntry.setField(&quot;abstract&quot;,</span>
+<span class="fc" id="L50">                &quot;A general slice theorem for the action of a Fr$\\backslash$'echet Lie group on a &quot;</span>
+                        + &quot;Fr$\\backslash$'echet manifolds is established. The Nash-Moser theorem provides the &quot;
+                        + &quot;fundamental tool to generalize the result of Palais to this &quot;
+                        + &quot;infinite-dimensional setting. The presented slice theorem is illustrated &quot;
+                        + &quot;by its application to gauge theories: the action of the gauge &quot;
+                        + &quot;transformation group admits smooth slices at every point and thus the &quot;
+                        + &quot;gauge orbit space is stratified by Fr$\\backslash$'echet manifolds. Furthermore, a &quot;
+                        + &quot;covariant and symplectic formulation of classical field theory is &quot;
+                        + &quot;proposed and extensively discussed. At the root of this novel framework &quot;
+                        + &quot;is the incorporation of field degrees of freedom F and spacetime M into &quot;
+                        + &quot;the product manifold F * M. The induced bigrading of differential forms &quot;
+                        + &quot;is used in order to carry over the usual symplectic theory to this new &quot;
+                        + &quot;setting. The examples of the Klein-Gordon field and general Yang-Mills &quot;
+                        + &quot;theory illustrate that the presented approach conveniently handles the &quot;
+                        + &quot;occurring symmetries.&quot;);
+
+<span class="fc" id="L66">        famaeyMcGaughEntry = new BibEntry();</span>
+<span class="fc" id="L67">        famaeyMcGaughEntry.setType(BiblatexEntryTypes.ARTICLE);</span>
+<span class="fc" id="L68">        famaeyMcGaughEntry.setField(&quot;bibtexkey&quot;, &quot;2012LRR....15...10F&quot;);</span>
+<span class="fc" id="L69">        famaeyMcGaughEntry.setField(&quot;author&quot;, &quot;Famaey, B. and McGaugh, S. S.&quot;);</span>
+<span class="fc" id="L70">        famaeyMcGaughEntry.setField(&quot;title&quot;, &quot;Modified Newtonian Dynamics (MOND): Observational Phenomenology and Relativistic Extensions&quot;);</span>
+<span class="fc" id="L71">        famaeyMcGaughEntry.setField(&quot;journal&quot;, &quot;Living Reviews in Relativity&quot;);</span>
+<span class="fc" id="L72">        famaeyMcGaughEntry.setField(&quot;year&quot;, &quot;2012&quot;);</span>
+<span class="fc" id="L73">        famaeyMcGaughEntry.setField(&quot;volume&quot;, &quot;15&quot;);</span>
+<span class="fc" id="L74">        famaeyMcGaughEntry.setField(&quot;month&quot;, &quot;#sep#&quot;);</span>
+<span class="fc" id="L75">        famaeyMcGaughEntry.setField(&quot;archiveprefix&quot;, &quot;arXiv&quot;);</span>
+<span class="fc" id="L76">        famaeyMcGaughEntry.setField(&quot;doi&quot;, &quot;10.12942/lrr-2012-10&quot;);</span>
+<span class="fc" id="L77">        famaeyMcGaughEntry.setField(&quot;eid&quot;, &quot;10&quot;);</span>
+<span class="fc" id="L78">        famaeyMcGaughEntry.setField(&quot;eprint&quot;, &quot;1112.3960&quot;);</span>
+<span class="fc" id="L79">        famaeyMcGaughEntry.setField(&quot;pages&quot;, &quot;10&quot;);</span>
+<span class="fc" id="L80">        famaeyMcGaughEntry.setField(&quot;keywords&quot;, &quot;astronomical observations, Newtonian limit, equations of motion, extragalactic astronomy, cosmology, theories of gravity, fundamental physics, astrophysics&quot;);</span>
+<span class="fc" id="L81">        famaeyMcGaughEntry.setField(&quot;url&quot;, &quot;http://adsabs.harvard.edu/abs/2012LRR....15...10F&quot;);</span>
+
+<span class="fc" id="L83">        sunWelchEntry = new BibEntry();</span>
+<span class="fc" id="L84">        sunWelchEntry.setType(BiblatexEntryTypes.ARTICLE);</span>
+<span class="fc" id="L85">        sunWelchEntry.setField(&quot;bibtexkey&quot;, &quot;2012NatMa..11...44S&quot;);</span>
+<span class="fc" id="L86">        sunWelchEntry.setField(&quot;author&quot;, &quot;Sun, Y. and Welch, G. C. and Leong, W. L. and Takacs, C. J. and Bazan, G. C. and Heeger, A. J.&quot;);</span>
+<span class="fc" id="L87">        sunWelchEntry.setField(&quot;doi&quot;, &quot;10.1038/nmat3160&quot;);</span>
+<span class="fc" id="L88">        sunWelchEntry.setField(&quot;journal&quot;, &quot;Nature Materials&quot;);</span>
+<span class="fc" id="L89">        sunWelchEntry.setField(&quot;month&quot;, &quot;#jan#&quot;);</span>
+<span class="fc" id="L90">        sunWelchEntry.setField(&quot;pages&quot;, &quot;44-48&quot;);</span>
+<span class="fc" id="L91">        sunWelchEntry.setField(&quot;title&quot;, &quot;Solution-processed small-molecule solar cells with 6.7\\% efficiency&quot;);</span>
+<span class="fc" id="L92">        sunWelchEntry.setField(&quot;volume&quot;, &quot;11&quot;);</span>
+<span class="fc" id="L93">        sunWelchEntry.setField(&quot;year&quot;, &quot;2012&quot;);</span>
+<span class="fc" id="L94">        sunWelchEntry.setField(&quot;url&quot;, &quot;http://adsabs.harvard.edu/abs/2012NatMa..11...44S&quot;);</span>
+
+<span class="fc" id="L96">        xiongSunEntry = new BibEntry();</span>
+<span class="fc" id="L97">        xiongSunEntry.setType(BiblatexEntryTypes.ARTICLE);</span>
+<span class="fc" id="L98">        xiongSunEntry.setField(&quot;bibtexkey&quot;, &quot;2007ITGRS..45..879X&quot;);</span>
+<span class="fc" id="L99">        xiongSunEntry.setField(&quot;author&quot;, &quot;Xiong, X. and Sun, J. and Barnes, W. and Salomonson, V. and Esposito, J. and Erives, H. and Guenther, B.&quot;);</span>
+<span class="fc" id="L100">        xiongSunEntry.setField(&quot;doi&quot;, &quot;10.1109/TGRS.2006.890567&quot;);</span>
+<span class="fc" id="L101">        xiongSunEntry.setField(&quot;journal&quot;, &quot;IEEE Transactions on Geoscience and Remote Sensing&quot;);</span>
+<span class="fc" id="L102">        xiongSunEntry.setField(&quot;month&quot;, &quot;#apr#&quot;);</span>
+<span class="fc" id="L103">        xiongSunEntry.setField(&quot;pages&quot;, &quot;879-889&quot;);</span>
+<span class="fc" id="L104">        xiongSunEntry.setField(&quot;title&quot;, &quot;Multiyear On-Orbit Calibration and Performance of Terra MODIS Reflective Solar Bands&quot;);</span>
+<span class="fc" id="L105">        xiongSunEntry.setField(&quot;volume&quot;, &quot;45&quot;);</span>
+<span class="fc" id="L106">        xiongSunEntry.setField(&quot;year&quot;, &quot;2007&quot;);</span>
+<span class="fc" id="L107">        xiongSunEntry.setField(&quot;url&quot;, &quot;http://adsabs.harvard.edu/abs/2007ITGRS..45..879X&quot;);</span>
+
+<span class="fc" id="L109">        ingersollPollardEntry = new BibEntry();</span>
+<span class="fc" id="L110">        ingersollPollardEntry.setType(BiblatexEntryTypes.ARTICLE);</span>
+<span class="fc" id="L111">        ingersollPollardEntry.setField(&quot;bibtexkey&quot;, &quot;1982Icar...52...62I&quot;);</span>
+<span class="fc" id="L112">        ingersollPollardEntry.setField(&quot;author&quot;, &quot;Ingersoll, A. P. and Pollard, D.&quot;);</span>
+<span class="fc" id="L113">        ingersollPollardEntry.setField(&quot;doi&quot;, &quot;10.1016/0019-1035(82)90169-5&quot;);</span>
+<span class="fc" id="L114">        ingersollPollardEntry.setField(&quot;journal&quot;, &quot;\\icarus&quot;);</span>
+<span class="fc" id="L115">        ingersollPollardEntry.setField(&quot;keywords&quot;, &quot;Atmospheric Circulation, Barotropic Flow, Convective Flow, Flow Stability, Jupiter Atmosphere, Rotating Fluids, Saturn Atmosphere, Adiabatic Flow, Anelasticity, Compressible Fluids, Planetary Rotation, Rotating Cylinders, Scaling Laws, Wind Profiles, PLANETS, JUPITER, SATURN, MOTION, INTERIORS, ATMOSPHERE, ANALYSIS, SCALE, BAROTROPY, CHARACTERISTICS, STRUCTURE, WINDS, VISCOSITY, DATA, CONVECTION, ROTATION, EDDY EFFECTS, ENERGY, ADIABATICITY, DIAGRAMS, REVIEW, LATITUDE, ZONES, VELOCITY, MATHEMATICAL MODELS, HEAT FLOW, EQUATIONS OF MOTION, FLUIDS, DYNAMICS, TEMPERATURE, GRADIENTS&quot;);</span>
+<span class="fc" id="L116">        ingersollPollardEntry.setField(&quot;month&quot;, &quot;#oct#&quot;);</span>
+<span class="fc" id="L117">        ingersollPollardEntry.setField(&quot;pages&quot;, &quot;62-80&quot;);</span>
+<span class="fc" id="L118">        ingersollPollardEntry.setField(&quot;title&quot;, &quot;Motion in the interiors and atmospheres of Jupiter and Saturn - Scale analysis, anelastic equations, barotropic stability criterion&quot;);</span>
+<span class="fc" id="L119">        ingersollPollardEntry.setField(&quot;volume&quot;, &quot;52&quot;);</span>
+<span class="fc" id="L120">        ingersollPollardEntry.setField(&quot;year&quot;, &quot;1982&quot;);</span>
+<span class="fc" id="L121">        ingersollPollardEntry.setField(&quot;url&quot;, &quot;http://adsabs.harvard.edu/abs/1982Icar...52...62I&quot;);</span>
+
+<span class="fc" id="L123">        luceyPaulEntry = new BibEntry();</span>
+<span class="fc" id="L124">        luceyPaulEntry.setType(BiblatexEntryTypes.ARTICLE);</span>
+<span class="fc" id="L125">        luceyPaulEntry.setField(&quot;bibtexkey&quot;, &quot;2000JGR...10520297L&quot;);</span>
+<span class="fc" id="L126">        luceyPaulEntry.setField(&quot;author&quot;, &quot;Lucey, P. G. and Blewett, D. T. and Jolliff, B. L.&quot;);</span>
+<span class="fc" id="L127">        luceyPaulEntry.setField(&quot;doi&quot;, &quot;10.1029/1999JE001117&quot;);</span>
+<span class="fc" id="L128">        luceyPaulEntry.setField(&quot;journal&quot;, &quot;\\jgr&quot;);</span>
+<span class="fc" id="L129">        luceyPaulEntry.setField(&quot;keywords&quot;, &quot;Planetology: Solid Surface Planets: Composition, Planetology: Solid Surface Planets: Remote sensing, Planetology: Solid Surface Planets: Surface materials and properties, Planetology: Solar System Objects: Moon (1221)&quot;);</span>
+<span class="fc" id="L130">        luceyPaulEntry.setField(&quot;pages&quot;, &quot;20297-20306&quot;);</span>
+<span class="fc" id="L131">        luceyPaulEntry.setField(&quot;title&quot;, &quot;Lunar iron and titanium abundance algorithms based on final processing of Clementine ultraviolet-visible images&quot;);</span>
+<span class="fc" id="L132">        luceyPaulEntry.setField(&quot;volume&quot;, &quot;105&quot;);</span>
+<span class="fc" id="L133">        luceyPaulEntry.setField(&quot;year&quot;, &quot;2000&quot;);</span>
+<span class="fc" id="L134">        luceyPaulEntry.setField(&quot;url&quot;, &quot;http://adsabs.harvard.edu/abs/2000JGR...10520297L&quot;);</span>
+<span class="fc" id="L135">    }</span>
+
+    @Test
+    public void testHelpPage() {
+<span class="fc" id="L139">        assertEquals(&quot;ADS&quot;, fetcher.getHelpPage().getPageName());</span>
+<span class="fc" id="L140">    }</span>
+
+    @Test
+    public void testGetName() {
+<span class="fc" id="L144">        assertEquals(&quot;SAO/NASA Astrophysics Data System&quot;, fetcher.getName());</span>
+<span class="fc" id="L145">    }</span>
+
+    @Test
+    public void searchByQueryFindsEntry() throws Exception {
+<span class="fc" id="L149">        List&lt;BibEntry&gt; fetchedEntries = fetcher.performSearch(&quot;Diez slice theorem Lie&quot;);</span>
+<span class="fc" id="L150">        assertEquals(Collections.singletonList(diezSliceTheoremEntry), fetchedEntries);</span>
+<span class="fc" id="L151">    }</span>
+
+    @Test
+    public void searchByEntryFindsEntry() throws Exception {
+<span class="fc" id="L155">        BibEntry searchEntry = new BibEntry();</span>
+<span class="fc" id="L156">        searchEntry.setField(&quot;title&quot;, &quot;slice theorem&quot;);</span>
+<span class="fc" id="L157">        searchEntry.setField(&quot;author&quot;, &quot;Diez&quot;);</span>
+
+<span class="fc" id="L159">        List&lt;BibEntry&gt; fetchedEntries = fetcher.performSearch(searchEntry);</span>
+<span class="fc" id="L160">        assertFalse(fetchedEntries.isEmpty());</span>
+<span class="fc" id="L161">        assertEquals(diezSliceTheoremEntry, fetchedEntries.get(0));</span>
+<span class="fc" id="L162">    }</span>
+
+    @Test
+    public void testPerformSearchByFamaeyMcGaughEntry() throws Exception {
+<span class="fc" id="L166">        Optional&lt;BibEntry&gt; fetchedEntry = fetcher.performSearchById(&quot;10.12942/lrr-2012-10&quot;);</span>
+<span class="fc" id="L167">        fetchedEntry.ifPresent(entry -&gt; entry.clearField(FieldName.ABSTRACT));//Remove abstract due to copyright</span>
+<span class="fc" id="L168">        assertEquals(Optional.of(famaeyMcGaughEntry), fetchedEntry);</span>
+<span class="fc" id="L169">    }</span>
+
+    @Test
+    public void testPerformSearchByIdEmptyDOI() throws Exception {
+<span class="fc" id="L173">        Optional&lt;BibEntry&gt; fetchedEntry = fetcher.performSearchById(&quot;&quot;);</span>
+<span class="fc" id="L174">        assertEquals(Optional.empty(), fetchedEntry);</span>
+<span class="fc" id="L175">    }</span>
+
+    @Test
+    public void testPerformSearchByIdInvalidDoi() throws Exception {
+<span class="fc" id="L179">        Optional&lt;BibEntry&gt; fetchedEntry = fetcher.performSearchById(&quot;this.doi.will.fail&quot;);</span>
+<span class="fc" id="L180">        assertEquals(Optional.empty(), fetchedEntry);</span>
+<span class="fc" id="L181">    }</span>
+
+    @Test
+    public void testPerformSearchBySunWelchEntry() throws Exception {
+<span class="fc" id="L185">        Optional&lt;BibEntry&gt; fetchedEntry = fetcher.performSearchById(&quot;10.1038/nmat3160&quot;);</span>
+<span class="fc" id="L186">        fetchedEntry.ifPresent(entry -&gt; entry.clearField(FieldName.ABSTRACT)); //Remove abstract due to copyright</span>
+<span class="fc" id="L187">        assertEquals(Optional.of(sunWelchEntry), fetchedEntry);</span>
+<span class="fc" id="L188">    }</span>
+
+    @Test
+    public void testPerformSearchByXiongSunEntry() throws Exception {
+<span class="fc" id="L192">        Optional&lt;BibEntry&gt; fetchedEntry = fetcher.performSearchById(&quot;10.1109/TGRS.2006.890567&quot;);</span>
+<span class="fc" id="L193">        assertEquals(Optional.of(xiongSunEntry), fetchedEntry);</span>
+<span class="fc" id="L194">    }</span>
+
+    @Test
+    public void testPerformSearchByIngersollPollardEntry() throws Exception {
+<span class="fc" id="L198">        Optional&lt;BibEntry&gt; fetchedEntry = fetcher.performSearchById(&quot;10.1016/0019-1035(82)90169-5&quot;);</span>
+<span class="fc" id="L199">        assertEquals(Optional.of(ingersollPollardEntry), fetchedEntry);</span>
+<span class="fc" id="L200">    }</span>
+
+    @Test
+    public void testPerformSearchByLuceyPaulEntry() throws Exception {
+<span class="fc" id="L204">        Optional&lt;BibEntry&gt; fetchedEntry = fetcher.performSearchById(&quot;10.1029/1999JE001117&quot;);</span>
+<span class="fc" id="L205">        assertEquals(Optional.of(luceyPaulEntry), fetchedEntry);</span>
+<span class="fc" id="L206">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>EntryTableTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui</a> &gt; <span class="el_source">EntryTableTest.java</span></div><h1>EntryTableTest.java</h1><pre class="source lang-java linenums">package org.jabref.gui;
+
+import java.awt.event.KeyEvent;
+import java.util.regex.Pattern;
+
+import org.jabref.testutils.category.GUITest;
+
+import org.assertj.swing.fixture.JTableCellFixture;
+import org.assertj.swing.fixture.JTableFixture;
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
+
+/**
+ * Specific Use-Case:
+ * I import a database. Then I doubleclick on the first entry in the table to open the entry editor.
+ * Then I click on the first entry again, and scroll through all of the lists entries, without having to click
+ * on the table again.
+ */
+@Category(GUITest.class)
+<span class="fc" id="L21">public class EntryTableTest extends AbstractUITest{</span>
+
+    private final static int SCROLL_ACTION_EXECUTION = 5;
+    private final static String TEST_FILE_NAME = &quot;testbib/testjabref.bib&quot;;
+    private final static int DOWN = KeyEvent.VK_DOWN;
+    private final static int UP = KeyEvent.VK_UP;
+    private final static int TITLE_COLUMN_INDEX = 5;
+
+    @Test
+    public void scrollThroughEntryList() {
+<span class="nc" id="L31">        String path = getAbsolutePath(TEST_FILE_NAME);</span>
+
+<span class="nc" id="L33">        importBibIntoNewDatabase(path);</span>
+
+<span class="nc" id="L35">        JTableFixture entryTable = mainFrame.table();</span>
+
+        //use a pattern from the first row to select it since it seems to be the best way to get the cell object
+<span class="nc" id="L38">        Pattern pattern = Pattern.compile(&quot;256.*&quot;);</span>
+<span class="nc" id="L39">        JTableCellFixture firstCell = entryTable.cell(pattern);</span>
+
+<span class="nc" id="L41">        entryTable.selectRows(0).doubleClick();</span>
+        //delay has to be shortened so that double click is recognized
+<span class="nc" id="L43">        robot().settings().delayBetweenEvents(0);</span>
+<span class="nc" id="L44">        firstCell.doubleClick();</span>
+<span class="nc" id="L45">        robot().settings().delayBetweenEvents(SPEED_NORMAL);</span>
+
+<span class="nc" id="L47">        firstCell.click();</span>
+        //is the first table entry selected?
+<span class="nc" id="L49">        assertColumnValue(entryTable, 0, TITLE_COLUMN_INDEX, entryTable.selectionValue());</span>
+
+        //go throught the table and check if the entry with the correct index is selected
+<span class="nc bnc" id="L52" title="All 2 branches missed.">        for (int i=0; i &lt; SCROLL_ACTION_EXECUTION; i++) {</span>
+<span class="nc" id="L53">            robot().pressAndReleaseKey(DOWN);</span>
+<span class="nc bnc" id="L54" title="All 2 branches missed.">            Assert.assertTrue(entryTable.selectionValue() != null);</span>
+<span class="nc" id="L55">            assertColumnValue(entryTable, i+1, TITLE_COLUMN_INDEX, entryTable.selectionValue());</span>
+        }
+        //do the same going up again
+<span class="nc bnc" id="L58" title="All 2 branches missed.">        for (int i = SCROLL_ACTION_EXECUTION; i &gt; 0; i--) {</span>
+<span class="nc" id="L59">            robot().pressAndReleaseKey(UP);</span>
+<span class="nc bnc" id="L60" title="All 2 branches missed.">            Assert.assertTrue(entryTable.selectionValue() != null);</span>
+<span class="nc" id="L61">            assertColumnValue(entryTable, i-1, TITLE_COLUMN_INDEX, entryTable.selectionValue());</span>
+        }
+
+<span class="nc" id="L64">        closeDatabase();</span>
+<span class="nc" id="L65">        exitJabRef();</span>
+<span class="nc" id="L66">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>CitationStyleToClipboardWorkerTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.gui.worker</a> &gt; <span class="el_source">CitationStyleToClipboardWorkerTest.java</span></div><h1>CitationStyleToClipboardWorkerTest.java</h1><pre class="source lang-java linenums">package org.jabref.gui.worker;
+
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.StringSelection;
+import java.util.Arrays;
+
+import org.jabref.gui.exporter.RtfTransferable;
+import org.jabref.gui.fieldeditors.HtmlTransferable;
+import org.jabref.gui.fieldeditors.XmlTransferable;
+import org.jabref.logic.util.OS;
+
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+<span class="fc" id="L16">public class CitationStyleToClipboardWorkerTest {</span>
+
+    @Test
+    public void processPreviewText() throws Exception {
+<span class="fc" id="L20">        String expected = &quot;Article (Smith2016)Smith, B.; Jones, B. &amp; Williams, J.Taylor, P. (Ed.)Title of the test entry BibTeX Journal, JabRef Publishing, 2016, 34, 45-67 Abstract: This entry describes a test scenario which may be useful in JabRef. By providing a test entry it is possible to see how certain things will look in this graphical BIB-file mananger.&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L21">                &quot;Article (Smith2016)Smith, B.; Jones, B. &amp; Williams, J.Taylor, P. (Ed.)Title of the test entry BibTeX Journal, JabRef Publishing, 2016, 34, 45-67 Abstract: This entry describes a test scenario which may be useful in JabRef. By providing a test entry it is possible to see how certain things will look in this graphical BIB-file mananger.&quot;;</span>
+
+<span class="fc" id="L23">        String citation = &quot;Article (Smith2016)&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L24">                &quot;Smith, B.; Jones, B. &amp;amp; Williams, J.&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L25">                &quot;Taylor, P. (Ed.)&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L26">                &quot;Title of the test entry &quot; + OS.NEWLINE +</span>
+<span class="fc" id="L27">                &quot;BibTeX Journal, JabRef Publishing, 2016, 34, 45-67 &quot; + OS.NEWLINE +</span>
+<span class="fc" id="L28">                OS.NEWLINE +</span>
+<span class="fc" id="L29">                &quot;Abstract:  This entry describes a test scenario which may be useful in JabRef. By providing a test entry it is possible to see how certain things will look in this graphical BIB-file mananger. &quot;;</span>
+
+<span class="fc" id="L31">        HtmlTransferable HtmlTransferable = CitationStyleToClipboardWorker.processPreview(Arrays.asList(citation, citation));</span>
+
+<span class="fc" id="L33">        Object actual = HtmlTransferable.getTransferData(DataFlavor.stringFlavor);</span>
+<span class="fc" id="L34">        assertEquals(expected, actual);</span>
+<span class="fc" id="L35">    }</span>
+
+    @Test
+    public void processPreviewHtml() throws Exception {
+<span class="fc" id="L39">        String expected = &quot;&lt;font face=\&quot;sans-serif\&quot;&gt;&lt;b&gt;&lt;i&gt;Article&lt;/i&gt;&lt;a name=\&quot;Smith2016\&quot;&gt; (Smith2016)&lt;/a&gt;&lt;/b&gt;&lt;br&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L40">                &quot; Smith, B.; Jones, B. &amp;amp; Williams, J.&lt;BR&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L41">                &quot; Taylor, P. &lt;i&gt;(Ed.)&lt;/i&gt;&lt;BR&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L42">                &quot; Title of the test entry &lt;BR&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L43">                OS.NEWLINE +</span>
+<span class="fc" id="L44">                &quot; &lt;em&gt;BibTeX Journal, &lt;/em&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L45">                OS.NEWLINE +</span>
+<span class="fc" id="L46">                OS.NEWLINE +</span>
+<span class="fc" id="L47">                OS.NEWLINE +</span>
+<span class="fc" id="L48">                &quot; &lt;em&gt;JabRef Publishing, &lt;/em&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L49">                &quot;&lt;b&gt;2016&lt;/b&gt;&lt;i&gt;, 34&lt;/i&gt;, 45-67 &quot; + OS.NEWLINE +</span>
+<span class="fc" id="L50">                &quot;&lt;BR&gt;&lt;BR&gt;&lt;b&gt;Abstract: &lt;/b&gt; This entry describes a test scenario which may be useful in JabRef. By providing a test entry it is possible to see how certain things will look in this graphical BIB-file mananger. &quot; + OS.NEWLINE +</span>
+<span class="fc" id="L51">                &quot;&lt;/dd&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L52">                &quot;&lt;p&gt;&lt;/p&gt;&lt;/font&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L53">                &quot;&lt;br&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L54">                &quot;&lt;font face=\&quot;sans-serif\&quot;&gt;&lt;b&gt;&lt;i&gt;Article&lt;/i&gt;&lt;a name=\&quot;Smith2016\&quot;&gt; (Smith2016)&lt;/a&gt;&lt;/b&gt;&lt;br&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L55">                &quot; Smith, B.; Jones, B. &amp;amp; Williams, J.&lt;BR&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L56">                &quot; Taylor, P. &lt;i&gt;(Ed.)&lt;/i&gt;&lt;BR&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L57">                &quot; Title of the test entry &lt;BR&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L58">                OS.NEWLINE +</span>
+<span class="fc" id="L59">                &quot; &lt;em&gt;BibTeX Journal, &lt;/em&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L60">                OS.NEWLINE +</span>
+<span class="fc" id="L61">                OS.NEWLINE +</span>
+<span class="fc" id="L62">                OS.NEWLINE +</span>
+<span class="fc" id="L63">                &quot; &lt;em&gt;JabRef Publishing, &lt;/em&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L64">                &quot;&lt;b&gt;2016&lt;/b&gt;&lt;i&gt;, 34&lt;/i&gt;, 45-67 &quot; + OS.NEWLINE +</span>
+<span class="fc" id="L65">                &quot;&lt;BR&gt;&lt;BR&gt;&lt;b&gt;Abstract: &lt;/b&gt; This entry describes a test scenario which may be useful in JabRef. By providing a test entry it is possible to see how certain things will look in this graphical BIB-file mananger. &quot; + OS.NEWLINE +</span>
+<span class="fc" id="L66">                &quot;&lt;/dd&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L67">                &quot;&lt;p&gt;&lt;/p&gt;&lt;/font&gt;&quot;;</span>
+
+<span class="fc" id="L69">        String citation = &quot;&lt;font face=\&quot;sans-serif\&quot;&gt;&lt;b&gt;&lt;i&gt;Article&lt;/i&gt;&lt;a name=\&quot;Smith2016\&quot;&gt; (Smith2016)&lt;/a&gt;&lt;/b&gt;&lt;br&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L70">                &quot; Smith, B.; Jones, B. &amp;amp; Williams, J.&lt;BR&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L71">                &quot; Taylor, P. &lt;i&gt;(Ed.)&lt;/i&gt;&lt;BR&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L72">                &quot; Title of the test entry &lt;BR&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L73">                OS.NEWLINE +</span>
+<span class="fc" id="L74">                &quot; &lt;em&gt;BibTeX Journal, &lt;/em&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L75">                OS.NEWLINE +</span>
+<span class="fc" id="L76">                OS.NEWLINE +</span>
+<span class="fc" id="L77">                OS.NEWLINE +</span>
+<span class="fc" id="L78">                &quot; &lt;em&gt;JabRef Publishing, &lt;/em&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L79">                &quot;&lt;b&gt;2016&lt;/b&gt;&lt;i&gt;, 34&lt;/i&gt;, 45-67 &quot; + OS.NEWLINE +</span>
+<span class="fc" id="L80">                &quot;&lt;BR&gt;&lt;BR&gt;&lt;b&gt;Abstract: &lt;/b&gt; This entry describes a test scenario which may be useful in JabRef. By providing a test entry it is possible to see how certain things will look in this graphical BIB-file mananger. &quot; + OS.NEWLINE +</span>
+<span class="fc" id="L81">                &quot;&lt;/dd&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L82">                &quot;&lt;p&gt;&lt;/p&gt;&lt;/font&gt;&quot;;</span>
+
+<span class="fc" id="L84">        HtmlTransferable transferable = CitationStyleToClipboardWorker.processPreview(Arrays.asList(citation, citation));</span>
+
+<span class="fc" id="L86">        Object actual = transferable.getTransferData(HtmlTransferable.HTML_FLAVOR);</span>
+<span class="fc" id="L87">        assertEquals(expected, actual);</span>
+<span class="fc" id="L88">    }</span>
+
+    @Test
+    public void processText() throws Exception {
+<span class="fc" id="L92">        String expected = &quot;[1]B. Smith, B. Jones, and J. Williams, “Title of the test entry,” BibTeX Journal, vol. 34, no. 3, pp. 45–67, Jul. 2016.&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L93">                &quot;[1]B. Smith, B. Jones, and J. Williams, “Title of the test entry,” BibTeX Journal, vol. 34, no. 3, pp. 45–67, Jul. 2016.&quot; + OS.NEWLINE;</span>
+
+<span class="fc" id="L95">        String citation = &quot;[1]B. Smith, B. Jones, and J. Williams, “Title of the test entry,” BibTeX Journal, vol. 34, no. 3, pp. 45–67, Jul. 2016.&quot; + OS.NEWLINE;</span>
+<span class="fc" id="L96">        StringSelection textTransferable = CitationStyleToClipboardWorker.processText(Arrays.asList(citation, citation));</span>
+
+<span class="fc" id="L98">        Object actual = textTransferable.getTransferData(DataFlavor.stringFlavor);</span>
+<span class="fc" id="L99">        assertEquals(expected, actual);</span>
+<span class="fc" id="L100">    }</span>
+
+    @Test
+    public void processRtf() throws Exception {
+<span class="fc" id="L104">        String expected = &quot;{\\rtf&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L105">                &quot;[1]\\tab B. Smith, B. Jones, and J. Williams, \\uc0\\u8220{}Title of the test entry,\\uc0\\u8221{} {\\i{}BibTeX Journal}, vol. 34, no. 3, pp. 45\\uc0\\u8211{}67, Jul. 2016.&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L106">                &quot;\\line&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L107">                &quot;[1]\\tab B. Smith, B. Jones, and J. Williams, \\uc0\\u8220{}Title of the test entry,\\uc0\\u8221{} {\\i{}BibTeX Journal}, vol. 34, no. 3, pp. 45\\uc0\\u8211{}67, Jul. 2016.&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L108">                &quot;}&quot;;</span>
+
+<span class="fc" id="L110">        String citation = &quot;[1]\\tab B. Smith, B. Jones, and J. Williams, \\uc0\\u8220{}Title of the test entry,\\uc0\\u8221{} {\\i{}BibTeX Journal}, vol. 34, no. 3, pp. 45\\uc0\\u8211{}67, Jul. 2016.&quot; + OS.NEWLINE;</span>
+<span class="fc" id="L111">        RtfTransferable rtfTransferable = CitationStyleToClipboardWorker.processRtf(Arrays.asList(citation, citation));</span>
+
+<span class="fc" id="L113">        Object actual = rtfTransferable.getTransferData(DataFlavor.stringFlavor);</span>
+<span class="fc" id="L114">        assertEquals(expected, actual);</span>
+<span class="fc" id="L115">    }</span>
+
+    @Test
+    public void processXslFo() throws Exception {
+<span class="fc" id="L119">        String expected = &quot;&lt;?xml version=\&quot;1.0\&quot; encoding=\&quot;UTF-8\&quot;?&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L120">                &quot;&lt;fo:root xmlns:fo=\&quot;http://www.w3.org/1999/XSL/Format\&quot;&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L121">                &quot;   &lt;fo:layout-master-set&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L122">                &quot;      &lt;fo:simple-page-master master-name=\&quot;citations\&quot;&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L123">                &quot;         &lt;fo:region-body/&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L124">                &quot;      &lt;/fo:simple-page-master&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L125">                &quot;   &lt;/fo:layout-master-set&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L126">                &quot;   &lt;fo:page-sequence master-reference=\&quot;citations\&quot;&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L127">                &quot;      &lt;fo:flow flow-name=\&quot;xsl-region-body\&quot;&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L128">                OS.NEWLINE +</span>
+<span class="fc" id="L129">                &quot;&lt;fo:block id=\&quot;Smith2016\&quot;&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L130">                &quot;  &lt;fo:table table-layout=\&quot;fixed\&quot; width=\&quot;100%\&quot;&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L131">                &quot;    &lt;fo:table-column column-number=\&quot;1\&quot; column-width=\&quot;2.5em\&quot;/&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L132">                &quot;    &lt;fo:table-column column-number=\&quot;2\&quot; column-width=\&quot;proportional-column-width(1)\&quot;/&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L133">                &quot;    &lt;fo:table-body&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L134">                &quot;      &lt;fo:table-row&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L135">                &quot;        &lt;fo:table-cell&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L136">                &quot;          &lt;fo:block&gt;[1]&lt;/fo:block&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L137">                &quot;        &lt;/fo:table-cell&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L138">                &quot;        &lt;fo:table-cell&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L139">                &quot;          &lt;fo:block&gt;B. Smith, B. Jones, and J. Williams, “Title of the test entry,” &lt;fo:inline font-style=\&quot;italic\&quot;&gt;BibTeX Journal&lt;/fo:inline&gt;, vol. 34, no. 3, pp. 45–67, Jul. 2016.&lt;/fo:block&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L140">                &quot;        &lt;/fo:table-cell&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L141">                &quot;      &lt;/fo:table-row&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L142">                &quot;    &lt;/fo:table-body&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L143">                &quot;  &lt;/fo:table&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L144">                &quot;&lt;/fo:block&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L145">                OS.NEWLINE +</span>
+<span class="fc" id="L146">                &quot;&lt;fo:block id=\&quot;Smith2016\&quot;&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L147">                &quot;  &lt;fo:table table-layout=\&quot;fixed\&quot; width=\&quot;100%\&quot;&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L148">                &quot;    &lt;fo:table-column column-number=\&quot;1\&quot; column-width=\&quot;2.5em\&quot;/&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L149">                &quot;    &lt;fo:table-column column-number=\&quot;2\&quot; column-width=\&quot;proportional-column-width(1)\&quot;/&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L150">                &quot;    &lt;fo:table-body&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L151">                &quot;      &lt;fo:table-row&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L152">                &quot;        &lt;fo:table-cell&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L153">                &quot;          &lt;fo:block&gt;[1]&lt;/fo:block&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L154">                &quot;        &lt;/fo:table-cell&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L155">                &quot;        &lt;fo:table-cell&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L156">                &quot;          &lt;fo:block&gt;B. Smith, B. Jones, and J. Williams, “Title of the test entry,” &lt;fo:inline font-style=\&quot;italic\&quot;&gt;BibTeX Journal&lt;/fo:inline&gt;, vol. 34, no. 3, pp. 45–67, Jul. 2016.&lt;/fo:block&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L157">                &quot;        &lt;/fo:table-cell&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L158">                &quot;      &lt;/fo:table-row&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L159">                &quot;    &lt;/fo:table-body&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L160">                &quot;  &lt;/fo:table&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L161">                &quot;&lt;/fo:block&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L162">                OS.NEWLINE +</span>
+<span class="fc" id="L163">                &quot;      &lt;/fo:flow&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L164">                &quot;   &lt;/fo:page-sequence&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L165">                &quot;&lt;/fo:root&gt;&quot; + OS.NEWLINE;</span>
+
+<span class="fc" id="L167">        String citation = &quot;&lt;fo:block id=\&quot;Smith2016\&quot;&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L168">                &quot;  &lt;fo:table table-layout=\&quot;fixed\&quot; width=\&quot;100%\&quot;&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L169">                &quot;    &lt;fo:table-column column-number=\&quot;1\&quot; column-width=\&quot;2.5em\&quot;/&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L170">                &quot;    &lt;fo:table-column column-number=\&quot;2\&quot; column-width=\&quot;proportional-column-width(1)\&quot;/&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L171">                &quot;    &lt;fo:table-body&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L172">                &quot;      &lt;fo:table-row&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L173">                &quot;        &lt;fo:table-cell&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L174">                &quot;          &lt;fo:block&gt;[1]&lt;/fo:block&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L175">                &quot;        &lt;/fo:table-cell&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L176">                &quot;        &lt;fo:table-cell&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L177">                &quot;          &lt;fo:block&gt;B. Smith, B. Jones, and J. Williams, “Title of the test entry,” &lt;fo:inline font-style=\&quot;italic\&quot;&gt;BibTeX Journal&lt;/fo:inline&gt;, vol. 34, no. 3, pp. 45–67, Jul. 2016.&lt;/fo:block&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L178">                &quot;        &lt;/fo:table-cell&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L179">                &quot;      &lt;/fo:table-row&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L180">                &quot;    &lt;/fo:table-body&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L181">                &quot;  &lt;/fo:table&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L182">                &quot;&lt;/fo:block&gt;&quot; + OS.NEWLINE;</span>
+
+<span class="fc" id="L184">        XmlTransferable xmlTransferable = CitationStyleToClipboardWorker.processXslFo(Arrays.asList(citation, citation));</span>
+
+<span class="fc" id="L186">        Object actual = xmlTransferable.getTransferData(DataFlavor.stringFlavor);</span>
+<span class="fc" id="L187">        assertEquals(expected, actual);</span>
+<span class="fc" id="L188">    }</span>
+
+    @Test
+    public void processHtmlAsHtml() throws Exception {
+<span class="fc" id="L192">        String expected = &quot;&lt;!DOCTYPE html&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L193">                &quot;&lt;html&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L194">                &quot;   &lt;head&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L195">                &quot;      &lt;meta charset=\&quot;utf-8\&quot;&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L196">                &quot;   &lt;/head&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L197">                &quot;   &lt;body&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L198">                OS.NEWLINE +</span>
+<span class="fc" id="L199">                &quot;  &lt;div class=\&quot;csl-entry\&quot;&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L200">                &quot;    &lt;div class=\&quot;csl-left-margin\&quot;&gt;[1]&lt;/div&gt;&lt;div class=\&quot;csl-right-inline\&quot;&gt;B. Smith, B. Jones, and J. Williams, “Title of the test entry,” &lt;i&gt;BibTeX Journal&lt;/i&gt;, vol. 34, no. 3, pp. 45–67, Jul. 2016.&lt;/div&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L201">                &quot;  &lt;/div&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L202">                OS.NEWLINE +</span>
+<span class="fc" id="L203">                &quot;&lt;br&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L204">                &quot;  &lt;div class=\&quot;csl-entry\&quot;&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L205">                &quot;    &lt;div class=\&quot;csl-left-margin\&quot;&gt;[1]&lt;/div&gt;&lt;div class=\&quot;csl-right-inline\&quot;&gt;B. Smith, B. Jones, and J. Williams, “Title of the test entry,” &lt;i&gt;BibTeX Journal&lt;/i&gt;, vol. 34, no. 3, pp. 45–67, Jul. 2016.&lt;/div&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L206">                &quot;  &lt;/div&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L207">                OS.NEWLINE +</span>
+<span class="fc" id="L208">                &quot;   &lt;/body&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L209">                &quot;&lt;/html&gt;&quot; + OS.NEWLINE;</span>
+
+<span class="fc" id="L211">        String citation = &quot;  &lt;div class=\&quot;csl-entry\&quot;&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L212">                &quot;    &lt;div class=\&quot;csl-left-margin\&quot;&gt;[1]&lt;/div&gt;&lt;div class=\&quot;csl-right-inline\&quot;&gt;B. Smith, B. Jones, and J. Williams, “Title of the test entry,” &lt;i&gt;BibTeX Journal&lt;/i&gt;, vol. 34, no. 3, pp. 45–67, Jul. 2016.&lt;/div&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L213">                &quot;  &lt;/div&gt;&quot; + OS.NEWLINE;</span>
+<span class="fc" id="L214">        HtmlTransferable htmlTransferable = CitationStyleToClipboardWorker.processHtml(Arrays.asList(citation, citation));</span>
+
+<span class="fc" id="L216">        Object actual = htmlTransferable.getTransferData(DataFlavor.allHtmlFlavor);</span>
+<span class="fc" id="L217">        assertEquals(expected, actual);</span>
+<span class="fc" id="L218">    }</span>
+
+    @Test
+    public void processHtmlAsText() throws Exception {
+<span class="fc" id="L222">        String expected = &quot;[1] B. Smith, B. Jones, and J. Williams, “Title of the test entry,” BibTeX Journal , vol. 34, no. 3, pp. 45–67, Jul. 2016.&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L223">                &quot;[1] B. Smith, B. Jones, and J. Williams, “Title of the test entry,” BibTeX Journal , vol. 34, no. 3, pp. 45–67, Jul. 2016.&quot;;</span>
+
+<span class="fc" id="L225">        String citation = &quot;  &lt;div class=\&quot;csl-entry\&quot;&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L226">                &quot;    &lt;div class=\&quot;csl-left-margin\&quot;&gt;[1]&lt;/div&gt;&lt;div class=\&quot;csl-right-inline\&quot;&gt;B. Smith, B. Jones, and J. Williams, “Title of the test entry,” &lt;i&gt;BibTeX Journal&lt;/i&gt;, vol. 34, no. 3, pp. 45–67, Jul. 2016.&lt;/div&gt;&quot; + OS.NEWLINE +</span>
+<span class="fc" id="L227">                &quot;  &lt;/div&gt;&quot; + OS.NEWLINE;</span>
+<span class="fc" id="L228">        HtmlTransferable htmlTransferable = CitationStyleToClipboardWorker.processHtml(Arrays.asList(citation, citation));</span>
+
+<span class="fc" id="L230">        Object actual = htmlTransferable.getTransferData(DataFlavor.stringFlavor);</span>
+<span class="fc" id="L231">        assertEquals(expected, actual);</span>
+<span class="fc" id="L232">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

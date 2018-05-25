@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>AuthorAndsReplacerTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.layout.format</a> &gt; <span class="el_source">AuthorAndsReplacerTest.java</span></div><h1>AuthorAndsReplacerTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.layout.format;
+
+import org.jabref.logic.layout.LayoutFormatter;
+
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
+
+<span class="fc" id="L8">public class AuthorAndsReplacerTest {</span>
+
+    /**
+     * Test method for
+     * {@link org.jabref.logic.layout.format.AuthorAndsReplacer#format(java.lang.String)}.
+     */
+    @Test
+    public void testFormat() {
+<span class="fc" id="L16">        LayoutFormatter a = new AuthorAndsReplacer();</span>
+
+        // Empty case
+<span class="fc" id="L19">        assertEquals(&quot;&quot;, a.format(&quot;&quot;));</span>
+
+        // Single Names don't change
+<span class="fc" id="L22">        assertEquals(&quot;Someone, Van Something&quot;, a.format(&quot;Someone, Van Something&quot;));</span>
+
+        // Two names just an &amp;
+<span class="fc" id="L25">        assertEquals(&quot;John Smith &amp; Black Brown, Peter&quot;, a</span>
+<span class="fc" id="L26">                .format(&quot;John Smith and Black Brown, Peter&quot;));</span>
+
+        // Three names put a comma:
+<span class="fc" id="L29">        assertEquals(&quot;von Neumann, John; Smith, John &amp; Black Brown, Peter&quot;, a</span>
+<span class="fc" id="L30">                .format(&quot;von Neumann, John and Smith, John and Black Brown, Peter&quot;));</span>
+
+<span class="fc" id="L32">        assertEquals(&quot;John von Neumann; John Smith &amp; Peter Black Brown&quot;, a</span>
+<span class="fc" id="L33">                .format(&quot;John von Neumann and John Smith and Peter Black Brown&quot;));</span>
+<span class="fc" id="L34">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

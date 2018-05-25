@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>AbbreviationsTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (11/05/2018 16:12:58)</a> &gt; <a href="../../index.html" class="el_group">JabRef</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">org.jabref.logic.journals</a> &gt; <span class="el_source">AbbreviationsTest.java</span></div><h1>AbbreviationsTest.java</h1><pre class="source lang-java linenums">package org.jabref.logic.journals;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+<span class="fc" id="L10">public class AbbreviationsTest {</span>
+
+    private JournalAbbreviationPreferences prefs;
+    private JournalAbbreviationLoader abbreviations;
+
+    @BeforeEach
+    public void setUp() throws Exception {
+<span class="fc" id="L17">        prefs = mock(JournalAbbreviationPreferences.class);</span>
+<span class="fc" id="L18">        abbreviations = new JournalAbbreviationLoader();</span>
+<span class="fc" id="L19">    }</span>
+
+    @Test
+    public void getNextAbbreviationAbbreviatesIEEEJournalTitle() {
+<span class="fc" id="L23">        when(prefs.useIEEEAbbreviations()).thenReturn(true);</span>
+
+<span class="fc" id="L25">        assertEquals(&quot;#IEEE_J_PROC#&quot;,</span>
+<span class="fc" id="L26">                abbreviations.getRepository(prefs)</span>
+<span class="fc" id="L27">                        .getNextAbbreviation(&quot;Proceedings of the IEEE&quot;).get());</span>
+<span class="fc" id="L28">    }</span>
+
+    @Test
+    public void getNextAbbreviationExpandsIEEEAbbreviation() {
+<span class="fc" id="L32">        when(prefs.useIEEEAbbreviations()).thenReturn(true);</span>
+
+<span class="fc" id="L34">        assertEquals(&quot;Proceedings of the IEEE&quot;,</span>
+<span class="fc" id="L35">                abbreviations.getRepository(prefs)</span>
+<span class="fc" id="L36">                        .getNextAbbreviation(&quot;#IEEE_J_PROC#&quot;).get());</span>
+<span class="fc" id="L37">    }</span>
+
+    @Test
+    public void getNextAbbreviationAbbreviatesJournalTitle() {
+<span class="fc" id="L41">        assertEquals(&quot;Proc. IEEE&quot;,</span>
+<span class="fc" id="L42">                abbreviations.getRepository(prefs)</span>
+<span class="fc" id="L43">                        .getNextAbbreviation(&quot;Proceedings of the IEEE&quot;).get());</span>
+<span class="fc" id="L44">    }</span>
+
+    @Test
+    public void getNextAbbreviationRemovesPoint() {
+<span class="fc" id="L48">        assertEquals(&quot;Proc IEEE&quot;,</span>
+<span class="fc" id="L49">                abbreviations.getRepository(prefs)</span>
+<span class="fc" id="L50">                        .getNextAbbreviation(&quot;Proc. IEEE&quot;).get());</span>
+<span class="fc" id="L51">    }</span>
+
+    @Test
+    public void getNextAbbreviationExpandsAbbreviation() {
+<span class="fc" id="L55">        assertEquals(&quot;Proceedings of the IEEE&quot;,</span>
+<span class="fc" id="L56">                abbreviations.getRepository(prefs)</span>
+<span class="fc" id="L57">                        .getNextAbbreviation(&quot;Proc IEEE&quot;).get());</span>
+<span class="fc" id="L58">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>java (11/05/2018 16:12:58)</div></body></html>

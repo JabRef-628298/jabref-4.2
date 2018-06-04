@@ -9,6 +9,14 @@ JabRef is an open-source, cross-platform citation and reference management tool 
 Stay on top of your literature: JabRef helps you to collect and organize sources, find the paper you need and discover the latest research.
 ![main table](https://www.jabref.org/img/JabRef-4-0-MainTable.png)
 
+## Grupo e divisão de classes
+gui/FindUnlinkedFilesDialog.java [1] - Marcos
+gui/JabRefFrame.java [1] - Tiago
+gui/openoffice/OOBibBase.java [6] - Guilherme 
+gui/openoffice/OpenOfficePanel.java [6] - Túlio 
+gui/openoffice/StyleSelectDialog.java [6] - Rodolfo
+
+
 ## Features
 
 JabRef is a cross-platform application that works on Windows, Linux and Mac OS X. It is available free of charge and is actively developed.

@@ -14,8 +14,8 @@ Stay on top of your literature: JabRef helps you to collect and organize sources
 
 ## Divisão de classes entre os membros do Grupo
 
-- gui/FindUnlinkedFilesDialog.java [1] - Marcos
-- gui/JabRefFrame.java [1] - Tiago
+- CitationManager.java - Marcos
+- DetectOpenOfficeInstallation.java] - Tiago
 - gui/openoffice/OOBibBase.java [6] - Guilherme 
 - gui/openoffice/OpenOfficePanel.java [6] - Túlio 
 - gui/openoffice/StyleSelectDialog.java [6] - Rodolfo

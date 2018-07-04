@@ -24,6 +24,19 @@ public class BibtexKeyChecker implements Checker {
             return Collections.emptyList();
         }
 
+        //Creates a template of how the bibtex key should like
+        String bibkeypattern = entry.getField(FieldName.AUTHOR).toString() +
+                entry.getField(FieldName.YEAR).toString() +
+                entry.getField(FieldName.TITLE).toString().toUpperCase();
+
+        //System.out.println(bibkeypattern);
+        //if the generated key wasn't equal to the template, it's wrong
+        if(!entry.toString().equals(bibkeypattern)) {
+            return Collections.singletonList(new IntegrityMessage(
+                    Localization.lang("wrong format: expected AutorYearTITLE"), entry, BibEntry.KEY_FIELD));
+        }
+        //
+
         if (StringUtil.isBlank(entry.getCiteKeyOptional())) {
             String authorTitleYear = entry.getAuthorTitleYear(100);
             return Collections.singletonList(new IntegrityMessage(

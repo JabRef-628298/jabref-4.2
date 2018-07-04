@@ -1,5 +1,6 @@
 package org.jabref.logic.integrity;
 
+import java.util.Calendar;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
@@ -14,6 +15,7 @@ public class YearChecker implements ValueChecker {
     private static final Predicate<String> ENDS_WITH_FOUR_DIGIT = Pattern.compile("[0-9]{4}$").asPredicate();
     private static final String PUNCTUATION_MARKS = "[(){},.;!?<>%&$]";
 
+
     /**
      * Checks, if the number String contains a four digit year and ends with it.
      * Official bibtex spec:
@@ -23,10 +25,28 @@ public class YearChecker implements ValueChecker {
      */
     @Override
     public Optional<String> checkValue(String value) {
+
+        //Creates a java calendar
+        Calendar cal = Calendar.getInstance();
+
+        //setLenient must be false at first
+        cal.setLenient(false);
+
+        //Verifies if there is a year in value and if this year exists
+        if ((value != null) && !value.equals("")) {
+            cal.set(Calendar.YEAR, Integer.parseInt(value));
+            try {
+                cal.get(Calendar.YEAR);
+
+            } catch (ArrayIndexOutOfBoundsException | IllegalArgumentException e) {
+                //If dont exists, show de message
+                return Optional.of(Localization.lang("invalid year"));
+            }
+        }
+
         if (StringUtil.isBlank(value)) {
             return Optional.empty();
         }
-
         if (!CONTAINS_FOUR_DIGIT.test(value.trim())) {
             return Optional.of(Localization.lang("should contain a four digit number"));
         }

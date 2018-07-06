@@ -18,6 +18,7 @@ import org.jabref.logic.util.FileType;
  */
 public abstract class Importer implements Comparable<Importer> {
 
+    public static Path importedFilePath;
     /**
      * Check whether the source is in the correct format for this importer.
      *
@@ -40,6 +41,7 @@ public abstract class Importer implements Comparable<Importer> {
      */
     public boolean isRecognizedFormat(Path filePath, Charset encoding) throws IOException {
         try (BufferedReader bufferedReader = getReader(filePath, encoding)) {
+            importedFilePath = filePath;
             return isRecognizedFormat(bufferedReader);
         }
     }
@@ -196,4 +198,9 @@ public abstract class Importer implements Comparable<Importer> {
     public int compareTo(Importer o) {
         return getName().compareTo(o.getName());
     }
+
+    public static Path getImportedFilePath() {
+        return importedFilePath;
+    }
+
 }

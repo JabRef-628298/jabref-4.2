@@ -9,7 +9,9 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -84,6 +86,7 @@ import org.jabref.logic.bibtex.comparator.FieldComparator;
 import org.jabref.logic.bibtexkeypattern.BibtexKeyGenerator;
 import org.jabref.logic.help.HelpFile;
 import org.jabref.logic.importer.ImportInspector;
+import org.jabref.logic.importer.Importer;
 import org.jabref.logic.importer.OutputPrinter;
 import org.jabref.logic.l10n.Localization;
 import org.jabref.logic.util.UpdateField;
@@ -91,6 +94,7 @@ import org.jabref.model.Defaults;
 import org.jabref.model.FieldChange;
 import org.jabref.model.database.BibDatabase;
 import org.jabref.model.database.BibDatabaseContext;
+import org.jabref.model.database.BibDatabaseMode;
 import org.jabref.model.entry.AuthorList;
 import org.jabref.model.entry.BibEntry;
 import org.jabref.model.entry.FieldName;
@@ -172,6 +176,7 @@ public class ImportInspectionDialog extends JabRefDialog implements ImportInspec
     private final JPopupMenu popup = new JPopupMenu();
     private final JButton deselectAllDuplicates = new JButton(Localization.lang("Deselect all duplicates"));
     private final JButton stop = new JButton(Localization.lang("Stop"));
+    private final JButton newDB = new JButton(Localization.lang("Create New Database"));
     private final PreviewPanel preview;
     private final Map<BibEntry, Set<GroupTreeNode>> groupAdditions = new HashMap<>();
     private final JCheckBox autoGenerate = new JCheckBox(Localization.lang("Generate keys"),
@@ -281,9 +286,15 @@ public class ImportInspectionDialog extends JabRefDialog implements ImportInspec
         builder.addButton(generate);
         builder.getPanel().setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
         centerPan.add(builder.getPanel(), BorderLayout.WEST);
+        JButton newDB = new JButton(Localization.lang("Create New Database"));
+        builder.addButton(newDB);
+        builder.addRelatedGap();
 
         ok.setEnabled(false);
         generate.setEnabled(false);
+
+        newDB.addActionListener(new CreateNewDatabase());
+
         ok.addActionListener(new OkListener());
         cancel.addActionListener(e -> {
             signalStopFetching();
@@ -1451,6 +1462,29 @@ public class ImportInspectionDialog extends JabRefDialog implements ImportInspec
                     return entry.getField(field).orElse(null);
                 }
             }
+        }
+
+    }
+
+
+    private class CreateNewDatabase implements ActionListener {
+
+        // TODO
+        @Override
+        public void actionPerformed(ActionEvent arg0) {
+
+            BibDatabaseMode mode = BibDatabaseMode.BIBLATEX;
+            File dbFile = new File("C:\\Users\\Tiago Bachiega\\Desktop\\bibfile.bib");
+            Path importedFile = Importer.getImportedFilePath();
+            MetaData meta = new MetaData();
+
+            BibDatabaseContext bibDatabaseContext = new BibDatabaseContext(new Defaults(BibDatabaseMode.BIBTEX));
+            bibDatabaseContext.setMode(mode);
+            bibDatabaseContext.setDatabaseFile(dbFile);
+
+
+            signalStopFetching();
+            dispose();
         }
 
     }

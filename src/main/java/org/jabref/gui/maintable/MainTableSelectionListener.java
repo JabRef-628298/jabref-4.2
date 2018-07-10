@@ -66,7 +66,7 @@ public class MainTableSelectionListener implements ListEventListener<BibEntry>, 
     // with storing the last row number jumped to, this is used to let multiple
     // key strokes cycle between all entries starting with the same letter:
     private final int[] lastPressed = new int[20];
-    private PreviewPanel preview;
+    private final PreviewPanel preview;
     private boolean workingOnPreview;
     private boolean enabled = true;
     private int lastPressedCount;
@@ -96,8 +96,8 @@ public class MainTableSelectionListener implements ListEventListener<BibEntry>, 
         }
 
         final BibEntry newSelected = selected.get(0);
-        if ((panel.getMode() == BasePanelMode.SHOWING_EDITOR || panel.getMode() == BasePanelMode.WILL_SHOW_EDITOR)
-                && panel.getEntryEditor() != null && newSelected == panel.getEntryEditor().getEntry()) {
+        if (((panel.getMode() == BasePanelMode.SHOWING_EDITOR) || (panel.getMode() == BasePanelMode.WILL_SHOW_EDITOR))
+                && (panel.getEntryEditor() != null) && (newSelected == panel.getEntryEditor().getEntry())) {
             // entry already selected and currently editing it, do not steal the focus from the selected textfield
             return;
         }
@@ -107,7 +107,7 @@ public class MainTableSelectionListener implements ListEventListener<BibEntry>, 
             if ((mode == BasePanelMode.WILL_SHOW_EDITOR) || (mode == BasePanelMode.SHOWING_EDITOR)) {
                 panel.showAndEdit(newSelected);
                 SwingUtilities.invokeLater(() -> table.ensureVisible(table.getSelectedRow()));
-            } else if (panel.getMode() == BasePanelMode.SHOWING_NOTHING || panel.getMode() == BasePanelMode.SHOWING_PREVIEW) {
+            } else if ((panel.getMode() == BasePanelMode.SHOWING_NOTHING) || (panel.getMode() == BasePanelMode.SHOWING_PREVIEW)) {
                 // Either nothing or a preview was shown. Update the preview.
                 updatePreview(newSelected);
             }
@@ -115,7 +115,9 @@ public class MainTableSelectionListener implements ListEventListener<BibEntry>, 
     }
 
     private void updatePreview(final BibEntry toShow) {
-        updatePreview(toShow, 0);
+        if (Globals.prefs.getPreviewPreferences().isPreviewPanelEnabled()) {
+            updatePreview(toShow, 0);
+        }
     }
 
     private void updatePreview(final BibEntry toShow, int repeats) {
